@@ -102,7 +102,8 @@ export async function loadWorld(k: Kernel, actorId: string): Promise<WorldState>
   try {
     messages = await k.inbox();
   } catch (error) {
-    if (!(error instanceof KernelError)) throw error;
+    // Only "nobody in particular" means no inbox; an unreachable kernel is not an empty one.
+    if (!(error instanceof KernelError) || (error.name !== "unauthenticated" && error.name !== "forbidden")) throw error;
   }
   const verified = new Set<string>();
   for (const e of events.filter((x) => x.type === "claim.capability")) {

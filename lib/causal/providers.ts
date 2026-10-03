@@ -11,7 +11,7 @@
 import type { Kernel, WorldEntity } from "../kernel/client";
 import { sha256Hex } from "../money/settlement";
 import type { CapabilityAnswer } from "../world/counterparty";
-import { answerInquiries } from "./exchange";
+import { AnswerService } from "../agents/answer-service";
 import type { ProviderResponse, RouteStep } from "./types";
 import type { WorldState } from "./world";
 
@@ -181,14 +181,22 @@ export function verificationRequest(counterparts: Counterparts, local: LocalSide
 
 // --- Arcadia: the same providers, with the other side running on this device --------------------
 
-// Arcadia's counterparty answers on this device through the same loop a remote agent runs: its
-// own World, its own Horizon (`inquiry.answer`), its own selection, its own authority in the market.
-export const arcadiaInquiry = (counterparts: Counterparts): Provider =>
-  messagingInquiry(
-    counterparts,
-    { respond: (agentId, _entity, org) => answerInquiries({ kernel: counterparts.as(agentId), actorId: agentId, orgRef: org, kernelFor: counterparts.as, providers: new Providers([]) }) },
-    "arcadia.agent-messaging.inquiry",
-  );
+// Arcadia's counterparty answers on this device through the same service and loop a remote agent
+// runs: woken by the delivery, its own World, its own Horizon (`inquiry.answer`), its own selection,
+// its own authority in the market.
+export function arcadiaInquiry(counterparts: Counterparts): Provider {
+  // Each organization's answer service, running on this device; delivery wakes it.
+  const services = new Map<string, AnswerService>();
+  const serviceFor = (agentId: string, orgRef: string) => {
+    let service = services.get(agentId);
+    if (!service) {
+      service = new AnswerService({ kernel: counterparts.as(agentId), actorId: agentId, orgRef, kernelFor: counterparts.as, providers: new Providers([]), safetyNetMs: 0 });
+      services.set(agentId, service);
+    }
+    return service;
+  };
+  return messagingInquiry(counterparts, { respond: (agentId, _entity, org) => serviceFor(agentId, org).wake() }, "arcadia.agent-messaging.inquiry");
+}
 
 export const arcadiaAcceptance = (counterparts: Counterparts): Provider => messagingAcceptance(counterparts, "arcadia.agent-messaging.acceptance");
 

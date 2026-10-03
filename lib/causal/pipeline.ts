@@ -113,6 +113,8 @@ async function attempts(k: Kernel, route: RecordedRoute, index: number) {
     .reverse();
 }
 
+const OPEN = new Set(["proposed", "authorized", "enacting", "needs_reconciliation"]);
+
 export async function executeStep(x: Executor, route: RecordedRoute, index: number): Promise<StepOutcome> {
   const actor = route.steps[index].actorId;
   const world = x.worldFor ? await x.worldFor(actor) : x.world;
@@ -138,32 +140,38 @@ export async function executeStep(x: Executor, route: RecordedRoute, index: numb
     if (now.decision === "DENY") return { index, actionId: last.action_id, status: "denied", detail: now.reasons.join("; ") || "denied", provider: null };
   }
   const attempt = prior.filter((a) => a.status === "rejected").length;
+  // An attempt already under way (its proposal's reply may have been lost) is continued, never
+  // proposed again: the terms that were decided on are the terms that happen.
+  const open = last && OPEN.has(last.status) ? last : null;
 
   let actionId: string;
-  try {
-    actionId = await k.proposeAction({
-      kind: step.kind,
-      capability: step.capability,
-      scope: step.scope,
-      targetRef: step.targetRef ?? undefined,
-      inReplyTo: step.inReplyTo ?? undefined,
-      amount: step.amount ?? undefined,
-      asset: step.asset ?? undefined,
-      payload: {
-        ...step.payload,
-        route: `event:${route.eventId}`,
-        step: index,
-        binding: step.binding,
-        ...(step.consequences.length ? { consequences: step.consequences } : {}),
-        ...(step.guards?.length ? { guards: step.guards } : {}),
-      },
-      idempotencyKey: `route:${route.eventId}:${index}${attempt ? `:${attempt}` : ""}`,
-    });
-  } catch (error) {
-    if (error instanceof KernelError && error.name === "forbidden") return { index, actionId: null, status: "denied", detail: error.message, provider: null };
-    // A precondition the kernel found already false: the World moved since the plan.
-    if (error instanceof KernelError && error.name === "invalid" && /guard does not hold/.test(error.message)) return { index, actionId: null, status: "failed", detail: error.message, provider: null };
-    throw error;
+  if (open) actionId = open.action_id;
+  else {
+    try {
+      actionId = await k.proposeAction({
+        kind: step.kind,
+        capability: step.capability,
+        scope: step.scope,
+        targetRef: step.targetRef ?? undefined,
+        inReplyTo: step.inReplyTo ?? undefined,
+        amount: step.amount ?? undefined,
+        asset: step.asset ?? undefined,
+        payload: {
+          ...step.payload,
+          route: `event:${route.eventId}`,
+          step: index,
+          binding: step.binding,
+          ...(step.consequences.length ? { consequences: step.consequences } : {}),
+          ...(step.guards?.length ? { guards: step.guards } : {}),
+        },
+        idempotencyKey: `route:${route.eventId}:${index}${attempt ? `:${attempt}` : ""}`,
+      });
+    } catch (error) {
+      if (error instanceof KernelError && error.name === "forbidden") return { index, actionId: null, status: "denied", detail: error.message, provider: null };
+      // A precondition the kernel found already false: the World moved since the plan.
+      if (error instanceof KernelError && error.name === "invalid" && /guard does not hold/.test(error.message)) return { index, actionId: null, status: "failed", detail: error.message, provider: null };
+      throw error;
+    }
   }
   let action = await k.readAction(actionId);
   const out = (status: StepOutcome["status"], detail: string, by: string | null = provider?.id ?? null): StepOutcome => ({ index, actionId, status, detail, provider: by });

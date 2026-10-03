@@ -27,7 +27,8 @@ export type Answered = { goal: Goal; route: Route | null; outcomes: StepOutcome[
 // Answers every open inquiry to the organization that the agent's own authority allows, once each;
 // an inquiry it may not answer stays open with the kernel's reason in the route.
 export async function answerInquiries(x: Answerer): Promise<Answered[]> {
-  const kernelFor = x.kernelFor ?? (() => x.kernel);
+  // The agent acts through its own session; other actors (read-only here) through kernelFor.
+  const kernelFor = (id: string) => (id === x.actorId ? x.kernel : (x.kernelFor?.(id) ?? x.kernel));
   const providers = x.providers;
   const world = await loadWorld(x.kernel, x.actorId);
   const answered: Answered[] = [];
