@@ -183,6 +183,35 @@ describe("the SOLVE loop", () => {
     assert.ok(rejected >= 1, "the refusal itself is history");
   });
 
+  it("keeps causal order, and lets a refused agent succeed once its principal delegates", async () => {
+    const L = await loop();
+    const route = (await L.horizonFor(L.agentId)).routes[0];
+    const recorded = await recordRoute(L.you, route);
+    // Accepting before asking is not a route: the step waits for the ones before it.
+    const early = await executeStep(await L.executor(L.youId), recorded, 2);
+    assert.equal(early.status, "blocked");
+    assert.match(early.detail, /step 1 .* must complete first/);
+
+    // Told to ask on its own, the companion attempts it with its own authority: the kernel refuses
+    // and the refusal is history. Asking again records nothing new while authority is unchanged.
+    const own = await computeHorizon({ world: await loadWorld(L.as(L.agentId), L.agentId), actorId: L.agentId, principalId: L.youId, goal: L.goal, kernelFor: L.kernelFor, providers: L.providers, fallback: "none" });
+    assert.equal(own.routes[0].executable, false);
+    const attempt = await recordRoute(L.you, own.routes[0]);
+    const refused = await executeStep(await L.executor(L.agentId), attempt, 0);
+    assert.equal(refused.status, "denied");
+    assert.match(refused.detail, /message.send/);
+    const rejections = () => count(L.k, "select count(*) as n from kernel.action_transitions where status = 'rejected'");
+    const before = await rejections();
+    assert.equal((await executeStep(await L.executor(L.agentId), attempt, 0)).status, "denied");
+    assert.equal(await rejections(), before, "no repeated refusal while nothing changed");
+
+    // You delegate (the planned route's first step); the same attempt now goes through, under a
+    // new key, and its consequence lands once.
+    assert.equal((await executeStep(await L.executor(L.youId), recorded, 0)).status, "completed");
+    assert.equal((await executeStep(await L.executor(L.agentId), attempt, 0)).status, "completed");
+    assert.equal(await count(L.k, "select count(*) as n from kernel.relations where kind = 'offers' and attributes->>'status' = 'quoted'"), 1);
+  });
+
   it("survives a crash between evidence and settlement, and concurrent runs, with one consequence", async () => {
     const L = await loop();
     const route = (await L.horizonFor(L.youId)).routes[0];

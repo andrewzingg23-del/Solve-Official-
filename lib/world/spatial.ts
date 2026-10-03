@@ -92,7 +92,7 @@ export type SpatialInput = {
   effectsAfterSeq: number;
 };
 
-type Proposed = { payload?: { type?: string; organization?: string }; capability?: string; decision?: string; reasons?: string[]; action_id?: string };
+type Proposed = { payload?: { type?: string; organization?: string; binding?: { org?: string } }; kind?: string; capability?: string; decision?: string; reasons?: string[]; action_id?: string };
 
 // The latest contact decision and any acceptance per organization, from the viewer's own records.
 function consequences(model: SpatialModel) {
@@ -101,9 +101,10 @@ function consequences(model: SpatialModel) {
   const acceptanceActions = new Map<string, string>();
   for (const e of [...model.events].sort((a, b) => a.seq - b.seq)) {
     const p = e.payload as Proposed;
-    if (e.type === "kernel.action.proposed" && p.payload?.organization) {
-      const org = p.payload.organization;
-      if (p.payload.type === "ACCEPTANCE") acceptanceActions.set(String(p.action_id), org);
+    // Contact attempts: a supplier inquiry (pipeline) or a direct message naming an organization.
+    const org = p.payload?.binding?.org ?? p.payload?.organization;
+    if (e.type === "kernel.action.proposed" && org && (p.kind === "supplier.inquire" || p.kind === "message.send" || p.kind === "supplier.accept")) {
+      if (p.payload?.type === "ACCEPTANCE") acceptanceActions.set(String(p.action_id), org);
       else if (p.decision === "DENY") blocked.set(org, e);
       else blocked.delete(org);
     }

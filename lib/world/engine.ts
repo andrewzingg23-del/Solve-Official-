@@ -18,8 +18,12 @@ import type {
   WorldRelation,
 } from "../kernel/client";
 import type { ArcadiaManifest } from "../sandbox/manifest";
-import { respondToQueries, type CapabilityAnswer } from "./counterparty";
 import { loadOperations, type OperationsView } from "./operations";
+import { computeHorizon, TRANSITIONS, type HorizonInput } from "../causal/horizon";
+import { executeStep, recordRoute, type RecordedRoute } from "../causal/pipeline";
+import { arcadiaProviders, type Providers } from "../causal/providers";
+import type { Fact, Goal, Horizon, StepOutcome } from "../causal/types";
+import { loadWorld, type WorldState } from "../causal/world";
 import type { Edge, Node, ProofState } from "./types";
 import { planVehicleCompany, type RoutePlan } from "./wayfinder";
 
@@ -259,7 +263,8 @@ export class WorldEngine {
     const plan = planVehicleCompany(objective, leastCapital);
     const scope = `world:venture-${crypto.randomUUID().slice(0, 8)}`;
     await you.claimScope(scope);
-    const companion = avatarAgent(model);
+    // From the kernel, not the caller's possibly stale model: the companion may have just been made.
+    const companion = (await you.myAvatars()).find((a) => a.avatar_type === "ai_companion") ?? null;
     if (companion) await this.assist(companion.agent_id, scope);
 
     // A venture is a World, not a place: it gets no coordinates until it has a real site.
@@ -415,7 +420,8 @@ export class WorldEngine {
         at: reply.delivered_at,
       });
     }
-    const actionId = String(edge.attributes.acceptance ?? "").replace(/^action:/, "");
+    // The kernel stamps every declared consequence with the action that caused it.
+    const actionId = String(edge.attributes.action ?? "").replace(/^action:/, "");
     if (actionId) {
       const action = await this.sb.you.readAction(actionId);
       steps.push({
@@ -439,74 +445,90 @@ export class WorldEngine {
     return this.sb.as(agentId).authorize({ capability, scope });
   }
 
-  // You delegate contact (never commitment) to your companion for a week.
-  delegateContact(agentId: string, scope: string) {
-    return this.sb.you.issueLease({ grantee: agentId, capability: "message.send", scope, expiresAt: new Date(Date.now() + 7 * 86400_000) });
-  }
-
-  // The companion asks an organization's agent a structured capability question; that agent
-  // answers from its published record. Both are kernel actions with provenance.
-  // The attempt is always a proposal, so a refusal is a kernel record (the World shows the route
-  // stop from that record), not a silent client-side check.
-  async capabilityQuery(agentId: string, orgRef: string, quantity: number | null, scope: string, model: WorldModel) {
-    const orgKey = Object.entries(this.manifest.orgs).find(([, o]) => `entity:${o.entityId}` === orgRef)?.[0];
-    if (!orgKey) throw new Error("that organization has no agent in Arcadia");
-    const org = this.manifest.orgs[orgKey];
-    const node = model.nodes.get(orgRef)!;
-    const companion = this.sb.as(agentId);
-    const queryId = await companion.proposeAction({
-      kind: "message.send",
-      capability: "message.send",
-      scope,
-      targetRef: `actor:${org.agentId}`,
-      payload: { type: "CAPABILITY_QUERY", organization: orgRef, capability: "contract_manufacturing", quantity },
-    });
-    const proposed = await companion.readAction(queryId);
-    const decision: AuthorityDecision = { decision: proposed.decision, grant_id: null, policy_id: null, threshold: proposed.threshold, delay_seconds: null, reasons: proposed.reasons };
-    if (proposed.decision !== "ALLOW") return { decision, answer: null as CapabilityAnswer | null, queryId };
-    await companion.enactAction(queryId);
-
-    const entity: WorldEntity = {
-      entity_id: orgRef.slice(7),
-      kind: "organization",
-      scope: node.scope,
-      version: 1,
-      title: node.title,
-      summary: node.summary,
-      attributes: node.attributes,
-      latitude: null,
-      longitude: null,
-      location_truth: null,
-      importance: node.importance,
-      updated_at: "",
-    };
-    await respondToQueries(this.sb.as(org.agentId), entity, node.claimEventId, this.manifest.world);
-    const reply = (await companion.inbox()).find((m) => m.in_reply_to === queryId);
-    return { decision, queryId, answer: (reply?.payload as unknown as CapabilityAnswer) ?? null };
-  }
-
-  // A commitment (acceptance of an offer) needs commitment.make. The companion is denied unless
-  // it was delegated; the person can commit with their own authority.
-  async commitDecision(agentId: string, scope: string) {
+  // Read-only: whether the companion may commit here (it may not, unless delegated).
+  commitDecision(agentId: string, scope: string) {
     return this.authority(agentId, "commitment.make", scope);
   }
 
-  async commitAsYou(orgRef: string, scope: string, terms: Record<string, unknown>) {
-    const org = Object.values(this.manifest.orgs).find((o) => `entity:${o.entityId}` === orgRef);
-    if (!org) throw new Error("unknown organization");
-    const id = await this.sb.you.proposeAction({
-      kind: "message.send",
-      capability: "commitment.make",
-      scope,
-      targetRef: `actor:${org.agentId}`,
-      payload: { type: "ACCEPTANCE", organization: orgRef, ...terms },
+  // The causal loop on this sandbox. Every change below runs through lib/causal: Horizon plans
+  // from the World as the acting principal sees it, the selection is recorded, and each step goes
+  // through the one pipeline (kernel decision, provider evidence, atomic consequence).
+  private providerSet: Providers | null = null;
+  providers() {
+    const orgs = Object.values(this.manifest.orgs);
+    this.providerSet ??= arcadiaProviders({
+      agentFor: (ref) => orgs.find((o) => `entity:${o.entityId}` === ref)?.agentId ?? null,
+      claimEventFor: (ref) => orgs.find((o) => `entity:${o.entityId}` === ref)?.claimEventId ?? null,
+      as: (id) => this.sb.as(id),
+      replyScope: this.manifest.world,
     });
-    await this.sb.you.enactAction(id);
-    // The consequence in the World Graph: the organization now supplies your World, on these terms.
-    const world = (await this.sb.you.readWorld(scope)).find((e) => e.kind === "world");
-    if (world) {
-      await this.sb.you.relate({ kind: "supplies", fromRef: orgRef, toRef: `entity:${world.entity_id}`, scope, attributes: { status: "agreed", acceptance: `action:${id}`, ...terms } });
-    }
-    return id;
+    return this.providerSet;
+  }
+
+  kernelFor(actorId: string) {
+    return actorId === this.manifest.you.actorId ? this.sb.you : this.sb.as(actorId);
+  }
+
+  supplyGoal(model: WorldModel, quantity: number | null = 10000, capability = "contract_manufacturing"): Goal | null {
+    return model.venture?.worldRef ? { kind: "secure_supply", world: model.venture.worldRef, capability, quantity } : null;
+  }
+
+  async horizon(actorId: string, goal: Goal, fallback?: HorizonInput["fallback"], world?: WorldState): Promise<Horizon> {
+    const you = this.manifest.you.actorId;
+    const seen = world ?? (await loadWorld(this.kernelFor(actorId), actorId));
+    return computeHorizon({ world: seen, actorId, principalId: actorId === you ? null : you, goal, kernelFor: (id) => this.kernelFor(id), providers: this.providers(), fallback });
+  }
+
+  // The route through one organization, as the actor would take it now, recorded as your selection.
+  async plan(orgRef: string, goal: Goal, actorId: string, fallback?: HorizonInput["fallback"]) {
+    const world = await loadWorld(this.kernelFor(actorId), actorId);
+    const horizon = await this.horizon(actorId, goal, fallback, world);
+    const route = horizon.routes.find((r) => r.orgRef === orgRef) ?? null;
+    const excluded = horizon.excluded.find((e) => e.orgRef === orgRef)?.reasons ?? null;
+    const recorded = route ? await recordRoute(this.sb.you, route) : null;
+    return { horizon, route, recorded, excluded, world };
+  }
+
+  // Runs one step. The provider reads the World only for the entities it addresses, so the World
+  // the plan was made from serves when the same actor performs it.
+  async perform(recorded: RecordedRoute, transition: string, world?: WorldState): Promise<StepOutcome | null> {
+    const index = recorded.steps.findIndex((s) => s.transition === transition);
+    if (index < 0) return null;
+    const actor = recorded.steps[index].actorId;
+    const seen = world && world.actorId === actor ? world : await loadWorld(this.kernelFor(actor), actor);
+    return executeStep({ kernelFor: (id) => this.kernelFor(id), providers: this.providers(), world: seen }, recorded, index);
+  }
+
+  async quote(orgRef: string, worldRef: string): Promise<Fact | null> {
+    const world = await loadWorld(this.sb.you, this.manifest.you.actorId);
+    return world.facts.find((f) => f.subject === orgRef && f.predicate === "offers:quoted" && f.object === worldRef) ?? null;
+  }
+
+  // "Can they make N?": the companion asks on its own authority, because it was told to. If it may
+  // not, the kernel refuses and the refusal is history.
+  async ask(orgRef: string, quantity: number | null, model: WorldModel, agentId: string) {
+    const goal = this.supplyGoal(model, quantity)!;
+    const plan = await this.plan(orgRef, goal, agentId, "none");
+    if (plan.horizon.satisfied) return { ...plan, outcome: null, quote: await this.quote(orgRef, goal.world) };
+    const outcome = plan.recorded ? await this.perform(plan.recorded, TRANSITIONS.inquire.id, plan.world) : null;
+    return { ...plan, outcome, quote: await this.quote(orgRef, goal.world) };
+  }
+
+  // "You may contact suppliers": the delegation step of the companion's planned route.
+  async allowContact(model: WorldModel, agentId: string, orgRef?: string) {
+    const goal = this.supplyGoal(model)!;
+    const horizon = await this.horizon(agentId, goal);
+    const route = horizon.routes.find((r) => (orgRef ? r.orgRef === orgRef : true) && r.steps.some((s) => s.transition === TRANSITIONS.delegate.id));
+    if (!route) return null;
+    return this.perform(await recordRoute(this.sb.you, route), TRANSITIONS.delegate.id);
+  }
+
+  // "Accept as you": the acceptance step, performed with your authority; its declared consequence
+  // (the supply agreement) lands with it.
+  async acceptAsYou(orgRef: string, model: WorldModel, agentId: string) {
+    const goal = this.supplyGoal(model)!;
+    const plan = await this.plan(orgRef, goal, agentId, "principal");
+    const outcome = plan.recorded ? await this.perform(plan.recorded, TRANSITIONS.accept.id, plan.world) : null;
+    return { ...plan, outcome };
   }
 }

@@ -17,6 +17,10 @@ Canon as executable checks. Each line names the test that fails if the invariant
 | A verifier never takes the worker's word: a finding that contradicts the chain is never authorized | `tests/e2e/self-operation.test.ts` |
 | A build proposal's change class is computed from what it touches; the creation guardrails are Class D | `tests/ops/changes.test.ts` |
 | Agents promote only Class A changes, only after CI and a distinct reviewer, only the exact reviewed change; anything above Class A escalates | `tests/e2e/creation.test.ts` |
+| Declared consequences need write authority at proposal, land atomically with completion, once, never on failure, and roll the completion back if they cannot land | `tests/kernel/actions.test.ts` declared consequences |
+| The loop: context and Horizon from the actor's own authority; refusals recorded with no consequence; evidence settles before consequence; repeats, reloads, a crash between evidence and settlement, and concurrent runs yield one consequence; steps keep causal order | `tests/e2e/loop.test.ts` |
+| Providers are replaceable without changing routes or rewriting history; planning and re-ranking write nothing | `tests/e2e/loop.test.ts` |
+| Perception, planning and rendering never write; the browser's kernel survives reload with identical canonical state | `tests/e2e/loop.test.ts`, `npm run test:world` |
 | Quorum needs distinct parties; collectives can count actors when policy says so | `tests/kernel/actions.test.ts` governance |
 | Multisig accepts only named signers; governed writes cannot bypass actions | `tests/kernel/actions.test.ts` governance |
 | Timelocks and challenge windows hold enactment; revocation stops a pending action | `tests/kernel/actions.test.ts` governance |

@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import type { RepresentationKind } from "@/lib/kernel/client";
 import { bootSandbox, resetSandbox, type Sandbox } from "@/lib/sandbox/boot";
 import { kernelDigest } from "@/lib/sandbox/digest";
+import { buildContext } from "@/lib/causal/context";
 import { respond } from "@/lib/world/controller";
 import { avatarAgent, WorldEngine, type WorldModel } from "@/lib/world/engine";
 import { ruleProvider } from "@/lib/world/horizon";
@@ -52,6 +53,8 @@ declare global {
       context: () => InteractionContext;
       // Recomputes the semantic digest of the kernel this browser booted.
       digest: () => Promise<{ digest: string; tables: Record<string, number> }>;
+      // An actor's context (who, what it sees, what it can and cannot do), from its own authority.
+      actorContext: (actorId: string) => Promise<{ kind: string; scopes: string[]; can: string[]; cannot: string[]; grants: string[]; world: string | null }>;
     };
   }
 }
@@ -190,10 +193,14 @@ export function WorldShell() {
         if (!org || !model.venture) return;
         setBusy(true);
         try {
-          const reply = model.companionInbox.find((m) => (m.payload as { organization?: string }).organization === org);
-          const terms = { quantity: (reply?.payload as { quantity?: number })?.quantity ?? 10000, unit_price_usd: (reply?.payload as { unit_price_usd?: number })?.unit_price_usd };
-          await engine.commitAsYou(org, model.venture.scope, terms);
+          const companionId = avatarAgent(model)?.agent_id ?? model.avatars[0]?.agent_id;
+          if (!companionId) return;
+          const accepted = await engine.acceptAsYou(org, model, companionId);
           await reload();
+          if (accepted.outcome?.status !== "completed") {
+            setResult({ kind: "warning", statements: [{ truth: "fact", text: accepted.outcome?.detail ?? accepted.excluded?.join("; ") ?? "There is no route to accept." }], commands: [], actions: [] });
+            return;
+          }
           setResult({
             kind: "proposed_edit",
             statements: [{ truth: "fact", text: `You accepted ${model.nodes.get(org)?.title}'s terms under your own authority. It is recorded as a kernel event.` }],
@@ -260,8 +267,22 @@ export function WorldShell() {
       scene: () => earth.current,
       context: () => latestCtx.current,
       digest: () => kernelDigest((sql) => sandbox.k.owner(sql)),
+      actorContext: async (actorId) => {
+        const m = await engine!.load();
+        const goal = engine!.supplyGoal(m);
+        const kernel = engine!.kernelFor(actorId);
+        const c = await buildContext({ kernel, actorId, goal, kernelFor: (id) => engine!.kernelFor(id), providers: engine!.providers() });
+        return {
+          kind: c.who.kind,
+          scopes: c.sees.scopes,
+          can: c.can.map((x) => x.capability),
+          cannot: c.cannot.map((x) => x.capability),
+          grants: (await kernel.myGrants()).map((g) => `${g.capability}@${g.scope}`),
+          world: c.where.world,
+        };
+      },
     };
-  }, [sandbox]);
+  }, [sandbox, engine]);
   const companion = model ? avatarAgent(model) ?? model.avatars[0] ?? null : null;
   const selected = ctx.currentSelectionIds[0] ?? null;
   const lens = ctx.currentLens;
@@ -352,7 +373,7 @@ export function WorldShell() {
         )}
 
         {stewardOpen && engine && <StewardPanel load={loadOperations} onClose={() => setStewardOpen(false)} />}
-        {!stewardOpen && model && engine && <LensPlane lens={lens} engine={engine} model={model} ctx={ctx} onSelect={(r) => select(r)} onRepresent={represent} />}
+        {!stewardOpen && model && engine && <LensPlane lens={lens} engine={engine} model={model} ctx={ctx} onSelect={(r) => select(r)} onRepresent={represent} onChanged={reload} />}
 
         {/* Context drawer (Space lens): the selection, or the World index on request. */}
         {model && lens === "space" && (selected || indexOpen) && (

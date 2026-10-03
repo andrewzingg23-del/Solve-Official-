@@ -8,6 +8,7 @@
 // second tab, a crash and reload) continues where the kernel says it is; it never repeats an
 // action or a consequence. Nothing here decides authority: the kernel does, for whoever acts.
 import { KernelError, type Kernel } from "../kernel/client";
+import { sha256Hex } from "../money/settlement";
 import type { Providers } from "./providers";
 import type { Route, RouteStep, StepOutcome } from "./types";
 import type { WorldState } from "./world";
@@ -24,22 +25,26 @@ const compact = (s: RouteStep): RouteStep => ({ ...s, preconditions: [], predict
 export async function recordRoute(selector: Kernel, route: Route): Promise<RecordedRoute> {
   const scope = route.steps[0]?.scope;
   if (!scope) throw new Error("an empty route has nothing to record");
+  // A route is its plan (steps, bindings, actors, consequences): selecting the same plan again
+  // continues the existing selection, whose actions are keyed to it.
+  const existing = (await selector.readEvents(scope, { limit: 500, newestFirst: true })).find((e) => e.type === ROUTE_EVENT && e.payload.route_id === route.id);
+  if (existing) {
+    const p = existing.payload as { goal: Route["goal"]; policy: string; steps: RouteStep[] };
+    return { eventId: existing.id, routeId: route.id, goal: p.goal, policy: p.policy, steps: p.steps };
+  }
   const steps = route.steps.map(compact);
-  const eventId = await selector.recordEvent({
-    type: ROUTE_EVENT,
-    scope,
-    payload: { route_id: route.id, goal: route.goal, org: route.orgRef, policy: route.policy, score: route.score, steps },
-    idempotencyKey: `route:${route.id}`,
-  });
+  const payload = { route_id: route.id, goal: route.goal, org: route.orgRef, policy: route.policy, score: route.score, steps };
+  const eventId = await selector.recordEvent({ type: ROUTE_EVENT, scope, payload, idempotencyKey: `route:${route.id}:${await sha256Hex(JSON.stringify(payload))}` });
   return { eventId, routeId: route.id, goal: route.goal, policy: route.policy, steps };
 }
 
-// The latest recorded route for a goal in a scope, so execution resumes after a reload.
-export async function loadRoute(reader: Kernel, scope: string, goal: Route["goal"]): Promise<RecordedRoute | null> {
+// The latest recorded route for a goal in a scope (optionally through one organization), so
+// execution resumes after a reload.
+export async function loadRoute(reader: Kernel, scope: string, goal: Route["goal"], orgRef?: string): Promise<RecordedRoute | null> {
   const events = await reader.readEvents(scope, { limit: 500, newestFirst: true });
   // Field by field: stored JSON does not keep key order.
   const same = (g: Partial<Route["goal"]> | undefined) => !!g && g.kind === goal.kind && g.world === goal.world && g.capability === goal.capability && (g.quantity ?? null) === (goal.quantity ?? null);
-  const e = events.find((x) => x.type === ROUTE_EVENT && same((x.payload as { goal?: Route["goal"] }).goal));
+  const e = events.find((x) => x.type === ROUTE_EVENT && same((x.payload as { goal?: Route["goal"] }).goal) && (!orgRef || x.payload.org === orgRef));
   if (!e) return null;
   const p = e.payload as { route_id: string; goal: Route["goal"]; policy: string; steps: RouteStep[] };
   return { eventId: e.id, routeId: p.route_id, goal: p.goal, policy: p.policy, steps: p.steps };
@@ -51,11 +56,43 @@ export type Executor = {
   world: WorldState;
 };
 
+// The attempts at one step of a recorded route, oldest first.
+async function attempts(k: Kernel, route: RecordedRoute, index: number) {
+  const step = route.steps[index];
+  let actions;
+  try {
+    actions = await k.readActions(step.scope, 500);
+  } catch (error) {
+    // An actor that cannot read the scope has no attempts there; its proposal will be refused.
+    if (error instanceof KernelError && error.name === "forbidden") return [];
+    throw error;
+  }
+  return actions
+    .filter((a) => (a.payload as { route?: string }).route === `event:${route.eventId}` && (a.payload as { step?: number }).step === index)
+    .reverse();
+}
+
 export async function executeStep(x: Executor, route: RecordedRoute, index: number): Promise<StepOutcome> {
   const step = route.steps[index];
   const k = x.kernelFor(step.actorId);
   const provider = step.native ? null : x.providers.resolve(step.provider.capability);
   if (!step.native && !provider) return { index, actionId: null, status: "blocked", detail: `no provider for ${step.provider.capability} is connected`, provider: null };
+  // Causal order: a step runs only after the steps before it are done.
+  for (let i = 0; i < index; i++) {
+    if (!(await attempts(x.kernelFor(route.steps[i].actorId), route, i)).some((a) => a.status === "completed")) {
+      return { index, actionId: null, status: "blocked", detail: `step ${i + 1} (${route.steps[i].title}) must complete first`, provider: null };
+    }
+  }
+  // A refused attempt stays refused; once the kernel would allow the step (authority was granted
+  // since), the next attempt gets its own key. While it would still refuse, report the refusal
+  // instead of recording another.
+  const prior = await attempts(k, route, index);
+  const last = prior.at(-1);
+  if (last?.status === "rejected") {
+    const now = await k.authorize({ capability: step.capability, scope: step.scope });
+    if (now.decision === "DENY") return { index, actionId: last.action_id, status: "denied", detail: now.reasons.join("; ") || "denied", provider: null };
+  }
+  const attempt = prior.filter((a) => a.status === "rejected").length;
 
   let actionId: string;
   try {
@@ -65,7 +102,7 @@ export async function executeStep(x: Executor, route: RecordedRoute, index: numb
       scope: step.scope,
       targetRef: step.targetRef ?? undefined,
       payload: { ...step.payload, route: `event:${route.eventId}`, step: index, binding: step.binding, ...(step.consequences.length ? { consequences: step.consequences } : {}) },
-      idempotencyKey: `route:${route.eventId}:${index}`,
+      idempotencyKey: `route:${route.eventId}:${index}${attempt ? `:${attempt}` : ""}`,
     });
   } catch (error) {
     if (error instanceof KernelError && error.name === "forbidden") return { index, actionId: null, status: "denied", detail: error.message, provider: null };
@@ -125,8 +162,6 @@ export async function executeRoute(x: Executor, route: RecordedRoute, { only }: 
 }
 
 async function alreadyDone(x: Executor, route: RecordedRoute, index: number): Promise<StepOutcome | null> {
-  const step = route.steps[index];
-  const actions = await x.kernelFor(step.actorId).readActions(step.scope, 500);
-  const found = actions.find((a) => (a.payload as { route?: string; step?: number }).route === `event:${route.eventId}` && (a.payload as { step?: number }).step === index);
-  return found?.status === "completed" ? { index, actionId: found.action_id, status: "completed", detail: "already completed", provider: null } : null;
+  const found = (await attempts(x.kernelFor(route.steps[index].actorId), route, index)).find((a) => a.status === "completed");
+  return found ? { index, actionId: found.action_id, status: "completed", detail: "already completed", provider: null } : null;
 }

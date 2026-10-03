@@ -125,6 +125,7 @@ try {
     await page.waitForTimeout(800);
     return page.evaluate(() => window.__sov.context().currentSelectionIds);
   };
+  const beforeSelection = await page.evaluate(() => window.__sov.digest());
   check(JSON.stringify(await clickAt(halden)) === JSON.stringify([halden]), "clicking Halden selects its canonical id");
   check(JSON.stringify(await clickAt(kestrel, ["Shift"])) === JSON.stringify([halden, kestrel]), "shift-click adds Kestrel: a set for \"these\"");
   await page.keyboard.press("Escape");
@@ -142,6 +143,8 @@ try {
   );
   perf.fps = Math.round(frames);
   perf.heapMB = await page.evaluate(() => (performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1e6) : null));
+  const afterSelection = await page.evaluate(() => window.__sov.digest());
+  check(afterSelection.digest === beforeSelection.digest, "selecting, shift-selecting and moving the camera wrote nothing to the kernel");
 
   // 6. The loop: intent → route → selection → refusal → delegation → answer → commitment → World.
   const ask = async (text) => {
@@ -158,6 +161,15 @@ try {
   await page.waitForTimeout(1500);
   const offEarth = await page.evaluate(() => window.__sov.view().offEarth.map((o) => o.title));
   check(offEarth.includes("Your car company") || world.includes("Your car company"), "the venture World is listed off Earth, not given coordinates");
+  // The Horizon, computed from the World for the companion: the route, who acts, and why the
+  // other suppliers are not routes.
+  await page.getByRole("button", { name: "Cause", exact: true }).click();
+  const horizonPanel = page.getByRole("region", { name: "Horizon" });
+  await horizonPanel.getByText("Not a route").waitFor({ timeout: 30_000 });
+  const horizonText = await horizonPanel.innerText();
+  check(/disputed/.test(horizonText) && /6,000 a year, below 10,000/.test(horizonText), "the Horizon routes through Halden and says why Cobalt and Orrin are not routes");
+  check(/you · allowed/i.test(horizonText) && /nova · allowed/i.test(horizonText) && /do this/i.test(horizonText), "each route step shows who acts (you, Nova) and the kernel's decision for them");
+  await page.getByRole("button", { name: "Space", exact: true }).click();
   await page.getByRole("button", { name: "Index", exact: true }).click();
   await page.getByRole("navigation", { name: "World index" }).getByRole("button", { name: /Halden Works/ }).click();
   perf.refusalMs = await ask("Can they make 10,000?");
@@ -180,6 +192,20 @@ try {
   const proofLens = page.getByRole("region", { name: "proof lens" });
   await proofLens.getByText("Agreement", { exact: true }).waitFor({ timeout: 30_000 });
   check(/decided ALLOW/.test(await proofLens.innerText()), "the Proof lens shows the acceptance and the kernel's decision");
+  await page.getByRole("button", { name: "Space", exact: true }).click();
+
+  // Reload: the World is persistent. The agreement, its proof and the reached Horizon survive.
+  const digestBeforeReload = await page.evaluate(() => window.__sov.digest());
+  await page.reload();
+  await horizon.waitFor({ timeout: 120_000 });
+  await page.waitForFunction(() => (window.__sov?.scene()?.renderedRefs().length ?? 0) > 0, null, { timeout: 120_000 });
+  const digestAfterReload = await page.evaluate(() => window.__sov.digest());
+  check(digestAfterReload.digest === digestBeforeReload.digest, "after reload the browser's kernel holds exactly the same canonical state");
+  const stillCommitted = await page.evaluate((ref) => window.__sov.view().markers.find((m) => m.ref === ref)?.state, halden);
+  check(stillCommitted === "committed", "after reload Halden still shows the agreement");
+  await page.getByRole("button", { name: "Cause", exact: true }).click();
+  await page.getByRole("region", { name: "Horizon" }).getByText(/Reached:/).waitFor({ timeout: 30_000 });
+  check(true, "after reload the Horizon starts from the reached goal");
   await page.getByRole("button", { name: "Space", exact: true }).click();
 
   // 7. The steward projection: SOV operating SOV, read with the steward's authority.

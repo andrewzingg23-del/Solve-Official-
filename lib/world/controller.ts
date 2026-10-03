@@ -121,22 +121,36 @@ export async function respond(intent: Intent, input: { engine: WorldEngine; mode
       const org = model.nodes.get(orgRef)!;
       if (!venture) return { reload: false, patch: {}, result: result("question", [{ truth: "unknown", text: "Start a goal first so the inquiry has a World to belong to." }], [], [ACT.build], model) };
       if (!companion) return { reload: false, patch: {}, result: result("question", [{ truth: "unknown", text: "Create your companion first; it makes the inquiry." }], [], [], model) };
-      const asked = await engine.capabilityQuery(companion.agent_id, orgRef, intent.quantity, venture.scope, model);
-      if (asked.decision.decision !== "ALLOW" || !asked.answer) {
+      // Through the causal pipeline: Horizon plans from the World, the companion attempts the inquiry
+      // with its own authority, the counterparty's reply is evidence, and the quote it settles is
+      // recorded as a consequence.
+      const asked = await engine.ask(orgRef, intent.quantity, model, companion.agent_id);
+      if (asked.excluded) {
+        return {
+          reload: false,
+          patch: { currentSelectionIds: [orgRef] },
+          result: result("explanation", [{ truth: "inference", text: `${org.title} is not a route to ${intent.quantity ? intent.quantity.toLocaleString("en-US") : "that"}: ${asked.excluded.join("; ")}.` }], [{ type: "focus", refs: [orgRef] }], [ACT.showProof], model),
+        };
+      }
+      if (asked.outcome && asked.outcome.status === "denied") {
         // The refusal is recorded; reloading lets the World show it.
         return {
           reload: true,
           patch: { currentSelectionIds: [orgRef] },
           result: result(
             "warning",
-            [{ truth: "fact", text: `${companionName} isn't allowed to contact suppliers yet. ${asked.decision.reasons[0] ?? ""}`.trim() }],
+            [{ truth: "fact", text: `${companionName} isn't allowed to contact suppliers yet. ${asked.outcome.detail}`.trim() }],
             [{ type: "focus", refs: [orgRef] }],
             [ACT.allowContact],
             model,
           ),
         };
       }
-      const a = asked.answer;
+      const q = asked.quote?.value as { capacity_per_year?: number; lead_time_days?: number; unit_price_usd?: number; can_fulfill?: boolean } | undefined;
+      if (!q) {
+        return { reload: true, patch: { currentSelectionIds: [orgRef] }, result: result("warning", [{ truth: "unknown", text: `${companionName} asked ${org.title}; ${asked.outcome?.detail ?? "no answer is recorded yet"}.` }], [{ type: "focus", refs: [orgRef] }], [], model) };
+      }
+      const a = q;
       const qty = intent.quantity ? intent.quantity.toLocaleString("en-US") : "that many";
       return {
         reload: true,
@@ -158,7 +172,10 @@ export async function respond(intent: Intent, input: { engine: WorldEngine; mode
       if (!venture || !companion) {
         return { reload: false, patch: {}, result: result("question", [{ truth: "unknown", text: "There is no World or companion to delegate to yet." }], [], [ACT.build], model) };
       }
-      await engine.delegateContact(companion.agent_id, venture.scope);
+      const delegated = await engine.allowContact(model, companion.agent_id, ctx.currentSelectionIds.find((r) => model.nodes.get(r)?.kind === "organization"));
+      if (!delegated || delegated.status !== "completed") {
+        return { reload: true, patch: {}, result: result("warning", [{ truth: "fact", text: delegated ? `Not delegated: ${delegated.detail}` : `${companionName} needs no delegation for any route right now.` }], [], [], model) };
+      }
       return {
         reload: true,
         patch: {},

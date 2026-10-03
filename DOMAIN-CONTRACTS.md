@@ -5,8 +5,31 @@ The canonical primitives every surface builds on. One canonical graph, one actio
 Governing loop (any principal can run it, human or agent):
 
 ```
-INTENT → AUTHORITY → DECISION → ENACTMENT → EVIDENCE → CONSEQUENCE → EVENT → UPDATED STATE
+INTENT → HORIZON → ROUTE → AUTHORITY → ATTEMPT → EVIDENCE → RECONCILIATION → CONSEQUENCE → CANONICAL WORLD → NEW HORIZON
 ```
+
+## 0. What is canonical
+
+| Layer | Status | Notes |
+|---|---|---|
+| Kernel events, actions and transitions, evidence, grants and limits, entities and versions, relations, ledger, tasks, payments, settlements | **Canonical** | Append-only, hash-chained, one id per thing. The only place reality changes, and only through authorized writes. |
+| The browser's kernel (PGlite) | Projection | The same database; its semantic digest must equal the Arcadia manifest's at boot (`npm run test:world`). |
+| Arcadia snapshot and manifest | Projection | Generated through the real kernel; the build refuses a snapshot that does not reproduce the digest. |
+| `WorldState` (`lib/causal/world.ts`), actor context | Projection | Rebuilt from one actor's own kernel reads; never stored; never shows what that actor may not read. |
+| Facts and truth statuses | Projection | Derived from provenance: asserted, observed, verified, disputed, authorized, attempted, reconciled. |
+| Horizon, routes, rankings, predictions (`inferred`) | Interpretation | Never canonical. A route selection is recorded as an attributable event with its ranking policy; it changes nothing until its actions complete with evidence. |
+| Spatial view model, scene controller, Cesium, camera, selection, lens state | Rendering | Pure projections; never write to the kernel (tested: digest unchanged across selection and camera moves; recording proxies show zero writes). |
+
+Identity: one canonical ref per thing (`entity:<uuid>`, `actor:<uuid>`, …) across kernel, browser, Horizon bindings, consequences, context and every renderer. Across Arcadia generations the same thing keeps its `arcadia_key`; its kernel id is minted per generation (see DECISIONS).
+
+## The causal loop (`lib/causal`)
+
+- **Transition**: an operator on World state, naming the capability that authorizes it, the provider capability that performs it, the evidence that would show it happened, its failure states, and its declared consequences.
+- **Horizon** (`computeHorizon`): for one actor and goal, the reachable routes from current World state and why other paths are not routes. Every step carries its performer and the kernel's current decision for them; delegation is a step. Read-only.
+- **Route**: a proposed sequence of transitions with a deterministic id; recorded once when selected; its actions are keyed to it and its position, so repeats, crashes, reloads and concurrent runs continue instead of duplicating.
+- **Provider**: performs a capability outside the kernel and returns evidence, never truth. Routes name capabilities, not providers; history names which provider performed each action.
+- **Pipeline** (`executeStep`): propose with declared consequences → kernel decision (ALLOW / REQUIRE_* / DENY, refusals recorded) → attempt (kernel-native, or provider) → evidence → settle completed / failed / needs_reconciliation → the kernel applies the declared consequences atomically with completion → the next Horizon starts from the changed World. Steps keep causal order; a refused attempt is retried only once the kernel would allow it.
+- **Context** (`buildContext`): who, where, what it sees, what it can and cannot do, intent, beliefs with provenance, routes, for any principal, from its own authority.
 
 ## 1. Principals
 

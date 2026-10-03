@@ -71,6 +71,9 @@ export type HorizonInput = {
   kernelFor(actorId: string): Kernel;
   providers: Providers;
   policy?: RankingPolicy;
+  // When the actor lacks authority for a step: its principal delegates it (default), its principal
+  // does it, or nobody stands in and the actor's own decision stands (an attempt it was asked to make).
+  fallback?: "delegate" | "principal" | "none";
 };
 
 const canonical = (value: unknown): string =>
@@ -105,9 +108,10 @@ export async function computeHorizon(input: HorizonInput): Promise<Horizon> {
     return decisions.get(key)!;
   };
   // Who does a step: the actor if its authority allows, otherwise its principal if theirs does.
+  const fallback = input.fallback ?? "delegate";
   const performer = async (capability: string) => {
     const mine = await decide(actorId, capability);
-    if (mine.decision !== "DENY" || !principalId || principalId === actorId) return { who: actorId, decision: mine };
+    if (fallback === "none" || mine.decision !== "DENY" || !principalId || principalId === actorId) return { who: actorId, decision: mine };
     const theirs = await decide(principalId, capability);
     return theirs.decision === "DENY" ? { who: actorId, decision: mine } : { who: principalId, decision: theirs };
   };
@@ -146,7 +150,7 @@ export async function computeHorizon(input: HorizonInput): Promise<Horizon> {
       // An agent without contact authority can be given it by its principal, so it can then act on
       // its own: that delegation is a step of the route, not a side effect.
       const own = await decide(actorId, TRANSITIONS.inquire.capability);
-      if (own.decision === "DENY" && principalId && principalId !== actorId) {
+      if (fallback === "delegate" && own.decision === "DENY" && principalId && principalId !== actorId) {
         const grant = await decide(principalId, TRANSITIONS.delegate.capability);
         const holds = await decide(principalId, TRANSITIONS.inquire.capability);
         if (grant.decision !== "DENY" && holds.decision !== "DENY") {

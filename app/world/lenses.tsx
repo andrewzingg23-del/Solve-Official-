@@ -7,6 +7,7 @@ import type { Grant, RepresentationKind } from "@/lib/kernel/client";
 import type { ProofDetail, WorldEngine, WorldModel } from "@/lib/world/engine";
 import type { InteractionContext, LensId, Node, ProofState } from "@/lib/world/types";
 import { label } from "@/app/ui";
+import { HorizonRoutes } from "./horizon-routes";
 import { AvatarArt, type Seed } from "./avatar-art";
 
 const fmtUsd = (n: number) => (n >= 1e9 ? `$${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `$${Math.round(n / 1e6)}M` : `$${n.toLocaleString("en-US")}`);
@@ -28,7 +29,7 @@ export function ProofMark({ state, size = 14 }: { state: ProofState; size?: numb
 
 const Truth = ({ kind }: { kind: string }) => <span className="rounded-sm border border-line px-1.5 py-0.5 text-[10px] uppercase tracking-[0.16em] text-muted">{kind}</span>;
 
-function Cause({ model, ctx, onSelect }: { model: WorldModel; ctx: InteractionContext; onSelect(ref: string): void }) {
+function Cause({ engine, model, ctx, onSelect, onChanged }: { engine: WorldEngine; model: WorldModel; ctx: InteractionContext; onSelect(ref: string): void; onChanged(): Promise<unknown> }) {
   const v = model.venture;
   if (!v) return <Empty text="Nothing is underway, so nothing is blocked. Tell Horizon what you want to make real." />;
   const engaged = new Set(ctx.conversationRefs);
@@ -84,6 +85,7 @@ function Cause({ model, ctx, onSelect }: { model: WorldModel; ctx: InteractionCo
         </div>
       )}
       <p className="text-xs text-muted">{String(world?.attributes.source ?? "")}</p>
+      <HorizonRoutes engine={engine} model={model} onChanged={onChanged} />
     </div>
   );
 }
@@ -357,12 +359,13 @@ export function LensPlane(props: {
   ctx: InteractionContext;
   onSelect(ref: string): void;
   onRepresent(avatarId: string, kind: RepresentationKind): void;
+  onChanged(): Promise<unknown>;
 }) {
-  const { lens, engine, model, ctx, onSelect, onRepresent } = props;
+  const { lens, engine, model, ctx, onSelect, onRepresent, onChanged } = props;
   if (lens === "space") return null;
   return (
     <section aria-label={`${lens} lens`} className="pointer-events-auto absolute inset-x-3 top-[6.75rem] z-10 mx-auto max-h-[calc(100dvh-16rem)] max-w-4xl overflow-y-auto rounded-md border border-line bg-surface/85 p-5 backdrop-blur-md md:inset-x-8 md:top-24">
-      {lens === "cause" && <Cause model={model} ctx={ctx} onSelect={onSelect} />}
+      {lens === "cause" && <Cause engine={engine} model={model} ctx={ctx} onSelect={onSelect} onChanged={onChanged} />}
       {lens === "flow" && <Flow model={model} onSelect={onSelect} />}
       {lens === "proof" && <Proof engine={engine} model={model} ctx={ctx} />}
       {lens === "power" && <Power engine={engine} model={model} ctx={ctx} onSelect={onSelect} />}

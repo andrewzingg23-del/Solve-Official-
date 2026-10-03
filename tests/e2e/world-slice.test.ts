@@ -141,8 +141,8 @@ describe("the car-company loop", () => {
 
     // Nova may not contact anyone yet: authority, not willingness, decides.
     const beforeDenial = maxSeq(model);
-    const denied = await engine.capabilityQuery(nova.agent_id, org("halden"), 10000, scope, model);
-    assert.equal(denied.decision.decision, "DENY");
+    const denied = await engine.ask(org("halden"), 10000, model, nova.agent_id);
+    assert.equal(denied.outcome?.status, "denied");
     // The refusal is a kernel record, and the World shows it: Halden is not reachable yet.
     model = await engine.load();
     const refused = buildSpatialView(model, input({ effectsAfterSeq: beforeDenial }));
@@ -153,23 +153,23 @@ describe("the car-company loop", () => {
     // "You may contact suppliers but not make purchases."
     const delegation = await ruleProvider.interpret("You may contact suppliers but not make purchases.", ctx);
     assert.deepEqual(delegation, { type: "delegate_contact", allowPurchases: false });
-    await engine.delegateContact(nova.agent_id, scope);
-    const answered = await engine.capabilityQuery(nova.agent_id, org("halden"), 10000, scope, model);
-    assert.equal(answered.decision.decision, "ALLOW");
-    assert.deepEqual(
-      [answered.answer?.can_fulfill, answered.answer?.capacity_per_year, answered.answer?.lead_time_days, answered.answer?.unit_price_usd],
-      [true, 12000, 210, 18500],
-    );
+    assert.equal((await engine.allowContact(model, nova.agent_id, org("halden")))?.status, "completed");
+    const answered = await engine.ask(org("halden"), 10000, model, nova.agent_id);
+    assert.equal(answered.outcome?.status, "completed");
+    const q = answered.quote!.value!;
+    assert.deepEqual([q.can_fulfill, q.capacity_per_year, q.lead_time_days, q.unit_price_usd], [true, 12000, 210, 18500]);
+    assert.equal(answered.quote!.status, "reconciled", "the quote is canonical because the reply settled the inquiry");
     model = await engine.load();
-    const reply = model.companionInbox.find((m) => m.in_reply_to === answered.queryId)!;
+    const reply = model.companionInbox.find((m) => m.message_type === "INFORMATION_RESPONSE" && m.payload.organization === org("halden"))!;
     assert.deepEqual([reply.sender_kind, reply.on_behalf_of], ["agent", manifest.orgs.halden.ownerId], "provenance names the agent and its principal");
 
     // "Accept their offer": Nova was never given commitment authority; You commit with yours.
     assert.equal((await ruleProvider.interpret("Accept their offer", ctx)).type, "commit");
     assert.equal((await engine.commitDecision(nova.agent_id, scope)).decision, "DENY");
-    const acceptance = await engine.commitAsYou(org("halden"), scope, { quantity: 10000, unit_price_usd: 18500 });
-    const done = await engine.sb.you.readAction(acceptance);
-    assert.deepEqual([done.status, done.payload.type], ["completed", "ACCEPTANCE"]);
+    const acceptance = await engine.acceptAsYou(org("halden"), model, nova.agent_id);
+    assert.equal(acceptance.outcome?.status, "completed");
+    const done = await engine.sb.you.readAction(acceptance.outcome!.actionId!);
+    assert.deepEqual([done.status, done.kind, done.capability, done.proposer_id], ["completed", "supplier.accept", "commitment.make", manifest.you.actorId]);
 
     // The consequence changes the World: Halden now supplies your World, its marker shows the
     // agreement, its real logistics route through Sable carries it, and the change plays once.
