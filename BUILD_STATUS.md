@@ -6,7 +6,7 @@ Updated 2026-10-03. Branch `claude/keen-cerf-tpd7io`.
 
 - **Memory kernel (directive 1), code and tests.** `supabase/migrations/20261003064603_memory_kernel.sql`: events with provenance, append-only tables, SHA-256 hash chain, double-entry ledger with issuer-scoped supply, evidence with basis rules, identity-gated writes, cascading grant revocation, AI agents bounded by their owner. 35 tests pass against the real migration in an in-memory Postgres.
 - **App shell.** Next.js 16 + Supabase Auth email links, brand lock applied (abyssal base, cyan accent, Archivo). Sign-in registers the SOV ID; `/account` shows the SOV ID and its hash-linked history.
-- **Monetary constitution, draft 1.** `docs/MONETARY-CONSTITUTION.md`: SOLVE as common settlement asset, State economies under shared physics, kernel vs. chain non-impersonation, crossing protocol, mapping onto kernel primitives.
+- **Monetary constitution, draft 2.** `docs/MONETARY-CONSTITUTION.md`: SOLVE as a monetary OS. Neutral reserve with no forced routing, States designing full economies with executable law and credit, SOV ID as the wallet, agent spending policies, intent router, selective privacy, ZK epochs plus evidence mesh, forkable States, mapped onto kernel primitives.
 
 - **Kernel installed on the store (directive 2).** Supabase project `Solve-Official-` (`dupgybzkkbddsbaykrae`), migration `20261003064603_memory_kernel`. On the live database: genesis event present, `verify_chain` ok, `anon` has no access, API roles reach only `kernel_api`, no security advisor warnings beyond the intended "RLS with no policies".
 - **Live preview wired.** Vercel project `solve` builds this branch at `solve-git-claude-keen-cerf-tpd7io-sovigrn.vercel.app` with the store's URL and publishable key.
@@ -24,7 +24,7 @@ Updated 2026-10-03. Branch `claude/keen-cerf-tpd7io`.
 
 1. Run sign-in → SOV ID → history end to end on the live preview, with a screenshot.
 2. Concurrency test against real Postgres: parallel event writes and parallel postings on one account.
-3. Kernel v1.1 from the constitution: asset layer and class, charter and settlement event types, anchor publisher.
+3. Kernel v1.1 from the constitution (Part XI): spending policies on grants (agent wallets), then issuance policies on assets, asset layer and class, epoch commitments.
 4. Whop bridge Pack (directive 3) once the kernel runs on the store.
 
 ## Decisions waiting on the founder
