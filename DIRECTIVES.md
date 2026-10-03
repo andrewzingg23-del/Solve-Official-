@@ -17,6 +17,9 @@ Before any Room, any feature: set up the system's memory correctly. The kernel:
 - Identity, authority, and permissions gate every write.
 This is the stable master code. Build it clean enough to never revisit.
 
+### 2026-10-03 — The kernel's store lives outside the repo
+The repo holds the kernel's CODE. The memory itself (events, ledger, history, identities) is DATA — it lives in a dedicated secure database, separate from git. Encrypted at rest, access-controlled, backed up. Nothing in the repo reads or writes memory except through the kernel's gated interface. The founder provisions the store (dedicated Supabase project) — build the kernel against that interface, not against a local file.
+
 ## DONE
 
 (none)
