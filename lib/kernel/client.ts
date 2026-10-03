@@ -151,6 +151,216 @@ export type PaymentSummary = {
   created_at: string;
 };
 
+export type Decision =
+  | "ALLOW"
+  | "REQUIRE_SECOND_AUTHORITY"
+  | "REQUIRE_QUORUM"
+  | "REQUIRE_MULTISIG"
+  | "REQUIRE_DELAY"
+  | "REQUIRE_CHALLENGE_WINDOW"
+  | "DENY";
+
+export type AuthorityDecision = {
+  decision: Decision;
+  grant_id: string | null;
+  policy_id: string | null;
+  threshold: number | null;
+  delay_seconds: number | null;
+  reasons: string[];
+};
+
+export type PolicyRequirement = "allow" | "second_authority" | "quorum" | "multisig" | "delay" | "challenge_window" | "deny";
+
+export type AgentRole =
+  | "personal_avatar"
+  | "ai_companion"
+  | "world_agent"
+  | "organization_agent"
+  | "state_agent"
+  | "system_agent"
+  | "engineering_agent"
+  | "specialist";
+
+export type EntityKind =
+  | "world"
+  | "place"
+  | "organization"
+  | "resource"
+  | "need"
+  | "capability"
+  | "asset"
+  | "milestone"
+  | "agreement"
+  | "offer"
+  | "document";
+
+export type LocationTruth = "declared" | "device_observed" | "provider_derived" | "legal_address" | "estimated";
+export type Visibility = "public" | "members" | "private";
+
+export type WorldEntity = {
+  entity_id: string;
+  kind: EntityKind;
+  scope: string;
+  version: number;
+  title: string;
+  summary: string;
+  attributes: Record<string, unknown>;
+  latitude: string | null;
+  longitude: string | null;
+  altitude_m?: string | null;
+  location_truth: LocationTruth | null;
+  visibility?: Visibility;
+  importance: number;
+  created_at?: string;
+  updated_at: string;
+};
+
+export type RelationKind =
+  | "owns"
+  | "controls"
+  | "member_of"
+  | "located_in"
+  | "supplies"
+  | "requires"
+  | "blocks"
+  | "produces"
+  | "verifies"
+  | "represents"
+  | "assists"
+  | "offers"
+  | "needs"
+  | "part_of"
+  | "challenges"
+  | "replaces"
+  | "escalates_to";
+
+export type WorldRelation = {
+  relation_id: string;
+  kind: RelationKind;
+  from_ref: string;
+  to_ref: string;
+  scope: string;
+  attributes: Record<string, unknown>;
+  created_at: string;
+  ended_at: string | null;
+};
+
+export type TaskStatus =
+  | "created"
+  | "ready"
+  | "claimed"
+  | "in_progress"
+  | "blocked"
+  | "waiting_external"
+  | "verifying"
+  | "escalated"
+  | "completed"
+  | "failed"
+  | "needs_reconciliation"
+  | "cancelled";
+
+export type Task = {
+  task_id: string;
+  scope: string;
+  title: string;
+  objective: string;
+  cause_ref: string | null;
+  required_capability: string;
+  risk: "low" | "medium" | "high" | "critical";
+  reversible: boolean;
+  budget_amount: string | null;
+  budget_asset: string | null;
+  evidence_bases: EvidenceBasis[];
+  verification: "none" | "distinct_actor" | "distinct_party";
+  created_by: string;
+  status: TaskStatus;
+  worker_id: string | null;
+  detail: string;
+  result: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ActionStatus =
+  | "proposed"
+  | "authorized"
+  | "enacting"
+  | "completed"
+  | "failed"
+  | "needs_reconciliation"
+  | "rejected"
+  | "cancelled";
+
+export type Action = {
+  action_id: string;
+  kind: string;
+  capability: string;
+  scope: string;
+  proposer_id: string;
+  on_behalf_of: string | null;
+  target_ref: string | null;
+  payload: Record<string, unknown>;
+  amount: string | null;
+  asset: string | null;
+  decision: Decision;
+  reasons: string[];
+  threshold: number | null;
+  approvals: number;
+  status: ActionStatus;
+  detail: string;
+  result: Record<string, unknown> | null;
+  enact_after: string | null;
+  in_reply_to: string | null;
+  created_at: string;
+};
+
+export type ActionSummary = Pick<
+  Action,
+  "action_id" | "kind" | "proposer_id" | "on_behalf_of" | "target_ref" | "payload" | "decision" | "status" | "created_at"
+>;
+
+export type MessageType =
+  | "DISCOVERY_REQUEST"
+  | "CAPABILITY_QUERY"
+  | "PROOF_REQUEST"
+  | "PROOF_RESPONSE"
+  | "PROPOSAL"
+  | "COUNTERPROPOSAL"
+  | "INFORMATION_REQUEST"
+  | "INFORMATION_RESPONSE"
+  | "DECLINE"
+  | "HUMAN_ATTENTION_REQUIRED"
+  | "ACCEPTANCE";
+
+export type InboxMessage = {
+  action_id: string;
+  sender_id: string;
+  sender_kind: Actor["kind"];
+  on_behalf_of: string | null;
+  scope: string;
+  message_type: MessageType;
+  payload: Record<string, unknown>;
+  in_reply_to: string | null;
+  delivered_at: string;
+};
+
+export type AvatarType = "digital_self" | "ai_companion" | "abstract";
+export type AvatarRelationship = "represent" | "assist" | "guide" | "create_with";
+export type RepresentationKind = "abstract" | "pixel" | "cartoon" | "stylized_3d" | "realistic" | "voice_only";
+
+export type Avatar = {
+  avatar_id: string;
+  agent_id: string;
+  avatar_type: AvatarType;
+  name: string;
+  relationship: AvatarRelationship;
+  seed_version: number;
+  seed: Record<string, unknown>;
+  representation: RepresentationKind;
+  representations: RepresentationKind[];
+  created_at: string;
+};
+
 const errorNames = {
   KA001: "unauthenticated",
   KA002: "forbidden",
@@ -531,6 +741,263 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
         p_evidence: input.evidence ?? [],
         ...as,
       }),
+
+    // Agents and leases.
+    spawnAgent: (input: { label: string; role: AgentRole; serves?: string; idempotencyKey?: string }) =>
+      call<string>("spawn_agent", {
+        p_label: input.label,
+        p_role: input.role,
+        p_serves: input.serves ?? null,
+        p_idempotency_key: input.idempotencyKey ?? null,
+        ...as,
+      }),
+
+    issueLease: (input: {
+      grantee: string;
+      capability: string;
+      scope: string;
+      expiresAt?: Date;
+      maxAmount?: bigint | string;
+      asset?: string;
+      counterpartyRef?: string;
+      taskRef?: string;
+      idempotencyKey?: string;
+    }) =>
+      call<string>("issue_lease", {
+        p_grantee: input.grantee,
+        p_capability: input.capability,
+        p_scope: input.scope,
+        p_expires_at: input.expiresAt?.toISOString() ?? null,
+        p_max_amount: input.maxAmount?.toString() ?? null,
+        p_asset: input.asset ?? null,
+        p_counterparty_ref: input.counterpartyRef ?? null,
+        p_task_ref: input.taskRef ?? null,
+        p_idempotency_key: input.idempotencyKey ?? null,
+        ...as,
+      }),
+
+    // Authority decisions and policies.
+    authorize: (input: { capability: string; scope: string; amount?: bigint | string; asset?: string; counterpartyRef?: string; taskRef?: string }) =>
+      one<AuthorityDecision>("authorize", {
+        p_capability: input.capability,
+        p_scope: input.scope,
+        p_amount: input.amount?.toString() ?? null,
+        p_asset: input.asset ?? null,
+        p_counterparty_ref: input.counterpartyRef ?? null,
+        p_task_ref: input.taskRef ?? null,
+        ...as,
+      }),
+
+    setActionPolicy: (input: {
+      scope: string;
+      capability: string;
+      requirement: PolicyRequirement;
+      approverCapability?: string;
+      threshold?: number;
+      signers?: string[];
+      delaySeconds?: number;
+      distinctBy?: "party" | "actor";
+    }) =>
+      call<number>("set_action_policy", {
+        p_scope: input.scope,
+        p_capability: input.capability,
+        p_requirement: input.requirement,
+        p_approver_capability: input.approverCapability ?? null,
+        p_threshold: input.threshold ?? null,
+        p_signers: input.signers ?? null,
+        p_delay_seconds: input.delaySeconds ?? null,
+        p_distinct_by: input.distinctBy ?? "party",
+        ...as,
+      }),
+
+    // Actions: the generic consequence lifecycle.
+    proposeAction: (input: {
+      kind: string;
+      capability: string;
+      scope: string;
+      payload?: Record<string, unknown>;
+      targetRef?: string;
+      amount?: bigint | string;
+      asset?: string;
+      counterpartyRef?: string;
+      taskRef?: string;
+      inReplyTo?: string;
+      idempotencyKey?: string;
+    }) =>
+      call<string>("propose_action", {
+        p_kind: input.kind,
+        p_capability: input.capability,
+        p_scope: input.scope,
+        p_payload: input.payload ?? {},
+        p_target_ref: input.targetRef ?? null,
+        p_amount: input.amount?.toString() ?? null,
+        p_asset: input.asset ?? null,
+        p_counterparty_ref: input.counterpartyRef ?? null,
+        p_task_ref: input.taskRef ?? null,
+        p_in_reply_to: input.inReplyTo ?? null,
+        p_idempotency_key: input.idempotencyKey ?? null,
+        ...as,
+      }),
+
+    approveAction: (actionId: string) => call<ActionStatus>("approve_action", { p_action_id: actionId, ...as }),
+
+    challengeAction: (actionId: string, reason: string) =>
+      call<ActionStatus>("challenge_action", { p_action_id: actionId, p_reason: reason, ...as }),
+
+    cancelAction: (actionId: string, reason = "") =>
+      call<ActionStatus>("cancel_action", { p_action_id: actionId, p_reason: reason, ...as }),
+
+    enactAction: (actionId: string) => call<Record<string, unknown>>("enact_action", { p_action_id: actionId, ...as }),
+
+    beginAction: (actionId: string, detail = "") =>
+      call<ActionStatus>("begin_action", { p_action_id: actionId, p_detail: detail, ...as }),
+
+    settleAction: (input: {
+      actionId: string;
+      status: "completed" | "failed" | "needs_reconciliation";
+      result?: Record<string, unknown>;
+      detail?: string;
+      evidence?: Evidence[];
+    }) =>
+      call<ActionStatus>("settle_action", {
+        p_action_id: input.actionId,
+        p_status: input.status,
+        p_result: input.result ?? null,
+        p_detail: input.detail ?? "",
+        p_evidence: input.evidence ?? [],
+        ...as,
+      }),
+
+    readAction: (actionId: string) => one<Action>("read_action", { p_action_id: actionId, ...as }),
+
+    readActions: (scope: string, limit = 100) => call<ActionSummary[]>("read_actions", { p_scope: scope, p_limit: limit, ...as }),
+
+    inbox: () => call<InboxMessage[]>("inbox", { ...as }),
+
+    // World Graph.
+    upsertEntity: (input: {
+      entityId?: string;
+      kind: EntityKind;
+      scope: string;
+      title: string;
+      summary?: string;
+      attributes?: Record<string, unknown>;
+      latitude?: number;
+      longitude?: number;
+      altitudeM?: number;
+      locationTruth?: LocationTruth;
+      visibility?: Visibility;
+      importance?: number;
+      idempotencyKey?: string;
+    }) =>
+      call<string>("upsert_entity", {
+        p_kind: input.kind,
+        p_scope: input.scope,
+        p_title: input.title,
+        p_summary: input.summary ?? "",
+        p_attributes: input.attributes ?? {},
+        p_latitude: input.latitude ?? null,
+        p_longitude: input.longitude ?? null,
+        p_altitude_m: input.altitudeM ?? null,
+        p_location_truth: input.locationTruth ?? null,
+        p_visibility: input.visibility ?? "members",
+        p_importance: input.importance ?? 50,
+        p_entity_id: input.entityId ?? null,
+        p_idempotency_key: input.idempotencyKey ?? null,
+        ...as,
+      }),
+
+    relate: (input: { kind: RelationKind; fromRef: string; toRef: string; scope: string; attributes?: Record<string, unknown>; idempotencyKey?: string }) =>
+      call<string>("relate", {
+        p_kind: input.kind,
+        p_from_ref: input.fromRef,
+        p_to_ref: input.toRef,
+        p_scope: input.scope,
+        p_attributes: input.attributes ?? {},
+        p_idempotency_key: input.idempotencyKey ?? null,
+        ...as,
+      }),
+
+    endRelation: (relationId: string, reason = "") =>
+      call<string>("end_relation", { p_relation_id: relationId, p_reason: reason, ...as }),
+
+    readWorld: (scope: string) => call<WorldEntity[]>("read_world", { p_scope: scope, ...as }),
+
+    publicWorld: () => call<WorldEntity[]>("public_world", { ...as }),
+
+    readRelations: (scope: string, includeEnded = false) =>
+      call<WorldRelation[]>("read_relations", { p_scope: scope, p_include_ended: includeEnded, ...as }),
+
+    // Operational tasks.
+    createTask: (input: {
+      scope: string;
+      title: string;
+      requiredCapability: string;
+      objective?: string;
+      causeRef?: string;
+      risk?: Task["risk"];
+      reversible?: boolean;
+      budgetAmount?: bigint | string;
+      budgetAsset?: string;
+      evidenceBases?: EvidenceBasis[];
+      verification?: Task["verification"];
+      idempotencyKey?: string;
+    }) =>
+      call<string>("create_task", {
+        p_scope: input.scope,
+        p_title: input.title,
+        p_required_capability: input.requiredCapability,
+        p_objective: input.objective ?? "",
+        p_cause_ref: input.causeRef ?? null,
+        p_risk: input.risk ?? "low",
+        p_reversible: input.reversible ?? true,
+        p_budget_amount: input.budgetAmount?.toString() ?? null,
+        p_budget_asset: input.budgetAsset ?? null,
+        p_evidence_bases: input.evidenceBases ?? [],
+        p_verification: input.verification ?? "none",
+        p_idempotency_key: input.idempotencyKey ?? null,
+        ...as,
+      }),
+
+    transitionTask: (input: { taskId: string; status: TaskStatus; detail?: string; result?: Record<string, unknown>; evidence?: Evidence[] }) =>
+      call<TaskStatus>("transition_task", {
+        p_task_id: input.taskId,
+        p_status: input.status,
+        p_detail: input.detail ?? "",
+        p_result: input.result ?? null,
+        p_evidence: input.evidence ?? [],
+        ...as,
+      }),
+
+    readTasks: (scope: string) => call<Task[]>("read_tasks", { p_scope: scope, ...as }),
+
+    // Avatars.
+    createAvatar: (input: {
+      type: AvatarType;
+      name: string;
+      relationship?: AvatarRelationship;
+      seed?: Record<string, unknown>;
+      representation?: RepresentationKind;
+    }) =>
+      call<string>("create_avatar", {
+        p_avatar_type: input.type,
+        p_name: input.name,
+        p_relationship: input.relationship ?? "assist",
+        p_seed: input.seed ?? {},
+        p_representation: input.representation ?? "abstract",
+        ...as,
+      }),
+
+    setAvatarRepresentation: (avatarId: string, kind: RepresentationKind, rendererVersion = "sov-1", assetRef?: string) =>
+      call<string>("set_avatar_representation", {
+        p_avatar_id: avatarId,
+        p_kind: kind,
+        p_renderer_version: rendererVersion,
+        p_asset_ref: assetRef ?? null,
+        ...as,
+      }),
+
+    myAvatars: () => call<Avatar[]>("my_avatars", { ...as }),
   };
 }
 

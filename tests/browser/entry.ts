@@ -6,6 +6,7 @@ import "../kernel/kernel.test";
 import "../kernel/client.test";
 import "../kernel/money.test";
 import "../kernel/payments.test";
+import "../kernel/actions.test";
 import type { PGliteLike } from "../../lib/kernel/local";
 import { afterEachHooks, run, type Result } from "./shims/node-test";
 

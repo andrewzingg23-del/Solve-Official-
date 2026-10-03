@@ -64,6 +64,32 @@ async function exerciseEveryMethod(supabase: SupabaseClient, actAs?: string) {
   await k.readPayment("p");
   await k.myPayments();
   await k.recordPayment({ paymentId: "p", attempt: 1, status: "submitted", txSignature: "t", inputAmount: BigInt(1), wireTransaction: "w", slot: BigInt(1), detail: "", evidence: [evidence] });
+  await k.spawnAgent({ label: "a", role: "specialist", serves: "world:x", idempotencyKey: "k" });
+  await k.issueLease({ grantee: id, capability: "payment.send", scope: "world:x", expiresAt: new Date(), maxAmount: BigInt(5), asset: "DEV_USDC", counterpartyRef: `actor:${id}`, taskRef: `task:${id}`, idempotencyKey: "k" });
+  await k.authorize({ capability: "payment.send", scope: "world:x", amount: BigInt(1), asset: "DEV_USDC", counterpartyRef: `actor:${id}`, taskRef: `task:${id}` });
+  await k.setActionPolicy({ scope: "world:x", capability: "payment.send", requirement: "quorum", approverCapability: "payment.approve", threshold: 2, signers: [id], delaySeconds: 1, distinctBy: "actor" });
+  await k.proposeAction({ kind: "message.send", capability: "message.send", scope: "world:x", payload: {}, targetRef: `actor:${id}`, amount: BigInt(1), asset: "DEV_USDC", counterpartyRef: `actor:${id}`, taskRef: `task:${id}`, inReplyTo: id, idempotencyKey: "k" });
+  await k.approveAction(id);
+  await k.challengeAction(id, "r");
+  await k.cancelAction(id, "r");
+  await k.enactAction(id);
+  await k.beginAction(id, "d");
+  await k.settleAction({ actionId: id, status: "completed", result: {}, detail: "", evidence: [evidence] });
+  await k.readAction(id);
+  await k.readActions("world:x", 10);
+  await k.inbox();
+  await k.upsertEntity({ entityId: id, kind: "place", scope: "world:x", title: "t", summary: "", attributes: {}, latitude: 1, longitude: 2, altitudeM: 3, locationTruth: "declared", visibility: "public", importance: 50, idempotencyKey: "k" });
+  await k.relate({ kind: "supplies", fromRef: `entity:${id}`, toRef: `entity:${id}`, scope: "world:x", attributes: {}, idempotencyKey: "k" });
+  await k.endRelation(id, "r");
+  await k.readWorld("world:x");
+  await k.publicWorld();
+  await k.readRelations("world:x", true);
+  await k.createTask({ scope: "world:x", title: "t", requiredCapability: "task.work", objective: "", causeRef: `entity:${id}`, risk: "low", reversible: true, budgetAmount: BigInt(1), budgetAsset: "DEV_USDC", evidenceBases: ["artifact"], verification: "distinct_actor", idempotencyKey: "k" });
+  await k.transitionTask({ taskId: id, status: "claimed", detail: "", result: {}, evidence: [evidence] });
+  await k.readTasks("world:x");
+  await k.createAvatar({ type: "ai_companion", name: "Nova", relationship: "assist", seed: {}, representation: "abstract" });
+  await k.setAvatarRepresentation(id, "pixel", "sov-1", "ref");
+  await k.myAvatars();
 }
 
 it("calls only real kernel_api functions with their real argument names", async () => {
