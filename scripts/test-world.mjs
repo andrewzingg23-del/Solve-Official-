@@ -175,6 +175,13 @@ try {
   check(committed, "the agreement changes the World: Halden's real logistics route carries it");
   perf.queryMs = await page.evaluate(() => window.__sov.metrics.queryMs);
 
+  // PROOF inspection of the consequence: claim → offer → acceptance → agreement.
+  await page.getByRole("button", { name: "Proof", exact: true }).click();
+  const proofLens = page.getByRole("region", { name: "proof lens" });
+  await proofLens.getByText("Agreement", { exact: true }).waitFor({ timeout: 30_000 });
+  check(/decided ALLOW/.test(await proofLens.innerText()), "the Proof lens shows the acceptance and the kernel's decision");
+  await page.getByRole("button", { name: "Space", exact: true }).click();
+
   // 7. The steward projection: SOV operating SOV, read with the steward's authority.
   await page.getByRole("button", { name: "Steward", exact: true }).click();
   const steward = page.getByRole("region", { name: "Steward view" });

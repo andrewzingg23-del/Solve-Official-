@@ -180,6 +180,10 @@ describe("the car-company loop", () => {
     assert.equal(after.markers.find((m) => m.ref === org("halden"))?.state, "committed");
     assert.ok(after.links.some((l) => l.kind === "relation" && l.from === org("sable") && l.to === org("halden") && l.style === "committed"));
     assert.deepEqual(after.effects.map((e) => [e.kind, e.refs[0]]), [["commitment", org("halden")]]);
+    // And it is inspectable: the proof of Halden now runs from claim to agreement.
+    const proof = await engine.proofOf(org("halden"), model);
+    assert.deepEqual(proof.steps.map((st) => st.title), ["Claim", "Offer", "Acceptance", "Agreement"]);
+    assert.match(proof.steps[2].detail, /commitment.make\). The kernel decided ALLOW; the action is completed/);
 
     const integrity = await kernelClient(localSupabase(k, service)).verifyChain();
     assert.equal(integrity.ok, true);

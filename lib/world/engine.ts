@@ -349,6 +349,7 @@ export class WorldEngine {
           ...(challenge
             ? [{ title: "Challenge", detail: String((challenge.payload as { finding?: string }).finding ?? ""), evidence: await you.readEvidence(challenge.id), at: challenge.occurred_at }]
             : []),
+          ...(await this.agreementSteps(ref, model)),
         ],
       };
     }
@@ -383,6 +384,39 @@ export class WorldEngine {
   // SOV's own operations, as the steward reads them. Null where no steward runs on this device.
   operations(): Promise<OperationsView> | null {
     return this.sb.steward ? loadOperations(this.sb.steward) : null;
+  }
+
+  // The consequence, inspectable: the offer as the organization's agent gave it, your acceptance
+  // with the kernel's decision, and the agreement it wrote into the World Graph.
+  private async agreementSteps(orgRef: string, model: WorldModel): Promise<ProofStep[]> {
+    const edge = model.edges.find((e) => e.kind === "supplies" && e.from === orgRef && e.attributes.status === "agreed");
+    if (!edge) return [];
+    const org = model.nodes.get(orgRef)?.title ?? "The organization";
+    const steps: ProofStep[] = [];
+    const reply = model.companionInbox.find((m) => (m.payload as { organization?: string }).organization === orgRef);
+    if (reply) {
+      const p = reply.payload as { capacity_per_year?: number; lead_time_days?: number; unit_price_usd?: number };
+      steps.push({
+        title: "Offer",
+        detail: `${org}'s agent answered for its principal: ${p.capacity_per_year?.toLocaleString("en-US")} a year, ${p.lead_time_days} days lead time, $${p.unit_price_usd?.toLocaleString("en-US")} a unit.`,
+        evidence: [],
+        at: reply.delivered_at,
+      });
+    }
+    const actionId = String(edge.attributes.acceptance ?? "").replace(/^action:/, "");
+    if (actionId) {
+      const action = await this.sb.you.readAction(actionId);
+      steps.push({
+        title: "Acceptance",
+        detail: `You accepted under your own authority (${action.capability}). The kernel decided ${action.decision}; the action is ${action.status}.`,
+        evidence: [],
+        at: action.created_at,
+      });
+    }
+    const world = model.nodes.get(edge.to)?.title ?? "your World";
+    const terms = edge.attributes as { quantity?: number; unit_price_usd?: number };
+    steps.push({ title: "Agreement", detail: `${org} supplies ${world}: ${terms.quantity?.toLocaleString("en-US") ?? "?"} vehicles at $${terms.unit_price_usd?.toLocaleString("en-US") ?? "?"} a unit.`, evidence: [], at: null });
+    return steps;
   }
 
   companionGrants(agentId: string) {
