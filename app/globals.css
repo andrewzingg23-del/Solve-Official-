@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+/* Brand lock (BUILD-BOOK.md §2): abyssal blue-black, ice white, one cyan accent. No gold. */
+:root {
+  --background: #04070d;
+  --surface: #0a1220;
+  --foreground: #f2f7fb;
+  --muted: rgb(242 247 251 / 0.62);
+  --line: rgb(242 247 251 / 0.12);
+  --accent: #22d3ee;
+  --positive: #00e5a0;
+  --negative: #ff4d5e;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --font-sans: var(--font-archivo);
+  --font-mono: var(--font-geist-mono);
+  --ease-calm: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background:
+    radial-gradient(120% 80% at 50% 0%, var(--surface) 0%, var(--background) 70%) fixed;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
