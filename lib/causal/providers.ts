@@ -2,6 +2,12 @@
 // response is evidence for the reconciliation step, never canonical truth by itself. Routes name
 // capabilities, not providers, so a provider can be replaced (email, an API, a supplier portal, a
 // human) without changing routes or rewriting the history that names who performed what.
+//
+// A provider's `perform` is idempotent per action and re-performable: the first call asks, a
+// later call for the same action looks for the answer. "unknown" means the answer is not here yet;
+// the action waits as needs_reconciliation with no consequence, and the next run asks again. That
+// is how a counterparty that answers tomorrow, from its own session on its own device, settles a
+// step without the step ever assuming the answer.
 import type { Kernel, WorldEntity } from "../kernel/client";
 import { sha256Hex } from "../money/settlement";
 import { respondToQueries, type CapabilityAnswer } from "../world/counterparty";
@@ -29,26 +35,33 @@ export class Providers {
   }
 }
 
-// How Arcadia's counterparties are reached in the sandbox: each organization's agent principal,
-// which runs on this device and answers only from the organization's published record.
+// How counterparties are reached through the kernel: each organization's agent principal, which
+// answers from wherever it runs (this device in Arcadia; its own session anywhere else).
 export type Counterparts = {
   agentFor(orgRef: string): string | null;
   as(actorId: string): Kernel;
   claimEventFor(orgRef: string): string | null;
   // Where counterparties speak: the market World their agents hold authority in.
   replyScope: string;
-  // The market's independent verification service (Kestrel), a service actor on this device.
+  // The market's independent verification service (Kestrel), a service actor.
   verifierId: string;
 };
 
-const evidenceOf = async (description: string, facts: unknown) => ({
+// The sandbox runs the other side too: hooks that make the counterparty or verifier act on this
+// device between asking and looking. A real deployment has none; the other side acts when it acts.
+export type LocalSide = {
+  respond?(agentId: string, entity: WorldEntity, orgRef: string): Promise<unknown>;
+  verify?(claimEvent: string, orgRef: string, actionId: string, title: string): Promise<unknown>;
+};
+
+export const evidenceOf = async (description: string, facts: unknown) => ({
   basis: "artifact" as const,
   content_hash: `sha256:${await sha256Hex(JSON.stringify(facts))}` as const,
   description: description.slice(0, 500),
 });
 
 // The message is the mechanism; its idempotency key ties it to the action it serves, so a retry
-// after a crash never sends a second inquiry.
+// after a crash or a reconciliation run never sends a second inquiry.
 async function deliver(actor: Kernel, step: RouteStep, agentId: string, payload: Record<string, unknown>, capability: string, key: string) {
   const id = await actor.proposeAction({ kind: "message.send", capability, scope: step.scope, targetRef: `actor:${agentId}`, payload, idempotencyKey: key });
   const message = await actor.readAction(id);
@@ -57,9 +70,22 @@ async function deliver(actor: Kernel, step: RouteStep, agentId: string, payload:
   return { id, rejected: null };
 }
 
-export function arcadiaInquiry(counterparts: Counterparts): Provider {
+const answerResult = (answer: CapabilityAnswer, reply: string, provider: string) => ({
+  capacity_per_year: answer.capacity_per_year,
+  lead_time_days: answer.lead_time_days,
+  unit_price_usd: answer.unit_price_usd,
+  minimum_order: answer.minimum_order,
+  can_fulfill: answer.can_fulfill,
+  reply,
+  provider,
+});
+
+// Inquiry through the kernel's own messaging: the question is a message action to the
+// organization's agent; the answer is that agent's reply, performed under its own authority, for
+// its own principal, whenever it answers. Until then the step is unknown, not assumed.
+export function messagingInquiry(counterparts: Counterparts, local: LocalSide = {}, id = "kernel.messaging.inquiry"): Provider {
   return {
-    id: "arcadia.agent-messaging.inquiry",
+    id,
     capability: "counterparty.inquiry",
     async perform({ actor, actionId, step, world }) {
       const org = step.binding.org;
@@ -76,23 +102,14 @@ export function arcadiaInquiry(counterparts: Counterparts): Provider {
         `provider:inquiry:${actionId}`,
       );
       if (sent.rejected) return { provider: this.id, status: "failed", result: {}, evidence: [], detail: sent.rejected };
-      // Arcadia's counterparty answers on this device; a real one answers when it answers.
-      await respondToQueries(counterparts.as(agentId), entity, counterparts.claimEventFor(org), counterparts.replyScope);
+      if (local.respond) await local.respond(agentId, entity, org);
       const reply = (await actor.inbox()).find((m) => m.in_reply_to === sent.id);
-      if (!reply) return { provider: this.id, status: "unknown", result: { query: `action:${sent.id}` }, evidence: [], detail: "no reply yet" };
+      if (!reply) return { provider: this.id, status: "unknown", result: { query: `action:${sent.id}` }, evidence: [], detail: `${entity.title}'s agent has not answered yet` };
       const answer = reply.payload as unknown as CapabilityAnswer;
       return {
         provider: this.id,
         status: "succeeded",
-        result: {
-          capacity_per_year: answer.capacity_per_year,
-          lead_time_days: answer.lead_time_days,
-          unit_price_usd: answer.unit_price_usd,
-          minimum_order: answer.minimum_order,
-          can_fulfill: answer.can_fulfill,
-          reply: `action:${reply.action_id}`,
-          provider: this.id,
-        },
+        result: answerResult(answer, `action:${reply.action_id}`, this.id),
         evidence: [await evidenceOf(`Reply from ${entity.title}'s agent (action ${reply.action_id}) for its principal ${reply.on_behalf_of ?? "itself"}`, { reply: reply.action_id, answer })],
         detail: `${entity.title} replied`,
       };
@@ -100,9 +117,11 @@ export function arcadiaInquiry(counterparts: Counterparts): Provider {
   };
 }
 
-export function arcadiaAcceptance(counterparts: Counterparts): Provider {
+// The acceptance is a commitment the actor makes; delivering it to the organization's agent is
+// the mechanism, and the delivered message is the evidence.
+export function messagingAcceptance(counterparts: Counterparts, id = "kernel.messaging.acceptance"): Provider {
   return {
-    id: "arcadia.agent-messaging.acceptance",
+    id,
     capability: "counterparty.acceptance",
     async perform({ actor, actionId, step, world }) {
       const org = step.binding.org;
@@ -129,23 +148,61 @@ export function arcadiaAcceptance(counterparts: Counterparts): Provider {
   };
 }
 
-// Verification in the sandbox: the market's verification service inspects a claim and, unless
-// its own audit has challenged it, attaches externally verified evidence to the claim's event.
-// Only a service actor may attach that basis; the action's own evidence points at the attachment.
-export function arcadiaVerification(counterparts: Counterparts): Provider {
+// Verification by an independent service: the request is recorded; the verifier, a service actor
+// acting from its own session, attaches externally verified evidence to the claim's event (only a
+// service actor may attach that basis) or challenges the claim. The step settles on what the
+// claim's evidence shows, never on the requester's word.
+export function verificationRequest(counterparts: Counterparts, local: LocalSide = {}, id = "kernel.verification.request"): Provider {
   return {
-    id: "arcadia.kestrel.verification",
+    id,
     capability: "verification.service",
-    async perform({ actionId, step, world }) {
+    async perform({ actor, actionId, step, world }) {
       const org = step.binding.org;
       const claimEvent = typeof step.payload.claim_event === "string" ? step.payload.claim_event : null;
       const title = world.entities.get(org)?.title ?? org;
       if (!claimEvent) return { provider: this.id, status: "failed", result: {}, evidence: [], detail: `${title} has no claim on record` };
-      const kestrel = counterparts.as(counterparts.verifierId);
-      const challenged = (await kestrel.readEvents(counterparts.replyScope, { limit: 500 })).some((e) => e.type === "claim.challenge" && e.payload.claim_event_id === claimEvent);
-      if (challenged) return { provider: this.id, status: "failed", result: { claim_event: claimEvent, verified: false }, evidence: [], detail: `Kestrel's audit of ${title} found otherwise` };
-      const already = (await kestrel.readEvidence(claimEvent)).some((ev) => ev.basis === "externally_verified");
-      if (!already) {
+      if (local.verify) await local.verify(claimEvent, org, actionId, title);
+      // What the verifier recorded, read with the requester's own authority over the market.
+      const challenged = (await actor.readEvents(counterparts.replyScope, { limit: 500 })).some((e) => e.type === "claim.challenge" && e.payload.claim_event_id === claimEvent);
+      if (challenged) return { provider: this.id, status: "failed", result: { claim_event: claimEvent, verified: false }, evidence: [], detail: `the verifier's audit of ${title} found otherwise` };
+      const verified = (await actor.readEvidence(claimEvent)).find((ev) => ev.basis === "externally_verified");
+      if (!verified) return { provider: this.id, status: "unknown", result: { claim_event: claimEvent }, evidence: [], detail: `the verifier has not attached its finding on ${title} yet` };
+      return {
+        provider: this.id,
+        status: "succeeded",
+        result: { claim_event: claimEvent, verified: true, provider: this.id },
+        evidence: [await evidenceOf(`Externally verified evidence attached to ${title}'s claim (event ${claimEvent}): ${verified.description}`, { claimEvent, evidence: verified.content_hash })],
+        detail: `${title}'s claim verified`,
+      };
+    },
+  };
+}
+
+// --- Arcadia: the same providers, with the other side running on this device --------------------
+
+// Arcadia's counterparty answers on this device, from the organization's published record, under
+// the agent's own authority in the market: the same reply path a remote agent takes.
+export const arcadiaInquiry = (counterparts: Counterparts): Provider =>
+  messagingInquiry(
+    counterparts,
+    { respond: (agentId, entity, org) => respondToQueries(counterparts.as(agentId), entity, counterparts.claimEventFor(org), counterparts.replyScope) },
+    "arcadia.agent-messaging.inquiry",
+  );
+
+export const arcadiaAcceptance = (counterparts: Counterparts): Provider => messagingAcceptance(counterparts, "arcadia.agent-messaging.acceptance");
+
+// Kestrel in the sandbox inspects the claim and, unless its own audit has challenged it, attaches
+// externally verified evidence (simulated, and it says so); the provider then reads what it found.
+export const arcadiaVerification = (counterparts: Counterparts): Provider =>
+  verificationRequest(
+    counterparts,
+    {
+      async verify(claimEvent, _org, actionId, title) {
+        const kestrel = counterparts.as(counterparts.verifierId);
+        const challenged = (await kestrel.readEvents(counterparts.replyScope, { limit: 500 })).some((e) => e.type === "claim.challenge" && e.payload.claim_event_id === claimEvent);
+        if (challenged) return;
+        const already = (await kestrel.readEvidence(claimEvent)).some((ev) => ev.basis === "externally_verified");
+        if (already) return;
         await kestrel.attachEvidence(
           claimEvent,
           {
@@ -155,17 +212,14 @@ export function arcadiaVerification(counterparts: Counterparts): Provider {
           },
           `verify:${actionId}`,
         );
-      }
-      return {
-        provider: this.id,
-        status: "succeeded",
-        result: { claim_event: claimEvent, verified: true, provider: this.id },
-        evidence: [await evidenceOf(`Kestrel verification service attached externally verified evidence to ${title}'s claim (event ${claimEvent})`, { claimEvent, actionId })],
-        detail: `Kestrel verified ${title}'s claim`,
-      };
+      },
     },
-  };
-}
+    "arcadia.kestrel.verification",
+  );
 
 export const arcadiaProviders = (counterparts: Counterparts) =>
   new Providers([arcadiaInquiry(counterparts), arcadiaAcceptance(counterparts), arcadiaVerification(counterparts)]);
+
+// The real kernel-mediated set: nothing on this device answers for anyone else.
+export const messagingProviders = (counterparts: Counterparts) =>
+  new Providers([messagingInquiry(counterparts), messagingAcceptance(counterparts), verificationRequest(counterparts)]);
