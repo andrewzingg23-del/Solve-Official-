@@ -19,12 +19,14 @@ import type {
 } from "../kernel/client";
 import type { ArcadiaManifest } from "../sandbox/manifest";
 import { respondToQueries, type CapabilityAnswer } from "./counterparty";
+import { loadOperations, type OperationsView } from "./operations";
 import type { Edge, Node, ProofState } from "./types";
 import { planVehicleCompany, type RoutePlan } from "./wayfinder";
 
 export type SandboxLike = {
   manifest: ArcadiaManifest;
   you: Kernel;
+  steward?: Kernel;
   as(actorId: string): Kernel;
 };
 
@@ -376,6 +378,11 @@ export class WorldEngine {
       };
     }
     return { kind: "none", steps: [] };
+  }
+
+  // SOV's own operations, as the steward reads them. Null where no steward runs on this device.
+  operations(): Promise<OperationsView> | null {
+    return this.sb.steward ? loadOperations(this.sb.steward) : null;
   }
 
   companionGrants(agentId: string) {

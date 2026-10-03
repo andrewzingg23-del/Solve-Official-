@@ -20,6 +20,8 @@ import { kernelClient } from "../../lib/kernel/client";
 import { localSupabase, service, user } from "../../lib/kernel/local";
 import { sendPayment, type PaymentRail } from "../../lib/money/payment";
 import { settle, type SettlementRail } from "../../lib/money/settlement";
+import { installCollective, superviseReconciliation } from "../../lib/ops/collective";
+import { learnFromReconciliations } from "../../lib/ops/learning";
 import { kernelDigest } from "../../lib/sandbox/digest";
 import { createKernelDb, sha } from "../kernel/harness";
 import { newSigner, seedKeys } from "./keys";
@@ -32,12 +34,16 @@ export const ARCADIA_WORLD = "world:arcadia";
 // Bump when the generator's output changes meaning (new actors, entities, scenarios, data).
 //   arcadia/1  first civilization: You, Bob, eight suppliers, two Network States
 //   arcadia/2  seeded keys, natural keys, a private entity, provenance and digest in the manifest
-export const ARCADIA_GENERATOR = "arcadia/2";
+//   arcadia/3  scenarios; "lost-payment-responses" runs SOV's operating collective on its rail
+export const ARCADIA_GENERATOR = "arcadia/3";
 export const ARCADIA_SEED = "arcadia-genesis-1";
 
 // Scenarios layer behaviour onto the base civilization (failures, fraud, disputes, governance).
 // None is enabled by default; each is named in the manifest so a snapshot says what it contains.
-export type ArcadiaScenario = never;
+//   lost-payment-responses  two of You's payments lose their chain reply; SOV's collective detects,
+//                           works, verifies and closes them, then records what it learned.
+export type ArcadiaScenario = "lost-payment-responses";
+export const ARCADIA_DEFAULT_SCENARIOS: ArcadiaScenario[] = ["lost-payment-responses"];
 export type ArcadiaConfig = { seed: string; scenarios: ArcadiaScenario[] };
 
 const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
@@ -198,7 +204,7 @@ export const STATES = [
 export type { ArcadiaManifest };
 
 export async function buildArcadia(config: Partial<ArcadiaConfig> = {}) {
-  const resolved: ArcadiaConfig = { seed: config.seed ?? ARCADIA_SEED, scenarios: config.scenarios ?? [] };
+  const resolved: ArcadiaConfig = { seed: config.seed ?? ARCADIA_SEED, scenarios: config.scenarios ?? ARCADIA_DEFAULT_SCENARIOS };
   const started = Date.now();
   seedKeys(resolved.seed);
   try {
@@ -372,6 +378,39 @@ async function generate(config: ArcadiaConfig, started: number) {
   await steward.relate({ kind: "member_of", fromRef: `actor:${orgs.vireo.ownerId}`, toRef: `entity:${states.tessellate.entityId}`, scope: ARCADIA_WORLD });
   await steward.relate({ kind: "supplies", fromRef: `entity:${orgs.sable.entityId}`, toRef: `entity:${orgs.halden.entityId}`, scope: ARCADIA_WORLD });
 
+  // Scenario: SOV operating SOV on the payment rail.
+  let operations: ArcadiaManifest["operations"] = null;
+  if (config.scenarios.includes("lost-payment-responses")) {
+    const collective = await installCollective(steward, { paymentService, chain: "litesvm", as: asAgent });
+    for (let i = 1; i <= 2; i++) {
+      const id = await you.createPaymentIntent({
+        recipientId: bobId,
+        chain: "litesvm",
+        asset: "DEV_USDC",
+        amount: USD(1),
+        maxSlippageBps: 50,
+        memo: `Coffee with Bob ${i}`,
+        idempotencyKey: `arcadia-lost-${i}`,
+      });
+      const lost = await sendPayment({
+        payerKernel: you,
+        rail: paymentRail,
+        router: market.router,
+        payer: prepared.wallet,
+        sponsor: chain.sponsor,
+        paymentId: id,
+        beforeSubmit: async () => {
+          chain.gateway.loseNextResponse = true;
+        },
+      });
+      if (lost.status !== "needs_reconciliation") throw new Error(`scenario expected an unknown outcome, got ${lost.status}`);
+    }
+    const supervised = await superviseReconciliation({ rail: paymentRail, chain: "litesvm", collective, as: asAgent, staleAfterMs: 0 });
+    if (supervised.length !== 2 || !supervised.every((t) => t.closed)) throw new Error(`scenario did not close its tasks: ${JSON.stringify(supervised)}`);
+    const learned = await learnFromReconciliations(asAgent(collective.opsService), { railScope: "system/chain:litesvm" });
+    operations = { ...collective, tasks: supervised.map((t) => t.taskId), proposalEventId: learned?.proposalEventId ?? null };
+  }
+
   // Something You must never see: a private record in the same World. It tests that what reaches
   // the browser's view is authorized, not merely hidden.
   const privateEntityId = await steward.upsertEntity({
@@ -420,6 +459,7 @@ async function generate(config: ArcadiaConfig, started: number) {
     },
     metrics: { generationMs: Date.now() - started, snapshotBytes: 0, dumpMs: 0 },
     privateEntityId,
+    operations,
     notice: "Arcadia is a synthetic test civilization. Every company, person, State and amount is fictional; assets are test assets with no value.",
     personas: PERSONAS,
     world: ARCADIA_WORLD,

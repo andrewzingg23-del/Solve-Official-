@@ -23,13 +23,14 @@ Updated 2026-10-03. Branch `claude/keen-cerf-tpd7io`.
 - **SOV operates SOV (first self-operation proof).** `npx tsx scripts/self-operation.ts` prints it. A payment's chain response is lost → the payment service's monitor opens an operational task (cause, inputs, risk, evidence, distinct-party verification) → its worker agent claims it under a lease limited to that task and proposes the reconciliation as a governed action (REQUIRE_SECOND_AUTHORITY) → the trust service's verifier agent re-derives the facts and authorizes → the payment service reconciles only for that authorized action, recording chain evidence → the verifier confirms the consequence and closes the task. A crash mid-enactment resumes without a second record; a revoked lease stops the worker before the consequence; a false finding is never authorized; task-limited authority ends with the task. After two such failures the operations service records a learning event and a Class A build proposal (computed class, reuse analysis, rollback). Code: `lib/ops/`.
 - **Kernel v4 hardening.** Limited leases are invisible to capability-only checks (previously a task-limited lease would have passed `record_payment` or `read_events`); task-limited authority ends when the task closes; tasks carry creator-set inputs; actions expose their task ref.
 - **Arcadia runtime foundations.** Reproducible generation (`arcadia/2`, seeded keys, semantic digest in `lib/sandbox/digest.ts`, provenance in the manifest, natural `arcadia_key`s); the snapshot is reloaded and must reproduce the digest before it ships. Spatial view model (`lib/world/spatial.ts`) and a replaceable SceneController (`lib/world/scene.ts`, Cesium in `app/world/cesium-scene.ts`) with semantic camera operations and zoom bands; selection resolves to canonical refs (shift adds to a set); no invented geography (the venture World is listed off Earth); a recorded refusal marks a supplier not reachable and an agreement turns its real logistics route emerald, each playing once from its kernel event. `npm run test:world` proves it in Chromium against the built app and records performance against `perf/world-baseline.json`.
-- **Tests:** 130 pass (`npm test`); 72 kernel tests pass in Chromium (`npm run test:browser`); 17 World checks pass against the built app (`npm run test:world`).
+- **Steward projection and Arcadia scenarios.** Arcadia `arcadia/3` runs the `lost-payment-responses` scenario by default: SOV's operating collective (`lib/ops/collective.ts`) works two lost payment replies to closure and records a learning event and a Class A proposal, so the sandbox carries real operations history. The World's Steward view reads it with the steward's authority: what needs a human, each task's worker, verifier, kernel decision and consequence, what was learned, proposals with their class and promotion rule, and what is not built yet. You cannot read these records.
+- **Tests:** 132 pass (`npm test`); 72 kernel tests pass in Chromium (`npm run test:browser`); 19 World checks pass against the built app (`npm run test:world`).
 - **App shell and live preview.** `solve-git-claude-keen-cerf-tpd7io-sovigrn.vercel.app`, connected to the store. Email sign-in is switched off for now (founder, 2026-10-03). `/` is the World (Arcadia sandbox, runs in the browser); `/money` runs the proof-of-life and Send Bob $10 live on the server in a fresh in-memory kernel and chain per click (test assets, nothing saved). `/login` and `/account` still exist, unlinked.
 - **Specs.** `docs/MONETARY-CONSTITUTION.md` draft 3 (source spec for money; Part XIV lists what is enforced). `docs/plans/2026-10-03-monetary-proof-of-life.md`, `docs/plans/2026-10-03-payment-router.md`. World: `docs/specs/2026-10-03-world-interface.md`, `docs/specs/2026-10-03-avatar-world-integration.md`. Contracts: `DOMAIN-CONTRACTS.md`, `DECISIONS.md`, `SECURITY-INVARIANTS.md`, `ACTIVE-WORK.md`.
 
 ## DOING
 
-- **Steward projection.** A founder/steward view of SOV's own operations in the World: open and closed operational tasks, who worked and verified them, learning events and build proposals with their change class, from the same kernel records.
+- **First Class A creation loop.** From the recorded proposal: an engineering task, an isolated builder, independent review, CI, preview, promotion, then observing whether the friction falls.
 
 ## BLOCKED
 
@@ -41,13 +42,12 @@ Updated 2026-10-03. Branch `claude/keen-cerf-tpd7io`.
 ## NEXT
 
 1. Apply kernel v4 to the store; then the World runs against the live kernel for signed-in users as well as the sandbox.
-2. First Class A creation loop: an engineering task from the recorded proposal, an isolated builder, independent review, CI, preview, promotion, then observe whether the friction falls.
-3. World and avatar depth: embodiment (workshop scene), scoped and encrypted avatar memory, presence, return experience, a real reasoning provider behind the same validated command interface.
-4. Devnet genesis and rail bootstrap once devnet is reachable; then live settlement and payments on devnet.
-5. First Network State, State market, privacy, real-world exit, State credit, AI economic agents (constitution order).
-6. Payment router: an on-chain AMM venue (audited program) in place of RFQ makers; external aggregator adapter.
-7. Concurrency test against real Postgres; vesting and treasury programs.
-8. Whop bridge Pack (directive 3) once sign-in runs on the store.
+2. World and avatar depth: embodiment (workshop scene), scoped and encrypted avatar memory, presence, return experience, a real reasoning provider behind the same validated command interface.
+3. Devnet genesis and rail bootstrap once devnet is reachable; then live settlement and payments on devnet.
+4. First Network State, State market, privacy, real-world exit, State credit, AI economic agents (constitution order).
+5. Payment router: an on-chain AMM venue (audited program) in place of RFQ makers; external aggregator adapter.
+6. Concurrency test against real Postgres; vesting and treasury programs.
+7. Whop bridge Pack (directive 3) once sign-in runs on the store.
 
 ## Decisions waiting on the founder
 

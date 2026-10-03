@@ -26,6 +26,8 @@ export type ArcadiaManifest = {
   metrics: { generationMs: number; snapshotBytes: number; dumpMs: number };
   // A steward-only entity You must never receive (authorization tests).
   privateEntityId: string;
+  // SOV's operating collective, when the lost-payment-responses scenario ran.
+  operations: { trustService: string; opsService: string; workerId: string; verifierId: string; tasks: string[]; proposalEventId: string | null } | null;
   notice: string;
   personas: { you: string; bob: string; steward: string };
   world: string;

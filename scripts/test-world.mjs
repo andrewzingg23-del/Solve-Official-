@@ -174,9 +174,19 @@ try {
   const committed = await page.evaluate(() => window.__sov.view().links.some((l) => l.kind === "relation" && l.style === "committed"));
   check(committed, "the agreement changes the World: Halden's real logistics route carries it");
   perf.queryMs = await page.evaluate(() => window.__sov.metrics.queryMs);
+
+  // 7. The steward projection: SOV operating SOV, read with the steward's authority.
+  await page.getByRole("button", { name: "Steward", exact: true }).click();
+  const steward = page.getByRole("region", { name: "Steward view" });
+  await steward.getByText("Build proposals").waitFor({ timeout: 30_000 });
+  const stewardText = await steward.innerText();
+  const closedTasks = (stewardText.match(/Reconcile payment/g) ?? []).length;
+  check(closedTasks === (manifest.operations?.tasks.length ?? 0) && closedTasks > 0, `steward sees ${closedTasks} operational tasks, worked and verified by different parties`);
+  check(/CLASS A/.test(stewardText) && /not built yet/i.test(stewardText), "steward sees the Class A proposal and what is not built yet");
+  await page.getByRole("button", { name: "Steward", exact: true }).click();
   check(errors.length === 0, `no page or console errors${errors.length ? `: ${errors.slice(0, 3).join(" | ")}` : ""}`);
 
-  // 7. Phone width: same model, no overflow, nothing covering identity.
+  // 8. Phone width: same model, no overflow, nothing covering identity.
   const phone = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   await phone.goto(url);
   await phone.getByText("Who should represent you in SOV?").waitFor({ timeout: 120_000 });

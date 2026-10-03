@@ -11,6 +11,8 @@ export type Sandbox = {
   manifest: ArcadiaManifest;
   // You, signed in to your own sandbox.
   you: Kernel;
+  // The Arcadia steward, for the steward projection (the sandbox runs every principal locally).
+  steward: Kernel;
   // Any agent or service actor, as the sandbox runs every principal on this device.
   as(actorId: string): Kernel;
   restored: boolean;
@@ -82,6 +84,7 @@ export async function bootSandbox(onStage: (stage: string) => void = () => {}): 
     k,
     manifest,
     you: kernelClient(localSupabase(k, user(manifest.personas.you))),
+    steward: kernelClient(localSupabase(k, user(manifest.personas.steward))),
     as: (actorId: string) => kernelClient(localSupabase(k, service), { actAs: actorId }),
     restored,
   };

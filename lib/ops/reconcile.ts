@@ -123,7 +123,7 @@ export async function detectUnsettledPayments(payments: Kernel, chain: string, {
     };
     const taskId = await payments.createTask({
       scope,
-      title: `Reconcile payment ${paymentId.slice(0, 12)}`,
+      title: `Reconcile payment: ${payment.memo || `${payment.amount} ${payment.asset}`}`.slice(0, 200),
       objective: "Find out from the chain whether this payment executed, and record the outcome exactly once.",
       causeRef: `event:${event.id}`,
       requiredCapability: RECONCILE.capability,

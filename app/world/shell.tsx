@@ -20,6 +20,7 @@ import { Earth } from "./earth";
 import { Horizon } from "./horizon";
 import { LensPlane } from "./lenses";
 import { Onboarding } from "./onboarding";
+import { StewardPanel } from "./steward";
 
 const MOTION = "(prefers-reduced-motion: reduce)";
 
@@ -69,6 +70,7 @@ export function WorldShell() {
   const [earthStatus, setEarthStatus] = useState<{ status: "loading" | "ready" | "failed"; detail?: string }>({ status: "loading" });
   const [companionActing, setCompanionActing] = useState(false);
   const [indexOpen, setIndexOpen] = useState(false);
+  const [stewardOpen, setStewardOpen] = useState(false);
   // Events up to this sequence were history when the World opened: state, not effects.
   const [watermark, setWatermark] = useState(Number.MAX_SAFE_INTEGER);
   const reducedMotion = useReducedMotion();
@@ -231,6 +233,8 @@ export function WorldShell() {
     [model, ctx.currentSelectionIds, highlights, routes, fields, watermark],
   );
 
+  const loadOperations = useCallback(() => (engine ? engine.operations() : null), [engine]);
+
   const enterWorld = useCallback((ref: string) => {
     earth.current?.enterWorld(ref);
     const placed = earth.current?.renderedRefs().includes(ref);
@@ -293,6 +297,16 @@ export function WorldShell() {
             <span className="text-accent">{companionActing ? "◎" : "◉"}</span>
             <span className="text-xs font-semibold uppercase tracking-[0.22em]">You</span>
           </button>
+          {sandbox && (
+            <button
+              type="button"
+              aria-pressed={stewardOpen}
+              onClick={() => setStewardOpen((o) => !o)}
+              className={`border-l border-line pl-3 text-[10px] font-semibold uppercase tracking-[0.18em] ${stewardOpen ? "text-accent" : "text-muted hover:text-foreground"}`}
+            >
+              Steward
+            </button>
+          )}
           {companion && (
             <span className="flex items-center gap-2 border-l border-line pl-3" aria-label={`${companion.name}, ${companionActing ? "acting" : "present"}`}>
               <AvatarArt kind={companion.representation} seed={companion.seed as Seed} size={22} />
@@ -337,7 +351,8 @@ export function WorldShell() {
           </button>
         )}
 
-        {model && engine && <LensPlane lens={lens} engine={engine} model={model} ctx={ctx} onSelect={(r) => select(r)} onRepresent={represent} />}
+        {stewardOpen && engine && <StewardPanel load={loadOperations} onClose={() => setStewardOpen(false)} />}
+        {!stewardOpen && model && engine && <LensPlane lens={lens} engine={engine} model={model} ctx={ctx} onSelect={(r) => select(r)} onRepresent={represent} />}
 
         {/* Context drawer (Space lens): the selection, or the World index on request. */}
         {model && lens === "space" && (selected || indexOpen) && (

@@ -53,5 +53,18 @@ describe("Arcadia", () => {
     assert.ok(!mentions(await you.readEvents(ARCADIA_WORLD, { limit: 500 })), "nor its events");
     assert.ok(mentions(await steward.readEvents(ARCADIA_WORLD, { limit: 500 })));
     assert.equal((await kernelClient(localSupabase(a.k, service)).verifyChain()).ok, true);
+
+    // The default scenario: SOV's collective worked two lost payment replies to closure and
+    // recorded what it learned. A base civilization has no such history.
+    assert.deepEqual(a.manifest.arcadia.scenarios, ["lost-payment-responses"]);
+    assert.equal(a.manifest.operations?.tasks.length, 2);
+    const tasks = await steward.readTasks("system/chain:litesvm");
+    assert.deepEqual(tasks.map((t) => t.status), ["completed", "completed"]);
+    const proposal = (await steward.readEvents("system/ops")).find((e) => e.type === "ops.build_proposal.proposed");
+    assert.equal(proposal?.id, a.manifest.operations?.proposalEventId);
+    assert.equal(proposal?.payload.change_class, "A");
+    const base = await buildArcadia({ scenarios: [] });
+    assert.equal(base.manifest.operations, null);
+    assert.notEqual(base.manifest.arcadia.digest, a.manifest.arcadia.digest, "scenarios are part of what a snapshot means");
   });
 });

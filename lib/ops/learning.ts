@@ -19,7 +19,8 @@ export async function learnFromReconciliations(ops: Kernel, input: { railScope: 
     (t) => t.required_capability === RECONCILE.capability && t.status === "completed" && /outcome unknown/.test(String((t.inputs as Partial<ReconcileInputs>).signal)),
   );
   if (tasks.length < (input.threshold ?? 2)) return null;
-  const refs = tasks.map((t) => `task:${t.task_id}`).sort();
+  // In creation order (the kernel's), never by id: ids differ between generations.
+  const refs = tasks.map((t) => `task:${t.task_id}`);
   const key = await sha256Hex(refs.join(","));
 
   const learningEventId = await ops.recordEvent({

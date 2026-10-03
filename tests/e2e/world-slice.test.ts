@@ -22,6 +22,7 @@ before(async () => {
   engine = new WorldEngine({
     manifest,
     you: kernelClient(localSupabase(k, user(manifest.personas.you))),
+    steward: kernelClient(localSupabase(k, user(manifest.personas.steward))),
     as: (id) => kernelClient(localSupabase(k, service), { actAs: id }),
   });
   model = await engine.load();
@@ -58,6 +59,25 @@ describe("Arcadia as seen by You", () => {
     assert.ok(!view.markers.some((m) => m.ref === `entity:${manifest.privateEntityId}`));
     // History is state, not animation.
     assert.deepEqual(buildSpatialView(model, input({ effectsAfterSeq: maxSeq(model) })).effects, []);
+  });
+
+  it("lets the steward see SOV operating SOV, with what needs a human and what is not built", async () => {
+    const ops = (await engine.operations())!;
+    assert.equal(ops.tasks.length, 2);
+    for (const t of ops.tasks) {
+      assert.equal(t.status, "completed");
+      assert.equal(t.decision, "REQUIRE_SECOND_AUTHORITY");
+      assert.equal(t.actionStatus, "completed");
+      assert.equal(t.outcome, "payment confirmed");
+      assert.match(t.worker!, /Reconciler/);
+      assert.match(t.verifier!, /Verifier/);
+    }
+    assert.equal(ops.learning.length, 1);
+    assert.deepEqual(ops.proposals.map((p) => p.changeClass), ["A"]);
+    assert.deepEqual(ops.needsYou, []);
+    assert.equal(ops.notBuilt.length, 1, "the unbuilt creation loop is stated, not hidden");
+    // You cannot read SOV's operations.
+    await assert.rejects(engine.sb.you.readTasks("system/chain:litesvm"));
   });
 
   it("maps camera height to semantic zoom bands", () => {
