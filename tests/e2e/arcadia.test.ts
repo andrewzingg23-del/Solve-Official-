@@ -56,13 +56,18 @@ describe("Arcadia", () => {
 
     // The default scenario: SOV's collective worked two lost payment replies to closure and
     // recorded what it learned. A base civilization has no such history.
-    assert.deepEqual(a.manifest.arcadia.scenarios, ["lost-payment-responses"]);
+    assert.deepEqual(a.manifest.arcadia.scenarios, ["lost-payment-responses", "creation-loop"]);
     assert.equal(a.manifest.operations?.tasks.length, 2);
     const tasks = await steward.readTasks("system/chain:litesvm");
     assert.deepEqual(tasks.map((t) => t.status), ["completed", "completed"]);
     const proposal = (await steward.readEvents("system/ops")).find((e) => e.type === "ops.build_proposal.proposed");
     assert.equal(proposal?.id, a.manifest.operations?.proposalEventId);
     assert.equal(proposal?.payload.change_class, "A");
+    // The creation loop built, tested, reviewed, promoted and observed it.
+    const engineering = (await steward.readTasks("system/ops")).find((t) => t.task_id === a.manifest.operations?.engineeringTask);
+    assert.equal(engineering?.status, "completed");
+    const ops = (await steward.readEvents("system/ops")).map((e) => e.type).filter((t) => t.startsWith("ops."));
+    assert.deepEqual(ops, ["ops.learning.recorded", "ops.build_proposal.proposed", "ops.ci.completed", "ops.observation.recorded"]);
     const base = await buildArcadia({ scenarios: [] });
     assert.equal(base.manifest.operations, null);
     assert.notEqual(base.manifest.arcadia.digest, a.manifest.arcadia.digest, "scenarios are part of what a snapshot means");

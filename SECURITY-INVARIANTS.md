@@ -16,6 +16,7 @@ Canon as executable checks. Each line names the test that fails if the invariant
 | An operational consequence happens only for an action authorized by a distinct party, and only once, even across a crash | `tests/e2e/self-operation.test.ts` |
 | A verifier never takes the worker's word: a finding that contradicts the chain is never authorized | `tests/e2e/self-operation.test.ts` |
 | A build proposal's change class is computed from what it touches; the creation guardrails are Class D | `tests/ops/changes.test.ts` |
+| Agents promote only Class A changes, only after CI and a distinct reviewer, only the exact reviewed change; anything above Class A escalates | `tests/e2e/creation.test.ts` |
 | Quorum needs distinct parties; collectives can count actors when policy says so | `tests/kernel/actions.test.ts` governance |
 | Multisig accepts only named signers; governed writes cannot bypass actions | `tests/kernel/actions.test.ts` governance |
 | Timelocks and challenge windows hold enactment; revocation stops a pending action | `tests/kernel/actions.test.ts` governance |

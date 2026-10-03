@@ -1,28 +1,28 @@
 {
-  "recorded": "2026-10-03T10:47:25.251Z",
+  "recorded": "2026-10-03T10:56:39.794Z",
   "environment": "headless Chromium, SwiftShader (software WebGL)",
   "metrics": {
-    "firstViewMs": 6184,
-    "bootMs": 3714,
-    "loadMs": 2178,
-    "sceneInitMs": 1159,
+    "firstViewMs": 8750,
+    "bootMs": 3521,
+    "loadMs": 1951,
+    "sceneInitMs": 1152,
     "markers": 16,
-    "fps": 1,
+    "fps": 2,
     "heapMB": 342,
-    "buildMs": 7335,
-    "refusalMs": 3522,
-    "answerMs": 2669,
-    "commitMs": 2445,
+    "buildMs": 7096,
+    "refusalMs": 3951,
+    "answerMs": 2544,
+    "commitMs": 2891,
     "queryMs": [
-      883,
-      1156,
-      1006,
-      1027,
-      1069,
-      958
+      819,
+      1158,
+      963,
+      1036,
+      899,
+      1076
     ],
-    "generationMs": 5366,
-    "snapshotBytes": 6218003,
-    "events": 263
+    "generationMs": 5285,
+    "snapshotBytes": 6244545,
+    "events": 314
   }
 }

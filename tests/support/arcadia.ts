@@ -21,10 +21,12 @@ import { localSupabase, service, user } from "../../lib/kernel/local";
 import { sendPayment, type PaymentRail } from "../../lib/money/payment";
 import { settle, type SettlementRail } from "../../lib/money/settlement";
 import { installCollective, superviseReconciliation } from "../../lib/ops/collective";
+import { installCreation, leaseEngineering, openEngineeringTask, promoteAndObserve, runBuilder, runCi, runReviewer } from "../../lib/ops/creation";
 import { learnFromReconciliations } from "../../lib/ops/learning";
 import { kernelDigest } from "../../lib/sandbox/digest";
 import { createKernelDb, sha } from "../kernel/harness";
 import { newSigner, seedKeys } from "./keys";
+import { directoryWorkspace } from "./workspace";
 import { moneyKernel } from "./money-fixture";
 import { ARC, paymentMarket, USD } from "./payment-fixture";
 import { preparedSettlement, type ProofEnvironment } from "./proof-of-life";
@@ -35,15 +37,19 @@ export const ARCADIA_WORLD = "world:arcadia";
 //   arcadia/1  first civilization: You, Bob, eight suppliers, two Network States
 //   arcadia/2  seeded keys, natural keys, a private entity, provenance and digest in the manifest
 //   arcadia/3  scenarios; "lost-payment-responses" runs SOV's operating collective on its rail
-export const ARCADIA_GENERATOR = "arcadia/3";
+//   arcadia/4  "creation-loop" builds, tests, reviews, promotes and observes the Class A proposal
+export const ARCADIA_GENERATOR = "arcadia/4";
 export const ARCADIA_SEED = "arcadia-genesis-1";
 
 // Scenarios layer behaviour onto the base civilization (failures, fraud, disputes, governance).
 // None is enabled by default; each is named in the manifest so a snapshot says what it contains.
 //   lost-payment-responses  two of You's payments lose their chain reply; SOV's collective detects,
 //                           works, verifies and closes them, then records what it learned.
-export type ArcadiaScenario = "lost-payment-responses";
-export const ARCADIA_DEFAULT_SCENARIOS: ArcadiaScenario[] = ["lost-payment-responses"];
+//   creation-loop           (after lost-payment-responses) the Class A proposal is built by an
+//                           engineering agent, tested by CI against Arcadia itself, reviewed by
+//                           another party, promoted to a generation-time workspace and observed.
+export type ArcadiaScenario = "lost-payment-responses" | "creation-loop";
+export const ARCADIA_DEFAULT_SCENARIOS: ArcadiaScenario[] = ["lost-payment-responses", "creation-loop"];
 export type ArcadiaConfig = { seed: string; scenarios: ArcadiaScenario[] };
 
 const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
@@ -408,7 +414,28 @@ async function generate(config: ArcadiaConfig, started: number) {
     const supervised = await superviseReconciliation({ rail: paymentRail, chain: "litesvm", collective, as: asAgent, staleAfterMs: 0 });
     if (supervised.length !== 2 || !supervised.every((t) => t.closed)) throw new Error(`scenario did not close its tasks: ${JSON.stringify(supervised)}`);
     const learned = await learnFromReconciliations(asAgent(collective.opsService), { railScope: "system/chain:litesvm" });
-    operations = { ...collective, tasks: supervised.map((t) => t.taskId), proposalEventId: learned?.proposalEventId ?? null };
+    operations = { ...collective, tasks: supervised.map((t) => t.taskId), proposalEventId: learned?.proposalEventId ?? null, engineeringTask: null };
+
+    if (config.scenarios.includes("creation-loop") && learned) {
+      const creation = await installCreation(steward, { opsService: collective.opsService, trustService: collective.trustService, as: asAgent, read: ["system/chain:litesvm"] });
+      const ops = asAgent(collective.opsService);
+      const taskId = await openEngineeringTask(ops, learned.proposalEventId);
+      await leaseEngineering(ops, asAgent(collective.trustService), { taskId, builderId: creation.builderId, reviewerId: creation.reviewerId, rail: "system/chain:litesvm" });
+      const workspace = directoryWorkspace("arcadia-build-");
+      const target = directoryWorkspace("arcadia-target-");
+      const builder = asAgent(creation.builderId);
+      const reviewer = asAgent(creation.reviewerId);
+      await runBuilder(builder, { taskId, workspace });
+      // Arcadia is the simulation: CI runs the change against the civilization being generated.
+      const ci = await runCi(asAgent(creation.ciService), { taskId, workspace, simulate: async () => steward });
+      if (!ci.passed) throw new Error(`creation-loop CI failed: ${ci.problems.join("; ")}`);
+      const approval = await runReviewer(reviewer, { taskId, workspace, target });
+      if (!approval.approved) throw new Error(`creation-loop review refused: ${approval.reasons.join("; ")}`);
+      await promoteAndObserve(builder, { taskId, workspace, target, live: builder });
+      const closing = await runReviewer(reviewer, { taskId, workspace, target });
+      if (!closing.closed) throw new Error(`creation-loop did not close: ${closing.reasons.join("; ")}`);
+      operations.engineeringTask = taskId;
+    }
   }
 
   // Something You must never see: a private record in the same World. It tests that what reaches

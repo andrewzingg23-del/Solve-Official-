@@ -75,7 +75,8 @@ describe("Arcadia as seen by You", () => {
     assert.equal(ops.learning.length, 1);
     assert.deepEqual(ops.proposals.map((p) => p.changeClass), ["A"]);
     assert.deepEqual(ops.needsYou, []);
-    assert.equal(ops.notBuilt.length, 1, "the unbuilt creation loop is stated, not hidden");
+    assert.match(ops.proposals[0].status, /promoted and observed \(completed\)/);
+    assert.ok(ops.notBuilt.some((n) => /not this repository/.test(n)), "what is not built is stated, not hidden");
     // You cannot read SOV's operations.
     await assert.rejects(engine.sb.you.readTasks("system/chain:litesvm"));
   });

@@ -46,6 +46,7 @@ export async function loadOperations(steward: Kernel, chain = "litesvm"): Promis
   const actions = await steward.readActions(rail, 500);
   const railEvents = await steward.readEvents(rail, { limit: 500 });
   const opsEvents = await steward.readEvents(OPS_SCOPE, { limit: 500 });
+  const engineering = await steward.readTasks(OPS_SCOPE);
 
   const closedBy = new Map(railEvents.filter((e) => e.type === "kernel.task.completed").map((e) => [String(e.payload.task_id), e.actor_id]));
   const ids = new Set<string>();
@@ -100,12 +101,16 @@ export async function loadOperations(steward: Kernel, chain = "litesvm"): Promis
   for (const t of view.tasks) {
     if (["escalated", "failed", "needs_reconciliation", "blocked"].includes(t.status)) view.needsYou.push(`${t.title}: ${t.status}${t.detail ? ` (${t.detail})` : ""}`);
   }
+  // A proposal's life after it is recorded: its engineering task, CI, promotion and observation.
   for (const p of view.proposals) {
+    const task = engineering.find((t) => t.cause_ref === `event:${p.eventId}`);
+    const observed = task && opsEvents.find((e) => e.type === "ops.observation.recorded" && e.payload.task === task.task_id);
+    if (task) p.status = observed ? `promoted and observed (${task.status})` : `building (${task.status})`;
+    if (task && ["escalated", "failed", "blocked"].includes(task.status)) view.needsYou.push(`${task.title}: ${task.status}${task.detail ? ` (${task.detail})` : ""}`);
     if (p.changeClass === "C" || p.changeClass === "D") view.needsYou.push(`Class ${p.changeClass} proposal: ${p.problem} — ${p.promotion}`);
-    if (p.status === "proposed" && p.changeClass === "A") {
-      view.notBuilt.push(`No engineering worker has taken the Class A proposal "${p.problem}": the creation loop (builder, review, CI, preview, promotion) is not built yet.`);
-    }
+    if (!task && p.changeClass === "A") view.notBuilt.push(`No builder has taken the Class A proposal "${p.problem}" yet.`);
   }
+  view.notBuilt.push("Promotion targets an isolated workspace, not this repository: promoting into a branch and pull request with preview deploys is not built yet.");
   const open = view.tasks.filter((t) => !["completed", "cancelled"].includes(t.status)).length;
   if (open > 0) view.needsYou.push(`${open} operational task${open === 1 ? "" : "s"} still open.`);
   return view;
