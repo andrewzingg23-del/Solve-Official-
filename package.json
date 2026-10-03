@@ -13,7 +13,8 @@
     "prebuild": "node scripts/sync-browser-assets.mjs && tsx scripts/build-arcadia.ts",
     "test:browser": "node scripts/test-browser.mjs",
     "arcadia": "tsx scripts/build-arcadia.ts",
-    "test:world": "node scripts/test-world.mjs"
+    "test:world": "node scripts/test-world.mjs",
+    "test:postgres": "node scripts/test-postgres.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",
@@ -33,10 +34,12 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
+    "pg": "^8.23.1",
     "playwright-core": "^1.63.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",

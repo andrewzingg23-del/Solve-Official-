@@ -29,12 +29,15 @@ describe("Arcadia", () => {
     assert.equal(c.manifest.arcadia.digest, a.manifest.arcadia.digest, "keys are not meaning");
     assert.notEqual(c.manifest.arcadia.configuration, a.manifest.arcadia.configuration, "the seed is part of the configuration");
 
-    // The snapshot is a faithful projection: reloaded, it reproduces the kernel.
-    const dump = await (a.k.db as unknown as { dumpDataDir(c: "gzip"): Promise<Blob> }).dumpDataDir("gzip");
-    const reloaded = new PGlite({ loadDataDir: dump });
-    const parity = await kernelDigest(async (sql) => (await reloaded.query<Record<string, unknown>>(sql)).rows);
-    assert.equal(parity.digest, a.manifest.arcadia.digest);
-    await reloaded.close();
+    // The snapshot is a faithful projection: reloaded, it reproduces the kernel. (The browser
+    // snapshot is a PGlite data directory; on a Postgres server there is none to reload.)
+    const db = a.k.db as unknown as { dumpDataDir?(c: "gzip"): Promise<Blob> };
+    if (db.dumpDataDir) {
+      const reloaded = new PGlite({ loadDataDir: await db.dumpDataDir("gzip") });
+      const parity = await kernelDigest(async (sql) => (await reloaded.query<Record<string, unknown>>(sql)).rows);
+      assert.equal(parity.digest, a.manifest.arcadia.digest);
+      await reloaded.close();
+    }
 
     // Every entity keeps a natural key across generations.
     const keyed = await a.k.owner("select v.attributes->>'arcadia_key' as key from kernel.entity_versions v");

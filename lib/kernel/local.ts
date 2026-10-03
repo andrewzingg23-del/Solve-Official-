@@ -22,12 +22,17 @@ export const user = (sub: string): Session => ({ role: "authenticated", sub });
 export const service: Session = { role: "service_role" };
 export const anon: Session = { role: "anon" };
 
-// Creates the roles Supabase provides, then applies the migrations in order.
+// Creates the roles Supabase provides (unless the server already has them, as a real Postgres
+// shared between databases does), then applies the migrations in order.
 export async function migrate(db: PGliteLike, migrations: string[]) {
   await db.exec(`
-    create role anon nologin;
-    create role authenticated nologin;
-    create role service_role nologin;
+    do $$
+    begin
+      if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin; end if;
+      if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;
+      if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role nologin; end if;
+    end
+    $$;
   `);
   for (const sql of migrations) await db.exec(sql);
 }

@@ -21,7 +21,16 @@ const nodeRuntime: KernelRuntime = {
   },
 };
 
-let runtime = nodeRuntime;
+// A real Postgres server instead of PGlite (`npm run test:postgres`): same migrations, same tests.
+const postgresUrl = typeof process !== "undefined" ? process.env.SOV_KERNEL_POSTGRES_URL : undefined;
+const postgresRuntime: KernelRuntime | null = postgresUrl
+  ? {
+      create: async () => (await import("../support/postgres")).PostgresDb.create(postgresUrl),
+      migrations: nodeRuntime.migrations,
+    }
+  : null;
+
+let runtime = postgresRuntime ?? nodeRuntime;
 let template: Promise<PGliteLike> | undefined;
 
 export function setKernelRuntime(next: KernelRuntime) {

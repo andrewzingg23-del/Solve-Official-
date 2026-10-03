@@ -36,6 +36,8 @@ await build({
         // The harness's Node runtime imports PGlite; the browser uses /pglite/index.js instead.
         b.onResolve({ filter: /^@electric-sql\/pglite$/ }, () => ({ path: "/pglite/index.js", external: true }));
         b.onResolve({ filter: /^\/pglite\// }, (args) => ({ path: args.path, external: true }));
+        // The real-Postgres runtime is Node only and never loaded in the browser.
+        b.onResolve({ filter: /support\/postgres$/ }, (args) => ({ path: args.path, external: true }));
       },
     },
   ],

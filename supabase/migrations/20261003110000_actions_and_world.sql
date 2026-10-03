@@ -2586,6 +2586,15 @@ begin
 end;
 $$;
 
+-- Deferred constraint triggers fire at commit, after the kernel_api function that queued them has
+-- returned. Postgres 17 (the store) runs them as the session role (authenticated or service_role),
+-- which has no access to the kernel schema, so every ledger posting or entitlement by an API caller
+-- would fail at commit; Postgres 18 runs them as the role that queued the event, which hid this in
+-- the embedded test kernel. They run as their owner instead (search_path is already pinned; they
+-- only read and raise).
+alter function kernel.check_entries_balance() security definer;
+alter function kernel.check_attribution() security definer;
+
 revoke all on all tables in schema kernel from public, anon, authenticated, service_role;
 revoke all on all sequences in schema kernel from public, anon, authenticated, service_role;
 revoke all on all functions in schema kernel from public, anon, authenticated, service_role;

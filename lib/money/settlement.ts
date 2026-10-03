@@ -27,23 +27,33 @@ export async function sha256Hex(text: string) {
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function confirm(rail: SettlementRail, settlement: Settlement, signature: string, slot: bigint | undefined, detail = "") {
+async function confirm(rail: SettlementRail, settlement: Settlement, signature: string, slot: bigint | undefined, detail = ""): Promise<SettleResult> {
   const marker = await settlementMarkerAddress(rail.settlementAuthority.address, settlement.settlement_id);
-  await rail.kernel.recordSettlement({
-    settlementId: settlement.settlement_id,
-    status: "confirmed",
-    txSignature: signature,
-    slot,
-    detail,
-    evidence: [
-      {
-        basis: "externally_verified",
-        content_hash: `sha256:${await sha256Hex(`${rail.gateway.cluster}|${signature}|${marker}|${slot ?? ""}`)}`,
-        description: `${rail.gateway.cluster} transaction ${signature}; settlement marker ${marker}`,
-      },
-    ],
-  });
-  return { settlementId: settlement.settlement_id, status: "confirmed" as const, signature, detail };
+  try {
+    await rail.kernel.recordSettlement({
+      settlementId: settlement.settlement_id,
+      status: "confirmed",
+      txSignature: signature,
+      slot,
+      detail,
+      evidence: [
+        {
+          basis: "externally_verified",
+          content_hash: `sha256:${await sha256Hex(`${rail.gateway.cluster}|${signature}|${marker}|${slot ?? ""}`)}`,
+          description: `${rail.gateway.cluster} transaction ${signature}; settlement marker ${marker}`,
+        },
+      ],
+    });
+  } catch (error) {
+    // A concurrent worker confirmed it first (the kernel refuses a second confirmation with other
+    // terms): the settlement is confirmed, once.
+    if (error instanceof KernelError && error.name === "invalid") {
+      const current = await rail.kernel.readSettlement(settlement.settlement_id);
+      if (current.status === "confirmed") return { settlementId: settlement.settlement_id, status: "confirmed", signature: current.tx_signature };
+    }
+    throw error;
+  }
+  return { settlementId: settlement.settlement_id, status: "confirmed", signature, detail };
 }
 
 // Moves one settlement as far as it can go. Safe to call repeatedly and concurrently: the kernel
@@ -57,12 +67,15 @@ export async function settle(rail: SettlementRail, settlementId: string): Promis
     throw new Error(`settlement ${settlementId} belongs to ${settlement.chain}, not ${rail.gateway.cluster}`);
   }
 
-  // Reconcile before acting: if the release already executed, record it and send nothing.
+  // Reconcile before acting: if the release already executed, record it and send nothing. Re-read
+  // first: a concurrent worker may have recorded its submission (and landed it) after our read.
   if (await settlementExecuted(rail.gateway, rail.settlementAuthority.address, settlementId)) {
-    if (!settlement.tx_signature) {
+    const current = await rail.kernel.readSettlement(settlementId);
+    if (current.status === "confirmed") return { settlementId, status: "confirmed", signature: current.tx_signature };
+    if (!current.tx_signature) {
       throw new Error(`settlement ${settlementId} executed on chain without a recorded signature`);
     }
-    return confirm(rail, settlement, settlement.tx_signature, undefined, "reconciled: settlement marker present on chain");
+    return confirm(rail, current, current.tx_signature, undefined, "reconciled: settlement marker present on chain");
   }
 
   if (settlement.status === "submitted" && settlement.tx_signature) {
