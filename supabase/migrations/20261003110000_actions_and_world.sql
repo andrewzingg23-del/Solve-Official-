@@ -7,6 +7,8 @@
 --      REQUIRE_QUORUM, REQUIRE_MULTISIG, REQUIRE_DELAY, REQUIRE_CHALLENGE_WINDOW or DENY.
 --   2. No principal invents authority. A delegated grant or lease never exceeds what its issuer
 --      holds; governance can approve an action but cannot enact more than the proposer's grant.
+--      A limited lease authorizes only where its limits are checked: plain capability lookups
+--      (and so every earlier kernel_api function) never see it.
 --   3. Agents are first-class: they enact, create agents and hold leases. An agent's accountable
 --      party is found by following ownership to a human or service.
 --   4. Every action has one lifecycle and completes at most once; enactment re-checks authority,
@@ -146,7 +148,7 @@ create function kernel.delegate(p_issuer kernel.caller, p_grantee uuid, p_capabi
                                 p_expires_at timestamptz, p_basis text) returns uuid
 language plpgsql set search_path = '' as $$
 declare
-  v_parent uuid := kernel.find_grant(p_issuer.actor_id, p_capability, p_scope);
+  v_parent uuid := kernel.find_delegable_grant(p_issuer.actor_id, p_capability, p_scope);
   v_grant uuid := gen_random_uuid();
   v_event uuid;
 begin
@@ -234,7 +236,7 @@ create table kernel.grant_limits (
   max_amount numeric(38, 0) check (max_amount > 0),
   asset text references kernel.assets (code),
   counterparty_ref text check (counterparty_ref is null or kernel.is_ref(counterparty_ref)),
-  task_ref text check (task_ref is null or task_ref ~ '^task:'),
+  task_ref text check (task_ref is null or (task_ref ~ '^task:' and kernel.is_ref(task_ref))),
   event_id uuid not null unique references kernel.events (id),
   created_at timestamptz not null default now(),
   check ((max_amount is null) = (asset is null))
@@ -287,8 +289,71 @@ begin
   if l.task_ref is not null and p_task is distinct from l.task_ref then
     return format('the lease is limited to %s', l.task_ref);
   end if;
+  -- Authority limited to a task ends with the task.
+  if l.task_ref is not null
+     and (kernel.task_status(kernel.ref_id(l.task_ref)::uuid)).status in ('completed', 'failed', 'cancelled') then
+    return format('%s is closed', l.task_ref);
+  end if;
   return null;
 end;
+$$;
+
+-- Whether any grant along a chain carries limits.
+create function kernel.grant_limited(p_grant uuid) returns boolean
+language sql stable set search_path = '' as $$
+  with recursive chain as (
+    select g.id, g.parent_grant_id from kernel.grants g where g.id = p_grant
+    union all
+    select p.id, p.parent_grant_id from kernel.grants p join chain on p.id = chain.parent_grant_id
+  )
+  select exists (select 1 from chain join kernel.grant_limits l on l.grant_id = chain.id);
+$$;
+
+-- Plain capability lookup, used by every function that checks a capability without a request's
+-- amount, counterparty or task. A limited lease is invisible here, so a lease limited to one task
+-- or counterparty cannot be spent through such a function as if it were unlimited.
+create or replace function kernel.find_grant(p_actor uuid, p_capability text, p_scope text) returns uuid
+language sql stable set search_path = '' as $$
+  select g.id
+  from kernel.grants g
+  where g.grantee_id = p_actor
+    and kernel.capability_covers(g.capability, p_capability)
+    and kernel.scope_covers(g.scope, p_scope)
+    and kernel.grant_is_active(g.id)
+    and not kernel.grant_limited(g.id)
+  order by g.created_at, g.id
+  limit 1;
+$$;
+
+-- The first active grant whose limits permit a specific request, without consulting policy: for
+-- checks that are not themselves governed actions (task verification and management, approvals).
+create function kernel.find_permitted_grant(p_actor uuid, p_capability text, p_scope text, p_amount numeric default null,
+                                            p_asset text default null, p_counterparty text default null,
+                                            p_task text default null) returns uuid
+language sql stable set search_path = '' as $$
+  select g.id
+  from kernel.grants g
+  where g.grantee_id = p_actor
+    and kernel.capability_covers(g.capability, p_capability)
+    and kernel.scope_covers(g.scope, p_scope)
+    and kernel.grant_is_active(g.id)
+    and kernel.limits_permit(g.id, p_amount, p_asset, p_counterparty, p_task) is null
+  order by g.created_at, g.id
+  limit 1;
+$$;
+
+-- The grant a delegation hangs from, unlimited first. A limited lease may still be delegated
+-- from: its limits bind every grant below it (effective_limits) and issue_lease never widens them.
+create function kernel.find_delegable_grant(p_actor uuid, p_capability text, p_scope text) returns uuid
+language sql stable set search_path = '' as $$
+  select g.id
+  from kernel.grants g
+  where g.grantee_id = p_actor
+    and kernel.capability_covers(g.capability, p_capability)
+    and kernel.scope_covers(g.scope, p_scope)
+    and kernel.grant_is_active(g.id)
+  order by kernel.grant_limited(g.id), g.created_at, g.id
+  limit 1;
 $$;
 
 -- Issues a lease: a delegated grant plus limits, all within the issuer's own limits.
@@ -321,8 +386,11 @@ begin
   if p_counterparty_ref is not null and not kernel.is_ref(p_counterparty_ref) then
     raise exception using errcode = 'KA003', message = 'invalid counterparty ref';
   end if;
-  if p_task_ref is not null and p_task_ref !~ '^task:' then
+  if p_task_ref is not null and (p_task_ref !~ '^task:' or not kernel.is_ref(p_task_ref)) then
     raise exception using errcode = 'KA003', message = 'invalid task ref';
+  end if;
+  if p_task_ref is not null and not kernel.ref_exists(p_task_ref) then
+    raise exception using errcode = 'KA007', message = 'a lease can only be limited to a task that exists';
   end if;
 
   v_grant := kernel_api.issue_grant(p_grantee, p_capability, p_scope, p_expires_at, p_idempotency_key, p_as_actor);
@@ -664,7 +732,7 @@ begin
   end if;
 
   authority := kernel.require_allowed(c.actor_id, 'kernel.grant.issue', p_scope);
-  parent := kernel.find_grant(c.actor_id, p_capability, p_scope);
+  parent := kernel.find_delegable_grant(c.actor_id, p_capability, p_scope);
   if parent is null then
     raise exception using errcode = 'KA002', message = 'cannot grant authority the issuer does not hold';
   end if;
@@ -845,6 +913,8 @@ create table kernel.tasks (
   title text not null check (length(title) between 1 and 200),
   objective text not null default '' check (length(objective) <= 2000),
   cause_ref text check (cause_ref is null or kernel.is_ref(cause_ref)),
+  -- What the worker starts from (refs, identifiers), set by the creator, never by the worker.
+  inputs jsonb not null default '{}'::jsonb check (jsonb_typeof(inputs) = 'object' and length(inputs::text) <= 8000),
   required_capability text not null check (kernel.is_capability(required_capability)),
   risk text not null default 'low' check (risk in ('low', 'medium', 'high', 'critical')),
   reversible boolean not null default true,
@@ -1168,12 +1238,13 @@ $$;
 create function kernel.do_create_task(
   c kernel.caller, p_authority uuid, p_scope text, p_title text, p_objective text, p_cause_ref text,
   p_required_capability text, p_risk text, p_reversible boolean, p_budget_amount numeric, p_budget_asset text,
-  p_evidence_bases text[], p_verification text, p_idempotency_key text
+  p_evidence_bases text[], p_verification text, p_idempotency_key text, p_inputs jsonb default '{}'::jsonb
 ) returns uuid
 language plpgsql set search_path = '' as $$
 declare
   v_request jsonb := jsonb_build_object(
     'scope', p_scope, 'title', p_title, 'objective', coalesce(p_objective, ''), 'cause_ref', p_cause_ref,
+    'inputs', coalesce(p_inputs, '{}'::jsonb),
     'required_capability', p_required_capability, 'risk', coalesce(p_risk, 'low'), 'reversible', coalesce(p_reversible, true),
     'budget_amount', p_budget_amount::text, 'budget_asset', p_budget_asset,
     'evidence_bases', to_jsonb(coalesce(p_evidence_bases, '{}'::text[])), 'verification', coalesce(p_verification, 'none'));
@@ -1195,9 +1266,13 @@ begin
     c, 'kernel.task.created', p_scope, p_authority,
     jsonb_build_object('request', v_request, 'task_id', v_id), null, p_idempotency_key
   );
-  insert into kernel.tasks (id, scope, title, objective, cause_ref, required_capability, risk, reversible, budget_amount,
-                            budget_asset, evidence_bases, verification, created_by, event_id)
-  values (v_id, p_scope, p_title, coalesce(p_objective, ''), p_cause_ref, p_required_capability, coalesce(p_risk, 'low'),
+  if jsonb_typeof(coalesce(p_inputs, '{}'::jsonb)) <> 'object' then
+    raise exception using errcode = 'KA003', message = 'task inputs must be an object';
+  end if;
+  insert into kernel.tasks (id, scope, title, objective, cause_ref, inputs, required_capability, risk, reversible,
+                            budget_amount, budget_asset, evidence_bases, verification, created_by, event_id)
+  values (v_id, p_scope, p_title, coalesce(p_objective, ''), p_cause_ref, coalesce(p_inputs, '{}'::jsonb),
+          p_required_capability, coalesce(p_risk, 'low'),
           coalesce(p_reversible, true), p_budget_amount, p_budget_asset, coalesce(p_evidence_bases, '{}'),
           coalesce(p_verification, 'none'), c.actor_id, v_event);
   insert into kernel.task_transitions (task_id, status, actor_id, event_id) values (v_id, 'created', c.actor_id, v_event);
@@ -1218,7 +1293,8 @@ create function kernel_api.create_task(
   p_evidence_bases text[] default '{}',
   p_verification text default 'none',
   p_idempotency_key text default null,
-  p_as_actor uuid default null
+  p_as_actor uuid default null,
+  p_inputs jsonb default '{}'::jsonb
 ) returns uuid
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -1231,7 +1307,7 @@ begin
   perform kernel.lock_chain();
   return kernel.do_create_task(c, kernel.require_allowed(c.actor_id, 'task.create', p_scope), p_scope, p_title, p_objective,
                                p_cause_ref, p_required_capability, p_risk, p_reversible, p_budget_amount::numeric,
-                               p_budget_asset, p_evidence_bases, p_verification, p_idempotency_key);
+                               p_budget_asset, p_evidence_bases, p_verification, p_idempotency_key, p_inputs);
 end;
 $$;
 
@@ -1279,7 +1355,7 @@ begin
   if not kernel.task_transition_allowed(v_last.status, p_status) then
     raise exception using errcode = 'KA003', message = format('a task cannot move from %s to %s', v_last.status, p_status);
   end if;
-  v_manage := kernel.find_grant(c.actor_id, 'task.manage', v_task.scope);
+  v_manage := kernel.find_permitted_grant(c.actor_id, 'task.manage', v_task.scope, null, null, null, 'task:' || p_task_id);
 
   if p_status = 'claimed' then
     v_decision := kernel.decide(c.actor_id, v_task.required_capability, v_task.scope, v_task.budget_amount,
@@ -1293,12 +1369,13 @@ begin
     if c.actor_id <> v_task.created_by and v_manage is null then
       raise exception using errcode = 'KA002', message = 'only the task creator or a task.manage holder can do that';
     end if;
-    v_authority := coalesce(v_manage, kernel.find_grant(c.actor_id, 'task.create', v_task.scope));
+    v_authority := coalesce(v_manage, kernel.find_permitted_grant(c.actor_id, 'task.create', v_task.scope, null, null, null,
+                                                                  'task:' || p_task_id));
   elsif p_status = 'completed' and v_task.verification <> 'none' then
     if v_last.status <> 'verifying' then
       raise exception using errcode = 'KA003', message = 'this task needs verification before it completes';
     end if;
-    v_authority := kernel.find_grant(c.actor_id, 'task.verify', v_task.scope);
+    v_authority := kernel.find_permitted_grant(c.actor_id, 'task.verify', v_task.scope, null, null, null, 'task:' || p_task_id);
     if v_authority is null then
       raise exception using errcode = 'KA002', message = 'verification needs task.verify on the task scope';
     end if;
@@ -1345,7 +1422,7 @@ $$;
 
 create function kernel_api.read_tasks(p_scope text, p_as_actor uuid default null)
 returns table (
-  task_id uuid, scope text, title text, objective text, cause_ref text, required_capability text, risk text,
+  task_id uuid, scope text, title text, objective text, cause_ref text, inputs jsonb, required_capability text, risk text,
   reversible boolean, budget_amount text, budget_asset text, evidence_bases text[], verification text,
   created_by uuid, status text, worker_id uuid, detail text, result jsonb, created_at timestamptz, updated_at timestamptz
 )
@@ -1357,7 +1434,7 @@ begin
   perform kernel.require_scope(p_scope);
   perform kernel.require_grant(c.actor_id, 'kernel.read', p_scope);
   return query
-    select t.id, t.scope, t.title, t.objective, t.cause_ref, t.required_capability, t.risk, t.reversible,
+    select t.id, t.scope, t.title, t.objective, t.cause_ref, t.inputs, t.required_capability, t.risk, t.reversible,
            t.budget_amount::text, t.budget_asset, t.evidence_bases, t.verification, t.created_by,
            s.status, kernel.task_worker(t.id), s.detail, s.result, t.created_at, s.created_at
     from kernel.tasks t
@@ -1509,7 +1586,8 @@ begin
                     kernel.find_grant(p_actor, 'kernel.read', p_action.scope),
                     p_action.grant_id);
   end if;
-  return kernel.find_grant(p_actor, coalesce(p.approver_capability, p_action.capability), p_action.scope);
+  return kernel.find_permitted_grant(p_actor, coalesce(p.approver_capability, p_action.capability), p_action.scope,
+                                     p_action.amount, p_action.asset, p_action.counterparty_ref, p_action.task_ref);
 end;
 $$;
 
@@ -1836,7 +1914,7 @@ begin
                                   p ->> 'required_capability', p ->> 'risk', (p ->> 'reversible')::boolean,
                                   (p ->> 'budget_amount')::numeric, p ->> 'budget_asset',
                                   array(select jsonb_array_elements_text(coalesce(p -> 'evidence_bases', '[]'::jsonb))),
-                                  p ->> 'verification', null);
+                                  p ->> 'verification', null, coalesce(p -> 'inputs', '{}'::jsonb));
     v_result := jsonb_build_object('task_id', v_id);
   elsif v_action.kind = 'policy.set' then
     v_result := jsonb_build_object('version', kernel.do_set_policy(
@@ -1943,8 +2021,9 @@ $$;
 create function kernel_api.read_action(p_action_id uuid, p_as_actor uuid default null)
 returns table (
   action_id uuid, kind text, capability text, scope text, proposer_id uuid, on_behalf_of uuid, target_ref text,
-  payload jsonb, amount text, asset text, decision text, reasons text[], threshold integer, approvals integer,
-  status text, detail text, result jsonb, enact_after timestamptz, in_reply_to uuid, created_at timestamptz
+  payload jsonb, amount text, asset text, counterparty_ref text, task_ref text, decision text, reasons text[],
+  threshold integer, approvals integer, status text, detail text, result jsonb, enact_after timestamptz, in_reply_to uuid,
+  created_at timestamptz
 )
 language plpgsql stable security definer set search_path = '' as $$
 #variable_conflict use_column
@@ -1964,7 +2043,8 @@ begin
   end if;
   v_state := kernel.action_state(p_action_id);
   return query select v_action.id, v_action.kind, v_action.capability, v_action.scope, v_action.proposer_id,
-    v_action.on_behalf_of, v_action.target_ref, v_action.payload, v_action.amount::text, v_action.asset, v_action.decision,
+    v_action.on_behalf_of, v_action.target_ref, v_action.payload, v_action.amount::text, v_action.asset,
+    v_action.counterparty_ref, v_action.task_ref, v_action.decision,
     v_action.reasons, v_action.threshold,
     (select count(*)::integer from kernel.action_approvals a where a.action_id = p_action_id),
     v_state.status, v_state.detail, v_state.result, kernel.action_enact_after(p_action_id), v_action.in_reply_to,
@@ -1975,8 +2055,8 @@ $$;
 -- Actions in a scope (and nested scopes), newest first.
 create function kernel_api.read_actions(p_scope text, p_limit integer default 100, p_as_actor uuid default null)
 returns table (
-  action_id uuid, kind text, proposer_id uuid, on_behalf_of uuid, target_ref text, payload jsonb, decision text,
-  status text, created_at timestamptz
+  action_id uuid, kind text, proposer_id uuid, on_behalf_of uuid, target_ref text, task_ref text, payload jsonb,
+  decision text, status text, created_at timestamptz
 )
 language plpgsql stable security definer set search_path = '' as $$
 #variable_conflict use_column
@@ -1986,7 +2066,7 @@ begin
   perform kernel.require_scope(p_scope);
   perform kernel.require_grant(c.actor_id, 'kernel.read', p_scope);
   return query
-    select a.id, a.kind, a.proposer_id, a.on_behalf_of, a.target_ref, a.payload, a.decision,
+    select a.id, a.kind, a.proposer_id, a.on_behalf_of, a.target_ref, a.task_ref, a.payload, a.decision,
            (kernel.action_state(a.id)).status, a.created_at
     from kernel.actions a
     where a.scope = p_scope or starts_with(a.scope, p_scope || '/')

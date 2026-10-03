@@ -11,6 +11,11 @@ Canon as executable checks. Each line names the test that fails if the invariant
 | Authority decides, never humanness; an agent without a grant is denied, with one it enacts | `tests/kernel/actions.test.ts` principals |
 | Agents create agents only when granted; accountability follows ownership | `tests/kernel/actions.test.ts` principals |
 | Child lease ⊆ parent lease (amount, counterparty, task) | `tests/kernel/actions.test.ts` leases |
+| A limited lease is invisible to capability-only checks; it works only for the request it names | `tests/kernel/actions.test.ts` leases |
+| Authority limited to a task ends with the task | `tests/e2e/self-operation.test.ts` |
+| An operational consequence happens only for an action authorized by a distinct party, and only once, even across a crash | `tests/e2e/self-operation.test.ts` |
+| A verifier never takes the worker's word: a finding that contradicts the chain is never authorized | `tests/e2e/self-operation.test.ts` |
+| A build proposal's change class is computed from what it touches; the creation guardrails are Class D | `tests/ops/changes.test.ts` |
 | Quorum needs distinct parties; collectives can count actors when policy says so | `tests/kernel/actions.test.ts` governance |
 | Multisig accepts only named signers; governed writes cannot bypass actions | `tests/kernel/actions.test.ts` governance |
 | Timelocks and challenge windows hold enactment; revocation stops a pending action | `tests/kernel/actions.test.ts` governance |

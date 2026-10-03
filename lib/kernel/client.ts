@@ -265,6 +265,7 @@ export type Task = {
   title: string;
   objective: string;
   cause_ref: string | null;
+  inputs: Record<string, unknown>;
   required_capability: string;
   risk: "low" | "medium" | "high" | "critical";
   reversible: boolean;
@@ -302,6 +303,8 @@ export type Action = {
   payload: Record<string, unknown>;
   amount: string | null;
   asset: string | null;
+  counterparty_ref: string | null;
+  task_ref: string | null;
   decision: Decision;
   reasons: string[];
   threshold: number | null;
@@ -316,7 +319,7 @@ export type Action = {
 
 export type ActionSummary = Pick<
   Action,
-  "action_id" | "kind" | "proposer_id" | "on_behalf_of" | "target_ref" | "payload" | "decision" | "status" | "created_at"
+  "action_id" | "kind" | "proposer_id" | "on_behalf_of" | "target_ref" | "task_ref" | "payload" | "decision" | "status" | "created_at"
 >;
 
 export type MessageType =
@@ -950,6 +953,7 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
       budgetAsset?: string;
       evidenceBases?: EvidenceBasis[];
       verification?: Task["verification"];
+      inputs?: Record<string, unknown>;
       idempotencyKey?: string;
     }) =>
       call<string>("create_task", {
@@ -964,6 +968,7 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
         p_budget_asset: input.budgetAsset ?? null,
         p_evidence_bases: input.evidenceBases ?? [],
         p_verification: input.verification ?? "none",
+        p_inputs: input.inputs ?? {},
         p_idempotency_key: input.idempotencyKey ?? null,
         ...as,
       }),

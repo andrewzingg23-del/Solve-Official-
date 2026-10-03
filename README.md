@@ -18,6 +18,8 @@ Read first: [DIRECTIVES.md](DIRECTIVES.md) (founder orders), [VISION-CANON.md](V
 | `tests/` | Kernel, money, payments, router, chain (LiteSVM) and end-to-end tests |
 | `scripts/proof-of-life.ts` | Runs the monetary proof-of-life and prints each step |
 | `scripts/send-bob.ts` | Sends Bob $10 on test assets and prints every route compared |
+| `scripts/self-operation.ts` | Runs the self-operation loop (lost payment response → task → worker → verifier → reconciled → closed) and prints each step |
+| `lib/ops/` | SOV operating SOV: monitor, task-limited worker, independent verifier, learning, change classes for build proposals |
 | `lib/world/` | The World: graph model, Horizon interpreter, deixis, presentation commands, response planner |
 | `lib/sandbox/` | Arcadia sandbox: the kernel in the browser (PGlite), snapshot boot and reset |
 | `app/world/` | World shell: Cesium Earth, Horizon, lenses, context drawer, avatar onboarding |
@@ -88,6 +90,7 @@ The founder provisions a dedicated Supabase project (DIRECTIVES.md, directive 2)
 ```bash
 npx tsx scripts/proof-of-life.ts   # the monetary causal chain, locally
 npx tsx scripts/send-bob.ts        # Send Bob $10 through the payment router, locally
+npx tsx scripts/self-operation.ts  # SOV reconciles its own lost payment responses, locally
 npm test            # kernel, money, chain (LiteSVM), World and end-to-end tests; no network
 npm run test:browser  # the kernel tests in Chromium, against the browser kernel
 npm run typecheck

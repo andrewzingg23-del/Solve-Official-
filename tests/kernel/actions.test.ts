@@ -115,6 +115,32 @@ describe("leases", () => {
     assert.equal((await ask(t.agent(scout), "30000000")).decision, "ALLOW");
     assert.equal((await ask(t.agent(scout), "35000000")).decision, "DENY");
   });
+
+  it("are invisible to functions that check a capability alone", async () => {
+    const t = await setup();
+    const scout = await t.alice.spawnAgent({ label: "Scout", role: "specialist" });
+    const task = await t.alice.createTask({ scope: WORLD, title: "Survey the site", requiredCapability: "survey.run" });
+    const others = await t.alice.createTask({ scope: WORLD, title: "Another job", requiredCapability: "survey.run" });
+
+    // A read lease limited to one task is not a general read grant: read_events checks only the
+    // capability, so it must not see the lease at all.
+    await t.alice.issueLease({ grantee: scout, capability: "kernel.read", scope: WORLD, taskRef: `task:${task}` });
+    await assert.rejects(t.agent(scout).readEvents(WORLD), named("forbidden"));
+
+    // Where the request names its task, the same kind of lease works for that task only.
+    await t.alice.issueLease({ grantee: scout, capability: "task.verify", scope: WORLD, taskRef: `task:${task}` });
+    const [row] = await t.k.owner("select kernel.find_permitted_grant($1, 'task.verify', $2, null, null, null, $3) as g", [scout, WORLD, `task:${task}`]);
+    assert.ok(row.g, "permitted for its task");
+    const [other] = await t.k.owner("select kernel.find_permitted_grant($1, 'task.verify', $2, null, null, null, $3) as g", [scout, WORLD, `task:${others}`]);
+    assert.equal(other.g, null, "not for another task");
+
+    // A task limit must name a real task.
+    await assert.rejects(t.alice.issueLease({ grantee: scout, capability: "survey.run", scope: WORLD, taskRef: "task:abc" }), named("invalid"));
+    await assert.rejects(
+      t.alice.issueLease({ grantee: scout, capability: "survey.run", scope: WORLD, taskRef: "task:00000000-0000-4000-8000-000000000000" }),
+      named("not_found"),
+    );
+  });
 });
 
 describe("governance", () => {

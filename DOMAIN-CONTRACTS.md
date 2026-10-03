@@ -23,7 +23,7 @@ INTENT → AUTHORITY → DECISION → ENACTMENT → EVIDENCE → CONSEQUENCE →
 ## 2. Authority
 
 - **Grant** = capability (`world.entity.write`, `payment.send`, `*`) on a scope (`world:arcadia/room:x`), with optional expiry, issued by a holder or by kernel policy, chained to a parent. A grant is active only while every grant above it is active. A delegated grant never covers more than its issuer holds.
-- **Lease** = a grant plus limits (`kernel.grant_limits`): max amount and asset, counterparty, task. A child's limits sit inside its parent's.
+- **Lease** = a grant plus limits (`kernel.grant_limits`): max amount and asset, counterparty, task. A child's limits sit inside its parent's. A limited lease authorizes only where a request names what its limits constrain (`decide`, task transitions, approvals); plain capability checks never see it, so a lease limited to one task cannot be spent elsewhere. Authority limited to a task ends when the task completes, fails or is cancelled.
 - **Provenance**: every grant records who granted it, under which parent or policy, for which scope, until when. Authority can come from delegation or from a scope's governance (a World or organization granting its own agents), never from content, prompts or confidence.
 - **Policy** (`kernel.action_policies`) attaches a requirement to a capability on a scope. The most specific scope, then the most specific capability, wins.
 - **Decision** (`kernel_api.authorize`, deterministic):
@@ -79,12 +79,17 @@ Lenses (SPACE, PEOPLE, POWER, FLOW, CAUSE, PROOF, TIME, SELF) are projections of
 | Field | Meaning |
 |---|---|
 | cause_ref, objective, scope | why it exists, what done means, where |
+| inputs | what the worker starts from, set by the creator and never by the worker, so a verifier can check the worker against it |
 | required_capability | what a worker's lease must cover |
 | risk, reversible, budget | consequence profile |
 | evidence_bases, verification | `none / distinct_actor / distinct_party` |
 | status | `created, ready, claimed, in_progress, blocked, waiting_external, verifying, escalated, completed, failed, needs_reconciliation, cancelled` |
 
-Workers (human or agent) claim with a lease covering the capability. Completion requires the declared evidence and, when verification is required, a verifier that is a different actor or party holding `task.verify`. Task dependencies are World Graph relations between `task:` refs.
+Workers (human or agent) claim with a lease covering the capability. Completion requires the declared evidence and, when verification is required, a verifier that is a different actor or party holding `task.verify`. Task dependencies are World Graph relations between `task:` refs (`blocks, requires, produces, verifies, challenges, replaces, escalates_to`).
+
+**SOV operating SOV** (`lib/ops/`). The first internal loop runs on these primitives with no special path: deterministic code detects an unsettled payment and opens a task (the least-powerful worker for detection); a worker agent claims it under a lease limited to that task, observes the chain and proposes the consequence as a governed action; a verifier agent of a different party re-derives the facts from the task's inputs, the chain and kernel records and authorizes it; the service that owns the capability performs it only for that authorized action and re-checks the chain itself; the verifier confirms the consequence occurred and closes the task. Agents attach their observations as `artifact` evidence; `system_observed` and `externally_verified` stay with service actors.
+
+**Build proposals** (`lib/ops/changes.ts`). Repeated friction becomes an `ops.learning.recorded` event and then an `ops.build_proposal.proposed` event carrying problem, cause, evidence refs, expected outcome, affected paths and capabilities, risk, reuse analysis (compose > extend > create), rollback and status. Its change class (A autonomous, B supervised, C human approval before production, D agents propose only) is computed from what it touches, never claimed; the classifier itself is Class D.
 
 ## 6. Avatars
 
