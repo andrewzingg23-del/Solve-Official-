@@ -90,6 +90,7 @@ async function exerciseEveryMethod(supabase: SupabaseClient, actAs?: string) {
   await k.createAvatar({ type: "ai_companion", name: "Nova", relationship: "assist", seed: {}, representation: "abstract" });
   await k.setAvatarRepresentation(id, "pixel", "sov-1", "ref");
   await k.myAvatars();
+  await k.readActors([id]);
 }
 
 it("calls only real kernel_api functions with their real argument names", async () => {

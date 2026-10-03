@@ -1,0 +1,373 @@
+// ARCADIA — the internal SOV test civilization. One coherent synthetic universe used by tests,
+// the browser sandbox and demonstrations. Every entity is fictional and labelled as such; every
+// record is created through the real kernel, chain and router code paths.
+//
+// The visitor plays "You": a person whose verified work released DEV-SOLVE from the Earn Vault
+// and who paid Bob $10 through the payment router. The market holds fictional suppliers at real
+// cities, each with an owner and an organization agent, with capability claims in three proof
+// states (externally verified, self-reported, challenged), and two Network States.
+import { walletBalance } from "../../lib/chain/solve";
+import type { ArcadiaManifest } from "../../lib/sandbox/manifest";
+import { kernelClient } from "../../lib/kernel/client";
+import { localSupabase, service, user } from "../../lib/kernel/local";
+import { sendPayment, type PaymentRail } from "../../lib/money/payment";
+import { settle, type SettlementRail } from "../../lib/money/settlement";
+import { createKernelDb, sha } from "../kernel/harness";
+import { moneyKernel } from "./money-fixture";
+import { ARC, paymentMarket, USD } from "./payment-fixture";
+import { preparedSettlement, type ProofEnvironment } from "./proof-of-life";
+
+export const ARCADIA_WORLD = "world:arcadia";
+
+export const PERSONAS = {
+  you: "sandbox:you",
+  bob: "sandbox:bob",
+  steward: "auth-founder",
+} as const;
+
+type Org = {
+  key: string;
+  title: string;
+  summary: string;
+  city: string;
+  latitude: number;
+  longitude: number;
+  capabilities: string[];
+  attributes: Record<string, unknown>;
+  claim?: { statement: string; proof: "verified" | "self_reported" | "challenged"; challenge?: string };
+};
+
+export const CAPABILITIES: Record<string, string> = {
+  contract_manufacturing: "Contract manufacturing",
+  vehicle_engineering: "Vehicle engineering",
+  vehicle_design: "Vehicle design",
+  certification: "Certification and homologation",
+  battery_supply: "Battery packs",
+  chassis_supply: "Chassis and castings",
+  distribution: "Distribution",
+};
+
+export const ORGS: Org[] = [
+  {
+    key: "halden",
+    title: "Halden Works",
+    summary: "Contract vehicle manufacturer. Fictional Arcadia company.",
+    city: "Graz",
+    latitude: 47.0707,
+    longitude: 15.4395,
+    capabilities: ["contract_manufacturing"],
+    attributes: { capacity_per_year: 12000, lead_time_days: 210, unit_price_usd: 18500, minimum_order: 2000 },
+    claim: { statement: "Line capacity of 12,000 vehicles a year, IATF 16949 certified", proof: "verified" },
+  },
+  {
+    key: "orrin",
+    title: "Orrin Assembly",
+    summary: "Low-volume vehicle assembly. Fictional Arcadia company.",
+    city: "Valencia",
+    latitude: 39.4699,
+    longitude: -0.3763,
+    capabilities: ["contract_manufacturing"],
+    attributes: { capacity_per_year: 6000, lead_time_days: 150, unit_price_usd: 16900, minimum_order: 500 },
+    claim: { statement: "Line capacity of 6,000 vehicles a year", proof: "self_reported" },
+  },
+  {
+    key: "cobalt",
+    title: "Cobalt Ridge Motors",
+    summary: "Vehicle assembly. Fictional Arcadia company.",
+    city: "Bratislava",
+    latitude: 48.1486,
+    longitude: 17.1077,
+    capabilities: ["contract_manufacturing"],
+    attributes: { capacity_per_year: 50000, lead_time_days: 90, unit_price_usd: 14200, minimum_order: 1000 },
+    claim: {
+      statement: "Line capacity of 50,000 vehicles a year",
+      proof: "challenged",
+      challenge: "Site audit found one line rated near 4,000 vehicles a year",
+    },
+  },
+  {
+    key: "vireo",
+    title: "Vireo Design Studio",
+    summary: "Vehicle design and engineering. Fictional Arcadia company.",
+    city: "Turin",
+    latitude: 45.0703,
+    longitude: 7.6869,
+    capabilities: ["vehicle_design", "vehicle_engineering"],
+    attributes: { engineers: 140, programs_delivered: 9, lead_time_days: 300 },
+    claim: { statement: "Delivered nine vehicle programs from concept to production intent", proof: "verified" },
+  },
+  {
+    key: "kestrel",
+    title: "Kestrel Homologation Lab",
+    summary: "Vehicle certification and homologation testing. Fictional Arcadia company.",
+    city: "Munich",
+    latitude: 48.1351,
+    longitude: 11.582,
+    capabilities: ["certification"],
+    attributes: { accredited: true, typical_program_days: 240 },
+  },
+  {
+    key: "northgate",
+    title: "Northgate Cells",
+    summary: "Battery packs for vehicles. Fictional Arcadia company.",
+    city: "Gothenburg",
+    latitude: 57.7089,
+    longitude: 11.9746,
+    capabilities: ["battery_supply"],
+    attributes: { pack_kwh: [60, 82], capacity_packs_per_year: 30000 },
+  },
+  {
+    key: "ferro",
+    title: "Ferro Castings",
+    summary: "Chassis structures and castings. Fictional Arcadia company.",
+    city: "Brescia",
+    latitude: 45.5416,
+    longitude: 10.2118,
+    capabilities: ["chassis_supply"],
+    attributes: { lead_time_days: 120 },
+  },
+  {
+    key: "sable",
+    title: "Sable Logistics",
+    summary: "Vehicle distribution and logistics. Fictional Arcadia company.",
+    city: "Rotterdam",
+    latitude: 51.9244,
+    longitude: 4.4777,
+    capabilities: ["distribution"],
+    attributes: { markets: ["EU", "UK"], vehicles_per_month: 4000 },
+  },
+];
+
+export const STATES = [
+  {
+    key: "meridian",
+    title: "Meridian",
+    summary: "A digital-first Network State of independent operators. Fictional.",
+    attributes: { type: "network_state", currency: null, members: 1240 },
+    hubs: [
+      { city: "Lisbon", latitude: 38.7223, longitude: -9.1393 },
+      { city: "Tallinn", latitude: 59.437, longitude: 24.7536 },
+      { city: "Singapore", latitude: 1.3521, longitude: 103.8198 },
+      { city: "Austin", latitude: 30.2672, longitude: -97.7431 },
+    ],
+  },
+  {
+    key: "tessellate",
+    title: "Tessellate",
+    summary: "A Network State of builders with its own test currency, ARC. Fictional.",
+    attributes: { type: "network_state", currency: "ARC", members: 860 },
+    hubs: [
+      { city: "Berlin", latitude: 52.52, longitude: 13.405 },
+      { city: "Nairobi", latitude: -1.2921, longitude: 36.8219 },
+      { city: "Bengaluru", latitude: 12.9716, longitude: 77.5946 },
+      { city: "Mexico City", latitude: 19.4326, longitude: -99.1332 },
+    ],
+  },
+];
+
+export type { ArcadiaManifest };
+
+export async function buildArcadia() {
+  const market = await paymentMarket();
+  const chain = market.chain;
+  const k = await createKernelDb();
+  const client = (sub: string) => kernelClient(localSupabase(k, user(sub)));
+  const asAgent = (actorId: string) => kernelClient(localSupabase(k, service), { actAs: actorId });
+
+  const steward = client(PERSONAS.steward);
+  const stewardId = await steward.register("Arcadia Steward");
+  const money = await moneyKernel(k, {
+    chain: "litesvm",
+    mintAddress: chain.manifest.mint,
+    settlementAuthority: chain.manifest.settlementAuthority,
+    observedEarn: BigInt(chain.manifest.vaults.earn.allocation),
+  });
+
+  // You: verified work releases DEV-SOLVE from the Earn Vault (the monetary proof-of-life).
+  const you = client(PERSONAS.you);
+  const youId = await you.register("You");
+  const settlementRail: SettlementRail = {
+    kernel: kernelClient(localSupabase(k, service), { actAs: money.settlementService }),
+    gateway: chain.gateway,
+    manifest: chain.manifest,
+    sponsor: chain.sponsor,
+    settlementAuthority: chain.settlementAuthority,
+  };
+  const env = { k, money, chain, rail: settlementRail, verifier: asAgent(money.verifier) } as unknown as ProofEnvironment;
+  const prepared = await preparedSettlement(env, you, youId);
+  const released = await settle(settlementRail, prepared.settlementId);
+  if (released.status !== "confirmed") throw new Error(`Arcadia settlement did not confirm: ${released.status}`);
+
+  // You pay Bob $10 through the router.
+  await steward.defineAsset({ code: "DEV_USDC", issuerScope: "system/chain:litesvm", decimals: 6, label: "DEV-USDC (test, no value)" });
+  await steward.defineAsset({ code: "ARC", issuerScope: "system/chain:litesvm", decimals: 6, label: "ARC, Tessellate test currency (no value)" });
+  for (const asset of Object.values(market.assets)) await steward.registerChainAsset("litesvm", asset.code, asset.mint);
+  const paymentService = await steward.createServiceActor("payment service");
+  await steward.issueGrant({ grantee: paymentService, capability: "kernel.payment.record", scope: "system/chain:litesvm" });
+  const paymentRail: PaymentRail = { kernel: asAgent(paymentService), gateway: chain.gateway };
+
+  const bob = client(PERSONAS.bob);
+  const bobId = await bob.register("Bob");
+  const { generateKeyPairSigner } = await import("@solana/kit");
+  const bobWallet = await generateKeyPairSigner();
+  await bob.linkWallet("litesvm", bobWallet.address);
+  await bob.setPaymentProfile({ chain: "litesvm", receiveAddress: bobWallet.address, acceptAssets: ["DEV_USDC"] });
+  await market.fund(prepared.wallet.address, "ARC", ARC(1_000));
+  const paymentId = await you.createPaymentIntent({
+    recipientId: bobId,
+    chain: "litesvm",
+    asset: "DEV_USDC",
+    amount: USD(10),
+    maxSlippageBps: 50,
+    memo: "Send Bob $10",
+  });
+  const paid = await sendPayment({ payerKernel: you, rail: paymentRail, router: market.router, payer: prepared.wallet, sponsor: chain.sponsor, paymentId });
+  if (paid.status !== "confirmed") throw new Error(`Arcadia payment did not confirm: ${paid.status}`);
+
+  // The Arcadia market: a public World of fictional suppliers and Network States.
+  await steward.claimScope(ARCADIA_WORLD);
+  const verifierId = await steward.createServiceActor("Kestrel verification service");
+  await steward.issueGrant({ grantee: verifierId, capability: "kernel.evidence.attach", scope: ARCADIA_WORLD });
+  await steward.issueGrant({ grantee: verifierId, capability: "claim.challenge", scope: ARCADIA_WORLD });
+  await steward.issueGrant({ grantee: verifierId, capability: "world.relation.write", scope: ARCADIA_WORLD });
+
+  const capabilities: Record<string, string> = {};
+  for (const [key, title] of Object.entries(CAPABILITIES)) {
+    capabilities[key] = await steward.upsertEntity({
+      kind: "capability",
+      scope: ARCADIA_WORLD,
+      title,
+      summary: "A capability offered in the Arcadia market.",
+      attributes: { key },
+      visibility: "public",
+      importance: 40,
+    });
+  }
+
+  const orgs: ArcadiaManifest["orgs"] = {};
+  for (const org of ORGS) {
+    const owner = client(`sandbox:owner-${org.key}`);
+    const ownerId = await owner.register(`${org.title} (owner)`);
+    const agentId = await owner.spawnAgent({ label: `${org.title} agent`, role: "organization_agent" });
+    for (const capability of ["message.send", "claim.capability"]) {
+      await steward.issueGrant({ grantee: agentId, capability, scope: ARCADIA_WORLD });
+    }
+    const entityId = await steward.upsertEntity({
+      kind: "organization",
+      scope: ARCADIA_WORLD,
+      title: org.title,
+      summary: org.summary,
+      attributes: { ...org.attributes, city: org.city, capabilities: org.capabilities, synthetic: true },
+      latitude: org.latitude,
+      longitude: org.longitude,
+      locationTruth: "declared",
+      visibility: "public",
+      importance: 60,
+    });
+    await steward.relate({ kind: "controls", fromRef: `actor:${ownerId}`, toRef: `entity:${entityId}`, scope: ARCADIA_WORLD });
+    await steward.relate({ kind: "represents", fromRef: `actor:${agentId}`, toRef: `entity:${entityId}`, scope: ARCADIA_WORLD });
+    for (const c of org.capabilities) {
+      await steward.relate({ kind: "offers", fromRef: `entity:${entityId}`, toRef: `entity:${capabilities[c]}`, scope: ARCADIA_WORLD });
+    }
+
+    let claimEventId: string | null = null;
+    if (org.claim) {
+      claimEventId = await asAgent(agentId).recordEvent({
+        type: "claim.capability",
+        scope: ARCADIA_WORLD,
+        payload: { organization: `entity:${entityId}`, statement: org.claim.statement, attributes: org.attributes },
+        evidence: [{ basis: "self_reported", content_hash: sha(1000 + ORGS.indexOf(org)) as `sha256:${string}`, description: `${org.title} statement` }],
+      });
+      if (org.claim.proof === "verified") {
+        await asAgent(verifierId).attachEvidence(claimEventId, {
+          basis: "externally_verified",
+          content_hash: sha(2000 + ORGS.indexOf(org)) as `sha256:${string}`,
+          description: `Kestrel verification service: ${org.claim.statement.toLowerCase()} confirmed on site`,
+        });
+      }
+      if (org.claim.proof === "challenged") {
+        const challenge = await asAgent(verifierId).recordEvent({
+          type: "claim.challenge",
+          scope: ARCADIA_WORLD,
+          payload: { claim_event_id: claimEventId, finding: org.claim.challenge },
+          evidence: [{ basis: "artifact", content_hash: sha(3000 + ORGS.indexOf(org)) as `sha256:${string}`, description: "site audit report" }],
+        });
+        await asAgent(verifierId).relate({ kind: "challenges", fromRef: `event:${challenge}`, toRef: `event:${claimEventId}`, scope: ARCADIA_WORLD });
+      }
+    }
+    orgs[org.key] = { entityId, ownerId, agentId, claimEventId };
+  }
+
+  const states: ArcadiaManifest["states"] = {};
+  for (const state of STATES) {
+    const entityId = await steward.upsertEntity({
+      kind: "world",
+      scope: ARCADIA_WORLD,
+      title: state.title,
+      summary: state.summary,
+      attributes: state.attributes,
+      visibility: "public",
+      importance: 70,
+    });
+    const hubIds: string[] = [];
+    for (const hub of state.hubs) {
+      const hubId = await steward.upsertEntity({
+        kind: "place",
+        scope: ARCADIA_WORLD,
+        title: `${state.title} hub — ${hub.city}`,
+        summary: `A ${state.title} member hub. Fictional.`,
+        attributes: { state: state.key, city: hub.city },
+        latitude: hub.latitude,
+        longitude: hub.longitude,
+        locationTruth: "declared",
+        visibility: "public",
+        importance: 30,
+      });
+      await steward.relate({ kind: "member_of", fromRef: `entity:${hubId}`, toRef: `entity:${entityId}`, scope: ARCADIA_WORLD });
+      hubIds.push(hubId);
+    }
+    states[state.key] = { entityId, hubIds };
+  }
+  // Tessellate's builders work with Vireo; Halden ships through Sable.
+  await steward.relate({ kind: "member_of", fromRef: `actor:${orgs.vireo.ownerId}`, toRef: `entity:${states.tessellate.entityId}`, scope: ARCADIA_WORLD });
+  await steward.relate({ kind: "supplies", fromRef: `entity:${orgs.sable.entityId}`, toRef: `entity:${orgs.halden.entityId}`, scope: ARCADIA_WORLD });
+
+  // You can read the public market as a member.
+  await steward.issueGrant({ grantee: youId, capability: "kernel.read", scope: ARCADIA_WORLD });
+
+  const balances: Record<string, Record<string, string>> = {};
+  for (const [who, owner] of [["you", prepared.wallet.address], ["bob", bobWallet.address]] as const) {
+    balances[who] = {};
+    for (const asset of Object.values(market.assets)) balances[who][asset.code] = (await walletBalance(chain.gateway, owner, asset.mint)).toString();
+  }
+
+  const integrity = await kernelClient(localSupabase(k, service)).verifyChain();
+  if (!integrity.ok) throw new Error(`Arcadia history broken: ${integrity.problem}`);
+
+  const manifest: ArcadiaManifest = {
+    version: "",
+    generatedAt: new Date().toISOString(),
+    notice: "Arcadia is a synthetic test civilization. Every company, person, State and amount is fictional; assets are test assets with no value.",
+    personas: PERSONAS,
+    world: ARCADIA_WORLD,
+    you: {
+      actorId: youId,
+      wallet: prepared.wallet.address,
+      settlementWorld: prepared.world,
+      settlementId: prepared.settlementId,
+      paymentId,
+    },
+    bob: { actorId: bobId, wallet: bobWallet.address },
+    steward: { actorId: stewardId, verifierId },
+    orgs,
+    capabilities,
+    states,
+    chain: {
+      cluster: chain.gateway.cluster,
+      note: "Chain state observed on the local LiteSVM chain when this sandbox was generated. That chain is not live in your browser; its receipts are in the kernel.",
+      symbols: Object.fromEntries(Object.values(market.assets).map((a) => [a.code, a.symbol])),
+      balances,
+    },
+  };
+  return { k, manifest, integrity };
+}

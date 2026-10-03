@@ -1444,7 +1444,8 @@ language sql stable set search_path = '' as $$
 $$;
 
 -- Kinds the kernel enacts itself, atomically, and the capability each one requires. event.record
--- requires the recorded event type itself.
+-- requires the recorded event type itself; messages that commit (proposal, counterproposal,
+-- acceptance) require commitment.make, so contacting someone never implies committing.
 create function kernel.native_capability(p_kind text, p_payload jsonb) returns text
 language sql immutable set search_path = '' as $$
   select case p_kind
@@ -1455,7 +1456,8 @@ language sql immutable set search_path = '' as $$
     when 'policy.set' then 'kernel.policy.set'
     when 'agent.spawn' then 'kernel.actor.create'
     when 'grant.issue' then 'kernel.grant.issue'
-    when 'message.send' then 'message.send'
+    when 'message.send' then case when p_payload ->> 'type' in ('PROPOSAL', 'COUNTERPROPOSAL', 'ACCEPTANCE')
+                                  then 'commitment.make' else 'message.send' end
     when 'ledger.post' then 'kernel.ledger.post'
     when 'event.record' then p_payload ->> 'type'
   end;
@@ -2170,6 +2172,30 @@ begin
       select * from kernel.avatar_identity_seeds x where x.avatar_id = a.id order by x.version desc limit 1
     ) s on true
     where a.owner_id = c.actor_id or a.agent_id = c.actor_id
+    order by a.created_at, a.id;
+end;
+$$;
+
+------------------------------------------------------------------------------------------------
+-- Principals: names and kinds
+------------------------------------------------------------------------------------------------
+
+-- Display facts about actors (kind, label, owner, agent role) for any registered caller. Identity
+-- links, grants and history stay behind their own gates.
+create function kernel_api.read_actors(p_actor_ids uuid[], p_as_actor uuid default null)
+returns table (actor_id uuid, kind text, label text, owner_id uuid, accountable_party uuid, role text)
+language plpgsql stable security definer set search_path = '' as $$
+#variable_conflict use_column
+declare
+  c kernel.caller := kernel.resolve_caller(p_as_actor);
+begin
+  if p_actor_ids is null or cardinality(p_actor_ids) > 500 then
+    raise exception using errcode = 'KA003', message = 'ask for at most 500 actors';
+  end if;
+  return query
+    select a.id, a.kind, a.label, a.owner_id, kernel.party_of(a.id), r.role
+    from kernel.actors a left join kernel.agent_roles r on r.actor_id = a.id
+    where a.id = any (p_actor_ids)
     order by a.created_at, a.id;
 end;
 $$;

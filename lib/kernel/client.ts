@@ -348,6 +348,15 @@ export type AvatarType = "digital_self" | "ai_companion" | "abstract";
 export type AvatarRelationship = "represent" | "assist" | "guide" | "create_with";
 export type RepresentationKind = "abstract" | "pixel" | "cartoon" | "stylized_3d" | "realistic" | "voice_only";
 
+export type ActorProfile = {
+  actor_id: string;
+  kind: Actor["kind"];
+  label: string;
+  owner_id: string | null;
+  accountable_party: string | null;
+  role: AgentRole | null;
+};
+
 export type Avatar = {
   avatar_id: string;
   agent_id: string;
@@ -998,6 +1007,8 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
       }),
 
     myAvatars: () => call<Avatar[]>("my_avatars", { ...as }),
+
+    readActors: (actorIds: string[]) => call<ActorProfile[]>("read_actors", { p_actor_ids: actorIds, ...as }),
   };
 }
 

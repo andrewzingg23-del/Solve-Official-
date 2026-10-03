@@ -9,9 +9,10 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "node --import tsx --test --test-force-exit \"tests/**/*.test.ts\"",
-    "predev": "node scripts/sync-browser-assets.mjs",
-    "prebuild": "node scripts/sync-browser-assets.mjs",
-    "test:browser": "node scripts/test-browser.mjs"
+    "predev": "node scripts/sync-browser-assets.mjs && tsx scripts/build-arcadia.ts",
+    "prebuild": "node scripts/sync-browser-assets.mjs && tsx scripts/build-arcadia.ts",
+    "test:browser": "node scripts/test-browser.mjs",
+    "arcadia": "tsx scripts/build-arcadia.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",
@@ -21,6 +22,7 @@
     "@solana/kit": "^8.4.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.2",
+    "cesium": "^1.146.0",
     "litesvm": "^1.5.0",
     "next": "16.3.8",
     "react": "19.2.8",

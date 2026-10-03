@@ -45,3 +45,5 @@ next-env.d.ts
 /public/pglite
 /public/kernel
 /.browser-tests
+/public/cesium
+/public/arcadia

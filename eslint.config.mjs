@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     // Generated: PGlite's untouched browser files, kernel migrations JSON, browser test bundles.
     "public/pglite/**",
     "public/kernel/**",
+    "public/cesium/**",
+    "public/arcadia/**",
     ".browser-tests/**",
   ]),
 ]);

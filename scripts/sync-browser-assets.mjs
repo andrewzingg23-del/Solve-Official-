@@ -1,6 +1,6 @@
-// Copies what the browser kernel needs into public/: PGlite's untouched ESM, WASM and data files,
-// and the kernel migrations as one JSON file. Runs before dev and build. Output is generated.
-import { copyFileSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+// Copies what the browser needs into public/: PGlite's untouched ESM, WASM and data files, the
+// kernel migrations as one JSON file, and the CesiumJS build. Runs before dev and build.
+import { copyFileSync, cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = process.cwd();
@@ -23,4 +23,12 @@ const migrations = readdirSync(migrationsDir)
   .map((name) => ({ name, sql: readFileSync(join(migrationsDir, name), "utf8") }));
 mkdirSync(join(root, "public/kernel"), { recursive: true });
 writeFileSync(join(root, "public/kernel/migrations.json"), JSON.stringify(migrations));
-console.log(`browser assets: ${copied} PGlite files, ${migrations.length} kernel migrations`);
+// CesiumJS: the untouched UMD build, loaded with a script tag so no bundler transforms it.
+const cesiumSrc = join(root, "node_modules/cesium/Build/Cesium");
+const cesiumOut = join(root, "public/cesium");
+rmSync(cesiumOut, { recursive: true, force: true });
+for (const part of ["Cesium.js", "Assets", "ThirdParty", "Widgets", "Workers"]) {
+  cpSync(join(cesiumSrc, part), join(cesiumOut, part), { recursive: true });
+}
+
+console.log(`browser assets: ${copied} PGlite files, ${migrations.length} kernel migrations, CesiumJS`);

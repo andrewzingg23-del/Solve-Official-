@@ -278,6 +278,13 @@ describe("messages", () => {
       t.agent(nova).proposeAction({ kind: "message.send", capability: "message.send", scope: WORLD, targetRef: `actor:${bobAgent}`, payload: { type: "GOSSIP" } }),
       named("invalid", /unknown message type/),
     );
+    // Contacting is not committing: an acceptance needs commitment.make.
+    await assert.rejects(
+      t.agent(nova).proposeAction({ kind: "message.send", capability: "message.send", scope: WORLD, targetRef: `actor:${bobAgent}`, payload: { type: "ACCEPTANCE" } }),
+      named("invalid", /commitment.make/),
+    );
+    const accept = await t.agent(nova).proposeAction({ kind: "message.send", capability: "commitment.make", scope: WORLD, targetRef: `actor:${bobAgent}`, payload: { type: "ACCEPTANCE" } });
+    assert.equal((await t.agent(nova).readAction(accept)).decision, "DENY");
 
     // A reply chain longer than 20 is stopped by the kernel.
     let last = query;
