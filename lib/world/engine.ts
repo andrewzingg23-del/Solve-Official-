@@ -19,7 +19,8 @@ import type {
 } from "../kernel/client";
 import type { ArcadiaManifest } from "../sandbox/manifest";
 import { loadOperations, type OperationsView } from "./operations";
-import { computeHorizon, TRANSITIONS, type HorizonInput } from "../causal/horizon";
+import { computeHorizon, type HorizonInput } from "../causal/horizon";
+import { supplyGoal, TRANSITIONS, verifyGoal } from "../causal/transitions";
 import { executeStep, recordRoute, type RecordedRoute } from "../causal/pipeline";
 import { arcadiaProviders, type Providers } from "../causal/providers";
 import type { Fact, Goal, Horizon, StepOutcome } from "../causal/types";
@@ -461,6 +462,7 @@ export class WorldEngine {
       claimEventFor: (ref) => orgs.find((o) => `entity:${o.entityId}` === ref)?.claimEventId ?? null,
       as: (id) => this.sb.as(id),
       replyScope: this.manifest.world,
+      verifierId: this.manifest.steward.verifierId,
     });
     return this.providerSet;
   }
@@ -470,7 +472,14 @@ export class WorldEngine {
   }
 
   supplyGoal(model: WorldModel, quantity: number | null = 10000, capability = "contract_manufacturing"): Goal | null {
-    return model.venture?.worldRef ? { kind: "secure_supply", world: model.venture.worldRef, capability, quantity } : null;
+    const capabilityRef = this.manifest.capabilities[capability];
+    if (!model.venture?.worldRef || !capabilityRef) return null;
+    return supplyGoal({ worldRef: model.venture.worldRef, scope: model.venture.scope, capability, capabilityRef: `entity:${capabilityRef}`, quantity, what: "vehicles" });
+  }
+
+  verifyGoal(orgRef: string, model: WorldModel): Goal {
+    const node = model.nodes.get(orgRef);
+    return verifyGoal({ orgRef, scope: node?.scope ?? this.manifest.world, title: node?.title ?? orgRef });
   }
 
   async horizon(actorId: string, goal: Goal, fallback?: HorizonInput["fallback"], world?: WorldState): Promise<Horizon> {
@@ -496,7 +505,7 @@ export class WorldEngine {
     if (index < 0) return null;
     const actor = recorded.steps[index].actorId;
     const seen = world && world.actorId === actor ? world : await loadWorld(this.kernelFor(actor), actor);
-    return executeStep({ kernelFor: (id) => this.kernelFor(id), providers: this.providers(), world: seen }, recorded, index);
+    return executeStep({ kernelFor: (id) => this.kernelFor(id), providers: this.providers(), world: seen, worldFor: (id) => (id === seen.actorId ? Promise.resolve(seen) : loadWorld(this.kernelFor(id), id)) }, recorded, index);
   }
 
   async quote(orgRef: string, worldRef: string): Promise<Fact | null> {
@@ -509,9 +518,9 @@ export class WorldEngine {
   async ask(orgRef: string, quantity: number | null, model: WorldModel, agentId: string) {
     const goal = this.supplyGoal(model, quantity)!;
     const plan = await this.plan(orgRef, goal, agentId, "none");
-    if (plan.horizon.satisfied) return { ...plan, outcome: null, quote: await this.quote(orgRef, goal.world) };
+    if (plan.horizon.satisfied) return { ...plan, outcome: null, quote: await this.quote(orgRef, goal.bind.world) };
     const outcome = plan.recorded ? await this.perform(plan.recorded, TRANSITIONS.inquire.id, plan.world) : null;
-    return { ...plan, outcome, quote: await this.quote(orgRef, goal.world) };
+    return { ...plan, outcome, quote: await this.quote(orgRef, goal.bind.world) };
   }
 
   // "You may contact suppliers": the delegation step of the companion's planned route.

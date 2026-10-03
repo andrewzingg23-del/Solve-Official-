@@ -15,7 +15,9 @@
 --      so revocation stops it; external enactment records `enacting` first and completes with
 --      evidence; unknown outcomes are needs_reconciliation. An action may declare its consequences
 --      when proposed (what approvers see is what happens); they are applied in the same
---      transaction that completes it, exactly once, and never when it fails.
+--      transaction that completes it, exactly once, and never when it fails. It may also declare
+--      guards ("only if this still holds"): checked at proposal and again at enactment; an outside
+--      effect that lands while its guard has lapsed needs reconciliation, never a consequence.
 --   5. The World Graph changes only through events: versioned entities, relations ended by
 --      events, one canonical ref per thing.
 --   6. A task is completed by its worker or, when verification is required, by a distinct
@@ -1645,6 +1647,7 @@ declare
   v_action kernel.actions;
   v_event uuid;
   v_approval uuid;
+  v_guard text;
 begin
   if p_kind is null or p_kind !~ '^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$' then
     raise exception using errcode = 'KA003', message = 'invalid action kind';
@@ -1657,6 +1660,7 @@ begin
     raise exception using errcode = 'KA003', message = 'payload must be a JSON object of at most 16000 characters';
   end if;
   perform kernel.validate_consequences(c, p_payload -> 'consequences');
+  perform kernel.validate_guards(p_payload -> 'guards');
   if p_amount is not null and p_amount !~ '^[1-9][0-9]{0,37}$' then
     raise exception using errcode = 'KA003', message = 'amount must be a positive integer in minor units';
   end if;
@@ -1709,6 +1713,11 @@ begin
     end if;
   end if;
 
+  -- A precondition that already fails is not an action (a retry of an existing one replayed above).
+  v_guard := kernel.guard_failure(p_payload -> 'guards');
+  if v_guard is not null then
+    raise exception using errcode = 'KA003', message = 'guard does not hold: ' || v_guard;
+  end if;
   d := kernel.decide(c.actor_id, p_capability, p_scope, p_amount::numeric, p_asset, p_counterparty_ref, p_task_ref);
   v_event := kernel.append_event(
     c, 'kernel.action.proposed', p_scope, d.grant_id,
@@ -1928,6 +1937,63 @@ begin
 end;
 $$;
 
+-- Guards: conditions an action requires to hold when it is enacted.
+--   {"op": "relation.exists" | "relation.absent", "kind": <relation kind>, "from_ref"?: <ref>, "to_ref"?: <ref>,
+--    "attributes"?: {...}}      attributes: a subset the (active) relation's attributes must contain
+create function kernel.validate_guards(p_guards jsonb) returns void
+language plpgsql immutable set search_path = '' as $$
+declare
+  x jsonb;
+begin
+  if p_guards is null then
+    return;
+  end if;
+  if jsonb_typeof(p_guards) <> 'array' or jsonb_array_length(p_guards) > 20 then
+    raise exception using errcode = 'KA003', message = 'guards must be an array of at most 20 conditions';
+  end if;
+  for x in select * from jsonb_array_elements(p_guards) loop
+    if (x ->> 'op') not in ('relation.exists', 'relation.absent') or coalesce(x ->> 'kind', '') = ''
+       or (x ? 'from_ref' and not kernel.is_ref(x ->> 'from_ref')) or (x ? 'to_ref' and not kernel.is_ref(x ->> 'to_ref'))
+       or (x ? 'attributes' and jsonb_typeof(x -> 'attributes') <> 'object') then
+      raise exception using errcode = 'KA003', message = 'invalid guard';
+    end if;
+  end loop;
+end;
+$$;
+
+-- The first guard that does not hold now, described; null when all hold.
+create function kernel.guard_failure(p_guards jsonb) returns text
+language plpgsql stable set search_path = '' as $$
+declare
+  x jsonb;
+  v_found boolean;
+  v_desc text;
+begin
+  if p_guards is null then
+    return null;
+  end if;
+  for x in select * from jsonb_array_elements(p_guards) loop
+    select exists (
+      select 1 from kernel.relations r
+      where r.kind = x ->> 'kind'
+        and (x ->> 'from_ref' is null or r.from_ref = x ->> 'from_ref')
+        and (x ->> 'to_ref' is null or r.to_ref = x ->> 'to_ref')
+        and r.attributes @> coalesce(x -> 'attributes', '{}'::jsonb)
+        and not exists (select 1 from kernel.relation_endings e where e.relation_id = r.id)
+    ) into v_found;
+    v_desc := concat_ws(' ', x ->> 'kind', 'from ' || (x ->> 'from_ref'), 'to ' || (x ->> 'to_ref'),
+                        case when x ? 'attributes' then 'with ' || (x -> 'attributes')::text end);
+    if x ->> 'op' = 'relation.exists' and not v_found then
+      return 'no ' || v_desc;
+    end if;
+    if x ->> 'op' = 'relation.absent' and v_found then
+      return 'already ' || v_desc;
+    end if;
+  end loop;
+  return null;
+end;
+$$;
+
 -- Checks that an action may be enacted now by this actor; returns the enactor's grant.
 create function kernel.enactment_grant(c kernel.caller, p_action kernel.actions) returns uuid
 language plpgsql stable set search_path = '' as $$
@@ -1965,6 +2031,7 @@ declare
   p jsonb;
   v_result jsonb;
   v_id uuid;
+  v_guard text;
 begin
   perform kernel.lock_chain();
   select * into v_action from kernel.actions a where a.id = p_action_id;
@@ -1975,10 +2042,18 @@ begin
   if v_state.status = 'completed' then
     return v_state.result;
   end if;
+  if v_state.status = 'failed' then
+    return jsonb_build_object('failed', v_state.detail);
+  end if;
   if not kernel.native_action_kind(v_action.kind) then
     raise exception using errcode = 'KA003', message = 'external actions are enacted with begin_action and complete_action';
   end if;
   v_grant := kernel.enactment_grant(c, v_action);
+  v_guard := kernel.guard_failure(v_action.payload -> 'guards');
+  if v_guard is not null then
+    perform kernel.record_action_transition(c, v_grant, v_action, 'failed', 'guard no longer holds: ' || v_guard, null, null);
+    return jsonb_build_object('failed', 'guard no longer holds: ' || v_guard);
+  end if;
   p := v_action.payload;
 
   if v_action.kind = 'entity.upsert' then
@@ -2040,6 +2115,9 @@ language plpgsql security definer set search_path = '' as $$
 declare
   c kernel.caller := kernel.resolve_caller(p_as_actor);
   v_action kernel.actions;
+  v_status text;
+  v_grant uuid;
+  v_guard text;
 begin
   perform kernel.lock_chain();
   select * into v_action from kernel.actions a where a.id = p_action_id;
@@ -2049,11 +2127,18 @@ begin
   if kernel.native_action_kind(v_action.kind) then
     raise exception using errcode = 'KA003', message = 'kernel-native actions are enacted with enact_action';
   end if;
-  if (kernel.action_state(p_action_id)).status = 'enacting' then
-    return 'enacting';
+  v_status := (kernel.action_state(p_action_id)).status;
+  if v_status in ('enacting', 'failed') then
+    return v_status;
   end if;
-  perform kernel.record_action_transition(c, kernel.enactment_grant(c, v_action), v_action, 'enacting',
-                                          coalesce(p_detail, ''), null, null);
+  v_grant := kernel.enactment_grant(c, v_action);
+  -- Re-checked right before the outside call: the World may have moved since the proposal.
+  v_guard := kernel.guard_failure(v_action.payload -> 'guards');
+  if v_guard is not null then
+    perform kernel.record_action_transition(c, v_grant, v_action, 'failed', 'guard no longer holds: ' || v_guard, null, null);
+    return 'failed';
+  end if;
+  perform kernel.record_action_transition(c, v_grant, v_action, 'enacting', coalesce(p_detail, ''), null, null);
   return 'enacting';
 end;
 $$;
@@ -2074,6 +2159,7 @@ declare
   v_action kernel.actions;
   v_state kernel.action_transitions;
   v_grant uuid;
+  v_guard text;
 begin
   perform kernel.lock_chain();
   select * into v_action from kernel.actions a where a.id = p_action_id;
@@ -2099,6 +2185,16 @@ begin
   v_grant := coalesce((kernel.decide(c.actor_id, v_action.capability, v_action.scope, v_action.amount, v_action.asset,
                                      v_action.counterparty_ref, v_action.task_ref)).grant_id, v_action.grant_id);
   if p_status = 'completed' then
+    -- An outside effect that landed while its guard lapsed is not a consequence: someone must
+    -- reconcile it.
+    v_guard := kernel.guard_failure(v_action.payload -> 'guards');
+    if v_guard is not null then
+      if v_state.status <> 'needs_reconciliation' then
+        perform kernel.record_action_transition(c, v_grant, v_action, 'needs_reconciliation',
+                                                'the effect may have landed while its guard lapsed: ' || v_guard, p_result, null, p_evidence);
+      end if;
+      return 'needs_reconciliation';
+    end if;
     -- Evidence settled what happened; its declared consequences land in this same transaction.
     p_result := coalesce(p_result, '{}'::jsonb)
       || jsonb_build_object('consequences', kernel.apply_consequences(c, v_action, coalesce(p_result, '{}'::jsonb)));

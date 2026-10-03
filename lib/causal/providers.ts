@@ -37,6 +37,8 @@ export type Counterparts = {
   claimEventFor(orgRef: string): string | null;
   // Where counterparties speak: the market World their agents hold authority in.
   replyScope: string;
+  // The market's independent verification service (Kestrel), a service actor on this device.
+  verifierId: string;
 };
 
 const evidenceOf = async (description: string, facts: unknown) => ({
@@ -127,4 +129,43 @@ export function arcadiaAcceptance(counterparts: Counterparts): Provider {
   };
 }
 
-export const arcadiaProviders = (counterparts: Counterparts) => new Providers([arcadiaInquiry(counterparts), arcadiaAcceptance(counterparts)]);
+// Verification in the sandbox: the market's verification service inspects a claim and, unless
+// its own audit has challenged it, attaches externally verified evidence to the claim's event.
+// Only a service actor may attach that basis; the action's own evidence points at the attachment.
+export function arcadiaVerification(counterparts: Counterparts): Provider {
+  return {
+    id: "arcadia.kestrel.verification",
+    capability: "verification.service",
+    async perform({ actionId, step, world }) {
+      const org = step.binding.org;
+      const claimEvent = typeof step.payload.claim_event === "string" ? step.payload.claim_event : null;
+      const title = world.entities.get(org)?.title ?? org;
+      if (!claimEvent) return { provider: this.id, status: "failed", result: {}, evidence: [], detail: `${title} has no claim on record` };
+      const kestrel = counterparts.as(counterparts.verifierId);
+      const challenged = (await kestrel.readEvents(counterparts.replyScope, { limit: 500 })).some((e) => e.type === "claim.challenge" && e.payload.claim_event_id === claimEvent);
+      if (challenged) return { provider: this.id, status: "failed", result: { claim_event: claimEvent, verified: false }, evidence: [], detail: `Kestrel's audit of ${title} found otherwise` };
+      const already = (await kestrel.readEvidence(claimEvent)).some((ev) => ev.basis === "externally_verified");
+      if (!already) {
+        await kestrel.attachEvidence(
+          claimEvent,
+          {
+            basis: "externally_verified",
+            content_hash: `sha256:${await sha256Hex(`kestrel:${claimEvent}:${actionId}`)}`,
+            description: `Kestrel verification service: ${title}'s claim confirmed on site (simulated in your sandbox)`,
+          },
+          `verify:${actionId}`,
+        );
+      }
+      return {
+        provider: this.id,
+        status: "succeeded",
+        result: { claim_event: claimEvent, verified: true, provider: this.id },
+        evidence: [await evidenceOf(`Kestrel verification service attached externally verified evidence to ${title}'s claim (event ${claimEvent})`, { claimEvent, actionId })],
+        detail: `Kestrel verified ${title}'s claim`,
+      };
+    },
+  };
+}
+
+export const arcadiaProviders = (counterparts: Counterparts) =>
+  new Providers([arcadiaInquiry(counterparts), arcadiaAcceptance(counterparts), arcadiaVerification(counterparts)]);

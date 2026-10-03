@@ -14,7 +14,7 @@ import { buildContext } from "../../lib/causal/context";
 import { computeHorizon, RANKING_V1, type RankingPolicy } from "../../lib/causal/horizon";
 import { executeRoute, executeStep, loadRoute, recordRoute, ROUTE_EVENT, type Executor } from "../../lib/causal/pipeline";
 import { arcadiaProviders, arcadiaInquiry, Providers, type Provider } from "../../lib/causal/providers";
-import type { Goal } from "../../lib/causal/types";
+import { STANDARD, supplyGoal, verifyGoal, type Transition } from "../../lib/causal/transitions";
 import { loadWorld } from "../../lib/causal/world";
 import { WorldEngine, avatarAgent } from "../../lib/world/engine";
 import { buildSpatialView } from "../../lib/world/spatial";
@@ -50,14 +50,15 @@ async function loop() {
     claimEventFor: (ref: string) => Object.values(orgs).find((o) => `entity:${o.entityId}` === ref)?.claimEventId ?? null,
     as,
     replyScope: manifest.world,
+    verifierId: manifest.steward.verifierId,
   };
   const providers = arcadiaProviders(counterparts);
   const youId = manifest.you.actorId;
   const kernelFor = (id: string) => (id === youId ? you : as(id));
-  const goal: Goal = { kind: "secure_supply", world: worldRef, capability: "contract_manufacturing", quantity: 10000 };
+  const goal = supplyGoal({ worldRef, scope, capability: "contract_manufacturing", capabilityRef: `entity:${manifest.capabilities.contract_manufacturing}`, quantity: 10000, what: "vehicles" });
   const horizonFor = async (actorId: string, policy?: RankingPolicy) =>
     computeHorizon({ world: await loadWorld(kernelFor(actorId), actorId), actorId, principalId: actorId === youId ? null : youId, goal, kernelFor, providers, policy });
-  const executor = async (actorId: string, p = providers): Promise<Executor> => ({ kernelFor, providers: p, world: await loadWorld(kernelFor(actorId), actorId) });
+  const executor = async (actorId: string, p = providers): Promise<Executor> => ({ kernelFor, providers: p, world: await loadWorld(kernelFor(actorId), actorId), worldFor: (id) => loadWorld(kernelFor(id), id) });
   return { k, manifest, you, as, engine, agentId, scope, worldRef, org, counterparts, providers, youId, kernelFor, goal, horizonFor, executor };
 }
 
@@ -73,7 +74,7 @@ describe("the SOLVE loop", () => {
     assert.equal(ctx.who.kind, "agent");
     assert.equal(ctx.who.principalId, L.youId);
     assert.equal(ctx.where.world, L.worldRef);
-    assert.deepEqual(ctx.cannot.map((c) => c.capability).sort(), ["commitment.make", "kernel.grant.issue", "message.send"]);
+    assert.deepEqual(ctx.cannot.map((c) => c.capability).sort(), ["commitment.make", "kernel.grant.issue", "message.send", "verification.request"]);
     assert.ok(ctx.can.some((c) => c.capability === "world.relation.write"));
     assert.ok(!ctx.world.entities.has(`entity:${L.manifest.privateEntityId}`), "authorization before visibility");
     assert.equal(ctx.beliefs.find((f) => f.subject === L.org("halden") && f.predicate === "claims")?.status, "verified");
@@ -176,7 +177,8 @@ describe("the SOLVE loop", () => {
     const bob = L.manifest.bob.actorId;
     const intruder = { ...recorded, steps: recorded.steps.map((s, i) => (i === 1 ? { ...s, actorId: bob } : s)) };
     const bobKernel = kernelClient(localSupabase(L.k, user(L.manifest.personas.bob)));
-    const blocked = await executeStep({ ...(await L.executor(L.youId)), kernelFor: (id) => (id === bob ? bobKernel : L.kernelFor(id)) }, intruder, 1);
+    const asBob = (id: string) => (id === bob ? bobKernel : L.kernelFor(id));
+    const blocked = await executeStep({ ...(await L.executor(L.youId)), kernelFor: asBob, worldFor: (id) => loadWorld(asBob(id), id) }, intruder, 1);
     assert.equal(blocked.status, "denied");
     assert.equal(await count(L.k, "select count(*) as n from kernel.relations where kind = 'supplies' and to_ref = $1", [L.worldRef]), 0, "no consequence from a refusal");
     const rejected = await count(L.k, "select count(*) as n from kernel.action_transitions where status = 'rejected'");
@@ -271,6 +273,107 @@ describe("the SOLVE loop", () => {
     assert.deepEqual(await L.k.owner("select id, hash from kernel.events order by seq"), history, "planning wrote nothing");
     const selections = (await L.you.readEvents(L.scope, { limit: 500 })).filter((e) => e.type === ROUTE_EVENT);
     assert.deepEqual(selections.map((e) => e.payload.policy), [RANKING_V1.id], "the selection keeps the policy it was made under");
+  });
+
+  it("reaches a second goal kind, verification, through the same registry and pipeline", async () => {
+    const L = await loop();
+    const youWorld = () => loadWorld(L.you, L.youId);
+    const plan = async (goal: ReturnType<typeof supplyGoal>) => computeHorizon({ world: await youWorld(), actorId: L.youId, principalId: null, goal, kernelFor: L.kernelFor, providers: L.providers });
+    const orrinVerified = verifyGoal({ orgRef: L.org("orrin"), scope: L.manifest.world, title: "Orrin Assembly" });
+    const before = await plan(orrinVerified);
+    assert.deepEqual(before.routes.map((r) => r.steps.map((s) => s.transition)), [["claim.verify"]], "a verification goal is one step");
+
+    // At 5,000 vehicles Orrin is a route, through verification; Cobalt still is not.
+    const small = supplyGoal({ worldRef: L.worldRef, scope: L.scope, capability: "contract_manufacturing", capabilityRef: `entity:${L.manifest.capabilities.contract_manufacturing}`, quantity: 5000, what: "vehicles" });
+    const h = await plan(small);
+    const byOrg = Object.fromEntries(h.routes.map((r) => [r.orgRef, r.steps.map((st) => st.transition)]));
+    assert.deepEqual(byOrg[L.org("halden")], ["supplier.inquire", "supplier.accept"]);
+    assert.deepEqual(byOrg[L.org("orrin")], ["supplier.inquire", "claim.verify", "supplier.accept"]);
+    assert.match(h.excluded.find((e) => e.orgRef === L.org("cobalt"))!.reasons.join(), /disputed/);
+    const verifyStep = h.routes.find((r) => r.orgRef === L.org("orrin"))!.steps[1];
+    assert.equal(verifyStep.scope, L.manifest.world, "verification happens where the claim lives");
+    assert.equal(verifyStep.authority.decision, "ALLOW");
+    assert.ok(verifyStep.preconditions.every((c) => c.met) && !h.routes.find((r) => r.orgRef === L.org("orrin"))!.steps[2].preconditions[1].met, "accept's verified-claim precondition comes from the step before");
+
+    const recorded = await recordRoute(L.you, h.routes.find((r) => r.orgRef === L.org("orrin"))!);
+    const run = await executeRoute(await L.executor(L.youId), recorded);
+    assert.deepEqual(run.map((o) => o.status), ["completed", "completed", "completed"]);
+    assert.equal(run[1].provider, "arcadia.kestrel.verification");
+    const world = await youWorld();
+    assert.equal(world.facts.find((f) => f.subject === L.org("orrin") && f.predicate === "claims")?.status, "verified", "asserted → verified by evidence, not by assertion");
+    assert.equal(world.facts.find((f) => f.predicate === "supplies:agreed" && f.subject === L.org("orrin"))?.status, "reconciled");
+    const attached = await L.you.readEvidence(L.manifest.orgs.orrin.claimEventId!);
+    assert.ok(attached.some((e) => e.basis === "externally_verified"), "the verifier's evidence sits on the claim itself");
+    assert.equal((await plan(orrinVerified)).satisfied?.status, "verified");
+    const cobalt = await plan(verifyGoal({ orgRef: L.org("cobalt"), scope: L.manifest.world, title: "Cobalt Ridge Motors" }));
+    assert.deepEqual(cobalt.routes, []);
+    assert.match(cobalt.excluded[0].reasons.join(), /disputed/);
+  });
+
+  it("re-checks guards at enactment: a route recorded before another supplier was agreed cannot agree a second", async () => {
+    const L = await loop();
+    const small = supplyGoal({ worldRef: L.worldRef, scope: L.scope, capability: "contract_manufacturing", capabilityRef: `entity:${L.manifest.capabilities.contract_manufacturing}`, quantity: 5000, what: "vehicles" });
+    const h = await computeHorizon({ world: await loadWorld(L.you, L.youId), actorId: L.youId, principalId: null, goal: small, kernelFor: L.kernelFor, providers: L.providers });
+    const halden = await recordRoute(L.you, h.routes.find((r) => r.orgRef === L.org("halden"))!);
+    const orrin = await recordRoute(L.you, h.routes.find((r) => r.orgRef === L.org("orrin"))!);
+    assert.deepEqual((await executeRoute(await L.executor(L.youId), halden)).map((o) => o.status), ["completed", "completed"]);
+    // The stale route still asks and verifies (those guards hold), but the kernel refuses the
+    // acceptance: the World already has an agreed supplier for this need, so it is not even an
+    // action (a guard that lapses after proposal fails the action at enactment instead; see the
+    // kernel tests).
+    const stale = await executeRoute(await L.executor(L.youId), orrin);
+    assert.deepEqual(stale.map((o) => o.status), ["completed", "completed", "failed"]);
+    assert.match(stale[2].detail, /guard does not hold: already supplies .*"status": "agreed"/);
+    assert.equal(stale[2].actionId, null, "refused before it became an action");
+    assert.equal(await count(L.k, "select count(*) as n from kernel.relations where kind = 'supplies' and to_ref = $1", [L.worldRef]), 1);
+    // And the Horizon now says the goal is reached, so no new route proposes it.
+    assert.equal((await computeHorizon({ world: await loadWorld(L.you, L.youId), actorId: L.youId, principalId: null, goal: small, kernelFor: L.kernelFor, providers: L.providers })).satisfied?.subject, L.org("halden"));
+  });
+
+  it("lets a World extend the registry with its own transition and provider", async () => {
+    const L = await loop();
+    const referral: Transition = {
+      id: "supplier.referral",
+      kind: "supplier.referral",
+      capability: "message.send",
+      provider: "counterparty.referral",
+      native: false,
+      expectedEvidence: "The organization's terms relayed by a referral partner.",
+      failures: ["the partner has no relationship with the organization"],
+      requires: [
+        { label: "offers the capability", pattern: { subject: "?org", predicate: "offers", object: "?capabilityRef" }, because: "its published record lists it" },
+        { label: "no quote yet", pattern: { subject: "?org", predicate: "offers:quoted", object: "?world" }, present: false, because: "nothing recorded" },
+      ],
+      produces: [{ subject: "?org", predicate: "offers:quoted", object: "?world", value: { capability: "?capability" } }],
+      scope: (b, w) => w.entities.get(b.world)?.scope ?? null,
+      title: (b, w) => `Get ${w.entities.get(b.org)?.title}'s terms through a referral partner`,
+      payload: () => ({}),
+      consequences: (b, w) => [{ op: "relation.create", kind: "offers", from_ref: b.org, to_ref: b.world, scope: w.entities.get(b.world)!.scope, attributes: { status: "quoted", capability: b.capability, via: "referral" }, result_keys: ["capacity_per_year", "unit_price_usd", "lead_time_days", "can_fulfill", "provider"] }],
+      uncertainty: () => ({ level: "medium", because: "second-hand terms" }),
+    };
+    const partner: Provider = {
+      id: "referral-partner",
+      capability: "counterparty.referral",
+      perform: async () => ({
+        provider: "referral-partner",
+        status: "succeeded",
+        result: { capacity_per_year: 12000, unit_price_usd: 18000, lead_time_days: 200, can_fulfill: true, provider: "referral-partner" },
+        evidence: [{ basis: "artifact", content_hash: `sha256:${"cd".repeat(32)}`, description: "Referral partner's relayed quote" }],
+        detail: "terms relayed",
+      }),
+    };
+    const providers = L.providers.with(partner);
+    const world = await loadWorld(L.you, L.youId);
+    const h = await computeHorizon({ world, actorId: L.youId, principalId: null, goal: L.goal, kernelFor: L.kernelFor, providers, transitions: STANDARD.with(referral) });
+    const halden = h.routes.filter((r) => r.orgRef === L.org("halden"));
+    assert.deepEqual(halden.map((r) => r.steps.map((st) => st.transition)).sort(), [["supplier.inquire", "supplier.accept"], ["supplier.referral", "supplier.accept"]], "two ways to a quote, one agreement");
+    const viaReferral = halden.find((r) => r.steps[0].transition === "supplier.referral")!;
+    const run = await executeRoute({ kernelFor: L.kernelFor, providers, world, worldFor: (id) => loadWorld(L.kernelFor(id), id), transitions: STANDARD.with(referral) }, await recordRoute(L.you, viaReferral));
+    assert.deepEqual(run.map((o) => o.status), ["completed", "completed"]);
+    const quote = (await L.you.readRelations(L.scope)).find((r) => r.kind === "offers")!;
+    assert.deepEqual([quote.attributes.via, quote.attributes.provider], ["referral", "referral-partner"]);
+    const agreed = (await L.you.readRelations(L.scope)).find((r) => r.kind === "supplies")!;
+    assert.equal(agreed.attributes.unit_price_usd, 18000, "the agreement carries the relayed terms");
   });
 
   it("keeps rendering, Horizon and context read-only", async () => {

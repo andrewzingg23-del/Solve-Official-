@@ -30,15 +30,32 @@ export type Fact = {
   provenance: Provenance;
 };
 
-// What an actor wants the World to become. Narrow on purpose: one desired state, stated as facts.
-export type Goal = {
-  kind: "secure_supply";
-  world: string; // entity ref of the World that needs it
-  capability: string; // capability key, e.g. "contract_manufacturing"
-  quantity: number | null;
+export type Binding = Record<string, string>;
+
+// A pattern over facts. A slot may be a canonical ref or a variable ("?org"); `value` is a subset
+// the fact's value must contain (its strings may be variables too); `status` restricts the truth
+// statuses that count.
+export type Pattern = {
+  subject?: string;
+  predicate: string;
+  object?: string;
+  status?: TruthStatus[];
+  value?: Record<string, unknown>;
 };
 
-export type Binding = Record<string, string>;
+// What an actor wants the World to become: facts it desires, in a scope it must be able to see.
+export type Goal = {
+  kind: string;
+  title: string;
+  scope: string;
+  desired: Pattern[];
+  // Variables the goal fixes (the World it concerns, the capability it needs).
+  bind: Binding;
+  // Kept for supply goals: the World entity and the quantity the terms are for.
+  world?: string;
+  capability?: string;
+  quantity?: number | null;
+};
 
 export type Check = { label: string; met: boolean; because: string };
 
@@ -46,6 +63,9 @@ export type Check = { label: string; met: boolean; because: string };
 export type Consequence =
   | { op: "relation.create"; kind: string; from_ref: string; to_ref: string; scope: string; attributes?: Record<string, unknown>; result_keys?: string[] }
   | { op: "relation.end"; relation_id: string; reason?: string };
+
+// A condition the kernel re-checks when the action is enacted (see kernel.guard_failure).
+export type KernelGuard = { op: "relation.exists" | "relation.absent"; kind: string; from_ref?: string; to_ref?: string; attributes?: Record<string, unknown> };
 
 export type Uncertainty = { level: "low" | "medium" | "high"; because: string };
 
@@ -69,6 +89,7 @@ export type RouteStep = {
   failures: string[];
   uncertainty: Uncertainty;
   consequences: Consequence[];
+  guards: KernelGuard[];
   predicted: Fact[];
   payload: Record<string, unknown>;
 };

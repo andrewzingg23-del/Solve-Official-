@@ -21,6 +21,8 @@ Canon as executable checks. Each line names the test that fails if the invariant
 | The loop: context and Horizon from the actor's own authority; refusals recorded with no consequence; evidence settles before consequence; repeats, reloads, a crash between evidence and settlement, and concurrent runs yield one consequence; steps keep causal order | `tests/e2e/loop.test.ts` |
 | Providers are replaceable without changing routes or rewriting history; planning and re-ranking write nothing | `tests/e2e/loop.test.ts` |
 | Perception, planning and rendering never write; the browser's kernel survives reload with identical canonical state | `tests/e2e/loop.test.ts`, `npm run test:world` |
+| Guards: a failing precondition is not an action; a lapsed guard fails enactment; an effect landed under a lapsed guard needs reconciliation and yields no consequence | `tests/kernel/actions.test.ts` guards, `tests/e2e/loop.test.ts` |
+| A step's consequences are fixed from the World at proposal; a World-extended transition plans and executes through the unchanged core; verification changes a claim's status only by a service's evidence | `tests/e2e/loop.test.ts` |
 | Quorum needs distinct parties; collectives can count actors when policy says so | `tests/kernel/actions.test.ts` governance |
 | Multisig accepts only named signers; governed writes cannot bypass actions | `tests/kernel/actions.test.ts` governance |
 | Timelocks and challenge windows hold enactment; revocation stops a pending action | `tests/kernel/actions.test.ts` governance |

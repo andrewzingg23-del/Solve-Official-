@@ -1,54 +1,17 @@
 // Horizon: given this World and this actor, what could happen next, and which sequences of state
-// transitions reach the actor's desired state. It reads only (World state and read-only authority
-// decisions); everything it produces is interpretation, ranked by a versioned policy, and becomes
-// canonical only when a route's actions complete with evidence.
-import type { AuthorityDecision, Kernel, WorldEntity } from "../kernel/client";
+// transitions reach the actor's desired facts. A backward-chaining planner over the transition
+// registry: it finds transitions that produce a desired fact, then plans their unmet requirements,
+// bounded in depth and never through the same transition twice. It reads only (World state and
+// read-only authority decisions); everything it produces is interpretation, ranked by a versioned
+// policy, and becomes canonical only when a route's actions complete with evidence.
+import type { AuthorityDecision, Kernel } from "../kernel/client";
 import { sha256Hex } from "../money/settlement";
 import type { Providers } from "./providers";
-import type { Binding, Check, Consequence, Fact, Goal, Horizon, Route, RouteStep, Uncertainty } from "./types";
+import { canonical, instantiate, isVar, matches, STANDARD, TRANSITIONS, type Transition, type Transitions } from "./transitions";
+import type { Binding, Goal, Horizon, Pattern, Route, RouteStep } from "./types";
 import type { WorldState } from "./world";
 
-// The transitions this Horizon knows. Each names the capability that authorizes it, the provider
-// capability that performs it (resolved at run time, replaceable), the evidence that would show it
-// happened, and how it can fail.
-export const TRANSITIONS = {
-  inquire: {
-    id: "supplier.inquire",
-    kind: "supplier.inquire",
-    capability: "message.send",
-    provider: "counterparty.inquiry",
-    native: false,
-    expectedEvidence: "A reply from the organization's agent, naming the principal it answers for.",
-    failures: ["the organization declines", "no reply arrives", "it cannot meet the quantity"],
-  },
-  accept: {
-    id: "supplier.accept",
-    kind: "supplier.accept",
-    capability: "commitment.make",
-    provider: "counterparty.acceptance",
-    native: false,
-    expectedEvidence: "The acceptance delivered to the organization's agent.",
-    failures: ["the offer was withdrawn", "authority lapsed before enactment"],
-  },
-  delegate: {
-    id: "authority.delegate",
-    kind: "grant.issue",
-    capability: "kernel.grant.issue",
-    provider: "kernel",
-    native: true,
-    expectedEvidence: "The kernel's grant record.",
-    failures: ["the delegator no longer holds the capability"],
-  },
-  verify: {
-    id: "claim.verify",
-    kind: "claim.verify",
-    capability: "verification.request",
-    provider: "verification",
-    native: false,
-    expectedEvidence: "Externally verified evidence attached to the claim.",
-    failures: ["the claim does not hold up", "no verifier is available"],
-  },
-} as const;
+export { TRANSITIONS } from "./transitions";
 
 export type RankingPolicy = { id: string; score(route: Omit<Route, "score" | "policy" | "id">, world: WorldState): number };
 
@@ -71,227 +34,229 @@ export type HorizonInput = {
   kernelFor(actorId: string): Kernel;
   providers: Providers;
   policy?: RankingPolicy;
+  transitions?: Transitions;
   // When the actor lacks authority for a step: its principal delegates it (default), its principal
   // does it, or nobody stands in and the actor's own decision stands (an attempt it was asked to make).
   fallback?: "delegate" | "principal" | "none";
 };
 
-const canonical = (value: unknown): string =>
-  Array.isArray(value) ? `[${value.map(canonical).join(",")}]` : value && typeof value === "object" ? `{${Object.keys(value).sort().map((k) => `${JSON.stringify(k)}:${canonical((value as Record<string, unknown>)[k])}`).join(",")}}` : JSON.stringify(value);
+const MAX_DEPTH = 4;
 
-function capabilityRef(world: WorldState, key: string) {
-  for (const [ref, e] of world.entities) if (e.kind === "capability" && e.attributes.key === key) return ref;
-  return null;
+type Planned = { t: Transition; binding: Binding };
+type Alternative = { binding: Binding; steps: Planned[] };
+
+// Binds a transition's produced pattern against the pattern wanted, under a binding.
+function fitProduced(produced: Pattern, wanted: Pattern, b: Binding): Binding | null {
+  const w = instantiate(wanted, b);
+  const out: Binding = { ...b };
+  for (const [mine, theirs] of [
+    [produced.subject, w.subject],
+    [produced.object, w.object],
+  ] as const) {
+    if (mine === undefined || theirs === undefined || isVar(theirs)) continue;
+    if (isVar(mine)) {
+      const v = mine.slice(1);
+      if (out[v] !== undefined && out[v] !== theirs) return null;
+      out[v] = theirs;
+    } else if (mine !== theirs) return null;
+  }
+  for (const [k, theirs] of Object.entries(w.value ?? {})) {
+    const mine = produced.value?.[k];
+    if (mine === undefined || isVar(theirs)) continue;
+    if (isVar(mine)) out[mine.slice(1)] = String(theirs);
+    else if (canonical(mine) !== canonical(theirs)) return null;
+  }
+  return out;
 }
 
-const num = (v: unknown) => (typeof v === "number" ? v : null);
+function enumerate(t: Transition, b: Binding, world: WorldState): Binding[] {
+  let out: Binding[] = [b];
+  for (const [v, kind] of Object.entries(t.binds ?? {})) {
+    if (b[v] !== undefined) continue;
+    const refs = [...world.entities.entries()].filter(([, e]) => e.kind === kind).map(([ref]) => ref);
+    out = out.flatMap((bb) => refs.map((ref) => ({ ...bb, [v]: ref })));
+  }
+  return out;
+}
 
 export async function computeHorizon(input: HorizonInput): Promise<Horizon> {
   const { world, actorId, principalId, goal, providers } = input;
   const policy = input.policy ?? RANKING_V1;
+  const registry = input.transitions ?? STANDARD;
   const horizon: Horizon = { actorId, goal, satisfied: null, routes: [], excluded: [], next: [], policy: policy.id };
-  const worldEntity = world.entities.get(goal.world);
-  if (!worldEntity) {
-    // Authorization before visibility: an actor that cannot see the World plans nothing in it.
-    horizon.excluded.push({ orgRef: goal.world, title: "this World", reasons: ["you cannot see this World"] });
+
+  // Authorization before visibility: an actor that cannot see the scope plans nothing in it.
+  if (!world.scopes.includes(goal.scope)) {
+    horizon.excluded.push({ orgRef: goal.scope, title: "this World", reasons: ["you cannot see this World"] });
     return horizon;
   }
-  const scope = worldEntity.scope;
-  horizon.satisfied =
-    world.facts.find((f) => f.predicate === "supplies:agreed" && f.object === goal.world && f.value?.capability === goal.capability) ?? null;
-  if (horizon.satisfied) return horizon;
+  for (const hit of matches(world, goal.desired[0], goal.bind)) {
+    if (goal.desired.every((p) => matches(world, p, hit.binding).length > 0)) {
+      horizon.satisfied = hit.fact;
+      return horizon;
+    }
+  }
+
+  // Why a candidate is not a route, by the thing it was about.
+  const exclusions = new Map<string, Set<string>>();
+  const note = (b: Binding, reasons: string[]) => {
+    const key = b.org ?? b.subject;
+    if (!key || !reasons.length) return;
+    const set = exclusions.get(key) ?? new Set<string>();
+    for (const r of reasons) set.add(r);
+    exclusions.set(key, set);
+  };
+
+  const solve = (pattern: Pattern, b: Binding, depth: number, seen: Set<string>): Alternative[] => {
+    const alternatives: Alternative[] = matches(world, pattern, b).map((m) => ({ binding: m.binding, steps: [] }));
+    if (depth >= MAX_DEPTH) return alternatives;
+    for (const t of registry.producing(pattern)) {
+      if (seen.has(t.id)) continue;
+      const produced = t.produces.find((q) => q.predicate === pattern.predicate)!;
+      const bound = fitProduced(produced, pattern, b);
+      if (!bound) continue;
+      for (const candidate of enumerate(t, bound, world)) {
+        const early = t.exclude?.(candidate, world, goal) ?? [];
+        if (early.length) {
+          note(candidate, early);
+          continue;
+        }
+        let branch: Alternative[] = [{ binding: candidate, steps: [] }];
+        for (const req of t.requires) {
+          const next: Alternative[] = [];
+          for (const alt of branch) {
+            if (req.present === false) {
+              if (matches(world, req.pattern, alt.binding).length === 0) next.push(alt);
+              continue;
+            }
+            for (const sub of solve(req.pattern, alt.binding, depth + 1, new Set([...seen, t.id]))) {
+              next.push({ binding: sub.binding, steps: [...alt.steps, ...sub.steps] });
+            }
+          }
+          branch = next;
+          if (!branch.length) break;
+        }
+        for (const alt of branch) {
+          const late = t.exclude?.(alt.binding, world, goal) ?? [];
+          if (late.length) {
+            note(alt.binding, late);
+            continue;
+          }
+          alternatives.push({ binding: alt.binding, steps: [...alt.steps, { t, binding: alt.binding }] });
+        }
+      }
+    }
+    return alternatives;
+  };
+
+  let plans: Alternative[] = [{ binding: { ...goal.bind }, steps: [] }];
+  for (const desired of goal.desired) {
+    const next: Alternative[] = [];
+    for (const alt of plans) for (const sub of solve(desired, alt.binding, 0, new Set())) next.push({ binding: sub.binding, steps: [...alt.steps, ...sub.steps] });
+    plans = next;
+  }
 
   const decisions = new Map<string, Promise<AuthorityDecision>>();
-  const decide = (who: string, capability: string) => {
-    const key = `${who}|${capability}`;
+  const decide = (who: string, capability: string, scope: string) => {
+    const key = `${who}|${capability}|${scope}`;
     if (!decisions.has(key)) decisions.set(key, input.kernelFor(who).authorize({ capability, scope }));
     return decisions.get(key)!;
   };
-  // Who does a step: the actor if its authority allows, otherwise its principal if theirs does.
   const fallback = input.fallback ?? "delegate";
-  const performer = async (capability: string) => {
-    const mine = await decide(actorId, capability);
-    if (fallback === "none" || mine.decision !== "DENY" || !principalId || principalId === actorId) return { who: actorId, decision: mine };
-    const theirs = await decide(principalId, capability);
-    return theirs.decision === "DENY" ? { who: actorId, decision: mine } : { who: principalId, decision: theirs };
-  };
 
-  const capRef = capabilityRef(world, goal.capability);
-  const candidates = [...world.entities.entries()].filter(
-    ([, e]) => e.kind === "organization" && ((e.attributes.capabilities as string[] | undefined) ?? []).includes(goal.capability),
-  );
-
-  for (const [orgRef, org] of candidates as [string, WorldEntity][]) {
-    const claim = world.facts.find((f) => f.subject === orgRef && f.predicate === "claims");
-    const quote = world.facts.find((f) => f.subject === orgRef && f.predicate === "offers:quoted" && f.object === goal.world);
-    const reasons: string[] = [];
-    if (claim?.status === "disputed") {
-      const challenge = world.events.find((e) => e.type === "claim.challenge" && e.payload.claim_event_id === claim.provenance.events[0]);
-      reasons.push(`its capacity claim is disputed${challenge ? `: ${String(challenge.payload.finding)}` : ""}`);
-    }
-    const capacity = num(quote?.value?.capacity_per_year) ?? num(claim?.value?.capacity_per_year) ?? num(org.attributes.capacity_per_year);
-    if (goal.quantity && capacity !== null && capacity < goal.quantity) {
-      reasons.push(`${quote ? "quoted" : "claims"} ${capacity.toLocaleString("en-US")} a year, below ${goal.quantity.toLocaleString("en-US")}`);
-    }
-    if (quote && quote.value?.can_fulfill === false) reasons.push("it said it cannot meet the quantity");
-    if (reasons.length) {
-      horizon.excluded.push({ orgRef, title: org.title, reasons });
-      continue;
-    }
-
-    const binding: Binding = { world: goal.world, org: orgRef, capability: goal.capability, ...(capRef ? { capabilityRef: capRef } : {}) };
+  for (const plan of plans) {
+    // Each transition once per binding, in causal order.
+    const seenSteps = new Set<string>();
+    const planned = plan.steps.filter((s) => {
+      const key = `${s.t.id}|${canonical(s.binding)}`;
+      if (seenSteps.has(key)) return false;
+      seenSteps.add(key);
+      return true;
+    });
+    if (!planned.length) continue;
     const steps: RouteStep[] = [];
-    const unitPrice = num(quote?.value?.unit_price_usd) ?? num(org.attributes.unit_price_usd);
-    const leadTime = num(quote?.value?.lead_time_days) ?? num(org.attributes.lead_time_days);
-    const claimStatus = claim?.status ?? "unknown";
-
-    if (!quote) {
-      const inquiry = await performer(TRANSITIONS.inquire.capability);
-      // An agent without contact authority can be given it by its principal, so it can then act on
-      // its own: that delegation is a step of the route, not a side effect.
-      const own = await decide(actorId, TRANSITIONS.inquire.capability);
-      if (fallback === "delegate" && own.decision === "DENY" && principalId && principalId !== actorId) {
-        const grant = await decide(principalId, TRANSITIONS.delegate.capability);
-        const holds = await decide(principalId, TRANSITIONS.inquire.capability);
-        if (grant.decision !== "DENY" && holds.decision !== "DENY") {
-          steps.push(step({
-            t: TRANSITIONS.delegate,
-            title: `Let your companion contact ${org.title} (and suppliers in this World) for 7 days`,
-            binding,
-            actorId: principalId,
-            authority: grant,
-            scope,
-            targetRef: null,
-            preconditions: [{ label: "you hold contact authority here", met: true, because: "your grants cover message.send" }],
-            uncertainty: { level: "low", because: "a kernel-native grant" },
-            consequences: [],
-            predicted: [],
-            payload: { grantee_id: actorId, capability: TRANSITIONS.inquire.capability, expires_at: new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10) + "T00:00:00Z" },
-          }));
+    const delegated = new Set<string>();
+    for (const { t, binding } of planned) {
+      const scope = t.scope(binding, world, goal);
+      if (!scope) continue;
+      // Who does a step: the actor if its authority allows; otherwise its principal delegates it
+      // (a step of the route) or performs it, as the caller asked.
+      let who = actorId;
+      let decision = await decide(actorId, t.capability, scope);
+      if (decision.decision === "DENY" && principalId && principalId !== actorId && fallback !== "none") {
+        const theirs = await decide(principalId, t.capability, scope);
+        if (theirs.decision !== "DENY") {
+          const grant = fallback === "delegate" && t.delegable ? await decide(principalId, TRANSITIONS.delegate.capability, scope) : null;
+          if (grant && grant.decision !== "DENY") {
+            const key = `${t.capability}|${scope}`;
+            if (!delegated.has(key)) {
+              delegated.add(key);
+              const db: Binding = { ...binding, scope, grantee: actorId, grants: t.capability };
+              steps.push(routeStep(TRANSITIONS.delegate, db, principalId, grant, world, goal, scope));
+            }
+            decision = { decision: "ALLOW", reasons: ["granted by the step before"], grant_id: null, policy_id: null, threshold: null, delay_seconds: null };
+          } else {
+            who = principalId;
+            decision = theirs;
+          }
         }
       }
-      const granted = steps.length > 0;
-      const quantity = goal.quantity;
-      steps.push(step({
-        t: TRANSITIONS.inquire,
-        title: `Ask ${org.title} whether it can make ${quantity ? quantity.toLocaleString("en-US") : "enough"}`,
-        binding,
-        actorId: granted ? actorId : inquiry.who,
-        authority: granted ? { decision: "ALLOW", reasons: ["granted by the step before"], grant_id: null, policy_id: null, threshold: null, delay_seconds: null } : inquiry.decision,
-        scope,
-        targetRef: null,
-        preconditions: [
-          { label: `${org.title} offers ${goal.capability.replace(/_/g, " ")}`, met: true, because: "its published record lists it" },
-          { label: "no quote yet", met: true, because: "nothing recorded in this World" },
-        ],
-        uncertainty: unc(claimStatus, capacity, quantity),
-        consequences: [{ op: "relation.create", kind: "offers", from_ref: orgRef, to_ref: goal.world, scope, attributes: { status: "quoted", capability: goal.capability, quantity }, result_keys: ["capacity_per_year", "lead_time_days", "unit_price_usd", "minimum_order", "can_fulfill", "reply", "provider"] }],
-        predicted: [{ subject: orgRef, predicate: "offers:quoted", object: goal.world, value: { capacity_per_year: capacity, unit_price_usd: unitPrice }, status: "inferred", provenance: { events: [], actions: [], evidence: [], by: null } }],
-        payload: { quantity },
-      }));
+      steps.push(routeStep(t, binding, who, decision, world, goal, scope));
     }
-
-    if (claimStatus !== "verified") {
-      const verify = await performer(TRANSITIONS.verify.capability);
-      steps.push(step({
-        t: TRANSITIONS.verify,
-        title: `Have ${org.title}'s capacity claim independently verified`,
-        binding,
-        actorId: verify.who,
-        authority: verify.decision,
-        scope,
-        targetRef: null,
-        preconditions: [{ label: "its claim is not yet verified", met: true, because: `the claim is ${claimStatus}` }],
-        uncertainty: { level: "high", because: "verification depends on an independent party" },
-        consequences: [],
-        predicted: [],
-        payload: {},
-      }));
-    }
-
-    const accept = await performer(TRANSITIONS.accept.capability);
-    const terms = { quantity: goal.quantity, unit_price_usd: unitPrice, lead_time_days: leadTime };
-    steps.push(step({
-      t: TRANSITIONS.accept,
-      title: `Accept ${org.title}'s terms${unitPrice ? ` at $${unitPrice.toLocaleString("en-US")} a unit` : ""}`,
-      binding,
-      actorId: accept.who,
-      authority: accept.decision,
-      scope,
-      targetRef: null,
-      preconditions: [
-        { label: "a quote that meets the quantity", met: Boolean(quote && quote.value?.can_fulfill), because: quote ? "recorded from its reply" : "comes from the inquiry" },
-        { label: "a verified capacity claim", met: claimStatus === "verified", because: `the claim is ${claimStatus}` },
-      ],
-      uncertainty: claimStatus === "verified" ? { level: "low", because: "verified capacity and a recorded quote" } : { level: "high", because: "capacity not independently verified" },
-      consequences: [{ op: "relation.create", kind: "supplies", from_ref: orgRef, to_ref: goal.world, scope, attributes: { status: "agreed", capability: goal.capability, ...terms } }],
-      predicted: [{ subject: orgRef, predicate: "supplies:agreed", object: goal.world, value: { capability: goal.capability, ...terms }, status: "inferred", provenance: { events: [], actions: [], evidence: [], by: null } }],
-      payload: { terms },
-    }));
-
     const blockedBy: string[] = [];
     for (const [i, s] of steps.entries()) {
       if (!s.native && !providers.resolve(s.provider.capability)) blockedBy.push(`step ${i + 1}: no provider for ${s.provider.capability} is connected`);
       else if (s.authority.decision === "DENY") blockedBy.push(`step ${i + 1}: ${s.authority.reasons.join("; ") || "not authorized"}`);
     }
+    const orgRef = plan.binding.org ?? plan.binding.subject ?? "";
     const draft = {
       goal,
       orgRef,
-      title: `${org.title}: ${steps.map((s) => s.transition.split(".")[1]).join(" → ")}`,
+      title: `${orgRef ? titleOf(world, orgRef) : goal.title}: ${steps.map((s) => s.transition.split(".")[1]).join(" → ")}`,
       steps,
       executable: blockedBy.length === 0,
       blockedBy,
       needsHuman: steps.some((s) => s.actorId !== actorId),
     };
-    const id = await sha256Hex(canonical({ goal, steps: steps.map((s) => ({ t: s.transition, b: s.binding, a: s.actorId, c: s.consequences })) }));
+    const id = await sha256Hex(canonical({ goal: { kind: goal.kind, scope: goal.scope, desired: goal.desired, bind: goal.bind }, steps: steps.map((s) => ({ t: s.transition, b: s.binding, a: s.actorId, c: s.consequences })) }));
     horizon.routes.push({ ...draft, id, score: policy.score(draft, world), policy: policy.id });
   }
 
+  const routed = new Set(horizon.routes.map((r) => r.orgRef));
+  for (const [ref, reasons] of exclusions) {
+    if (!routed.has(ref)) horizon.excluded.push({ orgRef: ref, title: titleOf(world, ref), reasons: [...reasons] });
+  }
   horizon.routes.sort((a, b) => b.score - a.score || (a.id < b.id ? -1 : 1));
+  horizon.excluded.sort((a, b) => (a.title < b.title ? -1 : 1));
   horizon.next = horizon.routes.filter((r) => r.executable).map((r) => r.steps[0]);
   return horizon;
 }
 
-function unc(claim: string, capacity: number | null, quantity: number | null): Uncertainty {
-  if (claim === "verified" && capacity !== null && (!quantity || capacity >= quantity)) return { level: "low", because: "verified capacity covers the quantity" };
-  if (capacity === null) return { level: "high", because: "no capacity on record" };
-  return { level: "medium", because: `capacity is ${claim}` };
-}
+const titleOf = (w: WorldState, ref: string) => w.entities.get(ref)?.title ?? ref;
 
-type StepInput = {
-  t: (typeof TRANSITIONS)[keyof typeof TRANSITIONS];
-  title: string;
-  binding: Binding;
-  actorId: string;
-  authority: AuthorityDecision;
-  scope: string;
-  targetRef: string | null;
-  preconditions: Check[];
-  uncertainty: Uncertainty;
-  consequences: Consequence[];
-  predicted: Fact[];
-  payload: Record<string, unknown>;
-};
-
-function step(i: StepInput): RouteStep {
+function routeStep(t: Transition, binding: Binding, actorId: string, authority: AuthorityDecision, world: WorldState, goal: Goal, scope: string): RouteStep {
   return {
-    transition: i.t.id,
-    title: i.title,
-    binding: i.binding,
-    actorId: i.actorId,
-    authority: { actorId: i.actorId, decision: i.authority.decision, reasons: i.authority.reasons },
-    capability: i.t.capability,
-    scope: i.scope,
-    kind: i.t.kind,
-    targetRef: i.targetRef,
-    native: i.t.native,
-    provider: { capability: i.t.provider, id: null },
-    preconditions: i.preconditions,
-    expectedEvidence: i.t.expectedEvidence,
-    failures: [...i.t.failures],
-    uncertainty: i.uncertainty,
-    consequences: i.consequences,
-    predicted: i.predicted,
-    payload: i.payload,
+    transition: t.id,
+    title: t.title(binding, world, goal),
+    binding,
+    actorId,
+    authority: { actorId, decision: authority.decision, reasons: authority.reasons },
+    capability: t.capability,
+    scope,
+    kind: t.kind,
+    targetRef: null,
+    native: t.native,
+    provider: { capability: t.provider, id: null },
+    preconditions: t.requires.map((req) => {
+      const met = req.present === false ? matches(world, req.pattern, binding).length === 0 : matches(world, req.pattern, binding).length > 0;
+      return { label: req.label, met, because: met ? req.because : "comes from an earlier step" };
+    }),
+    expectedEvidence: t.expectedEvidence,
+    failures: [...t.failures],
+    uncertainty: t.uncertainty(binding, world, goal),
+    consequences: t.consequences(binding, world, goal),
+    guards: t.guards?.(binding, world, goal) ?? [],
+    predicted: t.predicted?.(binding, world, goal) ?? [],
+    payload: t.payload(binding, world, goal),
   };
 }

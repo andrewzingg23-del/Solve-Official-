@@ -43,7 +43,8 @@ export const ARCADIA_WORLD = "world:arcadia";
 //   arcadia/3  scenarios; "lost-payment-responses" runs SOV's operating collective on its rail
 //   arcadia/4  "creation-loop" builds, tests, reviews, promotes and observes the Class A proposal
 //   arcadia/5  members may share their read of the market with their own agents
-export const ARCADIA_GENERATOR = "arcadia/5";
+//   arcadia/6  members may request verification of a claim; Kestrel reads the market it verifies
+export const ARCADIA_GENERATOR = "arcadia/6";
 export const ARCADIA_SEED = "arcadia-genesis-1";
 
 // Scenarios layer behaviour onto the base civilization (failures, fraud, disputes, governance).
@@ -287,6 +288,7 @@ async function generate(config: ArcadiaConfig, started: number) {
   await steward.issueGrant({ grantee: verifierId, capability: "kernel.evidence.attach", scope: ARCADIA_WORLD });
   await steward.issueGrant({ grantee: verifierId, capability: "claim.challenge", scope: ARCADIA_WORLD });
   await steward.issueGrant({ grantee: verifierId, capability: "world.relation.write", scope: ARCADIA_WORLD });
+  await steward.issueGrant({ grantee: verifierId, capability: "kernel.read", scope: ARCADIA_WORLD });
 
   const capabilities: Record<string, string> = {};
   for (const [key, title] of Object.entries(CAPABILITIES)) {
@@ -461,6 +463,7 @@ async function generate(config: ArcadiaConfig, started: number) {
   // You can read the public market as a member, and share that read with your own agents.
   await steward.issueGrant({ grantee: youId, capability: "kernel.read", scope: ARCADIA_WORLD });
   await steward.issueGrant({ grantee: youId, capability: "kernel.grant.issue", scope: ARCADIA_WORLD });
+  await steward.issueGrant({ grantee: youId, capability: "verification.request", scope: ARCADIA_WORLD });
 
   const balances: Record<string, Record<string, string>> = {};
   for (const [who, owner] of [["you", prepared.wallet.address], ["bob", bobWallet.address]] as const) {

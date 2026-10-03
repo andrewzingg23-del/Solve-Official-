@@ -86,7 +86,7 @@ export function HorizonRoutes({ engine, model, onChanged }: { engine: WorldEngin
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className={label}>Horizon</p>
         <p className="text-xs text-muted">
-          Toward {goal.quantity?.toLocaleString("en-US")} vehicles of contract manufacturing, as {companion ? companion.name : "you"} can act now · ranked by {horizon?.policy ?? "…"}
+          Toward {goal.title}, as {companion ? companion.name : "you"} can act now · ranked by {horizon?.policy ?? "…"}
         </p>
       </div>
       {!horizon && <p className="text-sm text-muted">Reading the World…</p>}

@@ -3,7 +3,8 @@
 // then forbid it. The same function serves a human, an agent, an organization's agent or any future
 // principal: nothing in it assumes a person at a screen.
 import type { Kernel } from "../kernel/client";
-import { computeHorizon, TRANSITIONS, type HorizonInput } from "./horizon";
+import { computeHorizon, type HorizonInput } from "./horizon";
+import { STANDARD } from "./transitions";
 import type { Fact, Goal, Horizon } from "./types";
 import { loadWorld, type WorldState } from "./world";
 
@@ -27,23 +28,24 @@ export async function buildContext(
   const world = await loadWorld(kernel, actorId);
   const [profile] = await kernel.readActors([actorId]);
   const principalId = profile?.kind === "agent" ? (profile.owner_id ?? null) : null;
-  const target = goal ? world.entities.get(goal.world) : undefined;
-  const scope = target?.scope ?? null;
+  const target = goal?.world ? world.entities.get(goal.world) : undefined;
+  const scope = goal?.scope ?? null;
 
   const can: ActorContext["can"] = [];
   const cannot: ActorContext["cannot"] = [];
   if (scope) {
-    for (const capability of ["kernel.read", "world.relation.write", TRANSITIONS.inquire.capability, TRANSITIONS.accept.capability, TRANSITIONS.delegate.capability]) {
+    const capabilities = [...new Set(["kernel.read", "world.relation.write", ...(input.transitions ?? STANDARD).all().map((t) => t.capability)])];
+    for (const capability of capabilities) {
       const d = await kernel.authorize({ capability, scope });
       if (d.decision === "DENY") cannot.push({ capability, scope, reasons: d.reasons });
       else can.push({ capability, scope, decision: d.decision });
     }
   }
   const horizon = goal ? await computeHorizon({ ...input, world, actorId, principalId, goal }) : null;
-  const relevant = new Set<string>(goal ? [goal.world, ...(horizon?.routes.map((r) => r.orgRef) ?? []), ...(horizon?.excluded.map((e) => e.orgRef) ?? [])] : []);
+  const relevant = new Set<string>(goal ? [...Object.values(goal.bind), ...(horizon?.routes.map((r) => r.orgRef) ?? []), ...(horizon?.excluded.map((e) => e.orgRef) ?? [])] : []);
   return {
     who: { actorId, label: profile?.label ?? "", kind: profile?.kind ?? "unknown", role: profile?.role ?? null, principalId },
-    where: { world: target ? goal!.world : null, title: target?.title ?? null, scope },
+    where: { world: goal?.world ?? null, title: target?.title ?? goal?.title ?? null, scope },
     sees: { scopes: world.scopes, entities: world.entities.size, facts: world.facts.length },
     can,
     cannot,

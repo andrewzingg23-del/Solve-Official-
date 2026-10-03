@@ -10,6 +10,7 @@
 import { KernelError, type Kernel } from "../kernel/client";
 import { sha256Hex } from "../money/settlement";
 import type { Providers } from "./providers";
+import { canonical, STANDARD, type Transitions } from "./transitions";
 import type { Route, RouteStep, StepOutcome } from "./types";
 import type { WorldState } from "./world";
 
@@ -42,8 +43,9 @@ export async function recordRoute(selector: Kernel, route: Route): Promise<Recor
 // execution resumes after a reload.
 export async function loadRoute(reader: Kernel, scope: string, goal: Route["goal"], orgRef?: string): Promise<RecordedRoute | null> {
   const events = await reader.readEvents(scope, { limit: 500, newestFirst: true });
-  // Field by field: stored JSON does not keep key order.
-  const same = (g: Partial<Route["goal"]> | undefined) => !!g && g.kind === goal.kind && g.world === goal.world && g.capability === goal.capability && (g.quantity ?? null) === (goal.quantity ?? null);
+  // Structurally: stored JSON does not keep key order.
+  const wanted = canonical({ kind: goal.kind, scope: goal.scope, desired: goal.desired, bind: goal.bind });
+  const same = (g: Partial<Route["goal"]> | undefined) => !!g && canonical({ kind: g.kind, scope: g.scope, desired: g.desired, bind: g.bind }) === wanted;
   const e = events.find((x) => x.type === ROUTE_EVENT && same((x.payload as { goal?: Route["goal"] }).goal) && (!orgRef || x.payload.org === orgRef));
   if (!e) return null;
   const p = e.payload as { route_id: string; goal: Route["goal"]; policy: string; steps: RouteStep[] };
@@ -53,8 +55,33 @@ export async function loadRoute(reader: Kernel, scope: string, goal: Route["goal
 export type Executor = {
   kernelFor(actorId: string): Kernel;
   providers: Providers;
+  // The World as the executing actor sees it. `worldFor` (fresh, per actor) is preferred when
+  // given: a step's concrete terms are fixed from the World at proposal time, not planning time.
   world: WorldState;
+  worldFor?(actorId: string): Promise<WorldState>;
+  transitions?: Transitions;
 };
+
+// A route is a plan; the action is proposed with what the transition would do now. The plan's
+// bindings and actors stay; payload, consequences and guards are re-derived from the current
+// World so that what approvers see is what happens (the quote actually recorded, not the one
+// predicted when the route was planned).
+async function concrete(x: Executor, route: RecordedRoute, index: number, world: WorldState): Promise<RouteStep> {
+  const step = route.steps[index];
+  const t = (x.transitions ?? STANDARD).get(step.transition);
+  // Unknown to this registry, or an actor who cannot even see the World the step is in: the
+  // recorded plan stands, and the kernel refuses the actor rather than the shape.
+  const scope = t?.scope(step.binding, world, route.goal) ?? null;
+  if (!t || !scope) return step;
+  return {
+    ...step,
+    scope,
+    title: t.title(step.binding, world, route.goal),
+    payload: t.payload(step.binding, world, route.goal),
+    consequences: t.consequences(step.binding, world, route.goal),
+    guards: t.guards?.(step.binding, world, route.goal) ?? [],
+  };
+}
 
 // The attempts at one step of a recorded route, oldest first.
 async function attempts(k: Kernel, route: RecordedRoute, index: number) {
@@ -73,7 +100,9 @@ async function attempts(k: Kernel, route: RecordedRoute, index: number) {
 }
 
 export async function executeStep(x: Executor, route: RecordedRoute, index: number): Promise<StepOutcome> {
-  const step = route.steps[index];
+  const actor = route.steps[index].actorId;
+  const world = x.worldFor ? await x.worldFor(actor) : x.world;
+  const step = await concrete(x, route, index, world);
   const k = x.kernelFor(step.actorId);
   const provider = step.native ? null : x.providers.resolve(step.provider.capability);
   if (!step.native && !provider) return { index, actionId: null, status: "blocked", detail: `no provider for ${step.provider.capability} is connected`, provider: null };
@@ -87,6 +116,8 @@ export async function executeStep(x: Executor, route: RecordedRoute, index: numb
   // since), the next attempt gets its own key. While it would still refuse, report the refusal
   // instead of recording another.
   const prior = await attempts(k, route, index);
+  const done = prior.find((a) => a.status === "completed");
+  if (done) return { index, actionId: done.action_id, status: "completed", detail: "already completed", provider: null };
   const last = prior.at(-1);
   if (last?.status === "rejected") {
     const now = await k.authorize({ capability: step.capability, scope: step.scope });
@@ -101,11 +132,20 @@ export async function executeStep(x: Executor, route: RecordedRoute, index: numb
       capability: step.capability,
       scope: step.scope,
       targetRef: step.targetRef ?? undefined,
-      payload: { ...step.payload, route: `event:${route.eventId}`, step: index, binding: step.binding, ...(step.consequences.length ? { consequences: step.consequences } : {}) },
+      payload: {
+        ...step.payload,
+        route: `event:${route.eventId}`,
+        step: index,
+        binding: step.binding,
+        ...(step.consequences.length ? { consequences: step.consequences } : {}),
+        ...(step.guards?.length ? { guards: step.guards } : {}),
+      },
       idempotencyKey: `route:${route.eventId}:${index}${attempt ? `:${attempt}` : ""}`,
     });
   } catch (error) {
     if (error instanceof KernelError && error.name === "forbidden") return { index, actionId: null, status: "denied", detail: error.message, provider: null };
+    // A precondition the kernel found already false: the World moved since the plan.
+    if (error instanceof KernelError && error.name === "invalid" && /guard does not hold/.test(error.message)) return { index, actionId: null, status: "failed", detail: error.message, provider: null };
     throw error;
   }
   let action = await k.readAction(actionId);
@@ -118,17 +158,22 @@ export async function executeStep(x: Executor, route: RecordedRoute, index: numb
 
   if (step.native) {
     await k.enactAction(actionId);
-    return out("completed", "enacted by the kernel", "kernel");
+    action = await k.readAction(actionId);
+    return action.status === "completed" ? out("completed", "enacted by the kernel", "kernel") : out("failed", action.detail || action.status, "kernel");
   }
   if (action.status === "authorized") {
+    // The kernel re-checks the step's guards right before the outside call.
     await k.beginAction(actionId, `performing through ${provider!.id}`);
     action = await k.readAction(actionId);
+    if (action.status === "failed") return out("failed", action.detail || "a guard no longer holds");
   }
   // Enacting, or reopened for reconciliation: ask the provider (idempotent per action), then let
   // its evidence settle what happened.
-  const response = await provider!.perform({ actor: k, actorId: step.actorId, actionId, step, world: x.world });
+  const response = await provider!.perform({ actor: k, actorId: step.actorId, actionId, step, world });
   if (response.status === "succeeded") {
-    await k.settleAction({ actionId, status: "completed", result: response.result, detail: response.detail, evidence: response.evidence });
+    const settled = await k.settleAction({ actionId, status: "completed", result: response.result, detail: response.detail, evidence: response.evidence });
+    // The effect landed but a guard lapsed meanwhile: not a consequence until someone reconciles.
+    if (settled !== "completed") return out("unknown", (await k.readAction(actionId)).detail || "needs reconciliation");
     return out("completed", response.detail);
   }
   if (response.status === "failed") {

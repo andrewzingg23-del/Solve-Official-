@@ -414,6 +414,51 @@ describe("declared consequences", () => {
   });
 });
 
+describe("guards", () => {
+  it("hold at proposal, are re-checked at enactment, and turn a lapsed outside effect into reconciliation", async () => {
+    const t = await setup();
+    const a = await t.alice.upsertEntity({ kind: "organization", scope: WORLD, title: "Supplier" });
+    const b = await t.alice.upsertEntity({ kind: "world", scope: WORLD, title: "Venture" });
+    const quote = await t.alice.relate({ kind: "offers", fromRef: `entity:${a}`, toRef: `entity:${b}`, scope: WORLD, attributes: { status: "quoted", can_fulfill: true } });
+    const needsQuote = { op: "relation.exists", kind: "offers", from_ref: `entity:${a}`, to_ref: `entity:${b}`, attributes: { status: "quoted", can_fulfill: true } };
+    const noAgreement = { op: "relation.absent", kind: "supplies", to_ref: `entity:${b}`, attributes: { status: "agreed" } };
+    const propose = (guards: unknown[], kind = "supplier.accept", capability = "order.place") =>
+      t.alice.proposeAction({ kind, capability, scope: WORLD, payload: { guards } });
+
+    // A precondition that already fails is not an action; malformed guards are refused.
+    await assert.rejects(propose([{ ...needsQuote, attributes: { status: "quoted", can_fulfill: false } }]), named("invalid", /guard does not hold: no offers/));
+    await assert.rejects(propose([{ op: "relation.maybe", kind: "offers" }]), named("invalid", /invalid guard/));
+
+    // Native enactment: the guard lapses between proposal and enactment, so nothing is enacted.
+    const native = await t.alice.proposeAction({ kind: "message.send", capability: "message.send", scope: WORLD, targetRef: `actor:${t.bobId}`, payload: { type: "INFORMATION_REQUEST", guards: [needsQuote] } });
+    await t.alice.endRelation(quote, "withdrawn");
+    assert.deepEqual(await t.alice.enactAction(native), { failed: "guard no longer holds: no offers from entity:" + a + " to entity:" + b + ' with {"status": "quoted", "can_fulfill": true}' });
+    assert.equal((await t.alice.readAction(native)).status, "failed");
+    assert.deepEqual(await t.alice.enactAction(native), { failed: "guard no longer holds: no offers from entity:" + a + " to entity:" + b + ' with {"status": "quoted", "can_fulfill": true}' }, "stays failed");
+
+    // External enactment: the guard is re-checked right before the outside call.
+    const requote = await t.alice.relate({ kind: "offers", fromRef: `entity:${a}`, toRef: `entity:${b}`, scope: WORLD, attributes: { status: "quoted", can_fulfill: true } });
+    const external = await propose([needsQuote, noAgreement]);
+    await t.alice.endRelation(requote, "withdrawn again");
+    assert.equal(await t.alice.beginAction(external), "failed");
+    assert.match((await t.alice.readAction(external)).detail, /guard no longer holds/);
+
+    // The guard held when the outside call began, then lapsed before settlement: the effect may
+    // have landed, so it needs reconciliation and no consequence is applied.
+    await t.alice.relate({ kind: "offers", fromRef: `entity:${a}`, toRef: `entity:${b}`, scope: WORLD, attributes: { status: "quoted", can_fulfill: true } });
+    const racing = await t.alice.proposeAction({ kind: "supplier.accept", capability: "order.place", scope: WORLD, payload: { guards: [noAgreement], consequences: [{ op: "relation.create", kind: "supplies", from_ref: `entity:${a}`, to_ref: `entity:${b}`, scope: WORLD, attributes: { status: "agreed" } }] } });
+    assert.equal(await t.alice.beginAction(racing), "enacting");
+    await t.alice.relate({ kind: "supplies", fromRef: `entity:${a}`, toRef: `entity:${b}`, scope: WORLD, attributes: { status: "agreed", by: "someone else" } });
+    assert.equal(await t.alice.settleAction({ actionId: racing, status: "completed", result: {}, evidence: evidence(80) }), "needs_reconciliation");
+    assert.equal(await t.alice.settleAction({ actionId: racing, status: "completed", result: {}, evidence: evidence(80) }), "needs_reconciliation", "recorded once");
+    const open = await t.alice.readAction(racing);
+    assert.equal(open.status, "needs_reconciliation");
+    assert.match(open.detail, /guard lapsed: already supplies/);
+    assert.equal((await t.alice.readRelations(WORLD)).filter((r) => r.kind === "supplies").length, 1, "no consequence from a lapsed guard");
+    assert.equal(await t.alice.settleAction({ actionId: racing, status: "failed", detail: "reconciled: the other agreement stands" }), "failed");
+  });
+});
+
 describe("tasks", () => {
   it("are claimed under a lease, verified by someone else, and completed once with evidence", async () => {
     const t = await setup();
