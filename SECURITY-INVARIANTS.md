@@ -47,4 +47,6 @@ Canon as executable checks. Each line names the test that fails if the invariant
 | Ledger balances per asset; the kernel cannot create money | `tests/kernel/kernel.test.ts` ledger, `tests/kernel/money.test.ts` |
 | A payment pays only the published recipient, within slippage, once | `tests/kernel/payments.test.ts`, `tests/e2e/send-bob.test.ts` |
 | Venues never sign blind | `tests/e2e/send-bob.test.ts` |
-| Model output never receives keys or mutates the scene directly | enforced by architecture (`DOMAIN-CONTRACTS.md` §2–3); tests arrive with Horizon |
+| Model output never receives keys or mutates the scene directly; it is schema-constrained and validated before use; refusals, truncation and invalid output fall back to the rules; route suggestions must name a kernel-computed route; the model endpoint serves signed-in people only, within input limits | `tests/e2e/reasoning.test.ts`; architecture (`DOMAIN-CONTRACTS.md` Reasoning and consent) |
+| A model's reading never grants authority: consequential intents from interpretation are proposals, and only the person's confirmation writes | `tests/e2e/reasoning.test.ts` |
+| Supplier contact is granted only as task-scoped consent: the lease covers that task's steps and delivery messages, never other scopes, commitments or payments, and ends with the task; the evidenced result outlives the authority | `tests/e2e/pilot.test.ts` (also on Postgres 17) |

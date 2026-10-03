@@ -62,9 +62,10 @@ export const evidenceOf = async (description: string, facts: unknown) => ({
 });
 
 // The message is the mechanism; its idempotency key ties it to the action it serves, so a retry
-// after a crash or a reconciliation run never sends a second inquiry.
+// after a crash or a reconciliation run never sends a second inquiry. It is done for the step's
+// task, so authority leased for that task (and only that task) covers it too.
 async function deliver(actor: Kernel, step: RouteStep, agentId: string, payload: Record<string, unknown>, capability: string, key: string) {
-  const id = await actor.proposeAction({ kind: "message.send", capability, scope: step.scope, targetRef: `actor:${agentId}`, payload, idempotencyKey: key });
+  const id = await actor.proposeAction({ kind: "message.send", capability, scope: step.scope, targetRef: `actor:${agentId}`, taskRef: step.taskRef ?? undefined, payload, idempotencyKey: key });
   const message = await actor.readAction(id);
   if (message.status === "rejected") return { id, rejected: message.reasons.join("; ") || "refused" };
   if (message.status !== "completed") await actor.enactAction(id);

@@ -29,7 +29,7 @@ const ACT = {
     id: "allow-contact",
     label: "Let your companion contact suppliers (not purchase)",
     capability: "message.send",
-    consequence: "Delegates message.send in your car company World for 7 days. No commitment or payment authority.",
+    consequence: "Creates a supplier-contact task and leases your companion message.send for that task only (7 days at most). No commitment or payment authority; it ends when the task closes.",
   },
   commitAsYou: { id: "commit-as-you", label: "Accept as you", capability: "commitment.make", consequence: "You accept the quoted terms under your own authority." },
   showProof: { id: "lens:proof", label: "Is this true?", capability: "kernel.read", consequence: "Show the evidence behind this claim." },
@@ -51,8 +51,11 @@ function blocker(model: WorldModel, ctx: InteractionContext): Node | null {
   return null;
 }
 
-export async function respond(intent: Intent, input: { engine: WorldEngine; model: WorldModel; ctx: InteractionContext; text: string }): Promise<Outcome> {
+// `confirmed` is false when the intent came from a model's reading of free text: consequential
+// intents then come back as a proposal for the person to confirm, never executed from it.
+export async function respond(intent: Intent, input: { engine: WorldEngine; model: WorldModel; ctx: InteractionContext; text: string; confirmed?: boolean }): Promise<Outcome> {
   const { engine, model, ctx, text } = input;
+  const confirmed = input.confirmed ?? true;
   const venture = model.venture;
   const companion = avatarAgent(model);
   const companionName = companion?.name ?? "Your companion";
@@ -172,16 +175,23 @@ export async function respond(intent: Intent, input: { engine: WorldEngine; mode
       if (!venture || !companion) {
         return { reload: false, patch: {}, result: result("question", [{ truth: "unknown", text: "There is no World or companion to delegate to yet." }], [], [ACT.build], model) };
       }
-      const delegated = await engine.allowContact(model, companion.agent_id, ctx.currentSelectionIds.find((r) => model.nodes.get(r)?.kind === "organization"));
+      if (!confirmed) {
+        return {
+          reload: false,
+          patch: {},
+          result: result("question", [{ truth: "inference", text: `It sounds like you want ${companionName} to contact suppliers. Confirm to grant it for this task only; it cannot commit or pay.` }], [], [ACT.allowContact], model),
+        };
+      }
+      const delegated = await engine.allowContact(model, companion.agent_id);
       if (!delegated || delegated.status !== "completed") {
-        return { reload: true, patch: {}, result: result("warning", [{ truth: "fact", text: delegated ? `Not delegated: ${delegated.detail}` : `${companionName} needs no delegation for any route right now.` }], [], [], model) };
+        return { reload: true, patch: {}, result: result("warning", [{ truth: "fact", text: delegated ? `Not delegated: ${delegated.detail}` : "There is no World to contact suppliers for yet." }], [], [], model) };
       }
       return {
         reload: true,
         patch: {},
         result: result(
           "proposed_edit",
-          [{ truth: "fact", text: `${companionName} may contact suppliers for your car company for 7 days. It cannot commit or pay.` }],
+          [{ truth: "fact", text: `${companionName} may contact suppliers for this task only, until it closes (7 days at most). It cannot commit or pay.` }],
           [],
           [],
           model,

@@ -84,6 +84,8 @@ export type RouteStep = {
   targetRef: string | null;
   // The message this step answers, when it is a reply.
   inReplyTo: string | null;
+  // The task this step is done for (task:<id>): authority leased for that task applies only here.
+  taskRef: string | null;
   native: boolean;
   provider: { capability: string; id: string | null };
   preconditions: Check[];

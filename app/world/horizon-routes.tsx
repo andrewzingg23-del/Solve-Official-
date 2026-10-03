@@ -5,7 +5,10 @@
 // decides for them now, the evidence that would show it happened, and what it would change. Doing
 // a step runs it through the one pipeline; the World reloads and the Horizon re-plans from what
 // actually happened.
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { ruleProvider } from "@/lib/world/horizon";
+import { remoteProvider } from "@/lib/world/remote-provider";
+import type { RouteOption } from "@/lib/world/reasoning";
 import type { Horizon, Route, RouteStep } from "@/lib/causal/types";
 import type { WorldEngine, WorldModel } from "@/lib/world/engine";
 import { label } from "@/app/ui";
@@ -27,7 +30,7 @@ function Step({ step, n, who, next, busy, onDo }: { step: RouteStep; n: number; 
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="text-sm">
           <span className="mr-2 font-mono text-xs text-muted">{n}</span>
-          {step.title}
+          {step.transition === "authority.delegate" && step.binding.grants === "message.send" ? "Let your companion contact suppliers for this task only (no commitments or payments)" : step.title}
         </span>
         <span className={`text-[10px] font-semibold uppercase tracking-[0.18em] ${step.authority.decision === "DENY" ? "text-negative" : "text-positive"}`}>
           {who} · {DECISION[step.authority.decision] ?? step.authority.decision}
@@ -56,6 +59,10 @@ export function HorizonRoutes({ engine, model, onChanged }: { engine: WorldEngin
   const [next, setNext] = useState<Horizon | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  // A model may suggest one of these kernel-computed routes; doing it is still your click and the
+  // kernel's decision. Shown only when a model is available to you.
+  const reasoning = useMemo(() => remoteProvider(ruleProvider), []);
+  const [suggestion, setSuggestion] = useState<{ routeId: string; rationale: string; model: string } | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -63,6 +70,14 @@ export function HorizonRoutes({ engine, model, onChanged }: { engine: WorldEngin
       void engine.horizon(actorId, goal).then(async (h) => {
         if (!live) return;
         setHorizon(h);
+        const options: RouteOption[] = h.routes.map((r) => ({
+          id: r.id,
+          organization: model.nodes.get(r.orgRef)?.title ?? r.orgRef,
+          steps: r.steps.map((st) => `${st.title} (${st.authority.decision.toLowerCase().replace(/_/g, " ")})`),
+          executable: r.executable,
+          blockedBy: r.blockedBy,
+        }));
+        void reasoning.proposeRoute(goal.title, options).then((choice) => live && setSuggestion(choice));
         // The World that reached one goal has a new Horizon: what comes next from here.
         setNext(h.satisfied && following ? await engine.horizon(actorId, following) : null);
       });
@@ -80,6 +95,14 @@ export function HorizonRoutes({ engine, model, onChanged }: { engine: WorldEngin
     setBusy(true);
     setNote(null);
     try {
+      // Supplier contact is granted only as explicit, task-scoped consent (never a standing grant).
+      const first = route.steps[0];
+      if (first?.transition === "authority.delegate" && first.binding.grants === "message.send") {
+        const granted = await engine.allowContact(model, first.binding.grantee);
+        setNote(granted ? `${granted.status === "completed" ? "Granted" : "Not granted"}: ${granted.detail}` : "There is no World to contact suppliers for yet.");
+        await onChanged();
+        return;
+      }
       const plan = await engine.plan(route.orgRef, route.goal, actorId);
       const step = plan.recorded?.steps[0];
       const outcome = plan.recorded && step ? await engine.perform(plan.recorded, step.transition) : null;
@@ -99,6 +122,11 @@ export function HorizonRoutes({ engine, model, onChanged }: { engine: WorldEngin
         </p>
       </div>
       {!horizon && <p className="text-sm text-muted">Reading the World…</p>}
+      {suggestion && horizon?.routes.some((r) => r.id === suggestion.routeId) && (
+        <p className="text-xs text-muted">
+          Suggested by {suggestion.model}: {model.nodes.get(horizon.routes.find((r) => r.id === suggestion.routeId)!.orgRef)?.title}. {suggestion.rationale}
+        </p>
+      )}
       {horizon?.satisfied && (
         <p className="text-sm text-positive">
           Reached: {model.nodes.get(horizon.satisfied.subject)?.title ?? horizon.satisfied.subject} supplies this World ({horizon.satisfied.status}, from action {horizon.satisfied.provenance.actions[0]?.slice(0, 8)}).

@@ -28,6 +28,8 @@ import { loadWorld, type WorldState } from "../causal/world";
 import type { Edge, Node, ProofState } from "./types";
 import { planVehicleCompany, type RoutePlan } from "./wayfinder";
 
+const CLOSED = new Set(["completed", "failed", "cancelled"]);
+
 export type SandboxLike = {
   manifest: ArcadiaManifest;
   you: Kernel;
@@ -472,10 +474,16 @@ export class WorldEngine {
     return actorId === this.manifest.you.actorId ? this.sb.you : this.sb.as(actorId);
   }
 
+  // The open supplier-contact task the person created for this need, if any.
+  contactTask(model: WorldModel, capability = "contract_manufacturing") {
+    return model.venture?.tasks.find((t) => t.inputs.kind === "supplier.contact" && t.inputs.capability === capability && !CLOSED.has(t.status)) ?? null;
+  }
+
   supplyGoal(model: WorldModel, quantity: number | null = 10000, capability = "contract_manufacturing"): Goal | null {
     const capabilityRef = this.manifest.capabilities[capability];
     if (!model.venture?.worldRef || !capabilityRef) return null;
-    return supplyGoal({ worldRef: model.venture.worldRef, scope: model.venture.scope, capability, capabilityRef: `entity:${capabilityRef}`, quantity, what: "vehicles" });
+    const task = this.contactTask(model, capability);
+    return supplyGoal({ worldRef: model.venture.worldRef, scope: model.venture.scope, capability, capabilityRef: `entity:${capabilityRef}`, quantity, what: "vehicles", task: task ? `task:${task.task_id}` : null });
   }
 
   depositGoal(model: WorldModel): Goal | null {
@@ -530,12 +538,40 @@ export class WorldEngine {
   }
 
   // "You may contact suppliers": the delegation step of the companion's planned route.
-  async allowContact(model: WorldModel, agentId: string, orgRef?: string) {
-    const goal = this.supplyGoal(model)!;
-    const horizon = await this.horizon(agentId, goal);
-    const route = horizon.routes.find((r) => (orgRef ? r.orgRef === orgRef : true) && r.steps.some((s) => s.transition === TRANSITIONS.delegate.id));
-    if (!route) return null;
-    return this.perform(await recordRoute(this.sb.you, route), TRANSITIONS.delegate.id);
+  // Your explicit consent: a supplier-contact task for this need, and contact authority for your
+  // companion limited to that task (and to 7 days at most). Contact only: it carries no commitment
+  // or payment authority, and it ends when the task closes. Both are your own recorded acts.
+  async allowContact(model: WorldModel, agentId: string, capability = "contract_manufacturing") {
+    const venture = model.venture;
+    if (!venture) return null;
+    const need = capability.replace(/_/g, " ");
+    try {
+      let taskId = this.contactTask(model, capability)?.task_id ?? null;
+      if (!taskId) {
+        taskId = await this.sb.you.createTask({
+          scope: venture.scope,
+          title: `Contact suppliers about ${need}`,
+          requiredCapability: "message.send",
+          objective: "Ask suppliers whether they can meet this need. Contact only: no commitments, no payments.",
+          inputs: { kind: "supplier.contact", capability },
+          idempotencyKey: `contact:${venture.scope}:${capability}`,
+        });
+        // Open for the companion to work (claim, report, complete).
+        const [task] = (await this.sb.you.readTasks(venture.scope)).filter((t) => t.task_id === taskId);
+        if (task?.status === "created") await this.sb.you.transitionTask({ taskId, status: "ready" });
+      }
+      const leaseId = await this.sb.you.issueLease({
+        grantee: agentId,
+        capability: "message.send",
+        scope: venture.scope,
+        taskRef: `task:${taskId}`,
+        expiresAt: new Date(Date.now() + 7 * 86_400_000),
+        idempotencyKey: `contact-lease:${taskId}:${agentId}`,
+      });
+      return { status: "completed" as const, taskId, leaseId, detail: `contact suppliers about ${need}, for this task only` };
+    } catch (error) {
+      return { status: "denied" as const, taskId: null, leaseId: null, detail: error instanceof Error ? error.message : String(error) };
+    }
   }
 
   // "Accept as you": the acceptance step, performed with your authority; its declared consequence

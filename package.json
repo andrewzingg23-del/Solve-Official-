@@ -17,6 +17,7 @@
     "test:postgres": "node scripts/test-postgres.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
     "@electric-sql/pglite": "^0.5.8",
     "@solana-program/memo": "^0.15.0",
     "@solana-program/system": "^0.15.0",

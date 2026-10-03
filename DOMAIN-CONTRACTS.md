@@ -38,6 +38,12 @@ Identity: one canonical ref per thing (`entity:<uuid>`, `actor:<uuid>`, …) acr
 - **Pipeline** (`executeStep`): propose with declared consequences → kernel decision (ALLOW / REQUIRE_* / DENY, refusals recorded) → attempt (kernel-native, or provider) → evidence → settle completed / failed / needs_reconciliation → the kernel applies the declared consequences atomically with completion → the next Horizon starts from the changed World. Steps keep causal order; a refused attempt is retried only once the kernel would allow it.
 - **Context** (`buildContext`): who, where, what it sees, what it can and cannot do, intent, beliefs with provenance, routes, for any principal, from its own authority. An organization's agent runs the same loop end to end on what its owner delegated (`tests/e2e/organization.test.ts`): nothing in it assumes a person.
 
+## Reasoning and consent (`lib/world/reasoning.ts`, `lib/world/claude.ts`, `app/api/reason`)
+
+- **Reasoning boundary**: a reasoning provider turns what a person types into one of the World's intents, and may suggest one of the routes the Horizon already computed. Claude (`claude-opus-5-5`) is called only from the server (`POST /api/reason`) for signed-in people when `ANTHROPIC_API_KEY` is configured; its output is constrained by a JSON schema, validated again on the server and in the browser, and anything invalid, refused or truncated becomes no answer. Without a model, or on any failure, the browser uses the rule-based interpreter and says which one interpreted. A model never acts, never sees keys or ids it was not given, and a route suggestion counts only if it names a route the kernel computed.
+- **Consent is explicit**: a model's reading of a consequential intent (granting contact, committing) is only a proposal; the person's click executes it. A button is the person's explicit act and bypasses interpretation.
+- **Task-scoped supplier contact**: the person's consent creates a supplier-contact task in their World and leases their companion `message.send` limited to that task (7 days at most). Steps done for the task carry its ref (route steps and the provider's own delivery message), so the lease covers them and nothing else; commitments and payments are never part of it; the companion can claim and complete the task, and the authority ends when the task closes.
+
 ## 1. Principals
 
 | Kind | What it is | Accountable party |

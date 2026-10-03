@@ -88,6 +88,8 @@ export type Transition = {
   // The actor a message step is addressed to, and the message it answers.
   target?(b: Binding, w: WorldState, goal: Goal): string | null;
   inReplyTo?(b: Binding, w: WorldState, goal: Goal): string | null;
+  // The task the step is done for, when the goal names one: a lease limited to that task applies.
+  taskRef?(b: Binding, w: WorldState, goal: Goal): string | null;
   // Why this binding is not a route at all, beyond unmet requirements.
   exclude?(b: Binding, w: WorldState, goal: Goal): string[];
   title(b: Binding, w: WorldState, goal: Goal): string;
@@ -170,6 +172,7 @@ export const inquire: Transition = {
   ],
   produces: [{ subject: "?org", predicate: "offers:quoted", object: "?world", value: { capability: "?capability" } }],
   scope: (b, w) => scopeOf(w, b.world),
+  taskRef: (b) => (b.task?.startsWith("task:") ? b.task : null),
   title: (b, w, g) => `Ask ${titleOf(w, b.org)} whether it can make ${g.quantity ? fmt(g.quantity) : "enough"}`,
   payload: (_b, _w, g) => ({ quantity: g.quantity ?? null }),
   consequences: (b, w, g) => [
@@ -363,14 +366,16 @@ export const TRANSITIONS = { inquire, verify, accept, deposit, answer, delegate 
 
 // --- Goals ----------------------------------------------------------------------------------
 
-export function supplyGoal(input: { worldRef: string; scope: string; capability: string; capabilityRef: string; quantity: number | null; what?: string }): Goal {
+// `task` (task:<id>): the supplier-contact task the person created for this need; contact steps
+// are done for it, so authority leased for that task (and only that task) applies to them.
+export function supplyGoal(input: { worldRef: string; scope: string; capability: string; capabilityRef: string; quantity: number | null; what?: string; task?: string | null }): Goal {
   const quantity = input.quantity ?? null;
   return {
     kind: "secure_supply",
     title: `${quantity ? `${fmt(quantity)} ${input.what ?? "units"} of ` : ""}${input.capability.replace(/_/g, " ")}`,
     scope: input.scope,
     desired: [{ subject: "?org", predicate: "supplies:agreed", object: input.worldRef, value: { capability: input.capability } }],
-    bind: { world: input.worldRef, capability: input.capability, capabilityRef: input.capabilityRef },
+    bind: { world: input.worldRef, capability: input.capability, capabilityRef: input.capabilityRef, ...(input.task ? { task: input.task } : {}) },
     world: input.worldRef,
     capability: input.capability,
     quantity,

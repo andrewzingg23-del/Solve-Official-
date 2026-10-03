@@ -89,6 +89,7 @@ async function concrete(x: Executor, route: RecordedRoute, index: number, world:
     title: t.title(step.binding, world, route.goal),
     targetRef: t.target?.(step.binding, world, route.goal) ?? step.targetRef ?? null,
     inReplyTo: t.inReplyTo?.(step.binding, world, route.goal) ?? step.inReplyTo ?? null,
+    taskRef: t.taskRef?.(step.binding, world, route.goal) ?? step.taskRef ?? null,
     payload: t.payload(step.binding, world, route.goal),
     consequences: t.consequences(step.binding, world, route.goal),
     guards: t.guards?.(step.binding, world, route.goal) ?? [],
@@ -136,7 +137,7 @@ export async function executeStep(x: Executor, route: RecordedRoute, index: numb
   if (done) return { index, actionId: done.action_id, status: "completed", detail: "already completed", provider: null };
   const last = prior.at(-1);
   if (last?.status === "rejected") {
-    const now = await k.authorize({ capability: step.capability, scope: step.scope, amount: step.amount ?? undefined, asset: step.asset ?? undefined });
+    const now = await k.authorize({ capability: step.capability, scope: step.scope, amount: step.amount ?? undefined, asset: step.asset ?? undefined, taskRef: step.taskRef ?? undefined });
     if (now.decision === "DENY") return { index, actionId: last.action_id, status: "denied", detail: now.reasons.join("; ") || "denied", provider: null };
   }
   const attempt = prior.filter((a) => a.status === "rejected").length;
@@ -154,6 +155,7 @@ export async function executeStep(x: Executor, route: RecordedRoute, index: numb
         scope: step.scope,
         targetRef: step.targetRef ?? undefined,
         inReplyTo: step.inReplyTo ?? undefined,
+        taskRef: step.taskRef ?? undefined,
         amount: step.amount ?? undefined,
         asset: step.asset ?? undefined,
         payload: {

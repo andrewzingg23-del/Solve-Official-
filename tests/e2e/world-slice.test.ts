@@ -153,7 +153,9 @@ describe("the car-company loop", () => {
     // "You may contact suppliers but not make purchases."
     const delegation = await ruleProvider.interpret("You may contact suppliers but not make purchases.", ctx);
     assert.deepEqual(delegation, { type: "delegate_contact", allowPurchases: false });
-    assert.equal((await engine.allowContact(model, nova.agent_id, org("halden")))?.status, "completed");
+    // Granted as task-scoped consent; the World reloads (as the UI does) and the ask is done for that task.
+    assert.equal((await engine.allowContact(model, nova.agent_id))?.status, "completed");
+    model = await engine.load();
     const answered = await engine.ask(org("halden"), 10000, model, nova.agent_id);
     assert.equal(answered.outcome?.status, "completed");
     const q = answered.quote!.value!;

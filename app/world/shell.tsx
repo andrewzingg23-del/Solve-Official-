@@ -10,7 +10,9 @@ import { kernelDigest } from "@/lib/sandbox/digest";
 import { buildContext } from "@/lib/causal/context";
 import { respond } from "@/lib/world/controller";
 import { avatarAgent, WorldEngine, type WorldModel } from "@/lib/world/engine";
-import { ruleProvider } from "@/lib/world/horizon";
+import { ruleProvider, type Intent } from "@/lib/world/horizon";
+import { remoteProvider } from "@/lib/world/remote-provider";
+import { CONSEQUENTIAL } from "@/lib/world/reasoning";
 import type { HorizonResult, PresentationCommand, ProposedAction } from "@/lib/world/presentation";
 import type { SceneController, SceneMetrics } from "@/lib/world/scene";
 import { buildSpatialView, type SpatialView } from "@/lib/world/spatial";
@@ -59,6 +61,19 @@ declare global {
   }
 }
 
+// What the person sees, in plain words, for the model: titles only, never ids or records.
+function describe(model: WorldModel, ctx: InteractionContext) {
+  const title = (ref: string) => model.nodes.get(ref)?.title ?? null;
+  const selected = ctx.currentSelectionIds.map(title).filter(Boolean);
+  const companion = model.avatars.find((a) => a.avatar_type === "ai_companion") ?? model.avatars[0] ?? null;
+  return [
+    `Lens: ${ctx.currentLens}.`,
+    selected.length ? `Selected: ${selected.join(", ")}.` : "Nothing selected.",
+    model.venture ? `Their World: ${title(model.venture.worldRef) ?? "a venture"}.` : "They have no venture World yet.",
+    companion ? `Their AI companion: ${companion.name}.` : "No AI companion yet.",
+  ].join(" ");
+}
+
 export function WorldShell() {
   const [sandbox, setSandbox] = useState<Sandbox | null>(null);
   const [stage, setStage] = useState("Waking the World");
@@ -72,6 +87,9 @@ export function WorldShell() {
   const [fields, setFields] = useState<{ ref: string; label: string }[]>([]);
   const [earthStatus, setEarthStatus] = useState<{ status: "loading" | "ready" | "failed"; detail?: string }>({ status: "loading" });
   const [companionActing, setCompanionActing] = useState(false);
+  // Language goes to the model when one is available to this person, else to the rules.
+  const reasoning = useMemo(() => remoteProvider(ruleProvider), []);
+  const [providerLabel, setProviderLabel] = useState(ruleProvider.label);
   const [indexOpen, setIndexOpen] = useState(false);
   const [stewardOpen, setStewardOpen] = useState(false);
   // Events up to this sequence were history when the World opened: state, not effects.
@@ -156,14 +174,19 @@ export function WorldShell() {
   );
 
   const submit = useCallback(
-    async (text: string) => {
+    async (text: string, given?: Intent) => {
       if (!engine || !model) return;
       setBusy(true);
       try {
-        const intent = await ruleProvider.interpret(text, ctx);
+        // A button is the person's explicit act; typed text is interpreted (by the model when one is
+        // available, else by the rules), and a model's reading of a consequential intent is only a
+        // proposal to confirm.
+        const intent = given ?? (await reasoning.interpret(text, ctx, describe(model, ctx)));
+        const confirmed = Boolean(given) || reasoning.lastSource.kind === "rules" || !CONSEQUENTIAL.includes(intent.type);
+        setProviderLabel(given ? ruleProvider.label : reasoning.label);
         const acting = intent.type === "capability_query" || intent.type === "discover";
         setCompanionActing(acting);
-        const outcome = await respond(intent, { engine, model, ctx, text });
+        const outcome = await respond(intent, { engine, model, ctx, text, confirmed });
         if (outcome.reload) await reload();
         setCtx((c) => ({ ...c, ...outcome.patch }));
         setResult(outcome.result);
@@ -175,14 +198,14 @@ export function WorldShell() {
         setTimeout(() => setCompanionActing(false), 1200);
       }
     },
-    [engine, model, ctx, reload, apply],
+    [engine, model, ctx, reload, apply, reasoning],
   );
 
   const act = useCallback(
     async (action: ProposedAction) => {
       if (!engine || !model) return;
       if (action.id === "find-them") return submit("Find them");
-      if (action.id === "allow-contact") return submit("You may contact suppliers but not make purchases");
+      if (action.id === "allow-contact") return submit("You may contact suppliers but not make purchases", { type: "delegate_contact", allowPurchases: false });
       if (action.id === "suggest:build") return submit("Help me build a car company with the least upfront capital possible");
       if (action.id.startsWith("lens:")) {
         setCtx((c) => ({ ...c, currentLens: action.id.slice(5) as LensId }));
@@ -404,7 +427,7 @@ export function WorldShell() {
           </button>
         )}
 
-        {model && <Horizon busy={busy} result={result} provider={ruleProvider.label} onSubmit={submit} onAction={act} />}
+        {model && <Horizon busy={busy} result={result} provider={providerLabel} onSubmit={(text) => submit(text)} onAction={act} />}
 
         {/* Status and sandbox notice. */}
         <footer className="pointer-events-auto absolute bottom-1 left-3 z-20 hidden text-[10px] uppercase tracking-[0.16em] text-muted/70 md:block">
