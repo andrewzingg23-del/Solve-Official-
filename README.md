@@ -8,7 +8,7 @@ Read first: [DIRECTIVES.md](DIRECTIVES.md) (founder orders), [VISION-CANON.md](V
 
 | Path | Purpose |
 | --- | --- |
-| `supabase/migrations/` | The memory kernel (v1), money (v2) and payments (v3): schema, gated interface, genesis |
+| `supabase/migrations/` | The memory kernel (v1), money (v2), payments (v3), and authority, actions and the World Graph (v4): schema, gated interface, genesis |
 | `lib/kernel/client.ts` | Typed client for `kernel_api` |
 | `lib/kernel/server.ts` | The kernel as the signed-in user |
 | `lib/chain/` | DEV-SOLVE on Solana: fixed-supply genesis, vaults, exactly-once releases, transfers, RPC gateway |
@@ -18,7 +18,10 @@ Read first: [DIRECTIVES.md](DIRECTIVES.md) (founder orders), [VISION-CANON.md](V
 | `tests/` | Kernel, money, payments, router, chain (LiteSVM) and end-to-end tests |
 | `scripts/proof-of-life.ts` | Runs the monetary proof-of-life and prints each step |
 | `scripts/send-bob.ts` | Sends Bob $10 on test assets and prints every route compared |
-| `app/` | Next.js 16 app: sign-in by email link, your SOV ID and history |
+| `lib/world/` | The World: graph model, Horizon interpreter, deixis, presentation commands, response planner |
+| `lib/sandbox/` | Arcadia sandbox: the kernel in the browser (PGlite), snapshot boot and reset |
+| `app/world/` | World shell: Cesium Earth, Horizon, lenses, context drawer, avatar onboarding |
+| `app/` | Next.js 16 app: `/` is the World; `/money` runs the money system live; email sign-in is off for now |
 | `proxy.ts` | Refreshes the auth session; sends signed-out visitors away from `/account` |
 
 Stack: Next.js 16 (App Router), Tailwind CSS 4, Supabase (Auth + Postgres).
@@ -85,7 +88,8 @@ The founder provisions a dedicated Supabase project (DIRECTIVES.md, directive 2)
 ```bash
 npx tsx scripts/proof-of-life.ts   # the monetary causal chain, locally
 npx tsx scripts/send-bob.ts        # Send Bob $10 through the payment router, locally
-npm test            # kernel, money, chain (LiteSVM) and end-to-end tests; no network
+npm test            # kernel, money, chain (LiteSVM), World and end-to-end tests; no network
+npm run test:browser  # the kernel tests in Chromium, against the browser kernel
 npm run typecheck
 npm run lint
 npm run build

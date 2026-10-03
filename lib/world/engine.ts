@@ -67,6 +67,31 @@ export type WorldModel = {
   loadedAt: string;
 };
 
+export type ProofStep = {
+  title: string;
+  detail: string;
+  evidence: { basis: string; description: string; content_hash: string }[];
+  at: string | null;
+};
+
+export type ProofDetail = { kind: "claim" | "settlement" | "payment" | "none"; steps: ProofStep[] };
+
+const PROOF_TITLES: Record<string, string> = {
+  "obligation.created": "Obligation",
+  "outcome.completed": "Outcome and evidence",
+  "kernel.entitlement.created": "Entitlement",
+  "kernel.settlement.prepared": "Authorization to settle",
+};
+
+function summarize(e: KernelEvent) {
+  const p = e.payload as Record<string, unknown>;
+  if (e.type === "obligation.created") return String(p.title ?? "");
+  if (e.type === "outcome.completed") return String(p.summary ?? "");
+  if (e.type === "kernel.entitlement.created") return `${Number(p.amount) / 1e9} DEV-SOLVE under policy ${p.policy_key}`;
+  if (e.type === "kernel.settlement.prepared") return `to wallet ${String(p.recipient_address ?? "").slice(0, 8)}…`;
+  return "";
+}
+
 const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
 
 export function nodeFromEntity(e: WorldEntity, proof: ProofState = "none", claimEventId: string | null = null): Node {
@@ -314,6 +339,56 @@ export class WorldEngine {
       .filter((n) => n.kind === "organization" && ((n.attributes.capabilities as string[]) ?? []).some((c) => capabilities.includes(c)))
       .sort((a, b) => rank[a.proof] - rank[b.proof] || b.importance - a.importance)
       .map((n) => n.ref);
+  }
+
+  // Evidence behind a claim, a settlement or a payment, read from the kernel.
+  async proofOf(ref: string, model: WorldModel): Promise<ProofDetail> {
+    const { you, manifest } = this.sb;
+    const node = model.nodes.get(ref);
+    if (node?.kind === "organization" && node.claimEventId) {
+      const events = await you.readEvents(manifest.world, { limit: 500 });
+      const claim = events.find((e) => e.id === node.claimEventId) ?? null;
+      const challenge = events.find((e) => e.type === "claim.challenge" && (e.payload as { claim_event_id?: string }).claim_event_id === node.claimEventId) ?? null;
+      return {
+        kind: "claim",
+        steps: [
+          { title: "Claim", detail: String((claim?.payload as { statement?: string })?.statement ?? ""), evidence: await you.readEvidence(node.claimEventId), at: claim?.occurred_at ?? null },
+          ...(challenge
+            ? [{ title: "Challenge", detail: String((challenge.payload as { finding?: string }).finding ?? ""), evidence: await you.readEvidence(challenge.id), at: challenge.occurred_at }]
+            : []),
+        ],
+      };
+    }
+    if (ref.startsWith("settlement:") && model.settlement) {
+      const events = await you.readEvents(model.settlement.world_scope, { limit: 100 });
+      const steps = [];
+      for (const e of events.filter((x) => ["obligation.created", "outcome.completed", "kernel.entitlement.created", "kernel.settlement.prepared"].includes(x.type))) {
+        steps.push({ title: PROOF_TITLES[e.type] ?? e.type, detail: summarize(e), evidence: await you.readEvidence(e.id), at: e.occurred_at });
+      }
+      steps.push({
+        title: "Settlement",
+        detail: `${model.settlement.status} on ${model.settlement.chain}; transaction ${model.settlement.tx_signature ?? "pending"}`,
+        evidence: [],
+        at: null,
+      });
+      return { kind: "settlement", steps };
+    }
+    if (ref.startsWith("payment:") && model.payment) {
+      const p = model.payment;
+      return {
+        kind: "payment",
+        steps: [
+          { title: "Intent", detail: `Pay Bob ${Number(p.amount) / 1e6} ${p.asset.replace("_", "-")} at his published address`, evidence: [], at: p.created_at },
+          { title: "Route", detail: `${p.legs.map((l) => l.venue).join(" → ") || "direct transfer"}, quoted ${p.quotedAt ?? ""}`, evidence: [], at: p.quotedAt },
+          { title: "Execution", detail: `${p.status}; transaction ${p.tx_signature ?? "pending"}`, evidence: [], at: null },
+        ],
+      };
+    }
+    return { kind: "none", steps: [] };
+  }
+
+  companionGrants(agentId: string) {
+    return this.sb.as(agentId).myGrants();
   }
 
   authority(agentId: string, capability: string, scope: string): Promise<AuthorityDecision> {
