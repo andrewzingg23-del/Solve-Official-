@@ -55,10 +55,13 @@ function Attributes({ node }: { node: Node }) {
 export function ContextDrawer(props: {
   model: WorldModel;
   selected: string | null;
+  // Everything selected; more than one is a set ("these", "them").
+  selection: string[];
   onSelect(ref: string | null): void;
   onAsk(text: string): void;
+  onEnterWorld(ref: string): void;
 }) {
-  const { model, selected, onSelect, onAsk } = props;
+  const { model, selected, selection, onSelect, onAsk, onEnterWorld } = props;
   const node = selected ? model.nodes.get(selected) : undefined;
 
   if (!node) {
@@ -106,12 +109,24 @@ export function ContextDrawer(props: {
           Close
         </button>
       </div>
+      {selection.length > 1 && (
+        <p className="text-xs text-muted">
+          {selection.length} selected: {selection.map((r) => model.nodes.get(r)?.title ?? r.split(":")[0]).join(", ")}. Ask about &ldquo;these&rdquo;.
+        </p>
+      )}
       {node.summary && <p className="text-sm leading-6 text-muted">{node.summary}</p>}
       {node.kind === "organization" && <ProofMark state={node.proof} />}
-      {node.location && (
+      {node.location ? (
         <p className="font-mono text-xs text-muted">
           {node.location.latitude.toFixed(2)}, {node.location.longitude.toFixed(2)} · {TRUTH[node.location.truth]}
         </p>
+      ) : (
+        <p className="text-xs text-muted">Not on Earth: {node.kind === "world" ? "a World, not a place" : "no physical location"}.</p>
+      )}
+      {node.kind === "world" && node.scope === model.venture?.scope && (
+        <button type="button" onClick={() => onEnterWorld(node.ref)} className="self-start rounded-md border border-accent px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-accent">
+          Enter this World
+        </button>
       )}
       <Attributes node={node} />
       {relations.length > 0 && (

@@ -6,14 +6,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { RepresentationKind } from "@/lib/kernel/client";
 import { bootSandbox, resetSandbox, type Sandbox } from "@/lib/sandbox/boot";
+import { kernelDigest } from "@/lib/sandbox/digest";
 import { respond } from "@/lib/world/controller";
 import { avatarAgent, WorldEngine, type WorldModel } from "@/lib/world/engine";
 import { ruleProvider } from "@/lib/world/horizon";
 import type { HorizonResult, PresentationCommand, ProposedAction } from "@/lib/world/presentation";
-import { emptyContext, LENSES, type Edge, type InteractionContext, type LensId } from "@/lib/world/types";
+import type { SceneController, SceneMetrics } from "@/lib/world/scene";
+import { buildSpatialView, type SpatialView } from "@/lib/world/spatial";
+import { emptyContext, LENSES, type InteractionContext, type LensId } from "@/lib/world/types";
 import { AvatarArt, type Seed } from "./avatar-art";
 import { ContextDrawer } from "./drawer";
-import { Earth, type EarthHandle } from "./earth";
+import { Earth } from "./earth";
 import { Horizon } from "./horizon";
 import { LensPlane } from "./lenses";
 import { Onboarding } from "./onboarding";
@@ -32,7 +35,25 @@ function useReducedMotion() {
   );
 }
 
-const NO_EDGES: Edge[] = [];
+const EMPTY_MODEL = { nodes: new Map(), edges: [], events: [] };
+
+// Timings a future learning loop can compare against: boot stages, World load, scene start.
+export type WorldMetrics = { boot: Record<string, number>; restored: boolean; loadMs: number; scene: SceneMetrics | null; queryMs: number[] };
+
+declare global {
+  interface Window {
+    // The World's own instruments, for automated parity and performance checks.
+    __sov?: {
+      metrics: WorldMetrics;
+      manifest: Sandbox["manifest"];
+      view: () => SpatialView;
+      scene: () => SceneController | null;
+      context: () => InteractionContext;
+      // Recomputes the semantic digest of the kernel this browser booted.
+      digest: () => Promise<{ digest: string; tables: Record<string, number> }>;
+    };
+  }
+}
 
 export function WorldShell() {
   const [sandbox, setSandbox] = useState<Sandbox | null>(null);
@@ -48,19 +69,34 @@ export function WorldShell() {
   const [earthStatus, setEarthStatus] = useState<{ status: "loading" | "ready" | "failed"; detail?: string }>({ status: "loading" });
   const [companionActing, setCompanionActing] = useState(false);
   const [indexOpen, setIndexOpen] = useState(false);
+  // Events up to this sequence were history when the World opened: state, not effects.
+  const [watermark, setWatermark] = useState(Number.MAX_SAFE_INTEGER);
   const reducedMotion = useReducedMotion();
-  const earth = useRef<EarthHandle>(null);
+  const earth = useRef<SceneController>(null);
+  const metrics = useRef<WorldMetrics>({ boot: {}, restored: false, loadMs: 0, scene: null, queryMs: [] });
   const engine = useMemo(() => (sandbox ? new WorldEngine(sandbox) : null), [sandbox]);
 
   useEffect(() => {
     let live = true;
-    bootSandbox((s) => live && setStage(s))
+    const started = performance.now();
+    let last = started;
+    bootSandbox((s) => {
+      const now = performance.now();
+      metrics.current.boot[s] = Math.round(now - last);
+      last = now;
+      if (live) setStage(s);
+    })
       .then(async (sb) => {
         if (!live) return;
+        metrics.current.boot.total = Math.round(performance.now() - started);
+        metrics.current.restored = sb.restored;
         setSandbox(sb);
         setStage("Reading the World");
+        const loading = performance.now();
         const m = await new WorldEngine(sb).load();
+        metrics.current.loadMs = Math.round(performance.now() - loading);
         if (!live) return;
+        setWatermark(m.events.reduce((max, e) => Math.max(max, e.seq), 0));
         setModel(m);
         setCtx((c) => ({ ...c, principalId: sb.manifest.you.actorId, activeAvatarId: m.avatars[0]?.avatar_id ?? null, currentWorldId: m.venture?.scope ?? null }));
       })
@@ -72,18 +108,24 @@ export function WorldShell() {
 
   const reload = useCallback(async () => {
     if (!engine) return null;
+    const started = performance.now();
     const m = await engine.load();
+    metrics.current.queryMs = [...metrics.current.queryMs.slice(-19), Math.round(performance.now() - started)];
     setModel(m);
     return m;
   }, [engine]);
 
-  const select = useCallback((ref: string | null) => {
-    setCtx((c) => ({
-      ...c,
-      currentSelectionIds: ref ? [ref] : [],
-      currentFocusId: ref,
-      conversationRefs: ref ? [ref, ...c.conversationRefs.filter((r) => r !== ref)].slice(0, 20) : c.conversationRefs,
-    }));
+  // Selection is language: it resolves to canonical refs, and additive picks build "these".
+  const select = useCallback((ref: string | null, additive = false) => {
+    setCtx((c) => {
+      const ids = !ref ? [] : additive ? (c.currentSelectionIds.includes(ref) ? c.currentSelectionIds.filter((r) => r !== ref) : [...c.currentSelectionIds, ref]) : [ref];
+      return {
+        ...c,
+        currentSelectionIds: ids,
+        currentFocusId: ref && ids.includes(ref) ? ref : (ids[0] ?? null),
+        conversationRefs: ref ? [ref, ...c.conversationRefs.filter((r) => r !== ref)].slice(0, 20) : c.conversationRefs,
+      };
+    });
   }, []);
 
   const apply = useCallback(
@@ -94,13 +136,16 @@ export function WorldShell() {
         if (c.type === "show_field") setFields((f) => [...f.filter((x) => x.ref !== c.ref), { ref: c.ref, label: c.label }]);
         if (c.type === "suggest_lens") setCtx((x) => ({ ...x, currentLens: c.lens }));
         if (c.type === "focus") {
-          if (c.refs.length === 1) earth.current?.focus(c.refs[0]);
-          else earth.current?.frame(c.refs);
+          // Something with no geography is opened, not flown to.
+          const placed = c.refs.length === 1 ? earth.current?.focusEntity(c.refs[0]) : earth.current?.focusBounds(c.refs);
+          if (!placed && c.refs.length === 1) select(c.refs[0]);
         }
         if (c.type === "open_context") select(c.ref);
       }
-      const routeOrHighlight = commands.find((c) => c.type === "show_route" || c.type === "highlight");
-      if (routeOrHighlight && "refs" in routeOrHighlight) earth.current?.frame(routeOrHighlight.refs);
+      const route = commands.find((c) => c.type === "show_route");
+      const highlight = commands.find((c) => c.type === "highlight");
+      if (route && "refs" in route) earth.current?.frameRoute(route.refs);
+      else if (highlight && "refs" in highlight) earth.current?.focusBounds(highlight.refs);
     },
     [select],
   );
@@ -180,7 +225,39 @@ export function WorldShell() {
     return () => window.removeEventListener("keydown", onKey);
   }, [select]);
 
-  const located = useMemo(() => (model ? [...model.nodes.values()].filter((n) => n.location) : []), [model]);
+  // DOMAIN STATE → AUTHORIZED QUERY (engine.load, as You) → SPATIAL VIEW → SCENE CONTROLLER.
+  const view = useMemo(
+    () => buildSpatialView(model ?? EMPTY_MODEL, { selected: ctx.currentSelectionIds, highlights, routes, fields, effectsAfterSeq: watermark }),
+    [model, ctx.currentSelectionIds, highlights, routes, fields, watermark],
+  );
+
+  const enterWorld = useCallback((ref: string) => {
+    earth.current?.enterWorld(ref);
+    const placed = earth.current?.renderedRefs().includes(ref);
+    setCtx((c) => ({ ...c, insideWorldRef: ref, currentLens: placed ? c.currentLens : "cause" }));
+  }, []);
+  const exitWorld = useCallback(() => {
+    earth.current?.exitWorld();
+    setCtx((c) => ({ ...c, insideWorldRef: null, currentLens: "space" }));
+  }, []);
+
+  const latestView = useRef(view);
+  const latestCtx = useRef(ctx);
+  useEffect(() => {
+    latestView.current = view;
+    latestCtx.current = ctx;
+  });
+  useEffect(() => {
+    if (!sandbox) return;
+    window.__sov = {
+      metrics: metrics.current,
+      manifest: sandbox.manifest,
+      view: () => latestView.current,
+      scene: () => earth.current,
+      context: () => latestCtx.current,
+      digest: () => kernelDigest((sql) => sandbox.k.owner(sql)),
+    };
+  }, [sandbox]);
   const companion = model ? avatarAgent(model) ?? model.avatars[0] ?? null : null;
   const selected = ctx.currentSelectionIds[0] ?? null;
   const lens = ctx.currentLens;
@@ -199,17 +276,14 @@ export function WorldShell() {
     <main className="relative h-dvh w-full overflow-hidden bg-background">
       <Earth
         ref={earth}
-        nodes={located}
-        edges={model?.edges ?? NO_EDGES}
-        highlights={highlights}
-        selected={selected}
-        routes={routes}
-        fields={fields}
+        view={view}
         dimmed={lens !== "space"}
         reducedMotion={reducedMotion}
         onSelect={select}
         onVisible={(refs) => setCtx((c) => ({ ...c, visibleEntityIds: refs }))}
+        onBand={(band) => setCtx((c) => ({ ...c, zoomBand: band }))}
         onStatus={(status, detail) => setEarthStatus({ status, detail })}
+        onMetrics={(m) => (metrics.current.scene = m)}
       />
 
       <div className="pointer-events-none absolute inset-0">
@@ -246,6 +320,23 @@ export function WorldShell() {
           ))}
         </nav>
 
+        {/* What matters now but has no place on Earth: listed, never given convenient coordinates. */}
+        {model && lens === "space" && !ctx.insideWorldRef && view.offEarth.length > 0 && (
+          <div aria-label="Not on Earth" className="pointer-events-auto absolute left-3 top-[6.75rem] z-10 flex max-w-[calc(100vw-7rem)] flex-wrap items-center gap-1.5 md:left-5 md:top-20">
+            <span className="text-[10px] uppercase tracking-[0.18em] text-muted">Not on Earth</span>
+            {view.offEarth.map((o) => (
+              <button key={o.ref} type="button" title={o.why} onClick={() => select(o.ref)} className="rounded-full border border-line bg-surface/80 px-2.5 py-1 text-xs backdrop-blur-md hover:border-accent hover:text-accent">
+                {o.title}
+              </button>
+            ))}
+          </div>
+        )}
+        {ctx.insideWorldRef && (
+          <button type="button" onClick={exitWorld} className="pointer-events-auto absolute left-3 top-[6.75rem] z-20 rounded-full border border-accent bg-surface/90 px-3 py-1 text-xs text-accent md:left-5 md:top-20">
+            ← Back to Earth · inside {model?.nodes.get(ctx.insideWorldRef)?.title ?? "World"}
+          </button>
+        )}
+
         {model && engine && <LensPlane lens={lens} engine={engine} model={model} ctx={ctx} onSelect={(r) => select(r)} onRepresent={represent} />}
 
         {/* Context drawer (Space lens): the selection, or the World index on request. */}
@@ -257,6 +348,8 @@ export function WorldShell() {
             <ContextDrawer
               model={model}
               selected={selected}
+              selection={ctx.currentSelectionIds}
+              onEnterWorld={enterWorld}
               onSelect={(r) => {
                 select(r);
                 if (!r) setIndexOpen(false);

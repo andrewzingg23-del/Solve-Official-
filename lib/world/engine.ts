@@ -258,13 +258,7 @@ export class WorldEngine {
     const scope = `world:venture-${crypto.randomUUID().slice(0, 8)}`;
     await you.claimScope(scope);
 
-    // Estimated anchor: the centre of the suppliers who offer what this route needs.
-    const suppliers = [...model.nodes.values()].filter(
-      (n) => n.kind === "organization" && n.location && ((n.attributes.capabilities as string[]) ?? []).some((c) => plan.missing.includes(c)),
-    );
-    const lat = suppliers.reduce((s, n) => s + n.location!.latitude, 0) / Math.max(1, suppliers.length);
-    const lon = suppliers.reduce((s, n) => s + n.location!.longitude, 0) / Math.max(1, suppliers.length);
-
+    // A venture is a World, not a place: it gets no coordinates until it has a real site.
     const world = await you.upsertEntity({
       kind: "world",
       scope,
@@ -279,9 +273,6 @@ export class WorldEngine {
         source: plan.source,
         explanation: plan.explanation,
       },
-      latitude: suppliers.length ? Number(lat.toFixed(4)) : undefined,
-      longitude: suppliers.length ? Number(lon.toFixed(4)) : undefined,
-      locationTruth: suppliers.length ? "estimated" : undefined,
       visibility: "members",
       importance: 90,
     });
@@ -402,9 +393,9 @@ export class WorldEngine {
 
   // The companion asks an organization's agent a structured capability question; that agent
   // answers from its published record. Both are kernel actions with provenance.
+  // The attempt is always a proposal, so a refusal is a kernel record (the World shows the route
+  // stop from that record), not a silent client-side check.
   async capabilityQuery(agentId: string, orgRef: string, quantity: number | null, scope: string, model: WorldModel) {
-    const decision = await this.authority(agentId, "message.send", scope);
-    if (decision.decision !== "ALLOW") return { decision, answer: null as CapabilityAnswer | null, queryId: null as string | null };
     const orgKey = Object.entries(this.manifest.orgs).find(([, o]) => `entity:${o.entityId}` === orgRef)?.[0];
     if (!orgKey) throw new Error("that organization has no agent in Arcadia");
     const org = this.manifest.orgs[orgKey];
@@ -417,6 +408,9 @@ export class WorldEngine {
       targetRef: `actor:${org.agentId}`,
       payload: { type: "CAPABILITY_QUERY", organization: orgRef, capability: "contract_manufacturing", quantity },
     });
+    const proposed = await companion.readAction(queryId);
+    const decision: AuthorityDecision = { decision: proposed.decision, grant_id: null, policy_id: null, threshold: proposed.threshold, delay_seconds: null, reasons: proposed.reasons };
+    if (proposed.decision !== "ALLOW") return { decision, answer: null as CapabilityAnswer | null, queryId };
     await companion.enactAction(queryId);
 
     const entity: WorldEntity = {
@@ -455,6 +449,11 @@ export class WorldEngine {
       payload: { type: "ACCEPTANCE", organization: orgRef, ...terms },
     });
     await this.sb.you.enactAction(id);
+    // The consequence in the World Graph: the organization now supplies your World, on these terms.
+    const world = (await this.sb.you.readWorld(scope)).find((e) => e.kind === "world");
+    if (world) {
+      await this.sb.you.relate({ kind: "supplies", fromRef: orgRef, toRef: `entity:${world.entity_id}`, scope, attributes: { status: "agreed", acceptance: `action:${id}`, ...terms } });
+    }
     return id;
   }
 }

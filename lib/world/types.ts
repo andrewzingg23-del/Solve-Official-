@@ -1,6 +1,7 @@
 // The World's view model and the one interaction context that World, Horizon and avatar share.
 // Everything here is a projection of kernel state; nothing is a second source of truth.
 import type { EntityKind, LocationTruth, RelationKind } from "../kernel/client";
+import type { ZoomBand } from "./spatial";
 
 export type LensId = "space" | "people" | "power" | "flow" | "cause" | "proof" | "time" | "self";
 
@@ -43,6 +44,9 @@ export type InteractionContext = {
   principalId: string;
   activeAvatarId: string | null;
   currentWorldId: string | null;
+  // The World entity the viewer has entered (WORLD band), if any.
+  insideWorldRef: string | null;
+  zoomBand: ZoomBand;
   currentSelectionIds: string[];
   currentFocusId: string | null;
   comparisonIds: string[];
@@ -61,6 +65,8 @@ export const emptyContext = (principalId: string): InteractionContext => ({
   principalId,
   activeAvatarId: null,
   currentWorldId: null,
+  insideWorldRef: null,
+  zoomBand: "ORBIT",
   currentSelectionIds: [],
   currentFocusId: null,
   comparisonIds: [],

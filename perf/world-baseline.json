@@ -1,0 +1,28 @@
+{
+  "recorded": "2026-10-03T10:30:50.788Z",
+  "environment": "headless Chromium, SwiftShader (software WebGL)",
+  "metrics": {
+    "firstViewMs": 6198,
+    "bootMs": 3842,
+    "loadMs": 2147,
+    "sceneInitMs": 1310,
+    "markers": 16,
+    "fps": 2,
+    "heapMB": 349,
+    "buildMs": 7037,
+    "refusalMs": 3642,
+    "answerMs": 2545,
+    "commitMs": 2863,
+    "queryMs": [
+      918,
+      1151,
+      899,
+      904,
+      847,
+      1011
+    ],
+    "generationMs": 4275,
+    "snapshotBytes": 6131607,
+    "events": 180
+  }
+}

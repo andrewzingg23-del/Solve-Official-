@@ -8,6 +8,7 @@ import { localSupabase, service, user } from "../../lib/kernel/local";
 import { resolveDeixis } from "../../lib/world/deixis";
 import { avatarAgent, WorldEngine, type WorldModel } from "../../lib/world/engine";
 import { ruleProvider } from "../../lib/world/horizon";
+import { bandCeiling, bandForHeight, buildSpatialView, type SpatialInput } from "../../lib/world/spatial";
 import { emptyContext } from "../../lib/world/types";
 import { buildArcadia } from "../support/arcadia";
 
@@ -27,6 +28,8 @@ before(async () => {
 });
 
 const org = (key: string) => `entity:${manifest.orgs[key].entityId}`;
+const input = (over: Partial<SpatialInput> = {}): SpatialInput => ({ selected: [], highlights: [], routes: [], fields: [], effectsAfterSeq: 0, ...over });
+const maxSeq = (m: WorldModel) => m.events.reduce((max, e) => Math.max(max, e.seq), 0);
 
 describe("Arcadia as seen by You", () => {
   it("shows the market with claims in their true proof states", () => {
@@ -34,6 +37,37 @@ describe("Arcadia as seen by You", () => {
     assert.equal(model.nodes.get(org("orrin"))?.proof, "self_reported");
     assert.equal(model.nodes.get(org("cobalt"))?.proof, "challenged");
     assert.equal(model.nodes.get(org("halden"))?.location?.truth, "declared");
+  });
+
+  it("renders only real geography, under canonical ids, and never what You may not see", () => {
+    const view = buildSpatialView(model, input());
+    assert.ok(view.markers.length > 0);
+    for (const m of view.markers) {
+      const node = model.nodes.get(m.ref);
+      assert.ok(node, `${m.ref} is a canonical ref of the World model`);
+      assert.match(m.ref, /^entity:[0-9a-f-]{36}$/);
+      assert.ok(node.location && node.location.truth, "markers exist only for things with a recorded location");
+    }
+    // Network States have no territory: they draw as constellations of their hubs, and the line
+    // stands for the State.
+    const meridian = `entity:${manifest.states.meridian.entityId}`;
+    assert.ok(!view.markers.some((m) => m.ref === meridian));
+    assert.ok(view.links.some((l) => l.kind === "constellation" && l.ref === meridian));
+    // The private record never reaches the model, so it can never reach a renderer.
+    assert.ok(!model.nodes.has(`entity:${manifest.privateEntityId}`));
+    assert.ok(!view.markers.some((m) => m.ref === `entity:${manifest.privateEntityId}`));
+    // History is state, not animation.
+    assert.deepEqual(buildSpatialView(model, input({ effectsAfterSeq: maxSeq(model) })).effects, []);
+  });
+
+  it("maps camera height to semantic zoom bands", () => {
+    assert.equal(bandForHeight(30_000_000), "ORBIT");
+    assert.equal(bandForHeight(17_000_000), "PLANET");
+    assert.equal(bandForHeight(3_000_000), "REGION");
+    assert.equal(bandForHeight(400_000), "METRO");
+    assert.equal(bandForHeight(20_000), "SITE");
+    assert.equal(bandCeiling("ORBIT"), Number.POSITIVE_INFINITY);
+    assert.equal(bandCeiling("REGION"), 8_000_000);
   });
 
   it("carries your real economic history: an Earn Vault release and a $10 payment", () => {
@@ -62,6 +96,14 @@ describe("the car-company loop", () => {
     assert.ok(plan.capitalUsd < plan.alternative.capitalUsd, "least capital beats an own plant");
     assert.ok(model.venture?.needs.some((n) => n.attributes.capability === "contract_manufacturing"));
     assert.equal(model.venture?.tasks[0].title, "Find a manufacturing partner");
+    // A venture is a World, not a place: no invented coordinates; listed off Earth when it matters.
+    const worldRef = model.venture!.worldRef;
+    assert.equal(model.nodes.get(worldRef)?.location, null);
+    const routeView = buildSpatialView(model, input({ routes: [worldRef, org("halden"), org("orrin")] }));
+    assert.ok(!routeView.markers.some((m) => m.ref === worldRef));
+    assert.deepEqual(routeView.offEarth.map((o) => o.ref), [worldRef]);
+    assert.ok(!routeView.links.some((l) => l.kind === "route"), "no route lines from an origin with no geography");
+    assert.equal(routeView.markers.find((m) => m.ref === org("halden"))?.emphasis, "lit");
 
     // "Find them" → candidates for the needs, verified claims first, challenged ones last.
     const find = await ruleProvider.interpret("Find them", emptyContext(manifest.you.actorId));
@@ -77,8 +119,15 @@ describe("the car-company loop", () => {
     assert.deepEqual(target, { kind: "resolved", refs: [org("halden")], source: "selection" });
 
     // Nova may not contact anyone yet: authority, not willingness, decides.
+    const beforeDenial = maxSeq(model);
     const denied = await engine.capabilityQuery(nova.agent_id, org("halden"), 10000, scope, model);
     assert.equal(denied.decision.decision, "DENY");
+    // The refusal is a kernel record, and the World shows it: Halden is not reachable yet.
+    model = await engine.load();
+    const refused = buildSpatialView(model, input({ effectsAfterSeq: beforeDenial }));
+    assert.equal(refused.markers.find((m) => m.ref === org("halden"))?.state, "blocked");
+    assert.deepEqual(refused.effects.map((e) => [e.kind, e.refs[0]]), [["route_stopped", org("halden")]]);
+    assert.match(refused.effects[0].label, /no active grant for message.send/);
 
     // "You may contact suppliers but not make purchases."
     const delegation = await ruleProvider.interpret("You may contact suppliers but not make purchases.", ctx);
@@ -100,6 +149,16 @@ describe("the car-company loop", () => {
     const acceptance = await engine.commitAsYou(org("halden"), scope, { quantity: 10000, unit_price_usd: 18500 });
     const done = await engine.sb.you.readAction(acceptance);
     assert.deepEqual([done.status, done.payload.type], ["completed", "ACCEPTANCE"]);
+
+    // The consequence changes the World: Halden now supplies your World, its marker shows the
+    // agreement, its real logistics route through Sable carries it, and the change plays once.
+    const beforeReload = maxSeq(model);
+    model = await engine.load();
+    assert.ok(model.edges.some((e) => e.kind === "supplies" && e.from === org("halden") && e.to === worldRef && e.attributes.status === "agreed"));
+    const after = buildSpatialView(model, input({ effectsAfterSeq: beforeReload }));
+    assert.equal(after.markers.find((m) => m.ref === org("halden"))?.state, "committed");
+    assert.ok(after.links.some((l) => l.kind === "relation" && l.from === org("sable") && l.to === org("halden") && l.style === "committed"));
+    assert.deepEqual(after.effects.map((e) => [e.kind, e.refs[0]]), [["commitment", org("halden")]]);
 
     const integrity = await kernelClient(localSupabase(k, service)).verifyChain();
     assert.equal(integrity.ok, true);

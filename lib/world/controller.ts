@@ -123,8 +123,9 @@ export async function respond(intent: Intent, input: { engine: WorldEngine; mode
       if (!companion) return { reload: false, patch: {}, result: result("question", [{ truth: "unknown", text: "Create your companion first; it makes the inquiry." }], [], [], model) };
       const asked = await engine.capabilityQuery(companion.agent_id, orgRef, intent.quantity, venture.scope, model);
       if (asked.decision.decision !== "ALLOW" || !asked.answer) {
+        // The refusal is recorded; reloading lets the World show it.
         return {
-          reload: false,
+          reload: true,
           patch: { currentSelectionIds: [orgRef] },
           result: result(
             "warning",

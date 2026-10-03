@@ -12,7 +12,8 @@
     "predev": "node scripts/sync-browser-assets.mjs && tsx scripts/build-arcadia.ts",
     "prebuild": "node scripts/sync-browser-assets.mjs && tsx scripts/build-arcadia.ts",
     "test:browser": "node scripts/test-browser.mjs",
-    "arcadia": "tsx scripts/build-arcadia.ts"
+    "arcadia": "tsx scripts/build-arcadia.ts",
+    "test:world": "node scripts/test-world.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",

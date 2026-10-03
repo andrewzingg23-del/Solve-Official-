@@ -93,6 +93,7 @@ npx tsx scripts/send-bob.ts        # Send Bob $10 through the payment router, lo
 npx tsx scripts/self-operation.ts  # SOV reconciles its own lost payment responses, locally
 npm test            # kernel, money, chain (LiteSVM), World and end-to-end tests; no network
 npm run test:browser  # the kernel tests in Chromium, against the browser kernel
+npm run test:world    # after a build: browser parity, identity, visibility, selection, the loop, performance
 npm run typecheck
 npm run lint
 npm run build

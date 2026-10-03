@@ -23,7 +23,9 @@ Canon as executable checks. Each line names the test that fails if the invariant
 | Native action kinds require their own capability | `tests/kernel/actions.test.ts` governance |
 | An action completes once; external completion needs evidence | `tests/kernel/actions.test.ts` governance |
 | Agent message loops stop at depth 20; messages carry sender kind and principal | `tests/kernel/actions.test.ts` messages |
-| Private entities never leak to members without `world.private.read` | `tests/kernel/actions.test.ts` world graph |
+| Private entities never leak to members without `world.private.read`, through entities, events, evidence or proposals | `tests/kernel/actions.test.ts` world graph, `tests/e2e/arcadia.test.ts` |
+| Arcadia is reproducible; its snapshot and the browser reproduce the kernel's semantic digest | `tests/e2e/arcadia.test.ts`, `npm run test:world` |
+| Renderers receive only authorized, canonically identified, really located things; effects come only from kernel events | `tests/e2e/world-slice.test.ts`, `npm run test:world` |
 | A worker cannot verify its own work; completion needs declared evidence | `tests/kernel/actions.test.ts` tasks |
 | Avatar representation changes never change identity or authority; creation is idempotent | `tests/kernel/actions.test.ts` avatars |
 | One obligation settles once; settlement ids derive from the obligation | `tests/kernel/money.test.ts`, `tests/e2e/proof-of-life.test.ts` |

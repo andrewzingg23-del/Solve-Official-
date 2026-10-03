@@ -74,6 +74,17 @@ Mapping of the proven slices: settlement `prepared → submitted → confirmed |
 
 Lenses (SPACE, PEOPLE, POWER, FLOW, CAUSE, PROOF, TIME, SELF) are projections of entities, relations, events, evidence, grants, actions, payments and settlements. No lens persists its own truth.
 
+### The spatial pipeline
+
+`DOMAIN STATE → AUTHORIZED QUERY (WorldEngine.load, kernel_api as the viewer) → SPATIAL VIEW (lib/world/spatial.ts) → SCENE CONTROLLER (lib/world/scene.ts) → RENDERER (app/world/cesium-scene.ts)`.
+
+- **One entity, many representations.** Markers, selectable lines, selection and deixis all carry the canonical ref; no renderer-specific ids.
+- **Real geography only.** A marker exists only for something with a recorded location and its truth. Worlds, Network States, people and payments get no convenient coordinates: they are listed off Earth, and later move into relationship, causal or World space.
+- **Authorization before visibility.** The view model is built only from what the viewer's kernel reads return; private records are withheld by the kernel (entities, their events, evidence and proposals), never sent and hidden.
+- **Consequence, not decoration.** Marker states (committed, blocked) and one-shot effects (commitment, route stopped, proof closed) derive from kernel records; effects play once per causing event and only for events after the World opened.
+- **Semantic zoom.** Bands ORBIT, PLANET, REGION, METRO, SITE (from camera height) and WORLD, ROOM (entered). Labels and representation change by band; identity never does.
+- **The camera is not state.** The product calls semantic operations (`focusEntity`, `focusBounds`, `frameRoute`, `teleportTo`, `returnHome`, `enterWorld`, `exitWorld`); only band changes and settled visibility flow back.
+
 ## 5. Operational tasks
 
 | Field | Meaning |
