@@ -25,6 +25,7 @@ import { localSupabase, service, user } from "../../lib/kernel/local";
 import { sendPayment, type PaymentRail } from "../../lib/money/payment";
 import { settle, type SettlementRail } from "../../lib/money/settlement";
 import { installCollective, superviseReconciliation } from "../../lib/ops/collective";
+import { allowPlanning } from "../../lib/causal/pipeline";
 import { installCreation, leaseEngineering, openEngineeringTask, promoteAndObserve, runBuilder, runCi, runReviewer } from "../../lib/ops/creation";
 import { learnFromReconciliations } from "../../lib/ops/learning";
 import { kernelDigest } from "../../lib/sandbox/digest";
@@ -45,7 +46,9 @@ export const ARCADIA_WORLD = "world:arcadia";
 //   arcadia/5  members may share their read of the market with their own agents
 //   arcadia/6  members may request verification of a claim; Kestrel reads the market it verifies
 //   arcadia/7  organization owners hold wallets and payment profiles, so they can be paid
-export const ARCADIA_GENERATOR = "arcadia/7";
+//   arcadia/8  owners are market members (read, delegate, request verification) and delegate reading,
+//              verification requests and planning to their organization agents
+export const ARCADIA_GENERATOR = "arcadia/8";
 export const ARCADIA_SEED = "arcadia-genesis-1";
 
 // Scenarios layer behaviour onto the base civilization (failures, fraud, disputes, governance).
@@ -315,6 +318,14 @@ async function generate(config: ArcadiaConfig, started: number) {
     for (const capability of ["message.send", "claim.capability"]) {
       await steward.issueGrant({ grantee: agentId, capability, scope: ARCADIA_WORLD });
     }
+    // The owner is a market member; what its agent may do there comes from the owner, recorded.
+    for (const capability of ["kernel.read", "kernel.grant.issue", "verification.request"]) {
+      await steward.issueGrant({ grantee: ownerId, capability, scope: ARCADIA_WORLD });
+    }
+    for (const capability of ["kernel.read", "verification.request"]) {
+      await owner.issueGrant({ grantee: agentId, capability, scope: ARCADIA_WORLD });
+    }
+    await allowPlanning(owner, agentId);
     const entityId = await steward.upsertEntity({
       kind: "organization",
       scope: ARCADIA_WORLD,

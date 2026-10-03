@@ -156,7 +156,7 @@ describe("the SOLVE loop", () => {
 
     // Reload: new sessions on the same database find the recorded route and its finished state.
     const reloaded = kernelClient(localSupabase(L.k, user(L.manifest.personas.you)));
-    const found = await loadRoute(reloaded, L.scope, L.goal);
+    const found = await loadRoute(reloaded, L.goal);
     assert.equal(found?.eventId, recorded.eventId);
     const resumed = await executeRoute({ kernelFor: (id) => (id === L.youId ? reloaded : L.as(id)), providers: L.providers, world: await loadWorld(reloaded, L.youId) }, found!);
     assert.deepEqual(resumed.map((o) => o.status), ["completed", "completed", "completed"]);
@@ -272,7 +272,7 @@ describe("the SOLVE loop", () => {
     const reranked = await L.horizonFor(L.youId, cheapest);
     assert.equal(reranked.policy, "horizon-rank/2-cheapest");
     assert.deepEqual(await L.k.owner("select id, hash from kernel.events order by seq"), history, "planning wrote nothing");
-    const selections = (await L.you.readEvents(L.scope, { limit: 500 })).filter((e) => e.type === ROUTE_EVENT);
+    const selections = (await L.you.readEvents(`actor:${L.youId}`, { limit: 500 })).filter((e) => e.type === ROUTE_EVENT);
     assert.deepEqual(selections.map((e) => e.payload.policy), [RANKING_V1.id], "the selection keeps the policy it was made under");
   });
 

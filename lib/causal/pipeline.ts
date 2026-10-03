@@ -22,10 +22,11 @@ export type RecordedRoute = { eventId: string; routeId: string; goal: Route["goa
 const compact = (s: RouteStep): RouteStep => ({ ...s, preconditions: [], predicted: [], failures: [], authority: { ...s.authority, reasons: [] } });
 
 // The selection is an attributable interpretation: who chose which route, under which ranking
-// policy. It is never rewritten; choosing again records a new selection.
+// policy. It is recorded in the selector's own scope (a plan belongs to whoever made it; the
+// World's history holds the consequences), never rewritten; choosing again records a new one.
 export async function recordRoute(selector: Kernel, route: Route): Promise<RecordedRoute> {
-  const scope = route.steps[0]?.scope;
-  if (!scope) throw new Error("an empty route has nothing to record");
+  if (!route.steps.length) throw new Error("an empty route has nothing to record");
+  const scope = `actor:${(await selector.whoami()).actor_id}`;
   // A route is its plan (steps, bindings, actors, consequences): selecting the same plan again
   // continues the existing selection, whose actions are keyed to it.
   const existing = (await selector.readEvents(scope, { limit: 500, newestFirst: true })).find((e) => e.type === ROUTE_EVENT && e.payload.route_id === route.id);
@@ -39,10 +40,10 @@ export async function recordRoute(selector: Kernel, route: Route): Promise<Recor
   return { eventId, routeId: route.id, goal: route.goal, policy: route.policy, steps };
 }
 
-// The latest recorded route for a goal in a scope (optionally through one organization), so
+// The reader's latest recorded route for a goal (optionally through one organization), so
 // execution resumes after a reload.
-export async function loadRoute(reader: Kernel, scope: string, goal: Route["goal"], orgRef?: string): Promise<RecordedRoute | null> {
-  const events = await reader.readEvents(scope, { limit: 500, newestFirst: true });
+export async function loadRoute(reader: Kernel, goal: Route["goal"], orgRef?: string): Promise<RecordedRoute | null> {
+  const events = await reader.readEvents(`actor:${(await reader.whoami()).actor_id}`, { limit: 500, newestFirst: true });
   // Structurally: stored JSON does not keep key order.
   const wanted = canonical({ kind: goal.kind, scope: goal.scope, desired: goal.desired, bind: goal.bind });
   const same = (g: Partial<Route["goal"]> | undefined) => !!g && canonical({ kind: g.kind, scope: g.scope, desired: g.desired, bind: g.bind }) === wanted;
@@ -50,6 +51,14 @@ export async function loadRoute(reader: Kernel, scope: string, goal: Route["goal
   if (!e) return null;
   const p = e.payload as { route_id: string; goal: Route["goal"]; policy: string; steps: RouteStep[] };
   return { eventId: e.id, routeId: p.route_id, goal: p.goal, policy: p.policy, steps: p.steps };
+}
+
+// An agent may keep its own plans only when its creator says so: the creator holds the agent's
+// actor scope and delegates reading it and recording selections in it. Recorded, revocable.
+export async function allowPlanning(creator: Kernel, agentId: string) {
+  const scope = `actor:${agentId}`;
+  await creator.issueGrant({ grantee: agentId, capability: "kernel.read", scope, idempotencyKey: `plan:read:${agentId}` });
+  await creator.issueGrant({ grantee: agentId, capability: ROUTE_EVENT, scope, idempotencyKey: `plan:select:${agentId}` });
 }
 
 export type Executor = {

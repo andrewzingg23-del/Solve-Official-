@@ -21,7 +21,7 @@ import type { ArcadiaManifest } from "../sandbox/manifest";
 import { loadOperations, type OperationsView } from "./operations";
 import { computeHorizon, type HorizonInput } from "../causal/horizon";
 import { depositGoal, supplyGoal, TRANSITIONS, verifyGoal } from "../causal/transitions";
-import { executeStep, recordRoute, type RecordedRoute } from "../causal/pipeline";
+import { allowPlanning, executeStep, recordRoute, type RecordedRoute } from "../causal/pipeline";
 import { arcadiaProviders, type Providers } from "../causal/providers";
 import type { Fact, Goal, Horizon, StepOutcome } from "../causal/types";
 import { loadWorld, type WorldState } from "../causal/world";
@@ -397,6 +397,7 @@ export class WorldEngine {
     await you.issueGrant({ grantee: agentId, capability: "kernel.read", scope, idempotencyKey: `assist:read:${agentId}:${scope}` });
     await you.issueGrant({ grantee: agentId, capability: "world.relation.write", scope, idempotencyKey: `assist:record:${agentId}:${scope}` });
     await you.issueGrant({ grantee: agentId, capability: "kernel.read", scope: manifest.world, idempotencyKey: `assist:market:${agentId}` });
+    await allowPlanning(you, agentId);
   }
 
   // SOV's own operations, as the steward reads them. Null where no steward runs on this device.
