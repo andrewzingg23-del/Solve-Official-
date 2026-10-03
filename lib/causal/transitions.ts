@@ -5,6 +5,7 @@
 // organization or agent can extend the registry (`with`) without touching the core: the planner
 // only ever reasons over patterns.
 import type { EntityKind } from "../kernel/client";
+import { answerCapabilityQuery } from "../world/counterparty";
 import type { Binding, Consequence, Fact, Goal, KernelGuard, Pattern, Uncertainty } from "./types";
 import type { WorldState } from "./world";
 
@@ -84,6 +85,9 @@ export type Transition = {
   // The delegation transition itself: inserted by the planner's authority pass, never chained.
   delegation?: boolean;
   scope(b: Binding, w: WorldState, goal: Goal): string | null;
+  // The actor a message step is addressed to, and the message it answers.
+  target?(b: Binding, w: WorldState, goal: Goal): string | null;
+  inReplyTo?(b: Binding, w: WorldState, goal: Goal): string | null;
   // Why this binding is not a route at all, beyond unmet requirements.
   exclude?(b: Binding, w: WorldState, goal: Goal): string[];
   title(b: Binding, w: WorldState, goal: Goal): string;
@@ -296,6 +300,44 @@ export const deposit: Transition = {
   predicted: (b) => [inferred(b.world, "pays:paid", b.org, { purpose: "deposit", amount: String(DEPOSIT_USD * 1_000_000), asset: "DEV_USDC" })],
 };
 
+// The counterparty's side of an inquiry: the organization's agent answers from the organization's
+// published record, as a kernel message in reply to the inquiry, under its own authority in the
+// market. Native: the kernel delivers it; the asker's provider finds it in its inbox.
+const inquiryOf = (w: WorldState, ref: string | undefined) => (ref ? w.facts.find((f) => f.subject === ref && f.predicate.startsWith("inquiry:")) : undefined);
+const askerOf = (w: WorldState, ref: string | undefined) => {
+  const from = inquiryOf(w, ref)?.value?.from;
+  return typeof from === "string" ? from : null;
+};
+
+export const answer: Transition = {
+  id: "inquiry.answer",
+  kind: "message.send",
+  capability: "message.send",
+  provider: "kernel",
+  native: true,
+  expectedEvidence: "The kernel's delivery record of the reply, bound to the inquiry it answers.",
+  failures: ["the agent may not speak in the market", "the organization publishes no record to answer from"],
+  requires: [{ label: "an open inquiry", pattern: { subject: "?inquiry", predicate: "inquiry:open", object: "?org" }, because: "it was delivered to the organization's agent" }],
+  produces: [{ subject: "?inquiry", predicate: "inquiry:answered", object: "?org" }],
+  scope: (b, w) => scopeOf(w, b.org),
+  target: (b, w) => askerOf(w, b.inquiry),
+  inReplyTo: (b) => (b.inquiry?.startsWith("action:") ? b.inquiry.slice("action:".length) : null),
+  title: (b, w) => {
+    const asker = askerOf(w, b.inquiry);
+    const quantity = num(inquiryOf(w, b.inquiry)?.value?.quantity);
+    return `Answer ${asker ? titleOf(w, asker) : "the"} inquiry${quantity ? ` for ${fmt(quantity)}` : ""} from ${titleOf(w, b.org)}'s published record`;
+  },
+  payload: (b, w) => {
+    const entity = w.entities.get(b.org);
+    const quantity = num(inquiryOf(w, b.inquiry)?.value?.quantity);
+    const claim = claimOf(w, b.org)?.provenance.events[0] ?? null;
+    return { type: "INFORMATION_RESPONSE", organization: b.org, in_reply_to: b.inquiry, ...(entity ? answerCapabilityQuery(entity, quantity, claim) : { can_fulfill: false, quantity, note: "no published record" }) };
+  },
+  consequences: () => [],
+  uncertainty: () => ({ level: "low", because: "a kernel-native reply from the published record" }),
+  predicted: (b) => [inferred(b.inquiry, "inquiry:answered", b.org, {})],
+};
+
 const VERBS: Record<string, string> = { "message.send": "contact suppliers (not purchase)", "commitment.make": "make commitments", "verification.request": "request verification" };
 
 export const delegate: Transition = {
@@ -316,8 +358,8 @@ export const delegate: Transition = {
   uncertainty: () => ({ level: "low", because: "a kernel-native grant" }),
 };
 
-export const STANDARD = new Transitions([inquire, verify, accept, deposit, delegate]);
-export const TRANSITIONS = { inquire, verify, accept, deposit, delegate } as const;
+export const STANDARD = new Transitions([inquire, verify, accept, deposit, answer, delegate]);
+export const TRANSITIONS = { inquire, verify, accept, deposit, answer, delegate } as const;
 
 // --- Goals ----------------------------------------------------------------------------------
 
@@ -354,4 +396,24 @@ export function verifyGoal(input: { orgRef: string; scope: string; title: string
     desired: [{ subject: input.orgRef, predicate: "claims", status: ["verified"] }],
     bind: { org: input.orgRef },
   };
+}
+
+// The counterparty's goals: one per inquiry delivered to it and still open, in the World the
+// organization lives in. Nothing here assumes who asked.
+export function answerGoal(input: { inquiryRef: string; orgRef: string; scope: string; title: string }): Goal {
+  return {
+    kind: "answer_inquiry",
+    title: `the inquiry to ${input.title} answered`,
+    scope: input.scope,
+    desired: [{ subject: input.inquiryRef, predicate: "inquiry:answered", object: input.orgRef }],
+    bind: { org: input.orgRef, inquiry: input.inquiryRef },
+  };
+}
+
+export function openInquiryGoals(world: WorldState, orgRef: string): Goal[] {
+  const scope = scopeOf(world, orgRef);
+  if (!scope) return [];
+  return world.facts
+    .filter((f) => f.predicate === "inquiry:open" && f.object === orgRef)
+    .map((f) => answerGoal({ inquiryRef: f.subject, orgRef, scope, title: titleOf(world, orgRef) }));
 }

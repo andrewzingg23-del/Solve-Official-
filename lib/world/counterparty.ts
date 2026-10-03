@@ -1,7 +1,7 @@
-// Counterparty agents in the sandbox. In Arcadia every organization has an agent principal with
-// its own grants; on this device the sandbox runs that agent too. Its answers come only from the
-// organization's published record in the World Graph, and it says so.
-import type { Kernel, WorldEntity } from "../kernel/client";
+// What an organization's agent answers to a capability query: only its organization's published
+// record in the World Graph, and it says so. The answering itself is the `inquiry.answer`
+// transition (lib/causal/transitions.ts), run by the agent through its own Horizon.
+import type { WorldEntity } from "../kernel/client";
 
 export type CapabilityAnswer = {
   can_fulfill: boolean;
@@ -28,29 +28,4 @@ export function answerCapabilityQuery(org: WorldEntity, quantity: number | null,
     claim_event_id: claimEventId,
     note: "Answered by the organization's agent from its published record (simulated in your sandbox).",
   };
-}
-
-// Reads the agent's inbox and answers each capability query once: the idempotency key makes a
-// repeat answer return the original action instead of sending another.
-export async function respondToQueries(agent: Kernel, org: WorldEntity, claimEventId: string | null, scope: string) {
-  const replies: string[] = [];
-  for (const m of await agent.inbox()) {
-    if (m.message_type !== "CAPABILITY_QUERY") continue;
-    const q = m.payload as { quantity?: number | null };
-    const answer = answerCapabilityQuery(org, q.quantity ?? null, claimEventId);
-    const id = await agent.proposeAction({
-      kind: "message.send",
-      capability: "message.send",
-      scope,
-      targetRef: `actor:${m.sender_id}`,
-      payload: { type: "INFORMATION_RESPONSE", organization: `entity:${org.entity_id}`, ...answer },
-      inReplyTo: m.action_id,
-      idempotencyKey: `answer:${m.action_id}`,
-    });
-    const reply = await agent.readAction(id);
-    if (reply.status === "rejected") continue; // the agent may not speak there: no answer, recorded as refused
-    if (reply.status !== "completed") await agent.enactAction(id);
-    replies.push(id);
-  }
-  return replies;
 }

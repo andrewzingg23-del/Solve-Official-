@@ -10,7 +10,8 @@
 // step without the step ever assuming the answer.
 import type { Kernel, WorldEntity } from "../kernel/client";
 import { sha256Hex } from "../money/settlement";
-import { respondToQueries, type CapabilityAnswer } from "../world/counterparty";
+import type { CapabilityAnswer } from "../world/counterparty";
+import { answerInquiries } from "./exchange";
 import type { ProviderResponse, RouteStep } from "./types";
 import type { WorldState } from "./world";
 
@@ -180,12 +181,12 @@ export function verificationRequest(counterparts: Counterparts, local: LocalSide
 
 // --- Arcadia: the same providers, with the other side running on this device --------------------
 
-// Arcadia's counterparty answers on this device, from the organization's published record, under
-// the agent's own authority in the market: the same reply path a remote agent takes.
+// Arcadia's counterparty answers on this device through the same loop a remote agent runs: its
+// own World, its own Horizon (`inquiry.answer`), its own selection, its own authority in the market.
 export const arcadiaInquiry = (counterparts: Counterparts): Provider =>
   messagingInquiry(
     counterparts,
-    { respond: (agentId, entity, org) => respondToQueries(counterparts.as(agentId), entity, counterparts.claimEventFor(org), counterparts.replyScope) },
+    { respond: (agentId, _entity, org) => answerInquiries({ kernel: counterparts.as(agentId), actorId: agentId, orgRef: org, kernelFor: counterparts.as, providers: new Providers([]) }) },
     "arcadia.agent-messaging.inquiry",
   );
 

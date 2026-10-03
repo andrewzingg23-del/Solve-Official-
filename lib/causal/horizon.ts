@@ -245,7 +245,8 @@ function routeStep(t: Transition, binding: Binding, actorId: string, authority: 
     capability: t.capability,
     scope,
     kind: t.kind,
-    targetRef: null,
+    targetRef: t.target?.(binding, world, goal) ?? null,
+    inReplyTo: t.inReplyTo?.(binding, world, goal) ?? null,
     native: t.native,
     provider: { capability: t.provider, id: null },
     preconditions: t.requires.map((req) => {

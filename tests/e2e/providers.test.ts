@@ -7,49 +7,13 @@ import assert from "node:assert/strict";
 import { createServer, type IncomingMessage, type Server } from "node:http";
 import { describe, it } from "node:test";
 import { endpointAllowed, httpCounterparty, httpInquiry } from "../../lib/causal/http";
-import { computeHorizon } from "../../lib/causal/horizon";
-import { executeRoute, recordRoute, type Executor } from "../../lib/causal/pipeline";
+import { answerInquiries } from "../../lib/causal/exchange";
+import { executeRoute, recordRoute } from "../../lib/causal/pipeline";
 import { messagingProviders, Providers, verificationRequest, type ProviderContext } from "../../lib/causal/providers";
-import { supplyGoal, verifyGoal } from "../../lib/causal/transitions";
-import type { Goal } from "../../lib/causal/types";
-import { loadWorld, type WorldState } from "../../lib/causal/world";
-import { kernelClient } from "../../lib/kernel/client";
-import { localSupabase, service, user } from "../../lib/kernel/local";
+import { verifyGoal } from "../../lib/causal/transitions";
 import { sha256Hex } from "../../lib/money/settlement";
-import { respondToQueries } from "../../lib/world/counterparty";
-import { WorldEngine } from "../../lib/world/engine";
-import { buildArcadia, ORGS } from "../support/arcadia";
-
-async function setting() {
-  const { k, manifest } = await buildArcadia();
-  const you = kernelClient(localSupabase(k, user(manifest.personas.you)));
-  const as = (id: string) => kernelClient(localSupabase(k, service), { actAs: id });
-  const engine = new WorldEngine({ manifest, you, as });
-  const model = await engine.load();
-  const { scope } = await engine.buildVenture("a car company with the least upfront capital", true, model);
-  const worldRef = (await engine.load()).venture!.worldRef;
-  const orgs = Object.entries(manifest.orgs);
-  const org = (key: string) => `entity:${manifest.orgs[key].entityId}`;
-  const keyOf = (ref: string) => orgs.find(([, o]) => `entity:${o.entityId}` === ref)?.[0] ?? null;
-  const counterparts = {
-    agentFor: (ref: string) => orgs.find(([, o]) => `entity:${o.entityId}` === ref)?.[1].agentId ?? null,
-    claimEventFor: (ref: string) => orgs.find(([, o]) => `entity:${o.entityId}` === ref)?.[1].claimEventId ?? null,
-    as,
-    replyScope: manifest.world,
-    verifierId: manifest.steward.verifierId,
-  };
-  const youId = manifest.you.actorId;
-  const kernelFor = (id: string) => (id === youId ? you : as(id));
-  const youWorld = () => loadWorld(you, youId);
-  const goal = (quantity = 10000) =>
-    supplyGoal({ worldRef, scope, capability: "contract_manufacturing", capabilityRef: `entity:${manifest.capabilities.contract_manufacturing}`, quantity, what: "vehicles" });
-  const horizon = async (providers: Providers, g: Goal = goal()) => computeHorizon({ world: await youWorld(), actorId: youId, principalId: null, goal: g, kernelFor, providers });
-  const executor = async (providers: Providers): Promise<Executor> => ({ kernelFor, providers, world: await youWorld(), worldFor: (id) => loadWorld(kernelFor(id), id) });
-  const queriesTo = async (agentId: string) => (await as(agentId).inbox()).filter((m) => m.message_type === "CAPABILITY_QUERY");
-  return { k, manifest, you, as, scope, worldRef, org, keyOf, counterparts, youId, kernelFor, youWorld, goal, horizon, executor, queriesTo };
-}
-
-const quoteOf = (world: WorldState, org: string) => world.facts.find((f) => f.subject === org && f.predicate === "offers:quoted");
+import { ORGS } from "../support/arcadia";
+import { quoteOf, setting } from "../support/causal";
 
 const completionEvidence = async (k: Awaited<ReturnType<typeof setting>>["k"], actionId: string) =>
   k.owner(
@@ -82,9 +46,10 @@ describe("real providers behind the same capabilities", () => {
     assert.deepEqual([again[0].status, again[0].actionId], ["unknown", actionId]);
     assert.equal((await S.queriesTo(halden.agentId)).length, 1, "one inquiry per action, however many runs");
 
-    // Halden's agent answers from its own session, under its own authority, for its principal.
-    const entity = (await S.as(halden.agentId).readWorld(S.manifest.world)).find((e) => e.entity_id === halden.entityId)!;
-    const replies = await respondToQueries(S.as(halden.agentId), entity, halden.claimEventId, S.manifest.world);
+    // Halden's agent answers from its own session, under its own authority, for its principal,
+    // through its own loop (tests/e2e/exchange.test.ts proves that side).
+    const answered = await answerInquiries({ kernel: S.as(halden.agentId), actorId: halden.agentId, orgRef: S.org("halden"), kernelFor: S.as, providers: new Providers([]) });
+    const replies = answered.map((a) => a.outcomes[0]?.actionId).filter((id): id is string => !!id);
     assert.equal(replies.length, 1);
 
     // The next run finds the answer, settles the step, and the route continues to the acceptance.

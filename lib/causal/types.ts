@@ -82,6 +82,8 @@ export type RouteStep = {
   scope: string;
   kind: string;
   targetRef: string | null;
+  // The message this step answers, when it is a reply.
+  inReplyTo: string | null;
   native: boolean;
   provider: { capability: string; id: string | null };
   preconditions: Check[];

@@ -319,7 +319,7 @@ export type Action = {
 
 export type ActionSummary = Pick<
   Action,
-  "action_id" | "kind" | "proposer_id" | "on_behalf_of" | "target_ref" | "task_ref" | "payload" | "decision" | "status" | "created_at"
+  "action_id" | "kind" | "proposer_id" | "on_behalf_of" | "target_ref" | "task_ref" | "payload" | "decision" | "status" | "in_reply_to" | "created_at"
 >;
 
 export type MessageType =

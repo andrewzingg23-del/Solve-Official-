@@ -2336,7 +2336,7 @@ $$;
 create function kernel_api.read_actions(p_scope text, p_limit integer default 100, p_as_actor uuid default null)
 returns table (
   action_id uuid, kind text, proposer_id uuid, on_behalf_of uuid, target_ref text, task_ref text, payload jsonb,
-  decision text, status text, created_at timestamptz
+  decision text, status text, in_reply_to uuid, created_at timestamptz
 )
 language plpgsql stable security definer set search_path = '' as $$
 #variable_conflict use_column
@@ -2347,7 +2347,7 @@ begin
   perform kernel.require_grant(c.actor_id, 'kernel.read', p_scope);
   return query
     select a.id, a.kind, a.proposer_id, a.on_behalf_of, a.target_ref, a.task_ref, kernel.visible_payload(c.actor_id, a), a.decision,
-           (kernel.action_state(a.id)).status, a.created_at
+           (kernel.action_state(a.id)).status, a.in_reply_to, a.created_at
     from kernel.actions a
     where a.scope = p_scope or starts_with(a.scope, p_scope || '/')
     order by a.created_at desc, a.id

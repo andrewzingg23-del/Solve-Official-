@@ -87,6 +87,8 @@ async function concrete(x: Executor, route: RecordedRoute, index: number, world:
     ...step,
     scope,
     title: t.title(step.binding, world, route.goal),
+    targetRef: t.target?.(step.binding, world, route.goal) ?? step.targetRef ?? null,
+    inReplyTo: t.inReplyTo?.(step.binding, world, route.goal) ?? step.inReplyTo ?? null,
     payload: t.payload(step.binding, world, route.goal),
     consequences: t.consequences(step.binding, world, route.goal),
     guards: t.guards?.(step.binding, world, route.goal) ?? [],
@@ -144,6 +146,7 @@ export async function executeStep(x: Executor, route: RecordedRoute, index: numb
       capability: step.capability,
       scope: step.scope,
       targetRef: step.targetRef ?? undefined,
+      inReplyTo: step.inReplyTo ?? undefined,
       amount: step.amount ?? undefined,
       asset: step.asset ?? undefined,
       payload: {
