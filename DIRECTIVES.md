@@ -23,6 +23,13 @@ The repo holds the kernel's CODE. The memory itself (events, ledger, history, id
 ### 2026-10-03 — Whop bridge Pack (after the kernel lands)
 Build a Pack that connects a Whop seller's account via Whop OAuth (read their API docs first). It imports their community — members, roles, products — and generates invite links into a SOLVE World. Membership status syncs through Whop webhooks into capability grants (join on Whop = granted here, lapse there = revoked here). Every imported track record enters the kernel as a verifiable claim, not a fact. Do not start this until the memory kernel is done and tested.
 
+### 2026-10-03 — Use Sovereign and grow it from real outcomes
+Build toward authorized AI agents actually using Sovereign to pursue useful goals through a person's or organization's World. The loop is: observe authorized state → identify a goal → find a route → act only within granted authority → record evidence and outcome → learn from real friction → propose the smallest reusable improvement. Sovereign's own agents should use this same governed system to operate and improve Sovereign; they must not bypass its identity, authority, evidence, or review rules.
+
+Prioritize completed user value over feature count, elaborate simulation, or architecture without a concrete use. Arcadia can prove mechanics and invariants, but simulated activity is not proof of adoption or usefulness. As soon as the live path is safe, use it in a narrow founder or user pilot; use measured outcomes and observed friction to choose the next slice.
+
+Scale verification to risk and change. Add or update focused tests for changed behavior, and preserve checks for consequential invariants such as identity, authority, provenance, conservation, idempotency, funding, and consent whenever those boundaries are touched. Run browser and broader end-to-end suites when their boundaries change and run the full suite before promotion or release. Do not repeat unaffected expensive suites or add duplicate tests merely to increase test counts. Tests build confidence for real use; they are not a substitute for it.
+
 ## DONE
 
 (none)
