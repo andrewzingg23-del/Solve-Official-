@@ -2,19 +2,22 @@
 
 App that connects humans and custom AI agent avatars to self-create environments that live on a secure blockchain coin.
 
-Read first: [DIRECTIVES.md](DIRECTIVES.md) (founder orders), [VISION-CANON.md](VISION-CANON.md), [BUILD-BOOK.md](BUILD-BOOK.md), [docs/MONETARY-CONSTITUTION.md](docs/MONETARY-CONSTITUTION.md) (money spec). Current state: [BUILD_STATUS.md](BUILD_STATUS.md). Next: [docs/specs/2026-10-03-world-interface.md](docs/specs/2026-10-03-world-interface.md).
+Read first: [DIRECTIVES.md](DIRECTIVES.md) (founder orders), [VISION-CANON.md](VISION-CANON.md), [BUILD-BOOK.md](BUILD-BOOK.md), [docs/MONETARY-CONSTITUTION.md](docs/MONETARY-CONSTITUTION.md) (money spec). Current state: [BUILD_STATUS.md](BUILD_STATUS.md). Next: [docs/specs/2026-10-03-world-interface.md](docs/specs/2026-10-03-world-interface.md) with [docs/specs/2026-10-03-avatar-world-integration.md](docs/specs/2026-10-03-avatar-world-integration.md).
 
 ## What's here
 
 | Path | Purpose |
 | --- | --- |
-| `supabase/migrations/` | The memory kernel (v1) and money (v2): schema, gated interface, genesis |
+| `supabase/migrations/` | The memory kernel (v1), money (v2) and payments (v3): schema, gated interface, genesis |
 | `lib/kernel/client.ts` | Typed client for `kernel_api` |
 | `lib/kernel/server.ts` | The kernel as the signed-in user |
 | `lib/chain/` | DEV-SOLVE on Solana: fixed-supply genesis, vaults, exactly-once releases, transfers, RPC gateway |
 | `lib/money/settlement.ts` | Settlement worker: outbox between kernel and chain, with reconciliation |
-| `tests/` | Kernel, money, chain (LiteSVM) and end-to-end tests |
+| `lib/router/` | Payment router: venue quotes (spot, TWAP, executable, depth), route search that never forces SOLVE, atomic execution |
+| `lib/money/payment.ts` | Payment worker: submit, reconcile, retry around failed venues |
+| `tests/` | Kernel, money, payments, router, chain (LiteSVM) and end-to-end tests |
 | `scripts/proof-of-life.ts` | Runs the monetary proof-of-life and prints each step |
+| `scripts/send-bob.ts` | Sends Bob $10 on test assets and prints every route compared |
 | `app/` | Next.js 16 app: sign-in by email link, your SOV ID and history |
 | `proxy.ts` | Refreshes the auth session; sends signed-out visitors away from `/account` |
 
@@ -81,6 +84,7 @@ The founder provisions a dedicated Supabase project (DIRECTIVES.md, directive 2)
 
 ```bash
 npx tsx scripts/proof-of-life.ts   # the monetary causal chain, locally
+npx tsx scripts/send-bob.ts        # Send Bob $10 through the payment router, locally
 npm test            # kernel, money, chain (LiteSVM) and end-to-end tests; no network
 npm run typecheck
 npm run lint

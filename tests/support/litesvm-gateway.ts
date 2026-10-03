@@ -10,6 +10,8 @@ export class LiteSvmGateway implements ChainGateway {
   offline = false;
   // Simulates a lost response: the next send() executes, then throws as if the reply never came.
   loseNextResponse = false;
+  // Rotates the blockhash after every send. Turn off to land several transactions in one block.
+  expireAfterSend = true;
 
   constructor(readonly svm: LiteSVM = new LiteSVM()) {}
 
@@ -37,7 +39,7 @@ export class LiteSvmGateway implements ChainGateway {
     if (this.offline) throw new Error("RPC unavailable");
     const result = this.svm.sendTransaction(transaction);
     // A fresh blockhash per transaction keeps identical-looking retries distinct.
-    this.svm.expireBlockhash();
+    if (this.expireAfterSend) this.svm.expireBlockhash();
     if (this.loseNextResponse) {
       this.loseNextResponse = false;
       throw new Error("connection reset before the response arrived");

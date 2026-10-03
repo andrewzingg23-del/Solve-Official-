@@ -97,6 +97,60 @@ export type Settlement = {
   tx_signature: string | null;
 };
 
+export type PaymentStatus = "created" | "routed" | "submitted" | "confirmed" | "failed" | "needs_reconciliation";
+
+export type ChainAsset = { asset: string; mint_address: string; decimals: number; label: string };
+
+export type PaymentProfile = {
+  actor_id: string;
+  chain: SettlementChain;
+  version: number;
+  receive_address: string;
+  accept_assets: string[];
+};
+
+// Amounts are minor units as integer strings.
+export type Payment = {
+  payment_id: string;
+  intent_id: string;
+  payer_id: string;
+  recipient_id: string;
+  chain: SettlementChain;
+  asset: string;
+  amount: string;
+  max_slippage_bps: number;
+  recipient_address: string;
+  accept_assets: string[];
+  memo: string;
+  status: PaymentStatus;
+  attempt: number;
+  payer_address: string | null;
+  input_asset: string | null;
+  input_amount: string | null;
+  max_input: string | null;
+  deliver_asset: string | null;
+  deliver_amount: string | null;
+  expires_at: string | null;
+  tx_signature: string | null;
+  executed_input: string | null;
+  wire_transaction: string | null;
+  created_at: string;
+};
+
+export type PaymentSummary = {
+  payment_id: string;
+  direction: "sent" | "received";
+  counterparty_id: string;
+  chain: SettlementChain;
+  asset: string;
+  amount: string;
+  status: PaymentStatus;
+  deliver_asset: string | null;
+  deliver_amount: string | null;
+  tx_signature: string | null;
+  created_at: string;
+};
+
 const errorNames = {
   KA001: "unauthenticated",
   KA002: "forbidden",
@@ -377,6 +431,101 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
         p_settlement_id: input.settlementId,
         p_status: input.status,
         p_tx_signature: input.txSignature ?? null,
+        p_slot: input.slot === undefined ? null : Number(input.slot),
+        p_detail: input.detail ?? "",
+        p_evidence: input.evidence ?? [],
+        ...as,
+      }),
+
+    // Payments: assets on chains (system authority) and payment profiles.
+    registerChainAsset: (chain: SettlementChain, asset: string, mintAddress: string) =>
+      call<string>("register_chain_asset", { p_chain: chain, p_asset: asset, p_mint_address: mintAddress, ...as }),
+
+    readChainAssets: (chain: SettlementChain) => call<ChainAsset[]>("read_chain_assets", { p_chain: chain }),
+
+    setPaymentProfile: (input: { chain: SettlementChain; receiveAddress: string; acceptAssets: string[] }) =>
+      call<number>("set_payment_profile", {
+        p_chain: input.chain,
+        p_receive_address: input.receiveAddress,
+        p_accept_assets: input.acceptAssets,
+        ...as,
+      }),
+
+    readPaymentProfile: (actorId: string, chain: SettlementChain) =>
+      one<PaymentProfile>("read_payment_profile", { p_actor_id: actorId, p_chain: chain, ...as }),
+
+    // Payments: intents, routes and reads.
+    createPaymentIntent: (input: {
+      recipientId: string;
+      chain: SettlementChain;
+      asset: string;
+      amount: bigint | string;
+      maxSlippageBps?: number;
+      memo?: string;
+      idempotencyKey?: string;
+    }) =>
+      call<string>("create_payment_intent", {
+        p_recipient_id: input.recipientId,
+        p_chain: input.chain,
+        p_asset: input.asset,
+        p_amount: input.amount.toString(),
+        p_max_slippage_bps: input.maxSlippageBps ?? 100,
+        p_memo: input.memo ?? "",
+        p_idempotency_key: input.idempotencyKey ?? null,
+        ...as,
+      }),
+
+    selectPaymentRoute: (input: {
+      paymentId: string;
+      route: Record<string, unknown>;
+      payerAddress: string;
+      recipientAddress: string;
+      inputAsset: string;
+      inputAmount: bigint | string;
+      maxInput: bigint | string;
+      deliverAsset: string;
+      deliverAmount: bigint | string;
+      quotedAt: string;
+      expiresAt: string;
+    }) =>
+      call<number>("select_payment_route", {
+        p_payment_id: input.paymentId,
+        p_route: input.route,
+        p_payer_address: input.payerAddress,
+        p_recipient_address: input.recipientAddress,
+        p_input_asset: input.inputAsset,
+        p_input_amount: input.inputAmount.toString(),
+        p_max_input: input.maxInput.toString(),
+        p_deliver_asset: input.deliverAsset,
+        p_deliver_amount: input.deliverAmount.toString(),
+        p_quoted_at: input.quotedAt,
+        p_expires_at: input.expiresAt,
+        ...as,
+      }),
+
+    readPayment: (paymentId: string) => one<Payment>("read_payment", { p_payment_id: paymentId, ...as }),
+
+    myPayments: () => call<PaymentSummary[]>("my_payments", { ...as }),
+
+    // Payment service only.
+    recordPayment: (input: {
+      paymentId: string;
+      attempt: number;
+      status: Exclude<PaymentStatus, "created" | "routed">;
+      txSignature?: string;
+      inputAmount?: bigint | string;
+      wireTransaction?: string;
+      slot?: bigint;
+      detail?: string;
+      evidence?: Evidence[];
+    }) =>
+      call<string>("record_payment", {
+        p_payment_id: input.paymentId,
+        p_attempt: input.attempt,
+        p_status: input.status,
+        p_tx_signature: input.txSignature ?? null,
+        p_input_amount: input.inputAmount?.toString() ?? null,
+        p_wire_transaction: input.wireTransaction ?? null,
         p_slot: input.slot === undefined ? null : Number(input.slot),
         p_detail: input.detail ?? "",
         p_evidence: input.evidence ?? [],

@@ -55,6 +55,15 @@ async function exerciseEveryMethod(supabase: SupabaseClient, actAs?: string) {
   await k.readSettlement("s");
   await k.pendingSettlements("litesvm", 10);
   await k.recordSettlement({ settlementId: "s", status: "confirmed", txSignature: "t", slot: BigInt(1), detail: "", evidence: [evidence] });
+  await k.registerChainAsset("litesvm", "DEV_USDC", "m");
+  await k.readChainAssets("litesvm");
+  await k.setPaymentProfile({ chain: "litesvm", receiveAddress: "addr", acceptAssets: ["DEV_USDC"] });
+  await k.readPaymentProfile(id, "litesvm");
+  await k.createPaymentIntent({ recipientId: id, chain: "litesvm", asset: "DEV_USDC", amount: BigInt(10), maxSlippageBps: 50, memo: "", idempotencyKey: "k" });
+  await k.selectPaymentRoute({ paymentId: "p", route: {}, payerAddress: "a", recipientAddress: "b", inputAsset: "ARC", inputAmount: BigInt(1), maxInput: "1", deliverAsset: "DEV_USDC", deliverAmount: "1", quotedAt: "t", expiresAt: "t" });
+  await k.readPayment("p");
+  await k.myPayments();
+  await k.recordPayment({ paymentId: "p", attempt: 1, status: "submitted", txSignature: "t", inputAmount: BigInt(1), wireTransaction: "w", slot: BigInt(1), detail: "", evidence: [evidence] });
 }
 
 it("calls only real kernel_api functions with their real argument names", async () => {

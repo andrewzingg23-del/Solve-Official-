@@ -12,7 +12,7 @@ REALITY → EVENT → EVIDENCE → AUTHORITY → VERIFICATION → ECONOMIC ENTIT
 
 The person sees almost none of it. They say *Pay Sarah $200*, *Pay everyone who completed milestone 4*, *Cash out $1,000*, *Create an economy for our community*. The system finds a safe path.
 
-Status: the monetary proof-of-life runs end to end on DEV-SOLVE (Part XIV). Mainnet SOLVE, cards, credit, convertibility, cash-out and any public token activity stay gated by BUILD-BOOK §11 and the founder's explicit word. Draft 3 folds in the founder's monetary-OS design and build directive of 2026-10-03.
+Status: the monetary proof-of-life and the payment router run end to end on DEV-SOLVE and test assets (Part XIV). Mainnet SOLVE, cards, credit, convertibility, cash-out and any public token activity stay gated by BUILD-BOOK §11 and the founder's explicit word. Draft 3 folds in the founder's monetary-OS design and build directive of 2026-10-03.
 
 ---
 
@@ -187,7 +187,7 @@ No upgrade key ever holds unlimited power over the monetary constitution.
 
 ## Part XIV — What is enforced today
 
-Code: `supabase/migrations/20261003064603_memory_kernel.sql`, `supabase/migrations/20261003072025_monetary_proof_of_life.sql` (both applied to the store), `lib/chain/`, `lib/money/`.
+Code: `supabase/migrations/20261003064603_memory_kernel.sql`, `supabase/migrations/20261003072025_monetary_proof_of_life.sql`, `supabase/migrations/20261003080203_payment_router.sql`, `lib/chain/`, `lib/money/`, `lib/router/`.
 
 | Law | Enforcement | Verified by |
 |---|---|---|
@@ -201,8 +201,17 @@ Code: `supabase/migrations/20261003064603_memory_kernel.sql`, `supabase/migratio
 | Kernel cannot create money | Entitlements draw down observed allocation (non-negative); confirmations draw down the mirror | `tests/kernel/money`, `tests/e2e`: mirror equals chain |
 | Identity and authority | JWT-resolved actors, grants on every write, service key never a human or the kernel | `tests/kernel`, `tests/e2e` |
 | Chain wins for ownership | Balances read from chain; kernel stores only observations | `tests/e2e` |
+| No protocol price | Every price is a named venue's spot, TWAP or executable quote with depth and timestamp; inputs are valued at the best venue spot path (a mark, labelled as such); the kernel stores quotes, never prices | `tests/router` |
+| Net output identity | NetOutput = Gross − NetworkCost − TradingFees − ProviderFees − Slippage, exact in integer base units for every route; network cost is sponsored | `tests/router` |
+| SOLVE never forced | Routes ranked only by cost in the denomination; SOLVE is an intermediary only when its path is cheaper | `tests/router`: direct State-coin pool wins when deep, SOLVE path wins when it is cheaper |
+| Payments pay the right person | The kernel pins the recipient's published address and accepted assets at intent; routes to any other address or asset are rejected | `tests/kernel/payments`, `tests/e2e/send-bob` |
+| Live quotes, bounded slippage | Quotes expire (≤ 120 s, kernel clock and executor clock); the input limit is fixed by the intent's tolerance and checked at selection, build and submission | `tests/kernel/payments`, `tests/e2e/send-bob` |
+| Atomic routes, exactly-once payments | One transaction per attempt holds every leg plus a payment marker derived from the kernel's payment id; a failed leg rolls back the whole route; re-routing only after a definite failure; one confirmation per payment | `tests/e2e/send-bob`: failed leg, lost response, outage, concurrent workers, replay, rebuilt transaction |
+| Venues never sign blind | Each venue decodes the transaction and checks its own flows against live inventory before co-signing | `tests/e2e/send-bob`: an underpaying leg is refused |
 
-Not yet enforced: team vesting and treasury timelocks on chain (need a vesting/governance program; until then those vaults have no delegate and cold owners), liquidity and community release policies, the payment router, State economies, credit primitives, confidential amounts, ZK epochs, providers, cards and agent wallet contracts. Devnet genesis has not run yet: the build sandbox cannot reach Solana devnet, so every chain test runs on LiteSVM, which executes the same SPL programs.
+Payment router limits today: venues are RFQ makers that co-sign from inventory held in ordinary token accounts (constant-product or price-ladder pricing), not on-chain AMM programs, so a maker that co-signs two transactions against the same inventory can be filled at stale terms; no external aggregator is wired; delivery in a non-denomination asset is sized by the payer's executable quote, which the kernel records but cannot verify; test assets only (DEV-USDC and ARC are test mints).
+
+Not yet enforced: team vesting and treasury timelocks on chain (need a vesting/governance program; until then those vaults have no delegate and cold owners), liquidity and community release policies, State economies, credit primitives, confidential amounts, ZK epochs, providers, cards and agent wallet contracts. Devnet genesis has not run yet: the build sandbox cannot reach Solana devnet, so every chain test runs on LiteSVM, which executes the same SPL programs.
 
 ---
 
