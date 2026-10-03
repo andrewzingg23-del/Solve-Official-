@@ -47,7 +47,9 @@ export async function respondToQueries(agent: Kernel, org: WorldEntity, claimEve
       inReplyTo: m.action_id,
       idempotencyKey: `answer:${m.action_id}`,
     });
-    await agent.enactAction(id);
+    const reply = await agent.readAction(id);
+    if (reply.status === "rejected") continue; // the agent may not speak there: no answer, recorded as refused
+    if (reply.status !== "completed") await agent.enactAction(id);
     replies.push(id);
   }
   return replies;

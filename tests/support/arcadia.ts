@@ -9,8 +9,12 @@
 //
 // Reproducible: the seed fixes every key and id the generator creates, so the same seed, generator
 // version and kernel give the same semantic digest (lib/sandbox/digest.ts). Kernel row ids still
-// come from Postgres per generation; `arcadia_key` attributes and digest labels identify the same
-// thing across generations. The snapshot is the kernel's own database, never a second model.
+// come from Postgres per generation: they are minted by the built-in gen_random_uuid, which
+// Postgres dispatches by OID straight to its C implementation (redefining it in pg_catalog changes
+// nothing), kernel functions pin search_path = '', and the applied migrations that mint them cannot
+// be edited. So across generations the same thing is identified by its `arcadia_key` and its digest
+// label; within a generation its id is one and the same in the kernel, the snapshot, the browser and
+// every renderer. The snapshot is the kernel's own database, never a second model.
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -38,7 +42,8 @@ export const ARCADIA_WORLD = "world:arcadia";
 //   arcadia/2  seeded keys, natural keys, a private entity, provenance and digest in the manifest
 //   arcadia/3  scenarios; "lost-payment-responses" runs SOV's operating collective on its rail
 //   arcadia/4  "creation-loop" builds, tests, reviews, promotes and observes the Class A proposal
-export const ARCADIA_GENERATOR = "arcadia/4";
+//   arcadia/5  members may share their read of the market with their own agents
+export const ARCADIA_GENERATOR = "arcadia/5";
 export const ARCADIA_SEED = "arcadia-genesis-1";
 
 // Scenarios layer behaviour onto the base civilization (failures, fraud, disputes, governance).
@@ -453,8 +458,9 @@ async function generate(config: ArcadiaConfig, started: number) {
     importance: 80,
   });
 
-  // You can read the public market as a member.
+  // You can read the public market as a member, and share that read with your own agents.
   await steward.issueGrant({ grantee: youId, capability: "kernel.read", scope: ARCADIA_WORLD });
+  await steward.issueGrant({ grantee: youId, capability: "kernel.grant.issue", scope: ARCADIA_WORLD });
 
   const balances: Record<string, Record<string, string>> = {};
   for (const [who, owner] of [["you", prepared.wallet.address], ["bob", bobWallet.address]] as const) {

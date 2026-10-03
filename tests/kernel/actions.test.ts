@@ -366,6 +366,54 @@ describe("world graph", () => {
   });
 });
 
+describe("declared consequences", () => {
+  it("land with the action's completion, atomically, once, and never on failure", async () => {
+    const t = await setup();
+    const a = await t.alice.upsertEntity({ kind: "organization", scope: WORLD, title: "Supplier" });
+    const b = await t.alice.upsertEntity({ kind: "world", scope: WORLD, title: "Venture" });
+    const supplies = (extra: Record<string, unknown> = {}) => ({ op: "relation.create", kind: "supplies", from_ref: `entity:${a}`, to_ref: `entity:${b}`, scope: WORLD, attributes: { status: "agreed" }, result_keys: ["terms"], ...extra });
+
+    // Whoever declares a consequence must be able to write where it lands.
+    const nova = await t.alice.spawnAgent({ label: "Nova", role: "ai_companion" });
+    await t.alice.issueGrant({ grantee: nova, capability: "order.place", scope: WORLD });
+    await assert.rejects(
+      t.agent(nova).proposeAction({ kind: "supplier.order", capability: "order.place", scope: WORLD, payload: { consequences: [supplies()] } }),
+      named("forbidden", /cannot declare consequences/),
+    );
+
+    // External action: evidence settles it, and its consequence lands in the same transaction.
+    const id = await t.alice.proposeAction({ kind: "supplier.order", capability: "order.place", scope: WORLD, payload: { consequences: [supplies()] } });
+    await t.alice.beginAction(id);
+    assert.equal((await t.alice.readRelations(WORLD)).length, 0, "attempting is not consequence");
+    await t.alice.settleAction({ actionId: id, status: "completed", result: { terms: { quantity: 5 } }, evidence: evidence(70) });
+    const [rel] = (await t.alice.readRelations(WORLD)).filter((r) => r.kind === "supplies");
+    assert.deepEqual(rel.attributes, { status: "agreed", terms: { quantity: 5 }, action: `action:${id}` });
+    const done = await t.alice.readAction(id);
+    assert.deepEqual(done.result?.consequences, [{ op: "relation.create", relation_id: rel.relation_id }]);
+    const [created] = await t.k.owner("select correlation_id from kernel.events where type = 'kernel.relation.created' and payload->>'relation_id' = $1", [rel.relation_id]);
+    assert.equal(created.correlation_id, id, "the consequence names the action that caused it");
+    await t.alice.settleAction({ actionId: id, status: "completed", result: { terms: { quantity: 5 } }, evidence: evidence(70) });
+    assert.equal((await t.alice.readRelations(WORLD)).filter((r) => r.kind === "supplies").length, 1, "exactly once");
+
+    // A failed action changes nothing.
+    const failed = await t.alice.proposeAction({ kind: "supplier.order", capability: "order.place", scope: WORLD, payload: { consequences: [supplies({ kind: "offers" })] } });
+    await t.alice.beginAction(failed);
+    await t.alice.settleAction({ actionId: failed, status: "failed", detail: "supplier declined" });
+    assert.ok(!(await t.alice.readRelations(WORLD)).some((r) => r.kind === "offers"));
+
+    // Kernel-native enactment applies them too.
+    const message = await t.alice.proposeAction({ kind: "message.send", capability: "message.send", scope: WORLD, targetRef: `actor:${t.bobId}`, payload: { type: "INFORMATION_REQUEST", consequences: [supplies({ kind: "offers" })] } });
+    await t.alice.enactAction(message);
+    assert.ok((await t.alice.readRelations(WORLD)).some((r) => r.kind === "offers" && r.attributes.action === `action:${message}`));
+
+    // If a consequence cannot land, the completion does not happen either.
+    const ghost = await t.alice.proposeAction({ kind: "supplier.order", capability: "order.place", scope: WORLD, payload: { consequences: [supplies({ to_ref: "entity:00000000-0000-4000-8000-000000000000" })] } });
+    await t.alice.beginAction(ghost);
+    await assert.rejects(t.alice.settleAction({ actionId: ghost, status: "completed", result: {}, evidence: evidence(71) }), named("not_found"));
+    assert.equal((await t.alice.readAction(ghost)).status, "enacting", "still open: it can be settled again or failed");
+  });
+});
+
 describe("tasks", () => {
   it("are claimed under a lease, verified by someone else, and completed once with evidence", async () => {
     const t = await setup();

@@ -259,6 +259,8 @@ export class WorldEngine {
     const plan = planVehicleCompany(objective, leastCapital);
     const scope = `world:venture-${crypto.randomUUID().slice(0, 8)}`;
     await you.claimScope(scope);
+    const companion = avatarAgent(model);
+    if (companion) await this.assist(companion.agent_id, scope);
 
     // A venture is a World, not a place: it gets no coordinates until it has a real site.
     const world = await you.upsertEntity({
@@ -379,6 +381,16 @@ export class WorldEngine {
       };
     }
     return { kind: "none", steps: [] };
+  }
+
+  // What an assisting companion may do in a World you build together, as recorded grants: see the
+  // World and the market it draws on, and record what it finds into the World. Contacting anyone
+  // and committing to anything stay with you until you delegate them.
+  async assist(agentId: string, scope: string) {
+    const { you, manifest } = this.sb;
+    await you.issueGrant({ grantee: agentId, capability: "kernel.read", scope, idempotencyKey: `assist:read:${agentId}:${scope}` });
+    await you.issueGrant({ grantee: agentId, capability: "world.relation.write", scope, idempotencyKey: `assist:record:${agentId}:${scope}` });
+    await you.issueGrant({ grantee: agentId, capability: "kernel.read", scope: manifest.world, idempotencyKey: `assist:market:${agentId}` });
   }
 
   // SOV's own operations, as the steward reads them. Null where no steward runs on this device.

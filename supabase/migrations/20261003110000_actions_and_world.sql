@@ -13,7 +13,9 @@
 --      party is found by following ownership to a human or service.
 --   4. Every action has one lifecycle and completes at most once; enactment re-checks authority,
 --      so revocation stops it; external enactment records `enacting` first and completes with
---      evidence; unknown outcomes are needs_reconciliation.
+--      evidence; unknown outcomes are needs_reconciliation. An action may declare its consequences
+--      when proposed (what approvers see is what happens); they are applied in the same
+--      transaction that completes it, exactly once, and never when it fails.
 --   5. The World Graph changes only through events: versioned entities, relations ended by
 --      events, one canonical ref per thing.
 --   6. A task is completed by its worker or, when verification is required, by a distinct
@@ -1037,7 +1039,8 @@ end;
 $$;
 
 create function kernel.do_relate(c kernel.caller, p_authority uuid, p_kind text, p_from_ref text, p_to_ref text,
-                                 p_scope text, p_attributes jsonb, p_idempotency_key text) returns uuid
+                                 p_scope text, p_attributes jsonb, p_idempotency_key text,
+                                 p_correlation uuid default null) returns uuid
 language plpgsql set search_path = '' as $$
 declare
   v_request jsonb := jsonb_build_object('kind', p_kind, 'from_ref', p_from_ref, 'to_ref', p_to_ref, 'scope', p_scope,
@@ -1055,7 +1058,7 @@ begin
   end if;
   v_event := kernel.append_event(
     c, 'kernel.relation.created', p_scope, p_authority,
-    jsonb_build_object('request', v_request, 'relation_id', v_id), null, p_idempotency_key
+    jsonb_build_object('request', v_request, 'relation_id', v_id), null, p_idempotency_key, p_correlation
   );
   insert into kernel.relations (id, kind, from_ref, to_ref, scope, attributes, event_id)
   values (v_id, p_kind, p_from_ref, p_to_ref, p_scope, coalesce(p_attributes, '{}'::jsonb), v_event);
@@ -1653,6 +1656,7 @@ begin
   if p_payload is null or jsonb_typeof(p_payload) <> 'object' or length(p_payload::text) > 16000 then
     raise exception using errcode = 'KA003', message = 'payload must be a JSON object of at most 16000 characters';
   end if;
+  perform kernel.validate_consequences(c, p_payload -> 'consequences');
   if p_amount is not null and p_amount !~ '^[1-9][0-9]{0,37}$' then
     raise exception using errcode = 'KA003', message = 'amount must be a positive integer in minor units';
   end if;
@@ -1843,6 +1847,87 @@ begin
 end;
 $$;
 
+-- Declared consequences: World Graph changes an action carries from its proposal.
+--   {"op": "relation.create", "kind": <relation kind>, "from_ref": <ref>, "to_ref": <ref>, "scope": <scope>,
+--    "attributes": {...}, "result_keys": [<keys of the completion result copied into attributes>]}
+--   {"op": "relation.end", "relation_id": <uuid>, "reason": <text>}
+-- The proposer must be able to write where they land; the enactor applies them on completion.
+create function kernel.validate_consequences(c kernel.caller, p_consequences jsonb) returns void
+language plpgsql stable set search_path = '' as $$
+declare
+  x jsonb;
+  v_scope text;
+begin
+  if p_consequences is null then
+    return;
+  end if;
+  if jsonb_typeof(p_consequences) <> 'array' or jsonb_array_length(p_consequences) > 20 then
+    raise exception using errcode = 'KA003', message = 'consequences must be an array of at most 20 changes';
+  end if;
+  for x in select * from jsonb_array_elements(p_consequences) loop
+    if x ->> 'op' = 'relation.create' then
+      v_scope := x ->> 'scope';
+      if not kernel.is_scope(v_scope) or not kernel.is_ref(x ->> 'from_ref') or not kernel.is_ref(x ->> 'to_ref')
+         or coalesce(x ->> 'kind', '') = '' or (x ? 'attributes' and jsonb_typeof(x -> 'attributes') <> 'object')
+         or (x ? 'result_keys' and jsonb_typeof(x -> 'result_keys') <> 'array') then
+        raise exception using errcode = 'KA003', message = 'invalid relation.create consequence';
+      end if;
+    elsif x ->> 'op' = 'relation.end' then
+      select r.scope into v_scope from kernel.relations r where r.id::text = x ->> 'relation_id';
+      if v_scope is null then
+        raise exception using errcode = 'KA007', message = 'a consequence can only end a relation that exists';
+      end if;
+    else
+      raise exception using errcode = 'KA003', message = format('unknown consequence %s', coalesce(x ->> 'op', 'null'));
+    end if;
+    if (kernel.decide(c.actor_id, 'world.relation.write', v_scope)).decision = 'DENY' then
+      raise exception using errcode = 'KA002', message = format('cannot declare consequences in %s', v_scope);
+    end if;
+  end loop;
+end;
+$$;
+
+-- Applies an action's declared consequences, inside the transaction completing it. Each change is
+-- attributed to the enactor, correlated with the action, and idempotent per action and position.
+create function kernel.apply_consequences(c kernel.caller, p_action kernel.actions, p_result jsonb) returns jsonb
+language plpgsql set search_path = '' as $$
+declare
+  x jsonb;
+  i integer := 0;
+  v_applied jsonb := '[]'::jsonb;
+  v_attributes jsonb;
+  v_grant uuid;
+  v_id uuid;
+  k text;
+begin
+  if p_action.payload -> 'consequences' is null then
+    return v_applied;
+  end if;
+  for x in select * from jsonb_array_elements(p_action.payload -> 'consequences') loop
+    i := i + 1;
+    if x ->> 'op' = 'relation.create' then
+      v_attributes := coalesce(x -> 'attributes', '{}'::jsonb);
+      for k in select jsonb_array_elements_text(coalesce(x -> 'result_keys', '[]'::jsonb)) loop
+        if p_result ? k then
+          v_attributes := v_attributes || jsonb_build_object(k, p_result -> k);
+        end if;
+      end loop;
+      v_attributes := v_attributes || jsonb_build_object('action', 'action:' || p_action.id);
+      v_grant := kernel.require_allowed(c.actor_id, 'world.relation.write', x ->> 'scope');
+      v_id := kernel.do_relate(c, v_grant, x ->> 'kind', x ->> 'from_ref', x ->> 'to_ref', x ->> 'scope', v_attributes,
+                               'consequence:' || p_action.id || ':' || i, p_action.id);
+      v_applied := v_applied || jsonb_build_object('op', 'relation.create', 'relation_id', v_id);
+    else
+      select r.scope into k from kernel.relations r where r.id::text = x ->> 'relation_id';
+      perform kernel.do_end_relation(c, kernel.require_allowed(c.actor_id, 'world.relation.write', k),
+                                     (x ->> 'relation_id')::uuid, coalesce(x ->> 'reason', 'superseded by action:' || p_action.id));
+      v_applied := v_applied || jsonb_build_object('op', 'relation.end', 'relation_id', x ->> 'relation_id');
+    end if;
+  end loop;
+  return v_applied;
+end;
+$$;
+
 -- Checks that an action may be enacted now by this actor; returns the enactor's grant.
 create function kernel.enactment_grant(c kernel.caller, p_action kernel.actions) returns uuid
 language plpgsql stable set search_path = '' as $$
@@ -1942,6 +2027,8 @@ begin
     v_result := jsonb_build_object('posting_event_id', v_id);
   end if;
 
+  v_result := coalesce(v_result, '{}'::jsonb)
+    || jsonb_build_object('consequences', kernel.apply_consequences(c, v_action, coalesce(v_result, '{}'::jsonb)));
   perform kernel.record_action_transition(c, v_grant, v_action, 'completed', 'enacted by the kernel', v_result, null);
   return v_result;
 end;
@@ -2011,6 +2098,11 @@ begin
   end if;
   v_grant := coalesce((kernel.decide(c.actor_id, v_action.capability, v_action.scope, v_action.amount, v_action.asset,
                                      v_action.counterparty_ref, v_action.task_ref)).grant_id, v_action.grant_id);
+  if p_status = 'completed' then
+    -- Evidence settled what happened; its declared consequences land in this same transaction.
+    p_result := coalesce(p_result, '{}'::jsonb)
+      || jsonb_build_object('consequences', kernel.apply_consequences(c, v_action, coalesce(p_result, '{}'::jsonb)));
+  end if;
   perform kernel.record_action_transition(c, v_grant, v_action, p_status, p_detail, p_result, null, p_evidence);
   return p_status;
 end;
