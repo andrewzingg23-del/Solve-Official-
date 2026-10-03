@@ -59,6 +59,44 @@ export type Entry = { account_id: string; amount: bigint | string };
 
 export type ChainCheck = { ok: boolean; events_checked: number; first_bad_seq: number | null; problem: string | null };
 
+export type SettlementChain = "litesvm" | "solana-devnet" | "solana-mainnet";
+export type SettlementStatus = "prepared" | "submitted" | "confirmed" | "failed" | "needs_reconciliation";
+
+export type Rail = { chain: SettlementChain; asset: string; mint_address: string; settlement_authority: string };
+export type Wallet = { id: string; chain: SettlementChain; address: string; created_at: string };
+
+export type Entitlement = {
+  entitlement_id: string;
+  settlement_id: string;
+  world_scope: string;
+  obligation_event_id: string;
+  outcome_event_id: string;
+  policy_key: string;
+  policy_version: number;
+  attribution_bps: number;
+  asset: string;
+  amount: string;
+  evidence_root: string;
+  created_at: string;
+  chain: SettlementChain | null;
+  recipient_address: string | null;
+  status: SettlementStatus | "unsettled";
+  tx_signature: string | null;
+};
+
+export type Settlement = {
+  settlement_id: string;
+  entitlement_id: string;
+  beneficiary_id: string;
+  chain: SettlementChain;
+  recipient_address: string;
+  asset: string;
+  // Minor units as an integer string.
+  amount: string;
+  status: SettlementStatus;
+  tx_signature: string | null;
+};
+
 const errorNames = {
   KA001: "unauthenticated",
   KA002: "forbidden",
@@ -244,6 +282,106 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
 
     // Service role only.
     verifyChain: () => one<ChainCheck>("verify_chain", {}),
+
+    // Money: rails and policies (system authority).
+    registerRail: (input: {
+      chain: SettlementChain;
+      mintAddress: string;
+      settlementAuthority: string;
+      onchainAccount: string;
+      unallocatedAccount: string;
+      payableAccount: string;
+    }) =>
+      call<string>("register_rail", {
+        p_chain: input.chain,
+        p_mint_address: input.mintAddress,
+        p_settlement_authority: input.settlementAuthority,
+        p_onchain_account: input.onchainAccount,
+        p_unallocated_account: input.unallocatedAccount,
+        p_payable_account: input.payableAccount,
+        ...as,
+      }),
+
+    defineRewardPolicy: (input: {
+      policyKey: string;
+      chain: SettlementChain;
+      outcomeType: string;
+      amount: bigint | string;
+      maxPerRelease: bigint | string;
+      totalCap: bigint | string;
+      requiredBases: Exclude<EvidenceBasis, "self_reported">[];
+      minIndependentParties?: number;
+      active?: boolean;
+    }) =>
+      call<number>("define_reward_policy", {
+        p_policy_key: input.policyKey,
+        p_chain: input.chain,
+        p_outcome_type: input.outcomeType,
+        p_amount: input.amount.toString(),
+        p_max_per_release: input.maxPerRelease.toString(),
+        p_total_cap: input.totalCap.toString(),
+        p_required_bases: input.requiredBases,
+        p_min_independent_parties: input.minIndependentParties ?? 1,
+        p_active: input.active ?? true,
+        ...as,
+      }),
+
+    readRail: (chain: SettlementChain) => one<Rail>("read_rail", { p_chain: chain }),
+
+    // Money: wallets, entitlements, settlements.
+    linkWallet: (chain: SettlementChain, address: string) =>
+      call<string>("link_wallet", { p_chain: chain, p_address: address, ...as }),
+
+    myWallets: () => call<Wallet[]>("my_wallets", { ...as }),
+
+    createEntitlement: (input: {
+      obligationEventId: string;
+      outcomeEventId: string;
+      beneficiaryId: string;
+      policyKey: string;
+      policyVersion: number;
+    }) =>
+      call<string>("create_entitlement", {
+        p_obligation_event_id: input.obligationEventId,
+        p_outcome_event_id: input.outcomeEventId,
+        p_beneficiary_id: input.beneficiaryId,
+        p_policy_key: input.policyKey,
+        p_policy_version: input.policyVersion,
+        ...as,
+      }),
+
+    myEntitlements: () => call<Entitlement[]>("my_entitlements", { ...as }),
+
+    prepareSettlement: (entitlementId: string, recipientAddress: string) =>
+      call<string>("prepare_settlement", { p_entitlement_id: entitlementId, p_recipient_address: recipientAddress, ...as }),
+
+    readSettlement: (settlementId: string) => one<Settlement>("read_settlement", { p_settlement_id: settlementId, ...as }),
+
+    pendingSettlements: (chain: SettlementChain, limit = 50) =>
+      call<{ settlement_id: string; status: SettlementStatus; created_at: string }[]>("pending_settlements", {
+        p_chain: chain,
+        p_limit: limit,
+        ...as,
+      }),
+
+    // Settlement service only.
+    recordSettlement: (input: {
+      settlementId: string;
+      status: Exclude<SettlementStatus, "prepared">;
+      txSignature?: string;
+      slot?: bigint;
+      detail?: string;
+      evidence?: Evidence[];
+    }) =>
+      call<string>("record_settlement", {
+        p_settlement_id: input.settlementId,
+        p_status: input.status,
+        p_tx_signature: input.txSignature ?? null,
+        p_slot: input.slot === undefined ? null : Number(input.slot),
+        p_detail: input.detail ?? "",
+        p_evidence: input.evidence ?? [],
+        ...as,
+      }),
   };
 }
 

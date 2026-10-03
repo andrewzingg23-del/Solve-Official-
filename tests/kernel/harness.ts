@@ -53,15 +53,52 @@ export class KernelDb {
     });
   }
 
+  private argTypes = new Map<string, Map<string, string>>();
+
+  // Input argument types of kernel_api.<fn>, so arrays encode the way PostgREST would.
+  private async typesOf(fn: string) {
+    let types = this.argTypes.get(fn);
+    if (!types) {
+      const rows = await this.owner(
+        `select unnest(p.proargnames[1:p.pronargs]) as name, unnest(p.proargtypes::regtype[]::text[]) as type
+         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+         where n.nspname = 'kernel_api' and p.proname = $1`,
+        [fn],
+      );
+      types = new Map(rows.map((r) => [r.name as string, r.type as string]));
+      this.argTypes.set(fn, types);
+    }
+    return types;
+  }
+
   // Calls kernel_api.<fn> with named arguments, as PostgREST's rpc does.
   async rpc(session: Session, fn: string, args: Record<string, unknown> = {}): Promise<Row[]> {
+    const types = await this.typesOf(fn);
     const names = Object.keys(args);
     const sql = `select * from kernel_api.${fn}(${names.map((n, i) => `${n} => $${i + 1}`).join(", ")})`;
     const values = names.map((n) => {
       const v = args[n];
+      if (Array.isArray(v) && types.get(n)?.endsWith("[]")) return v;
       return v !== null && typeof v === "object" && !(v instanceof Date) ? JSON.stringify(v) : v;
     });
     return this.as(session, sql, values);
+  }
+
+  private setReturning = new Map<string, boolean>();
+
+  // Whether kernel_api.<fn> returns rows (PostgREST returns an array) or a scalar.
+  async returnsSet(fn: string) {
+    let value = this.setReturning.get(fn);
+    if (value === undefined) {
+      const [row] = await this.owner(
+        `select p.proretset from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+         where n.nspname = 'kernel_api' and p.proname = $1`,
+        [fn],
+      );
+      value = Boolean(row?.proretset);
+      this.setReturning.set(fn, value);
+    }
+    return value;
   }
 
   // Calls a kernel_api function that returns a single value.

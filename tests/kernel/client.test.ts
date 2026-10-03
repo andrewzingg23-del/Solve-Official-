@@ -44,6 +44,17 @@ async function exerciseEveryMethod(supabase: SupabaseClient, actAs?: string) {
   await k.accountBalance(id);
   await k.myGrants();
   await k.verifyChain();
+  await k.registerRail({ chain: "litesvm", mintAddress: "m", settlementAuthority: "s", onchainAccount: id, unallocatedAccount: id, payableAccount: id });
+  await k.defineRewardPolicy({ policyKey: "p", chain: "litesvm", outcomeType: "outcome.completed", amount: BigInt(1), maxPerRelease: "1", totalCap: "1", requiredBases: ["system_observed"], minIndependentParties: 1, active: true });
+  await k.readRail("litesvm");
+  await k.linkWallet("litesvm", "addr");
+  await k.myWallets();
+  await k.createEntitlement({ obligationEventId: id, outcomeEventId: id, beneficiaryId: id, policyKey: "p", policyVersion: 1 });
+  await k.myEntitlements();
+  await k.prepareSettlement(id, "addr");
+  await k.readSettlement("s");
+  await k.pendingSettlements("litesvm", 10);
+  await k.recordSettlement({ settlementId: "s", status: "confirmed", txSignature: "t", slot: BigInt(1), detail: "", evidence: [evidence] });
 }
 
 it("calls only real kernel_api functions with their real argument names", async () => {
