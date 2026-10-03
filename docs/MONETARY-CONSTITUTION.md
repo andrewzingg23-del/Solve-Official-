@@ -131,7 +131,7 @@ Kernel-only units skip steps 3–4. Their posting is the settlement.
 
 ## Part VI — How this maps onto the memory kernel
 
-Built and tested in `supabase/migrations/20261003000000_memory_kernel.sql`:
+Built and tested in `supabase/migrations/20261003064603_memory_kernel.sql`:
 
 | Constitutional need | Kernel primitive |
 |---|---|

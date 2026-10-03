@@ -61,7 +61,7 @@ Without env vars the app runs and shows a setup notice.
 
 The founder provisions a dedicated Supabase project (DIRECTIVES.md, directive 2). Never use the legacy game project.
 
-1. Apply the migration: `supabase link --project-ref <ref> && supabase db push`, or paste `supabase/migrations/20261003000000_memory_kernel.sql` into the SQL editor.
+1. Apply the migration: `supabase link --project-ref <ref> && supabase db push`, or paste `supabase/migrations/20261003064603_memory_kernel.sql` into the SQL editor.
 2. **Project Settings → Data API → Exposed schemas:** add `kernel_api`. Do not expose `kernel`.
 3. **Authentication → URL Configuration:** Site URL `http://localhost:3000`; add `http://localhost:3000/**` and the production URL to Redirect URLs.
 4. **Database → Backups:** turn on point-in-time recovery for this project.
