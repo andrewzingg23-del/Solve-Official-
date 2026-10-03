@@ -17,7 +17,7 @@ Updated 2026-10-03. Branch `claude/keen-cerf-tpd7io`.
   - Kernel v3 pins the recipient's published address and accepted assets, rejects stale quotes, recipient mismatch and inputs beyond the slippage bound, and records one confirmation per payment.
   - Venues co-sign only after checking their own flows against live inventory.
 - **Tests:** 101 pass (`npm test`): kernel 35, money 13, payments 10, router 15, chain 11, end-to-end 17.
-- **App shell and live preview.** `solve-git-claude-keen-cerf-tpd7io-sovigrn.vercel.app`, connected to the store.
+- **App shell and live preview.** `solve-git-claude-keen-cerf-tpd7io-sovigrn.vercel.app`, connected to the store. Email sign-in is switched off for now (founder, 2026-10-03): Enter opens `/money`, which runs the proof-of-life and Send Bob $10 live on the server in a fresh in-memory kernel and chain per click (test assets, nothing saved). `/login` and `/account` still exist, unlinked.
 - **Specs.** `docs/MONETARY-CONSTITUTION.md` draft 3 (source spec for money; Part XIV lists what is enforced). `docs/plans/2026-10-03-monetary-proof-of-life.md`, `docs/plans/2026-10-03-payment-router.md`. Queued: `docs/specs/2026-10-03-world-interface.md` and `docs/specs/2026-10-03-avatar-world-integration.md`.
 
 ## DOING

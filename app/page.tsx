@@ -1,8 +1,6 @@
 import Link from "next/link";
-import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getUser } from "@/lib/supabase/server";
-import { SetupNotice } from "./setup-notice";
-import { primaryAction } from "./ui";
+import { primaryAction, secondaryAction } from "./ui";
 
 export default async function Home() {
   const user = await getUser();
@@ -19,20 +17,17 @@ export default async function Home() {
         </p>
       </div>
 
-      {!isSupabaseConfigured ? (
-        <SetupNotice />
-      ) : user ? (
-        <div className="flex flex-wrap items-center gap-4">
-          <Link href="/account" className={primaryAction}>
-            Your record
-          </Link>
-          <p className="text-sm text-muted">{user.email}</p>
-        </div>
-      ) : (
-        <Link href="/login" className={`${primaryAction} w-fit`}>
+      {/* Email sign-in is off for now: Enter opens the app directly. */}
+      <div className="flex flex-wrap items-center gap-4">
+        <Link href="/money" className={primaryAction}>
           Enter
         </Link>
-      )}
+        {user && (
+          <Link href="/account" className={secondaryAction}>
+            Your record
+          </Link>
+        )}
+      </div>
     </main>
   );
 }
