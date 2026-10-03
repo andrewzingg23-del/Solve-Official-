@@ -1,16 +1,16 @@
-import { generateKeyPairSigner } from "@solana/kit";
 import { runGenesis, solve, VAULTS, type Vault } from "../../lib/chain/solve";
+import { newSigner } from "./keys";
 import { LiteSvmGateway } from "./litesvm-gateway";
 
 // A fresh in-process chain with DEV-SOLVE genesis run: fixed supply, five vaults, bounded earn delegate.
 export async function devSolveChain({ releaseCapacity = solve(1_000_000) } = {}) {
   const gateway = new LiteSvmGateway();
-  const sponsor = await generateKeyPairSigner();
-  const mint = await generateKeyPairSigner();
-  const mintAuthority = await generateKeyPairSigner();
-  const settlementAuthority = await generateKeyPairSigner();
-  const owners = {} as Record<Vault, Awaited<ReturnType<typeof generateKeyPairSigner>>>;
-  for (const v of VAULTS) owners[v] = await generateKeyPairSigner();
+  const sponsor = await newSigner();
+  const mint = await newSigner();
+  const mintAuthority = await newSigner();
+  const settlementAuthority = await newSigner();
+  const owners = {} as Record<Vault, Awaited<ReturnType<typeof newSigner>>>;
+  for (const v of VAULTS) owners[v] = await newSigner();
   gateway.airdrop(sponsor.address, 100);
 
   const manifest = await runGenesis({

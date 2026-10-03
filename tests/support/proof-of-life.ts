@@ -2,8 +2,9 @@
 // balanced ledger → deterministic settlement → DEV-SOLVE Earn Vault release → on-chain ownership →
 // P2P transfer → reconciliation. Kernel: the real migrations in PGlite. Chain: LiteSVM running the
 // real SPL programs. Every step goes through the production client and worker code.
-import { createHash, randomUUID } from "node:crypto";
-import { generateKeyPairSigner, type KeyPairSigner } from "@solana/kit";
+import { createHash } from "node:crypto";
+import { newId, newSigner } from "./keys";
+import type { KeyPairSigner } from "@solana/kit";
 import { getApproveInstruction } from "@solana-program/token";
 import {
   appendTransactionMessageInstructions,
@@ -50,7 +51,7 @@ const sha = (text: string) => `sha256:${createHash("sha256").update(text).digest
 // A World with one synthetic obligation, completed and independently verified, entitled and
 // prepared for settlement to a fresh wallet.
 export async function preparedSettlement(env: ProofEnvironment, client: Kernel, actorId: string) {
-  const world = `world:${randomUUID()}`;
+  const world = `world:${await newId()}`;
   await client.claimScope(world);
   await client.issueGrant({ grantee: env.money.verifier, capability: "kernel.evidence.attach", scope: world });
   await client.issueGrant({ grantee: env.money.verifier, capability: "kernel.read", scope: world });
@@ -83,7 +84,7 @@ export async function preparedSettlement(env: ProofEnvironment, client: Kernel, 
     policyKey: POLICY,
     policyVersion: env.money.policyVersion,
   });
-  const wallet = await generateKeyPairSigner();
+  const wallet = await newSigner();
   await client.linkWallet("litesvm", wallet.address);
   const settlementId = await client.prepareSettlement(entitlementId, wallet.address);
   return { world, obligation, outcome, entitlementId, wallet, settlementId };
@@ -172,7 +173,7 @@ export async function runProofOfLife(onStep: (step: Step) => void = () => {}) {
   const aliceBalance = await walletBalance(env.chain.gateway, prepared.wallet.address, env.chain.manifest.mint);
   step("Chain balance", `Alice's wallet holds ${formatSolve(aliceBalance)} ${symbol} (read from chain)`);
 
-  const bob: KeyPairSigner = await generateKeyPairSigner();
+  const bob: KeyPairSigner = await newSigner();
   const transfer = await buildSponsoredTransfer({
     gateway: env.chain.gateway,
     mint: env.chain.manifest.mint,

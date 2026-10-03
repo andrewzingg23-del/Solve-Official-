@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { newId } from "./keys";
 import { solve } from "../../lib/chain/solve";
 import { service, sha, type KernelDb, type Session, user } from "../kernel/harness";
 
@@ -84,7 +84,7 @@ export async function worldWithOutcome(
   ownerId: string,
   { beneficiaries = [{ actor_id: ownerId, attribution_bps: 10_000 }] } = {},
 ) {
-  const world = `world:${randomUUID()}`;
+  const world = `world:${await newId()}`;
   await k.rpc(owner, "claim_scope", { p_scope: world });
   await k.rpc(owner, "issue_grant", { p_grantee: money.verifier, p_capability: "kernel.evidence.attach", p_scope: world });
   await k.rpc(owner, "issue_grant", { p_grantee: money.verifier, p_capability: "kernel.read", p_scope: world });

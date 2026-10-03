@@ -6,18 +6,48 @@
 // and who paid Bob $10 through the payment router. The market holds fictional suppliers at real
 // cities, each with an owner and an organization agent, with capability claims in three proof
 // states (externally verified, self-reported, challenged), and two Network States.
+//
+// Reproducible: the seed fixes every key and id the generator creates, so the same seed, generator
+// version and kernel give the same semantic digest (lib/sandbox/digest.ts). Kernel row ids still
+// come from Postgres per generation; `arcadia_key` attributes and digest labels identify the same
+// thing across generations. The snapshot is the kernel's own database, never a second model.
+import { createHash } from "node:crypto";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { walletBalance } from "../../lib/chain/solve";
 import type { ArcadiaManifest } from "../../lib/sandbox/manifest";
 import { kernelClient } from "../../lib/kernel/client";
 import { localSupabase, service, user } from "../../lib/kernel/local";
 import { sendPayment, type PaymentRail } from "../../lib/money/payment";
 import { settle, type SettlementRail } from "../../lib/money/settlement";
+import { kernelDigest } from "../../lib/sandbox/digest";
 import { createKernelDb, sha } from "../kernel/harness";
+import { newSigner, seedKeys } from "./keys";
 import { moneyKernel } from "./money-fixture";
 import { ARC, paymentMarket, USD } from "./payment-fixture";
 import { preparedSettlement, type ProofEnvironment } from "./proof-of-life";
 
 export const ARCADIA_WORLD = "world:arcadia";
+
+// Bump when the generator's output changes meaning (new actors, entities, scenarios, data).
+//   arcadia/1  first civilization: You, Bob, eight suppliers, two Network States
+//   arcadia/2  seeded keys, natural keys, a private entity, provenance and digest in the manifest
+export const ARCADIA_GENERATOR = "arcadia/2";
+export const ARCADIA_SEED = "arcadia-genesis-1";
+
+// Scenarios layer behaviour onto the base civilization (failures, fraud, disputes, governance).
+// None is enabled by default; each is named in the manifest so a snapshot says what it contains.
+export type ArcadiaScenario = never;
+export type ArcadiaConfig = { seed: string; scenarios: ArcadiaScenario[] };
+
+const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
+
+// The kernel's schema and rules, as the ordered migration files.
+export function kernelVersion() {
+  const dir = join(process.cwd(), "supabase/migrations");
+  const files = readdirSync(dir).filter((f) => f.endsWith(".sql")).sort();
+  return { digest: sha256(files.map((f) => `${f}\n${readFileSync(join(dir, f), "utf8")}`).join("\n")), migrations: files };
+}
 
 export const PERSONAS = {
   you: "sandbox:you",
@@ -167,7 +197,18 @@ export const STATES = [
 
 export type { ArcadiaManifest };
 
-export async function buildArcadia() {
+export async function buildArcadia(config: Partial<ArcadiaConfig> = {}) {
+  const resolved: ArcadiaConfig = { seed: config.seed ?? ARCADIA_SEED, scenarios: config.scenarios ?? [] };
+  const started = Date.now();
+  seedKeys(resolved.seed);
+  try {
+    return await generate(resolved, started);
+  } finally {
+    seedKeys(null);
+  }
+}
+
+async function generate(config: ArcadiaConfig, started: number) {
   const market = await paymentMarket();
   const chain = market.chain;
   const k = await createKernelDb();
@@ -208,8 +249,7 @@ export async function buildArcadia() {
 
   const bob = client(PERSONAS.bob);
   const bobId = await bob.register("Bob");
-  const { generateKeyPairSigner } = await import("@solana/kit");
-  const bobWallet = await generateKeyPairSigner();
+  const bobWallet = await newSigner();
   await bob.linkWallet("litesvm", bobWallet.address);
   await bob.setPaymentProfile({ chain: "litesvm", receiveAddress: bobWallet.address, acceptAssets: ["DEV_USDC"] });
   await market.fund(prepared.wallet.address, "ARC", ARC(1_000));
@@ -238,7 +278,7 @@ export async function buildArcadia() {
       scope: ARCADIA_WORLD,
       title,
       summary: "A capability offered in the Arcadia market.",
-      attributes: { key },
+      attributes: { key, arcadia_key: `capability:${key}` },
       visibility: "public",
       importance: 40,
     });
@@ -257,7 +297,7 @@ export async function buildArcadia() {
       scope: ARCADIA_WORLD,
       title: org.title,
       summary: org.summary,
-      attributes: { ...org.attributes, city: org.city, capabilities: org.capabilities, synthetic: true },
+      attributes: { ...org.attributes, city: org.city, capabilities: org.capabilities, synthetic: true, arcadia_key: `org:${org.key}` },
       latitude: org.latitude,
       longitude: org.longitude,
       locationTruth: "declared",
@@ -305,7 +345,7 @@ export async function buildArcadia() {
       scope: ARCADIA_WORLD,
       title: state.title,
       summary: state.summary,
-      attributes: state.attributes,
+      attributes: { ...state.attributes, arcadia_key: `state:${state.key}` },
       visibility: "public",
       importance: 70,
     });
@@ -316,7 +356,7 @@ export async function buildArcadia() {
         scope: ARCADIA_WORLD,
         title: `${state.title} hub — ${hub.city}`,
         summary: `A ${state.title} member hub. Fictional.`,
-        attributes: { state: state.key, city: hub.city },
+        attributes: { state: state.key, city: hub.city, arcadia_key: `hub:${state.key}:${hub.city.toLowerCase().replace(/\s+/g, "-")}` },
         latitude: hub.latitude,
         longitude: hub.longitude,
         locationTruth: "declared",
@@ -332,6 +372,21 @@ export async function buildArcadia() {
   await steward.relate({ kind: "member_of", fromRef: `actor:${orgs.vireo.ownerId}`, toRef: `entity:${states.tessellate.entityId}`, scope: ARCADIA_WORLD });
   await steward.relate({ kind: "supplies", fromRef: `entity:${orgs.sable.entityId}`, toRef: `entity:${orgs.halden.entityId}`, scope: ARCADIA_WORLD });
 
+  // Something You must never see: a private record in the same World. It tests that what reaches
+  // the browser's view is authorized, not merely hidden.
+  const privateEntityId = await steward.upsertEntity({
+    kind: "document",
+    scope: ARCADIA_WORLD,
+    title: "Halden Works second line (confidential)",
+    summary: "Steward-only planning note. Fictional.",
+    attributes: { organization: `entity:${orgs.halden.entityId}`, arcadia_key: "private:halden-second-line" },
+    latitude: 47.0707,
+    longitude: 15.4395,
+    locationTruth: "declared",
+    visibility: "private",
+    importance: 80,
+  });
+
   // You can read the public market as a member.
   await steward.issueGrant({ grantee: youId, capability: "kernel.read", scope: ARCADIA_WORLD });
 
@@ -343,10 +398,28 @@ export async function buildArcadia() {
 
   const integrity = await kernelClient(localSupabase(k, service)).verifyChain();
   if (!integrity.ok) throw new Error(`Arcadia history broken: ${integrity.problem}`);
+  const semantic = await kernelDigest((sql) => k.owner(sql));
+  const kernel = kernelVersion();
+  const policies = await k.owner("select capability, scope, requirement, version from kernel.action_policies order by scope, capability, version");
 
   const manifest: ArcadiaManifest = {
     version: "",
     generatedAt: new Date().toISOString(),
+    arcadia: {
+      generator: ARCADIA_GENERATOR,
+      seed: config.seed,
+      scenarios: config.scenarios,
+      configuration: sha256(JSON.stringify({ config, ORGS, STATES, CAPABILITIES })),
+      kernel: kernel.digest,
+      migrations: kernel.migrations,
+      policies: sha256(JSON.stringify(policies)),
+      digest: semantic.digest,
+      tables: semantic.tables,
+      events: semantic.events,
+      snapshot: "",
+    },
+    metrics: { generationMs: Date.now() - started, snapshotBytes: 0, dumpMs: 0 },
+    privateEntityId,
     notice: "Arcadia is a synthetic test civilization. Every company, person, State and amount is fictional; assets are test assets with no value.",
     personas: PERSONAS,
     world: ARCADIA_WORLD,

@@ -2016,6 +2016,98 @@ begin
 end;
 $$;
 
+-- The scope whose world.private.read an event needs, or null: an event that recorded a private
+-- entity version, or an action event about proposing one.
+create function kernel.private_scope_of(p_event_id uuid, p_type text, p_payload jsonb) returns text
+language sql stable set search_path = '' as $$
+  select coalesce(
+    (select en.scope from kernel.entity_versions v join kernel.entities en on en.id = v.entity_id
+     where v.event_id = p_event_id and v.visibility = 'private' limit 1),
+    case when p_type like 'kernel.action.%'
+              and coalesce(p_payload ->> 'action_id', '') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+      (select a.scope from kernel.actions a
+       where a.id = (p_payload ->> 'action_id')::uuid and a.kind = 'entity.upsert' and a.payload ->> 'visibility' = 'private')
+    end
+  );
+$$;
+
+-- Whether a reader is denied an event because it would disclose a private World record. The same
+-- rule as read_world: private needs world.private.read on the entity's scope. Read paths withhold
+-- such events and payloads instead of sending them for a client to hide.
+create function kernel.event_withheld(p_actor uuid, p_event_id uuid, p_type text, p_payload jsonb) returns boolean
+language sql stable set search_path = '' as $$
+  select x.s is not null and kernel.find_grant(p_actor, 'world.private.read', x.s) is null
+  from (select kernel.private_scope_of(p_event_id, p_type, p_payload) as s) x;
+$$;
+
+create or replace function kernel_api.read_events(
+  p_scope text,
+  p_after_seq bigint default 0,
+  p_limit integer default 50,
+  p_newest_first boolean default false,
+  p_as_actor uuid default null
+) returns table (
+  seq bigint, id uuid, occurred_at timestamptz, type text, scope text, actor_id uuid,
+  on_behalf_of uuid, grant_id uuid, auth_method text, payload jsonb, corrects uuid,
+  correlation_id uuid, hash text
+)
+language plpgsql stable security definer set search_path = '' as $$
+#variable_conflict use_column
+declare
+  c kernel.caller := kernel.resolve_caller(p_as_actor);
+  page_size integer := least(greatest(coalesce(p_limit, 50), 1), 500);
+begin
+  perform kernel.require_scope(p_scope);
+  perform kernel.require_grant(c.actor_id, 'kernel.read', p_scope);
+  return query
+    select e.seq, e.id, e.occurred_at, e.type, e.scope, e.actor_id, e.on_behalf_of, e.grant_id,
+           e.auth_method, e.payload, e.corrects, e.correlation_id, encode(e.hash, 'hex')
+    from kernel.events e
+    where (e.scope = p_scope or starts_with(e.scope, p_scope || '/'))
+      and e.seq > coalesce(p_after_seq, 0)
+      and not kernel.event_withheld(c.actor_id, e.id, e.type, e.payload)
+    order by case when p_newest_first then -e.seq else e.seq end
+    limit page_size;
+end;
+$$;
+
+create or replace function kernel_api.read_evidence(p_event_id uuid, p_as_actor uuid default null)
+returns table (
+  id uuid, basis text, content_hash text, media_type text, uri text, description text,
+  attached_by uuid, attached_at timestamptz
+)
+language plpgsql stable security definer set search_path = '' as $$
+#variable_conflict use_column
+declare
+  c kernel.caller := kernel.resolve_caller(p_as_actor);
+  target kernel.events;
+begin
+  select * into target from kernel.events e where e.id = p_event_id;
+  if target.id is null or kernel.event_withheld(c.actor_id, target.id, target.type, target.payload) then
+    raise exception using errcode = 'KA007', message = 'event not found';
+  end if;
+  perform kernel.require_grant(c.actor_id, 'kernel.read', target.scope);
+  return query
+    select ev.id, ev.basis, ev.content_hash, ev.media_type, ev.uri, ev.description, a.actor_id, a.occurred_at
+    from kernel.evidence ev
+    join kernel.events a on a.id = ev.attached_by_event
+    where ev.event_id = p_event_id
+    order by a.seq, ev.id;
+end;
+$$;
+
+-- An action's payload as a reader may see it: a proposal of a private entity is withheld from
+-- readers without world.private.read.
+create function kernel.visible_payload(p_actor uuid, p_action kernel.actions) returns jsonb
+language sql stable set search_path = '' as $$
+  select case
+    when p_action.kind = 'entity.upsert' and p_action.payload ->> 'visibility' = 'private'
+         and kernel.find_grant(p_actor, 'world.private.read', p_action.scope) is null
+      then jsonb_build_object('withheld', 'private')
+    else p_action.payload
+  end;
+$$;
+
 -- One action with its state, for its proposer's party, its target, its approvers and readers of
 -- its scope.
 create function kernel_api.read_action(p_action_id uuid, p_as_actor uuid default null)
@@ -2043,7 +2135,7 @@ begin
   end if;
   v_state := kernel.action_state(p_action_id);
   return query select v_action.id, v_action.kind, v_action.capability, v_action.scope, v_action.proposer_id,
-    v_action.on_behalf_of, v_action.target_ref, v_action.payload, v_action.amount::text, v_action.asset,
+    v_action.on_behalf_of, v_action.target_ref, kernel.visible_payload(c.actor_id, v_action), v_action.amount::text, v_action.asset,
     v_action.counterparty_ref, v_action.task_ref, v_action.decision,
     v_action.reasons, v_action.threshold,
     (select count(*)::integer from kernel.action_approvals a where a.action_id = p_action_id),
@@ -2066,7 +2158,7 @@ begin
   perform kernel.require_scope(p_scope);
   perform kernel.require_grant(c.actor_id, 'kernel.read', p_scope);
   return query
-    select a.id, a.kind, a.proposer_id, a.on_behalf_of, a.target_ref, a.task_ref, a.payload, a.decision,
+    select a.id, a.kind, a.proposer_id, a.on_behalf_of, a.target_ref, a.task_ref, kernel.visible_payload(c.actor_id, a), a.decision,
            (kernel.action_state(a.id)).status, a.created_at
     from kernel.actions a
     where a.scope = p_scope or starts_with(a.scope, p_scope || '/')

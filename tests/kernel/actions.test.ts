@@ -344,6 +344,16 @@ describe("world graph", () => {
     const bobView = await t.bob.readWorld(WORLD);
     assert.ok(bobView.some((e) => e.entity_id === plant));
     assert.ok(!bobView.some((e) => e.entity_id === secret), "private entities need world.private.read");
+    // Nor do their events, evidence or proposals reach a reader who may not see them.
+    const bobEvents = await t.bob.readEvents(WORLD, { limit: 500 });
+    assert.ok(!bobEvents.some((e) => JSON.stringify(e.payload).includes("Term sheet")), "a private record's events are withheld");
+    assert.ok((await t.alice.readEvents(WORLD, { limit: 500 })).some((e) => JSON.stringify(e.payload).includes("Term sheet")));
+    const [created] = await t.k.owner("select event_id from kernel.entity_versions where entity_id = $1", [secret]);
+    await assert.rejects(t.bob.readEvidence(created.event_id as string), named("not_found"));
+    const proposal = await t.alice.proposeAction({ kind: "entity.upsert", capability: "world.entity.write", scope: WORLD, payload: { kind: "document", title: "Board minutes", visibility: "private" } });
+    assert.deepEqual((await t.bob.readAction(proposal)).payload, { withheld: "private" });
+    assert.equal((await t.alice.readAction(proposal)).payload.title, "Board minutes");
+    assert.ok(!(await t.bob.readEvents(WORLD, { limit: 500 })).some((e) => JSON.stringify(e.payload).includes("Board minutes")));
     await assert.rejects(t.carol.readWorld(WORLD), named("forbidden"));
     assert.deepEqual((await t.carol.publicWorld()).map((e) => e.entity_id), [plant]);
 

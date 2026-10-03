@@ -4,7 +4,6 @@
 import {
   appendTransactionMessageInstructions,
   createTransactionMessage,
-  generateKeyPairSigner,
   pipe,
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
@@ -31,6 +30,7 @@ import type { AssetInfo } from "../../lib/router/types";
 import { ConstantProductVenue, LadderVenue } from "../../lib/router/venues";
 import { service, user, type KernelDb } from "../kernel/harness";
 import { devSolveChain } from "./chain-fixture";
+import { newSigner } from "./keys";
 import { moneyKernel } from "./money-fixture";
 import { pgliteSupabase } from "./pglite-supabase";
 
@@ -81,12 +81,12 @@ export const DEFAULT_VENUES: Record<string, AmmSpec | BookSpec> = {
 
 export async function paymentMarket({ venues = DEFAULT_VENUES } = {}) {
   const chain = await devSolveChain();
-  const mintAuthority = await generateKeyPairSigner();
+  const mintAuthority = await newSigner();
   // Real time plus an offset tests can move: the kernel checks quote expiry against its own clock.
   const clock = { offset: 0, now: () => new Date(Date.now() + clock.offset) };
 
   const createMint = async (decimals: number) => {
-    const mint = await generateKeyPairSigner();
+    const mint = await newSigner();
     const space = BigInt(getMintSize());
     await send(chain, [
       getCreateAccountInstruction({
@@ -140,7 +140,7 @@ export async function paymentMarket({ venues = DEFAULT_VENUES } = {}) {
     // sameBlock: land in the current block, leaving already-signed transactions valid.
     chain.gateway.expireAfterSend = !sameBlock;
     try {
-      const destination = await openAccount(to ?? (await generateKeyPairSigner()).address, code);
+      const destination = await openAccount(to ?? (await newSigner()).address, code);
       await send(chain, [
         getTransferCheckedInstruction({
           source: await tokenAccountAddress(owner.address, asset.mint),
@@ -160,9 +160,9 @@ export async function paymentMarket({ venues = DEFAULT_VENUES } = {}) {
   const feeOwners: Record<string, KeyPairSigner> = {};
   const list: (ConstantProductVenue | LadderVenue)[] = [];
   for (const [id, spec] of Object.entries(venues)) {
-    const signer = await generateKeyPairSigner();
+    const signer = await newSigner();
     venueSigners[id] = signer;
-    const feeOwner = spec.fees.providerFeeBps > 0 ? await generateKeyPairSigner() : undefined;
+    const feeOwner = spec.fees.providerFeeBps > 0 ? await newSigner() : undefined;
     if (feeOwner) feeOwners[id] = feeOwner;
     const codes = spec.kind === "orderbook" ? Object.keys(spec.inventory) : spec.pair;
     const venueAssets = codes.map((c) => assets[c]);
@@ -211,8 +211,8 @@ export async function paymentsKernel(k: KernelDb, market: Market, { bobAccepts =
   const bob = kernelClient(pgliteSupabase(k, user("auth-bob")));
   const aliceId = await alice.register("Alice");
   const bobId = await bob.register("Bob");
-  const aliceWallet = await generateKeyPairSigner();
-  const bobWallet = await generateKeyPairSigner();
+  const aliceWallet = await newSigner();
+  const bobWallet = await newSigner();
   await alice.linkWallet("litesvm", aliceWallet.address);
   await bob.linkWallet("litesvm", bobWallet.address);
   await bob.setPaymentProfile({ chain: "litesvm", receiveAddress: bobWallet.address, acceptAssets: bobAccepts });
