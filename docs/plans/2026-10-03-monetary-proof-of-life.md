@@ -53,7 +53,7 @@ Known limit: team vesting (12-month cliff, 72-month horizon) and treasury timelo
 | `lib/chain/solve.ts` | Supply constants, genesis, release, transfer, reads, markers, vesting |
 | `tests/support/litesvm-gateway.ts` | LiteSVM gateway |
 | `tests/chain/solve.test.ts` | Supply, vault, release, replay, capacity, transfer tests |
-| `supabase/migrations/*_monetary_proof_of_life.sql` | Kernel v2 |
+| `supabase/migrations/20261003072025_monetary_proof_of_life.sql` | Kernel v2 |
 | `tests/kernel/money.test.ts` | Entitlement and settlement adversarial tests |
 | `lib/money/settlement.ts` | Settlement worker (outbox) |
 | `tests/e2e/proof-of-life.test.ts` | The 16-step scenario plus adversarial cases, PGlite + LiteSVM |

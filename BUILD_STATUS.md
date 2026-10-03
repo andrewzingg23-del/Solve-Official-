@@ -4,12 +4,15 @@ Updated 2026-10-03. Branch `claude/keen-cerf-tpd7io`.
 
 ## DONE
 
-- **Memory kernel (directive 1), code and tests.** `supabase/migrations/20261003064603_memory_kernel.sql`: events with provenance, append-only tables, SHA-256 hash chain, double-entry ledger with issuer-scoped supply, evidence with basis rules, identity-gated writes, cascading grant revocation, AI agents bounded by their owner. 35 tests pass against the real migration in an in-memory Postgres.
-- **App shell.** Next.js 16 + Supabase Auth email links, brand lock applied (abyssal base, cyan accent, Archivo). Sign-in registers the SOV ID; `/account` shows the SOV ID and its hash-linked history.
-- **Monetary constitution, draft 2.** `docs/MONETARY-CONSTITUTION.md`: SOLVE as a monetary OS. Neutral reserve with no forced routing, States designing full economies with executable law and credit, SOV ID as the wallet, agent spending policies, intent router, selective privacy, ZK epochs plus evidence mesh, forkable States, mapped onto kernel primitives.
-
-- **Kernel installed on the store (directive 2).** Supabase project `Solve-Official-` (`dupgybzkkbddsbaykrae`), migration `20261003064603_memory_kernel`. On the live database: genesis event present, `verify_chain` ok, `anon` has no access, API roles reach only `kernel_api`, no security advisor warnings beyond the intended "RLS with no policies".
-- **Live preview wired.** Vercel project `solve` builds this branch at `solve-git-claude-keen-cerf-tpd7io-sovigrn.vercel.app` with the store's URL and publishable key.
+- **Memory kernel (directive 1), code and tests.** `supabase/migrations/20261003064603_memory_kernel.sql`: events with provenance, append-only tables, SHA-256 hash chain, double-entry ledger with issuer-scoped supply, evidence with basis rules, identity-gated writes, cascading grant revocation, AI agents bounded by their owner.
+- **Kernel installed on the store (directive 2).** Supabase project `Solve-Official-` (`dupgybzkkbddsbaykrae`): migrations `20261003064603_memory_kernel` and `20261003072025_monetary_proof_of_life`. Live checks: `verify_chain` ok, `anon` has no access, API roles reach only `kernel_api`, only the service role can verify the chain.
+- **Monetary proof-of-life (local).** The 16-step causal chain runs end to end: sign-in → actor → World → obligation → evidence → entitlement → balanced ledger → obligation-derived settlement id → DEV-SOLVE Earn Vault release → chain balance → P2P transfer → reload with kernel and chain reconciled. `npx tsx scripts/proof-of-life.ts` prints it. Kernel: the real migrations in PGlite. Chain: LiteSVM executing the real SPL Token/ATA/System/Memo programs.
+  - Fixed 1B supply sealed at genesis; five separately owned vaults; bounded Earn release capacity.
+  - Exactly-once settlement: obligation-derived id, one entitlement per obligation, one confirmation per settlement, on-chain seed marker.
+  - Settlement worker survives retries, concurrent workers, lost responses and RPC outages; a failed release is never recorded as completed.
+- **Tests:** 65 pass (`npm test`): kernel 35, money 13, chain 11, end-to-end 6.
+- **App shell and live preview.** `solve-git-claude-keen-cerf-tpd7io-sovigrn.vercel.app`, connected to the store.
+- **Specs.** `docs/MONETARY-CONSTITUTION.md` draft 3 (source spec for money). `docs/plans/2026-10-03-monetary-proof-of-life.md`. `docs/specs/2026-10-03-world-interface.md` (queued).
 
 ## DOING
 
@@ -17,17 +20,22 @@ Updated 2026-10-03. Branch `claude/keen-cerf-tpd7io`.
 
 ## BLOCKED
 
-- **Two Supabase dashboard settings (founder).** Data API → Exposed schemas: add `kernel_api`. Authentication → URL Configuration: add the preview URL to Redirect URLs. Then sign in once and grant root.
-- **Directive 1 not moved to DONE.** It stays ACTIVE until sign-in → SOV ID → history runs end to end on the store. Only the founder edits directives.
+- **Sign-in on the live preview (founder).** The account exists and the link was opened, but Supabase never received the app's code exchange: the link redirected away from the app. Add `https://solve-git-claude-keen-cerf-tpd7io-sovigrn.vercel.app/**` under Authentication → URL Configuration → Redirect URLs, and set the Site URL to the same host. Also add `kernel_api` under Data API → Exposed schemas. The built-in mailer allows only a few emails per hour (429s seen); wait or add custom SMTP.
+- **Devnet.** This build sandbox's network policy blocks `api.devnet.solana.com`, so DEV-SOLVE genesis has not run on devnet. Allow the host in the environment's network settings, or run genesis from a machine with access. The RPC gateway (`lib/chain/rpc-gateway.ts`) is written but unverified.
+- **Live settlement.** The deployed app needs the Supabase secret (service-role) key, a funded devnet sponsor key and the settlement key in Vercel before it can settle on devnet.
+- **Directive 1 not moved to DONE.** Stays ACTIVE until sign-in → SOV ID → history runs on the live store. Only the founder edits directives.
 
 ## NEXT
 
-1. Run sign-in → SOV ID → history end to end on the live preview, with a screenshot.
-2. Concurrency test against real Postgres: parallel event writes and parallel postings on one account.
-3. Kernel v1.1 from the constitution (Part XI): spending policies on grants (agent wallets), then issuance policies on assets, asset layer and class, epoch commitments.
-4. Whop bridge Pack (directive 3) once the kernel runs on the store.
+1. Payment router on test assets: PaymentIntent → Quote → Route → Execution → Settlement → Reconciliation, never forcing SOLVE; slippage, stale quote, insufficient liquidity, failed route, retry, partial provider failure, recipient mismatch.
+2. World Interface (`docs/specs/2026-10-03-world-interface.md`): persistent Cesium shell, semantic zoom, entity registry, Horizon, lenses (Space, Cause, Flow), World transition, context drawer, mobile, accessibility.
+3. Devnet genesis and rail bootstrap once devnet is reachable; then the live settlement path.
+4. First Network State, State market, privacy, real-world exit, State credit, AI economic agents (constitution order).
+5. Concurrency test against real Postgres; vesting and treasury programs.
+6. Whop bridge Pack (directive 3) once sign-in runs on the store.
 
 ## Decisions waiting on the founder
 
-- Unit name: SOV (BUILD-BOOK §11) or SOLVE (2026-10-03 message). The legacy game also has a virtual SOV.
-- Settlement toll size and whether any share burns; anchor cadence; first reward policy.
+- Naming: SOLVE (reserve) vs SOV (identity, card); the legacy game's virtual SOV collides.
+- First real reward policy and evidence thresholds; Earn release capacity and who holds the Earn cold key.
+- Vesting/treasury programs: build or adopt audited ones. Anchor cadence. Governance path.

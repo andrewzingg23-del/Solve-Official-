@@ -1,314 +1,220 @@
 # solve — Monetary Constitution
 
-Draft 2 · 2026-10-03 · for founder ratification
+Draft 3 · 2026-10-03 · for founder ratification · source specification for implementation
 
-SOLVE is a monetary operating system: one fabric where money, identity, proof, privacy, AI agents, credit and real-world payment rails interoperate but stay separable. SOLVE itself is the scarce neutral reserve that every economy can understand. Each State designs its own economy under shared physics. The kernel establishes causal truth. The blockchain establishes portable ownership and settlement. Neither may impersonate the other.
+SOLVE is the scarce, interoperable reserve beneath a network of Worlds and Network States. The system is infrastructure, not a token app: it carries one causal chain from reality to money and back into the record.
 
-The person sees almost none of this. They say *Send Sarah $200*, *Buy this*, *Pay everyone who completed milestone 4*, or *Move $50,000 from State A's treasury to State B's supplier*. The system finds the path.
+```
+REALITY → EVENT → EVIDENCE → AUTHORITY → VERIFICATION → ECONOMIC ENTITLEMENT
+→ CRYPTOGRAPHIC SETTLEMENT AUTHORIZATION → ON-CHAIN MONEY → OWNERSHIP
+→ TRANSFER · TRADE · SPEND · SAVE · INVEST · CASH OUT
+```
 
-Status: design. Nothing here is live. Mainnet, cards, credit, convertibility and any public token activity stay gated by BUILD-BOOK §11 and the founder's explicit word. Draft 2 folds in the founder's 2026-10-03 monetary-OS design.
+The person sees almost none of it. They say *Pay Sarah $200*, *Pay everyone who completed milestone 4*, *Cash out $1,000*, *Create an economy for our community*. The system finds a safe path.
+
+Status: the monetary proof-of-life runs end to end on DEV-SOLVE (Part XIV). Mainnet SOLVE, cards, credit, convertibility, cash-out and any public token activity stay gated by BUILD-BOOK §11 and the founder's explicit word. Draft 3 folds in the founder's monetary-OS design and build directive of 2026-10-03.
 
 ---
 
-## Part I — The stack
+## Part I — Three truths
 
-```
-                 HUMAN / AI INTENT
-                        │
-                     SOV ID              passkey · wallet · credentials
-                        │
-                   WAYFINDER             "what do you want done?"
-              ┌─────────┴─────────┐
-           REALITY             ECONOMY
-         Proof Kernel       Intent Router
-       events · evidence    best settlement path
-              └─────────┬─────────┘
-                 NETWORK STATES          constitutions · money · credit · treasury · agents
-                        │
-                      SOLVE              scarce neutral reserve
-               ┌────────┼────────┐
-              DEX      USDC    State FX
-               └────────┼────────┘
-                 REAL-WORLD EDGE         card · bank · merchant · API
-```
-
-The loop: **Intent → Contract → Action → Evidence → Proof → Value → Settlement → History → Credit → More agency.**
-
----
-
-## Part II — The two truths
-
-| | **Kernel** (causal truth) | **Chain** (ownership and settlement) |
+| Truth | Decided by | Answers |
 |---|---|---|
-| Records | Why value moved. Who intended it, who authorized it, under which rule, with what evidence. | That value moved. Who holds what, transferable without solve's permission. |
-| Nature | Private by default. Append-only. Hash-chained. Gated by identity and grants. | Public verification. Bearer. Final once confirmed. Self-custodied. |
-| Authority comes from | Grants held by actors (humans, agents, services). | Signatures by key holders. |
-| Answers | "Was this authorized?" "Was this earned?" "Did this State follow its constitution?" | "Who owns this now?" "Did settlement finalize?" "What is total supply?" |
+| **Reality** | The kernel | What happened, who acted, under which authority, with what evidence, under which policy, what obligation resulted, what is already settled. |
+| **Money** | The blockchain | How much SOLVE exists, where, who controls it, whether a transfer or vault release occurred, whether an entitlement already settled. |
+| **Market** | Markets | SOLVE's price, State-currency prices, exchange rates, liquidity, execution price, slippage. |
 
-### Non-impersonation articles
+None may impersonate another. **The kernel cannot create money. The blockchain cannot tell whether a house was built. The protocol cannot declare a price.**
 
-1. **The kernel never asserts ownership or settlement of a chain asset.** It records intents, authorizations and observations. A kernel balance for a chain asset is labelled *kernel accounting*, never *you own*.
-2. **The chain never asserts causation.** What reaches the chain is commitments and proofs about kernel state, not the record itself.
-3. **Every crossing is an evidenced event.** Kernel → chain is an authorized intent executed by a key holder, or a proof (Part VIII). Chain → kernel is an observation by a service actor, carrying the transaction signature and finality as `externally_verified` evidence.
-4. **One asset unit lives in one layer at a time.** Moving between layers is an explicit lock-and-mint or burn-and-release, both recorded.
-5. **Precedence is fixed.** For ownership of chain assets, the chain wins. For causation, authority and constitutional compliance, the kernel wins. A disagreement opens a reconciliation case, never a silent overwrite.
-
----
-
-## Part III — Shared physics
-
-Every economy inherits these. No State can amend them.
-
-1. **Conservation.** Double-entry everywhere. Value is created only by declared issuance under issuer authority, including credit created by authorized lenders. Every unit traces to an issuance event.
-2. **Consent.** No unit moves without authority from its holder: a grant in the kernel, a signature on chain. Debits into an account need no consent; credits out of it always do.
-3. **Provenance.** Every issuance, transfer, loan and burn is an event with an actor, a grant and the kernel clock.
-4. **Permanence.** History is append-only and hash-chained. Corrections are new events.
-5. **Idempotency.** A retried instruction never moves value twice.
-6. **Bounded agents.** An AI agent starts with zero authority, spends only inside its policy (Part VI), and can never exceed its owner.
-7. **Executable law.** Monetary rules a State declares as enforceable are enforced by code, not by promise.
-8. **Public aggregates, private individuals.** Every economy's supply, issuance, credit totals, reserves and rules are public and provable. Individual balances and terms are private by default and disclosable by choice.
-9. **Exit and fork.** A member can leave with what they own. A State can leave with everything it is (Part IX).
-10. **No impersonation of SOLVE.** No State unit may be presented as SOLVE, or as redeemable for SOLVE, unless fully backed by SOLVE held on chain with reserves verifiable at any time.
+1. The kernel records intents, authorizations and observations of chain events. A kernel balance for a chain asset is *kernel accounting*, never *you own*.
+2. The chain records commitments and proofs about kernel state, never the causal record itself.
+3. Every crossing is an evidenced event: kernel → chain is an authorized settlement executed by a key holder (later, a proof); chain → kernel is an observation by a service actor carrying the transaction signature as `externally_verified` evidence.
+4. One asset unit lives in one layer at a time. Crossings are lock-and-mint or burn-and-release, both recorded.
+5. Precedence: the chain wins for ownership and supply; the kernel wins for causation, authority and constitutional compliance; markets win for price. A disagreement opens a reconciliation case, never a silent overwrite.
 
 ---
 
-## Part IV — SOLVE, the neutral reserve
+## Part II — System laws (frozen)
 
-SOLVE is the scarce asset every economy can hold and settle in. It is not the currency anyone is required to use.
-
-| Article | Rule |
-|---|---|
-| Supply | 1,000,000,000, created once. No future mint. Allocation: ecosystem 45%, treasury 20%, team 15% (vested), liquidity 10%, community 10%. |
-| Entry | Earned through verified action. No ICO, no presale, no buy-in. Ever. |
-| Price | Discovered by the market. No peg, no defense. |
-| Role | Neutral reserve and cross-economy settlement asset. Coffee does not have to be priced in SOLVE. |
-| Routing | Never mandatory. The router compares every path; SOLVE carries the flow only where it is cheapest or most liquid. Dominance is earned, not coded. |
-| Domain | Canonical on one chain (Solana). No wrapped or bridged SOLVE until scale demands it. External money such as USDC travels at the edges instead. |
-| Demand | Use before trade: verification fees, settlement, State reserves, marketplace transactions. |
-
-### How "earned" works
-
-1. An actor does something. The kernel records it with evidence.
-2. A published, versioned reward policy decides eligibility, citing the evidence and the rule version. That decision is a causal fact.
-3. The ecosystem vault releases SOLVE on chain, within its program's rate limits. That release is settlement. Later, a proof replaces trust in the releasing key (Part VIII).
-4. The chain observer records finalized settlement. Only then does kernel accounting move.
+1. Reality is not created by blockchain. Money is not created by database fields.
+2. SOLVE supply is finite. Market prices are discovered, not declared.
+3. Economic obligations settle once. Every monetary movement has causality. Every consequential action has authority.
+4. History is append-only. Evidence and claims stay distinct.
+5. State monetary sovereignty cannot debase SOLVE. A State cannot manufacture an unfunded SOLVE claim.
+6. Users may leave, self-custody, send, trade, and use external rails. Fiat providers are replaceable edges.
+7. AI may not expand its own authority.
+8. Privacy means selective disclosure, not fake invisibility.
+9. Liquidity determines executable value.
+10. SOLVE earns reserve status through utility, not coercion.
 
 ---
 
-## Part V — State economies
+## Part III — Supply
 
-A State doesn't get "create token". It gets "design an economy", written as a monetary constitution that is part human-readable and part machine-enforced.
+- Exactly **1,000,000,000 SOLVE** are created once, at genesis.
+- Future minting = 0. The mint authority is removed in the same transaction that mints, so no later mint is possible by any key.
+- Burns are permanent and never restore mint capacity: Supply(t) = 1,000,000,000 − PermanentBurns(t) ≤ 1,000,000,000.
+- No peg, no floor, no redemption promise from SOV Inc., no protocol price defense, no guaranteed SOLVE/USD or State-coin/SOLVE rate.
+- One canonical supply domain (Solana). No Ethereum/Base/wrapped/bridged SOLVE until scale requires it, and never as competing canonical supplies. External assets such as USDC travel at the edges first.
 
-### The monetary constitution
+---
 
-| Field | Example (Arcadia) | Other choices |
+## Part IV — Genesis domains
+
+| Domain | SOLVE | Share | Powers |
+|---|---:|---:|---|
+| Earn Vault | 450,000,000 | 45% | Releases only against a canonical economic entitlement, once per settlement identity, within bounded release capacity. |
+| Treasury Vault | 200,000,000 | 20% | Separately authorized, budget-linked, bounded, observable, timelock-compatible. Never an indirect mint. |
+| Team Vesting Vault | 150,000,000 | 15% | Deterministic schedule: nothing before a 12-month cliff, linear by month to 72 months. No price acceleration, no discretionary release. |
+| Liquidity Vault | 100,000,000 | 10% | Controlled deployment into useful markets (SOLVE/USDC, SOLVE/SOL, SOLVE/State coins), tracking deployed amount, pair, venue, position, fees, realized changes and authorization. Never price defense or a founder trading wallet. |
+| Community Vault | 100,000,000 | 10% | Distinct domain. Release policy disabled until defined. Disabled is acceptable; ambiguous authority is not. |
+
+Five program- or key-controlled domains, each with its own owner. No administrator can drain more than one.
+
+### The Earn Vault
+
+It never mints, never transfers arbitrarily, never releases against a duplicate obligation or above capacity, never accepts unauthenticated claims, and never accepts self-attestation alone for a consequential release. A compromised verifier cannot drain it: the settlement key holds only a bounded allowance that the vault's cold owner sets.
+
+```
+EconomicEntitlement {
+  entitlement_id · actor_id · world_id · source_event_id (obligation) · outcome_event_id
+  evidence_root · policy_version · attribution_bps · amount · asset · created_at · settlement_status
+}
+```
+
+---
+
+## Part V — What earns
+
+**Never rewarded:** logins, clicks, views, messages, posts, likes, referrals by themselves, recruitment, token trading, token holding, capital deposits, circular transactions, self-transfers, meaningless activity.
+
+**Rewarded:** need / contract / bounty → authorized work → observable outcome → evidence → verification → entitlement.
+
+- **Attribution conserves.** Shares of one outcome sum to at most 100%. Splitting it across twenty identities divides it; it never multiplies it.
+- **Referrals.** Recruitment alone earns nothing. If a referred actor later helps create verified value, policy may allocate part of that existing outcome's attribution to the referrer. No multi-level cascade, no new value.
+- **Evidence.** The policy names the required evidence bases and the number of independent parties. Evidence from the beneficiary's own party never counts. Risk sets the threshold: 1–2 sources for low value, 3+ independent sources for high value, quorum plus a challenge period for system-critical outcomes.
+
+---
+
+## Part VI — Settlement identity and exactly-once
+
+- Every monetary consequence has one canonical `settlement_id`, derived from the obligation, not from any request: `sha256("solve:settlement:v1|" ‖ obligation ‖ "|" ‖ beneficiary ‖ "|" ‖ policy_key)`.
+- One obligation settles exactly once. Exact retries return the original result. A reused idempotency key with a changed payload fails. A different request id for the same obligation cannot settle it again. Concurrent attempts produce one settlement.
+- On chain, each release atomically creates a marker account derived from the settlement id; a replay fails and moves nothing. The marker also proves execution after a timeout.
+- External side effects use an outbox with explicit states: prepared → submitted → confirmed | failed | needs_reconciliation (reversed reserved). The worker records *submitted* before sending, never infers an outcome from a timeout, and never trusts a rejected send while the marker shows the release happened. Reconciliation is a first-class system.
+
+---
+
+## Part VII — Ownership and accounting
+
+- SOLVE ownership is on chain. The database may cache balances for display; the canonical balance and supply are the chain's. If they disagree, the chain wins for ownership.
+- The kernel ledger stays double-entry for causes and obligations: pending settlements, provider activity, State and fiat accounting, State currencies, internal claims and chain observations. Every transaction balances within its asset; assets are never netted against each other.
+- Earn accounting (asset per rail, scope `system/chain:<cluster>/vault:earn`):
+
+| Event | Debit | Credit |
 |---|---|---|
-| Base currency | ARC | — |
-| Supply model | Elastic | Fixed (100M), commodity-backed, revenue-backed, algorithmically bounded |
-| Issuance authority | State treasury | Elected council, formula only |
-| Expansion limit | 0–4% per year, enforced | Any declared bound, or none |
-| Credit creation | Authorized State lenders | None |
-| Reserve assets | SOLVE, USDC, BTC | Any mix, or none |
-| Treasury control | Multisig plus constitution | Program-owned |
-| External settlement | Router's choice; SOLVE where cheapest | — |
-| Privacy | Confidential amounts | Public amounts |
-| Policy changes | 67% vote plus 30-day timelock | Any declared rule |
-| Exit terms | What a departing member keeps | — |
+| Chain genesis observed | Earn on-chain mirror | Earn unallocated |
+| Entitlement verified | Earn unallocated | Earn payable |
+| Settlement confirmed | Earn payable | Earn on-chain mirror |
 
-### Executable monetary law
-
-Declared limits become program constraints, enforced in the kernel and, for chain assets, in the asset's program:
-
-- annual issuance ≤ declared bound × supply
-- treasury spend ≤ approved budget
-- policy change ⇒ recorded vote + elapsed timelock
-
-### Credit
-
-Base money is not total money. A State may authorize lenders, inside its scope, to create loans and deposit claims in its currency. Base money of 100M A plus 250M of lender credit is a 350M economy, settling externally in whatever the router finds best.
-
-The State publishes provable aggregates, never individual books:
-
-```
-Total base money        100M A
-Total deposits          212M A
-Total loans             198M A
-Reserves                 31M A
-SOLVE reserves          4.2M SOLVE
-Bad-debt ratio             1.7%
-```
-
-### Settling between States
-
-The router compares direct (A → B), via SOLVE (A → SOLVE → B), via USDC, and any other liquid path, then executes the one that satisfies the payer's constraints. The kernel records the intent and authority. The chain settles. The kernel records the observation.
+Earn unallocated can never go negative, so entitlements can never exceed the allocation the chain observer actually saw. The on-chain mirror must equal the chain's Earn Vault balance; a mismatch is a reconciliation case.
 
 ---
 
-## Part VI — Wallets, agents and the router
+## Part VIII — Markets and routing
 
-### The SOV ID is the wallet
-
-People see balances by asset, not addresses, gas, seed phrases or chains:
-
-```
-Andrew  @andrew
-SOLVE      14,822
-USD        $4,102
-ARC         8,410
-State-A     2,300
-```
-
-Keys stay with the person, unlocked by passkey (Face ID, Touch ID), with an optional recovery network and hardware keys for advanced users. Network fees are sponsored, or recovered invisibly where appropriate. Blockchain is infrastructure, not interface.
-
-### Agent wallets
-
-Every AI agent can hold a wallet under a spending policy its owner sets:
-
-```
-Andrew's Procurement AI
-  Can:     pay approved suppliers · ≤ $500 per transaction · ≤ $2,000 per day
-           only in World #391 · only against approved purchase orders
-  Cannot:  pay itself · buy arbitrary assets · withdraw · raise its own limits
-  Expires: 2026-12-31 · Owner: Andrew
-```
-
-Agents can also pay machines directly (HTTP 402-style metered payments) for data, compute, logistics or design, inside the same policy. Every payment is an agent-attributed event with the owner recorded.
-
-### The intent router
-
-You state the outcome; the router picks the path:
-
-```
-"Bob receives $500"
-  Bob accepts: USD, USDC, SOLVE      Andrew holds: ARC, SOLVE
-  ARC → SOLVE → USDC → Bob    $1.18
-  SOLVE → USDC → Bob          $0.62
-  SOLVE → Bob                 $0.02   ← chosen
-```
-
-### One card
-
-The card is a SOV Card, not a SOLVE card. A funding engine spends whatever the holder allows, in their order of preference (for example ARC first, then USD, USDC, SOLVE), converting at the edge to card settlement.
+- No protocol price field is monetary truth. Keep spot quote, TWAP, executable quote, liquidity depth, route and quote timestamp, and distinguish spot value from executable value at a quantity. A thin market's last price is never shown as realizable wealth.
+- Users state intents (*Pay Bob $500*); the router compares routes across sender assets, recipient-accepted assets, liquidity, network and provider costs, slippage, speed and user constraints, then picks the best route by net output = gross − network cost − trading fees − provider fees − slippage.
+- SOLVE routing is never forced. State A → USDC → State B wins when it is better. SOLVE becomes a bridge asset by being liquid, accepted, scarce, credible, cheap and connected.
+- The exchange layer abstracts AMMs, order books, aggregators, State markets and future SOV venues, and returns enough execution metadata to audit each route. No single routing server becomes monetary truth.
 
 ---
 
-## Part VII — Privacy and proof-of-fact
+## Part IX — Network States
 
-Privacy is selective, not binary.
+A Network State is a persistent sovereign World on shared physics: constitution, membership, roles, treasury, currency, markets, businesses, contracts, agents, governance, credit, debt, assets, history. SOV supplies primitives; the State supplies policy.
 
-| Public | Private | Disclosable on the holder's choice |
+- **Design Economy, not Create Token.** The economy compiler captures identity, currency name and symbol, monetary model, maximum supply or issuance rule, monetary and treasury authority, reserve policy, privacy policy, governance, policy-change rule, credit permissions and settlement preferences, and compiles them into a human-readable constitution plus machine-enforced configuration.
+- Allowed models: fixed supply, capped inflation, elastic issuance, revenue-linked, commodity- or reserve-backed, governance-controlled, or other explicitly bounded designs. Sovereignty is allowed; arithmetic fraud is not. Every issuance has authority, policy and accounting; every transition is attributable; every obligation settles once.
+- **No automatic SOLVE claim.** State-coin creation, market cap or failure never creates a SOLVE entitlement, collateral or bailout. A State may promise conversion to SOLVE only when that promise is funded with existing SOLVE.
+- **No required pegs.** State currencies float unless the State chooses a backed or pegged design. Cross-State exchange runs on market liquidity, with no protocol conversion guarantee.
+- **Credit.** Base money ≠ total economic money. Loans, deposit claims, credit, bonds and obligations stay separate primitives from base money, debt, securities and assets. Debt is never base money unless the State's constitution says so.
+- **Provable balance sheets.** States publish verifiable aggregates (base money, deposits, loans, reserves, SOLVE reserves, debt, treasury assets, delinquency) with individual privacy preserved. Accounting roots and proof interfaces exist before full ZK aggregation.
+- **Forkable.** Constitution, state root, membership credentials, currency references, treasury, ledger, proof history and governance rules are exportable so a compatible client can carry on without SOV Inc.
+
+---
+
+## Part X — Wallets, agents, cards, exit
+
+- **Wallets disappear from ordinary UX.** People see balances by asset. Identity and wallet stay separable: one actor may hold several wallets, an organization multisig/MPC, an agent a constrained wallet. Passkeys, device keys, embedded self-custody, external and hardware wallets, recovery policy. Fees are sponsored so nobody must first acquire SOL.
+- **Agent wallets** carry a contract: human owner, World scope, allowed assets, actions and counterparties, per-transaction and daily maximums, expiry, approval threshold. An agent cannot withdraw externally, buy speculative assets, pay itself, modify its limits or add counterparties. Machine commerce (APIs, inference, compute, data, logistics, other agents' work) uses the same authorization and payment intents and is recorded like any economic event.
+- **SOV Card** is multi-asset, not a SOLVE card: purchase → funding policy → quote routes → convert if required → card settlement. The merchant never needs to understand SOLVE.
+- **Exit.** Users can send SOLVE to any wallet, trade it, swap to stablecoins, use external wallets, off-ramp to banks, spend by card, and use cash access where supported. Cash-out shows an executable quote with fees and slippage, never balance × last price. SOV never presents fiat exit as a guaranteed redemption unless a separate explicit contract backs it.
+- **Providers** sit behind one boundary (`quote, swap, onRamp, offRamp, bankTransfer, cardAuthorize, cardSettle, atmWithdraw, reconcile`). A provider failure disables a rail; it never erases identity, SOLVE ownership, State history, contracts or records.
+
+---
+
+## Part XI — Privacy and proof
+
+- Privacy is named by dimension: identity, balance, amount, counterparty, membership, commercial data, audit disclosure, regulatory disclosure. "Private" is never used without saying what is private.
+- Selective disclosure: prove *age ≥ threshold*, *member of State*, *income ≥ threshold*, *assets ≥ threshold*, *license valid*, *contract completed*, *reserve ratio ≥ threshold* without exposing the dataset. Identity and evidence objects are built so proofs can reference canonical data.
+- ZK architecture: StateRoot(t) + private transitions + verification computation → proof → StateRoot(t+1). The chain verifies that authorized rules executed, without seeing private events. The proving system stays replaceable.
+- Cryptographic verification is not real-world attestation. A valid signature is never synonymous with a real-world fact; real outcomes need independent evidence (Part V).
+
+---
+
+## Part XII — Fees
+
+| Fee | Purpose | Source |
 |---|---|---|
-| SOLVE supply, State rules, proof validity, economy aggregates | Personal balances, payment amounts, commercial terms | Tax authority: required history · Auditor: a subset · Lender: proof of assets · Merchant: proof of payment · State: proof of membership |
+| Network/security | Spam prevention, execution cost. Tiny. Never price manipulation. | Network |
+| Market | Liquidity provision | AMM, DEX, liquidity providers |
+| Service | Business services | Marketplace, card, bank transfer, off-ramp |
 
-Proof-of-fact credentials let a person prove *income over 12 months > $100,000*, *age ≥ 21* or *member of State A* without revealing the underlying numbers or activity. Underwriting then asks *what have you actually done?*, from proofs the person chooses to share, instead of a credit score.
+Burns may exist; SOLVE's value thesis never depends on aggressive burning. Scarcity is one side of value; utility, liquidity, acceptance, credibility, interoperability, depth, network effects, institutional and State reserve demand, and payment demand are the rest. Usefulness comes before speculation.
 
 ---
 
-## Part VIII — Proving truth
+## Part XIII — Immutable versus upgradeable
 
-### ZK epochs
-
-The kernel's history is private. The chain should not have to trust the kernel's word either. For each epoch, a deterministic verification program runs over the kernel's events, and a zero-knowledge proof attests that it ran correctly. The chain receives only:
-
-```
-previous state root · new state root · policy hash · eligible releases · proof
-```
-
-ZK proves the rules were applied correctly to the evidence supplied. It cannot prove the house was built. That needs evidence.
-
-### The evidence mesh
-
-Consequential outcomes require independent evidence, scaled to risk:
-
-| Risk | Evidence |
+| Eventually immutable (minimal) | Upgradeable |
 |---|---|
-| Low value | 1–2 sources |
-| High value | 3+ independent sources |
-| System-critical | Quorum plus a challenge period |
+| 1B genesis supply; no future SOLVE mint; allocation ceilings; no duplicate vault release; basic ownership semantics | Wallet UX, routers, provider adapters, privacy systems, verification policies, State modules, card integrations, proof systems |
 
-A $100,000 construction milestone might combine the contract milestone, contractor signature, customer acceptance, invoice, payment confirmation, inspection, and an optional external verifier. Truth decentralizes progressively, not just the token.
+No upgrade key ever holds unlimited power over the monetary constitution.
 
 ---
 
-## Part IX — Forkable States
+## Part XIV — What is enforced today
 
-A State owns its constitution, membership registry, currency rules, treasury, contracts and economic history. If solve the company disappears, the State does not. It can export its state root, constitution, member credentials, treasury, ledger, proof history and currency programs, and any compatible client can reconstruct it.
+Code: `supabase/migrations/20261003064603_memory_kernel.sql`, `supabase/migrations/20261003072025_monetary_proof_of_life.sql` (both applied to the store), `lib/chain/`, `lib/money/`.
 
----
+| Law | Enforcement | Verified by |
+|---|---|---|
+| 1B once, no future mint | Mint authority set to none in the minting transaction (SPL Token) | `tests/chain`: re-mint with the old authority fails |
+| Five separate domains | Five token accounts, five owner keys; settlement key has no power over the other four | `tests/chain` |
+| Bounded Earn releases | SPL delegate allowance set by the cold Earn owner | `tests/chain`, `tests/e2e`: over-capacity release fails, retries after re-approval |
+| Exactly-once settlement | Obligation-derived settlement id; unique entitlement per obligation; one confirmation per settlement; seed marker on chain | `tests/kernel/money`, `tests/e2e`: retries, concurrent workers, lost responses, outages |
+| Independent evidence | Policy bases exclude self-report; own-party evidence ignored | `tests/kernel/money` |
+| Attribution conserves | Shares fixed by the obligation, ≤ 10,000 bps, deferred check | `tests/kernel/money` |
+| Stale policy rejected | Only the current active version verifies | `tests/kernel/money` |
+| Kernel cannot create money | Entitlements draw down observed allocation (non-negative); confirmations draw down the mirror | `tests/kernel/money`, `tests/e2e`: mirror equals chain |
+| Identity and authority | JWT-resolved actors, grants on every write, service key never a human or the kernel | `tests/kernel`, `tests/e2e` |
+| Chain wins for ownership | Balances read from chain; kernel stores only observations | `tests/e2e` |
 
-## Part X — The crossing protocol
-
-Every movement of a chain asset follows the same steps:
-
-1. **Intent.** Kernel event `settlement.intended`: payer, payee, asset, amount, quote and expiry, correlation id.
-2. **Authorization.** The payer's grant, the agent's spending policy where an agent pays, and approvals where policy demands them.
-3. **Route.** The router selects the path that satisfies the payer's constraints.
-4. **Execution.** The key holder signs, or the treasury program executes. solve never holds user keys.
-5. **Observation.** The chain observer records `settlement.observed` once finalized, with signature, slot and commitment level.
-6. **Reconciliation.** Kernel accounting moves only on observation. Expired intents close by event. Mismatches open a case.
-
-Kernel-only units skip 4–5. Their posting is the settlement.
-
----
-
-## Part XI — How this maps onto the memory kernel
-
-Built and tested in `supabase/migrations/20261003064603_memory_kernel.sql`, now installed on the store:
-
-| Constitutional need | Kernel primitive today |
-|---|---|
-| SOLVE defined once by the network | `define_asset('SOLVE', issuer 'system', 9 decimals)`, root authority only |
-| A State and its founding authority | `claim_scope('state:<id>')` |
-| A State currency with its own issuer | `define_asset(code, issuer 'state:<id>')` |
-| Lenders creating credit inside a State | Credit-normal accounts allowed anywhere under the issuer scope, e.g. `state:<id>/lender:<id>` |
-| Only issuers create supply | Supply-creating accounts refused outside the issuer scope |
-| Consent on every movement | Credits require `kernel.ledger.post` covering the account's scope |
-| Agents start at zero, never exceed owner | Agents hold no grants until issued; delegated grants die with their parent |
-| Chain observations as evidence | `externally_verified` evidence only from service actors |
-| Tamper evidence | Hash chain plus `verify_chain()` |
-
-### Next kernel work, in order
-
-1. **Spending policies on grants.** Per-posting cap, rolling daily cap, allowed assets, allowed counterparty scopes, purpose reference (e.g. purchase order), and a rule that an agent cannot pay itself. Enforced in `post_transaction`. This makes agent wallets real.
-2. **Issuance policies on assets.** Declared supply model and an enforced issuance bound per period; policy changes only through a recorded vote event plus timelock.
-3. **Asset layer and class.** `kernel` or `chain:solana`; closed-loop, backed or floating.
-4. **Epoch commitments.** Periodic state roots over the event chain, published by an anchor service: the prerequisite for ZK epochs.
-5. **Evidence thresholds.** Required evidence count and independence per event type and value tier, with challenge windows.
-6. **Settlement and constitution event types.** `state.constituted`, `state.policy_changed`, `settlement.intended`, `settlement.observed`, `settlement.expired`, `anchor.published`.
-
-Router, wallet, card, confidential balances, ZK proving and cross-chain edges are services around the kernel, built after these primitives.
+Not yet enforced: team vesting and treasury timelocks on chain (need a vesting/governance program; until then those vaults have no delegate and cold owners), liquidity and community release policies, the payment router, State economies, credit primitives, confidential amounts, ZK epochs, providers, cards and agent wallet contracts. Devnet genesis has not run yet: the build sandbox cannot reach Solana devnet, so every chain test runs on LiteSVM, which executes the same SPL programs.
 
 ---
 
-## Part XII — Failure modes
+## Part XV — Gates and open decisions
 
-| Failure | Containment |
-|---|---|
-| Kernel database compromised | Anchored state roots expose rewritten history. Chain assets stay with their holders. |
-| Chain reorg or stalled finality | The kernel records only finalized settlement. |
-| Observer lies or fails | Its evidence carries a checkable signature. Multi-observer quorum before mainnet. |
-| State over-issues | The kernel refuses issuance outside the declared bound. The network can suspend convertibility; it cannot seize members' assets. |
-| Lender over-extends | Public aggregates and reserve proofs make it visible; State policy sets reserve rules. |
-| Run on a backed unit | 100% SOLVE reserve, verifiable on chain. |
-| Agent overspends | Spending policy enforced per posting and per day; limits cannot be raised by the agent. |
-| Double spend across layers | One layer per unit; crossings are lock-and-mint or burn-and-release. |
+**Gates.** None of the following without the founder's explicit approval and legal review (this document is not legal advice; lending, deposits, cards, custody, exchange, convertibility, confidential transfers and cross-border settlement can trigger banking, money-transmission, securities, commodities and tax rules): SOLVE mainnet mint; any State currency on chain; credit creation; convertibility; cards, deposits, custody, cash-out or yield (forbidden by BUILD-BOOK §11 today).
 
----
+**Open decisions.**
 
-## Part XIII — Gates and open decisions
-
-**Gates.** None of the following happens without the founder's explicit approval and legal review. This document is not legal advice. Lending, deposits, cards, custody, exchange, convertibility, confidential transfers and cross-border settlement can trigger banking, money-transmission, securities, commodities and tax rules.
-
-- SOLVE mainnet mint.
-- Any State currency on chain, any credit creation, any convertibility.
-- Cards, deposits, custody, cash-out, yield (forbidden by BUILD-BOOK §11 today).
-
-**Building blocks.** The founder's research (2026-10-03) identifies existing components: Solana fee sponsorship, passkey/MPC embedded wallets, confidential token balances with optional auditor keys, general-purpose zkVMs, native cross-chain USDC transfer, HTTP 402 machine payments, and stablecoin-linked card programs. Verify each against current documentation before committing to it.
-
-**Open decisions for the founder.**
-
-1. **Name.** BUILD-BOOK §11 says SOV; this draft says SOLVE for the reserve and SOV for identity and the card. The legacy game's virtual SOV still collides. Settle naming before any mint.
-2. **Reward policy v1.** Which verified actions earn SOLVE first.
-3. **Anchor and epoch cadence.**
-4. **First State.** Which community writes the first monetary constitution: the founder's agency, the family World, or a launch-wedge seller community.
-5. **Governance path.** Today the founder holds root. When, and to whom, amendment authority moves.
+1. **Name.** SOLVE for the reserve, SOV for identity and the card; the legacy game's virtual SOV still collides. Settle before any mint.
+2. **First real reward policy** and its evidence thresholds.
+3. **Release capacity** for the Earn settlement key, and who holds the Earn cold key.
+4. **Vesting and treasury programs:** build in-house or adopt an audited program.
+5. **Anchor and epoch cadence.**
+6. **Governance path** for amending this constitution.

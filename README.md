@@ -2,16 +2,19 @@
 
 App that connects humans and custom AI agent avatars to self-create environments that live on a secure blockchain coin.
 
-Read first: [DIRECTIVES.md](DIRECTIVES.md) (founder orders), [VISION-CANON.md](VISION-CANON.md), [BUILD-BOOK.md](BUILD-BOOK.md), [docs/MONETARY-CONSTITUTION.md](docs/MONETARY-CONSTITUTION.md). Current state: [BUILD_STATUS.md](BUILD_STATUS.md).
+Read first: [DIRECTIVES.md](DIRECTIVES.md) (founder orders), [VISION-CANON.md](VISION-CANON.md), [BUILD-BOOK.md](BUILD-BOOK.md), [docs/MONETARY-CONSTITUTION.md](docs/MONETARY-CONSTITUTION.md) (money spec). Current state: [BUILD_STATUS.md](BUILD_STATUS.md). Next: [docs/specs/2026-10-03-world-interface.md](docs/specs/2026-10-03-world-interface.md).
 
 ## What's here
 
 | Path | Purpose |
 | --- | --- |
-| `supabase/migrations/` | The memory kernel: schema, gated interface, genesis |
+| `supabase/migrations/` | The memory kernel (v1) and money (v2): schema, gated interface, genesis |
 | `lib/kernel/client.ts` | Typed client for `kernel_api` |
 | `lib/kernel/server.ts` | The kernel as the signed-in user |
-| `tests/kernel/` | Kernel and client tests against an in-memory Postgres |
+| `lib/chain/` | DEV-SOLVE on Solana: fixed-supply genesis, vaults, exactly-once releases, transfers, RPC gateway |
+| `lib/money/settlement.ts` | Settlement worker: outbox between kernel and chain, with reconciliation |
+| `tests/` | Kernel, money, chain (LiteSVM) and end-to-end tests |
+| `scripts/proof-of-life.ts` | Runs the monetary proof-of-life and prints each step |
 | `app/` | Next.js 16 app: sign-in by email link, your SOV ID and history |
 | `proxy.ts` | Refreshes the auth session; sends signed-out visitors away from `/account` |
 
@@ -61,7 +64,7 @@ Without env vars the app runs and shows a setup notice.
 
 The founder provisions a dedicated Supabase project (DIRECTIVES.md, directive 2). Never use the legacy game project.
 
-1. Apply the migration: `supabase link --project-ref <ref> && supabase db push`, or paste `supabase/migrations/20261003064603_memory_kernel.sql` into the SQL editor.
+1. Apply the migrations: `supabase link --project-ref <ref> && supabase db push`, or paste each file in `supabase/migrations/` into the SQL editor in order.
 2. **Project Settings → Data API → Exposed schemas:** add `kernel_api`. Do not expose `kernel`.
 3. **Authentication → URL Configuration:** Site URL `http://localhost:3000`; add `http://localhost:3000/**` and the production URL to Redirect URLs.
 4. **Database → Backups:** turn on point-in-time recovery for this project.
@@ -77,7 +80,8 @@ The founder provisions a dedicated Supabase project (DIRECTIVES.md, directive 2)
 ## Checks
 
 ```bash
-npm test            # kernel + client contract tests (PGlite, no network)
+npx tsx scripts/proof-of-life.ts   # the monetary causal chain, locally
+npm test            # kernel, money, chain (LiteSVM) and end-to-end tests; no network
 npm run typecheck
 npm run lint
 npm run build
