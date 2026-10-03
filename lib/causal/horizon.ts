@@ -157,9 +157,9 @@ export async function computeHorizon(input: HorizonInput): Promise<Horizon> {
   }
 
   const decisions = new Map<string, Promise<AuthorityDecision>>();
-  const decide = (who: string, capability: string, scope: string) => {
-    const key = `${who}|${capability}|${scope}`;
-    if (!decisions.has(key)) decisions.set(key, input.kernelFor(who).authorize({ capability, scope }));
+  const decide = (who: string, capability: string, scope: string, money: { amount: string; asset: string } | null = null) => {
+    const key = `${who}|${capability}|${scope}|${money?.amount ?? ""}|${money?.asset ?? ""}`;
+    if (!decisions.has(key)) decisions.set(key, input.kernelFor(who).authorize({ capability, scope, amount: money?.amount, asset: money?.asset }));
     return decisions.get(key)!;
   };
   const fallback = input.fallback ?? "delegate";
@@ -181,10 +181,11 @@ export async function computeHorizon(input: HorizonInput): Promise<Horizon> {
       if (!scope) continue;
       // Who does a step: the actor if its authority allows; otherwise its principal delegates it
       // (a step of the route) or performs it, as the caller asked.
+      const money = t.amount?.(binding, world, goal) ?? null;
       let who = actorId;
-      let decision = await decide(actorId, t.capability, scope);
+      let decision = await decide(actorId, t.capability, scope, money);
       if (decision.decision === "DENY" && principalId && principalId !== actorId && fallback !== "none") {
-        const theirs = await decide(principalId, t.capability, scope);
+        const theirs = await decide(principalId, t.capability, scope, money);
         if (theirs.decision !== "DENY") {
           const grant = fallback === "delegate" && t.delegable ? await decide(principalId, TRANSITIONS.delegate.capability, scope) : null;
           if (grant && grant.decision !== "DENY") {
@@ -258,5 +259,7 @@ function routeStep(t: Transition, binding: Binding, actorId: string, authority: 
     guards: t.guards?.(binding, world, goal) ?? [],
     predicted: t.predicted?.(binding, world, goal) ?? [],
     payload: t.payload(binding, world, goal),
+    amount: t.amount?.(binding, world, goal)?.amount ?? null,
+    asset: t.amount?.(binding, world, goal)?.asset ?? null,
   };
 }

@@ -14,7 +14,8 @@ import { buildContext } from "../../lib/causal/context";
 import { computeHorizon, RANKING_V1, type RankingPolicy } from "../../lib/causal/horizon";
 import { executeRoute, executeStep, loadRoute, recordRoute, ROUTE_EVENT, type Executor } from "../../lib/causal/pipeline";
 import { arcadiaProviders, arcadiaInquiry, Providers, type Provider } from "../../lib/causal/providers";
-import { STANDARD, supplyGoal, verifyGoal, type Transition } from "../../lib/causal/transitions";
+import { routerPayment } from "../../lib/causal/money";
+import { depositGoal, STANDARD, supplyGoal, verifyGoal, type Transition } from "../../lib/causal/transitions";
 import { loadWorld } from "../../lib/causal/world";
 import { WorldEngine, avatarAgent } from "../../lib/world/engine";
 import { buildSpatialView } from "../../lib/world/spatial";
@@ -33,7 +34,7 @@ function recording(k: Kernel, calls: string[]): Kernel {
 }
 
 async function loop() {
-  const { k, manifest } = await buildArcadia();
+  const { k, manifest, treasury, market } = await buildArcadia();
   const you = kernelClient(localSupabase(k, user(manifest.personas.you)));
   const as = (id: string) => kernelClient(localSupabase(k, service), { actAs: id });
   const engine = new WorldEngine({ manifest, you, as });
@@ -59,7 +60,7 @@ async function loop() {
   const horizonFor = async (actorId: string, policy?: RankingPolicy) =>
     computeHorizon({ world: await loadWorld(kernelFor(actorId), actorId), actorId, principalId: actorId === youId ? null : youId, goal, kernelFor, providers, policy });
   const executor = async (actorId: string, p = providers): Promise<Executor> => ({ kernelFor, providers: p, world: await loadWorld(kernelFor(actorId), actorId), worldFor: (id) => loadWorld(kernelFor(id), id) });
-  return { k, manifest, you, as, engine, agentId, scope, worldRef, org, counterparts, providers, youId, kernelFor, goal, horizonFor, executor };
+  return { k, manifest, you, as, engine, agentId, scope, worldRef, org, counterparts, providers, youId, kernelFor, goal, horizonFor, executor, treasury, market };
 }
 
 const count = async (k: Awaited<ReturnType<typeof loop>>["k"], sql: string, params: unknown[] = []) => Number((await k.owner(sql, params))[0].n);
@@ -74,7 +75,7 @@ describe("the SOLVE loop", () => {
     assert.equal(ctx.who.kind, "agent");
     assert.equal(ctx.who.principalId, L.youId);
     assert.equal(ctx.where.world, L.worldRef);
-    assert.deepEqual(ctx.cannot.map((c) => c.capability).sort(), ["commitment.make", "kernel.grant.issue", "message.send", "verification.request"]);
+    assert.deepEqual(ctx.cannot.map((c) => c.capability).sort(), ["commitment.make", "kernel.grant.issue", "message.send", "payment.send", "verification.request"]);
     assert.ok(ctx.can.some((c) => c.capability === "world.relation.write"));
     assert.ok(!ctx.world.entities.has(`entity:${L.manifest.privateEntityId}`), "authorization before visibility");
     assert.equal(ctx.beliefs.find((f) => f.subject === L.org("halden") && f.predicate === "claims")?.status, "verified");
@@ -374,6 +375,56 @@ describe("the SOLVE loop", () => {
     assert.deepEqual([quote.attributes.via, quote.attributes.provider], ["referral", "referral-partner"]);
     const agreed = (await L.you.readRelations(L.scope)).find((r) => r.kind === "supplies")!;
     assert.equal(agreed.attributes.unit_price_usd, 18000, "the agreement carries the relayed terms");
+  });
+
+  it("moves money as a transition: a deposit through the router, under leases, guards and reconciliation", async () => {
+    const L = await loop();
+    const agreed = await recordRoute(L.you, (await L.horizonFor(L.youId)).routes[0]);
+    assert.deepEqual((await executeRoute(await L.executor(L.youId), agreed)).map((o) => o.status), ["completed", "completed"]);
+    const goal = depositGoal({ worldRef: L.worldRef, scope: L.scope, title: "Your car company" });
+    const youWorld = () => loadWorld(L.you, L.youId);
+
+    // Without a chain connected the route is honest about it.
+    const dry = await computeHorizon({ world: await youWorld(), actorId: L.youId, principalId: null, goal, kernelFor: L.kernelFor, providers: L.providers });
+    assert.deepEqual(dry.routes[0].steps.map((s) => [s.transition, s.amount, s.asset, s.authority.decision]), [["supplier.deposit", "25000000", "DEV_USDC", "ALLOW"]]);
+    assert.match(dry.routes[0].blockedBy.join(), /no provider for payment.send/);
+
+    // Budgets are authority: a companion leased $20 cannot pay $25, and the kernel says why.
+    await L.you.issueLease({ grantee: L.agentId, capability: "payment.send", scope: L.scope, maxAmount: "20000000", asset: "DEV_USDC" });
+    const providers = L.providers.with(routerPayment(L.treasury));
+    const capped = await computeHorizon({ world: await loadWorld(L.as(L.agentId), L.agentId), actorId: L.agentId, principalId: L.youId, goal, kernelFor: L.kernelFor, providers, fallback: "none" });
+    assert.equal(capped.routes[0].steps[0].authority.decision, "DENY");
+    assert.match(capped.routes[0].steps[0].authority.reasons.join(), /exceeds the delegated limit/);
+
+    // You pay. The chain reply is lost: the action waits for reconciliation; nothing is canonical
+    // yet, although the money moved. The next run reconciles from the chain marker: one payment,
+    // one consequence, the recipient paid exactly once.
+    const [profile] = await L.k.owner("select receive_address from kernel.payment_profiles where actor_id = $1 order by version desc limit 1", [L.manifest.orgs.halden.ownerId]);
+    const recipient = profile.receive_address as `${string}`;
+    const before = await L.market.balance(recipient as never, "DEV_USDC");
+    const route = await recordRoute(L.you, (await computeHorizon({ world: await youWorld(), actorId: L.youId, principalId: null, goal, kernelFor: L.kernelFor, providers })).routes[0]);
+    const exec = async () => ({ ...(await L.executor(L.youId, providers)) });
+    L.market.chain.gateway.loseNextResponse = true;
+    const first = await executeRoute(await exec(), route);
+    assert.equal(first[0].status, "unknown");
+    assert.equal((await L.you.readAction(first[0].actionId!)).status, "needs_reconciliation");
+    assert.equal((await youWorld()).facts.some((f) => f.predicate === "pays:paid"), false, "attempted, not yet true");
+    assert.equal(await L.market.balance(recipient as never, "DEV_USDC"), before + BigInt(25_000_000), "the money moved; the record waits for evidence");
+
+    const second = await executeRoute(await exec(), route);
+    assert.equal(second[0].status, "completed");
+    const paid = (await youWorld()).facts.find((f) => f.predicate === "pays:paid")!;
+    assert.equal(paid.status, "reconciled");
+    assert.equal(paid.value?.provider, "router.payment");
+    const payment = await L.you.readPayment(String(paid.value?.payment_id));
+    assert.deepEqual([payment.status, payment.amount, payment.asset, payment.tx_signature], ["confirmed", "25000000", "DEV_USDC", paid.value?.tx_signature]);
+    assert.equal(await L.market.balance(recipient as never, "DEV_USDC"), before + BigInt(25_000_000), "paid exactly once");
+
+    // A repeat changes nothing; the Horizon says the deposit is paid; the stale plan cannot pay twice.
+    assert.equal((await executeRoute(await exec(), route))[0].detail, "already completed");
+    assert.equal(await count(L.k, "select count(*) as n from kernel.relations where kind = 'pays'"), 1);
+    assert.equal(await count(L.k, "select count(*) as n from kernel.payment_intents"), 4, "Arcadia's three payments and this one");
+    assert.equal((await computeHorizon({ world: await youWorld(), actorId: L.youId, principalId: null, goal, kernelFor: L.kernelFor, providers })).satisfied?.status, "reconciled");
   });
 
   it("keeps rendering, Horizon and context read-only", async () => {

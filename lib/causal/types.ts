@@ -92,6 +92,9 @@ export type RouteStep = {
   guards: KernelGuard[];
   predicted: Fact[];
   payload: Record<string, unknown>;
+  // Money the step moves, in minor units: the kernel's leases and policies decide on it.
+  amount: string | null;
+  asset: string | null;
 };
 
 export type Route = {

@@ -888,7 +888,7 @@ create table kernel.relations (
   id uuid primary key,
   kind text not null check (kind in (
     'owns', 'controls', 'member_of', 'located_in', 'supplies', 'requires', 'blocks', 'produces',
-    'verifies', 'represents', 'assists', 'offers', 'needs', 'part_of', 'challenges', 'replaces', 'escalates_to'
+    'verifies', 'represents', 'assists', 'offers', 'needs', 'part_of', 'challenges', 'replaces', 'escalates_to', 'pays'
   )),
   from_ref text not null check (kernel.is_ref(from_ref)),
   to_ref text not null check (kernel.is_ref(to_ref)),

@@ -20,7 +20,7 @@ import type {
 import type { ArcadiaManifest } from "../sandbox/manifest";
 import { loadOperations, type OperationsView } from "./operations";
 import { computeHorizon, type HorizonInput } from "../causal/horizon";
-import { supplyGoal, TRANSITIONS, verifyGoal } from "../causal/transitions";
+import { depositGoal, supplyGoal, TRANSITIONS, verifyGoal } from "../causal/transitions";
 import { executeStep, recordRoute, type RecordedRoute } from "../causal/pipeline";
 import { arcadiaProviders, type Providers } from "../causal/providers";
 import type { Fact, Goal, Horizon, StepOutcome } from "../causal/types";
@@ -475,6 +475,11 @@ export class WorldEngine {
     const capabilityRef = this.manifest.capabilities[capability];
     if (!model.venture?.worldRef || !capabilityRef) return null;
     return supplyGoal({ worldRef: model.venture.worldRef, scope: model.venture.scope, capability, capabilityRef: `entity:${capabilityRef}`, quantity, what: "vehicles" });
+  }
+
+  depositGoal(model: WorldModel): Goal | null {
+    if (!model.venture?.worldRef) return null;
+    return depositGoal({ worldRef: model.venture.worldRef, scope: model.venture.scope, title: model.nodes.get(model.venture.worldRef)?.title ?? "your World" });
   }
 
   verifyGoal(orgRef: string, model: WorldModel): Goal {

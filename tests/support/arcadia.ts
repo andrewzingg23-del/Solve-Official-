@@ -44,7 +44,8 @@ export const ARCADIA_WORLD = "world:arcadia";
 //   arcadia/4  "creation-loop" builds, tests, reviews, promotes and observes the Class A proposal
 //   arcadia/5  members may share their read of the market with their own agents
 //   arcadia/6  members may request verification of a claim; Kestrel reads the market it verifies
-export const ARCADIA_GENERATOR = "arcadia/6";
+//   arcadia/7  organization owners hold wallets and payment profiles, so they can be paid
+export const ARCADIA_GENERATOR = "arcadia/7";
 export const ARCADIA_SEED = "arcadia-genesis-1";
 
 // Scenarios layer behaviour onto the base civilization (failures, fraud, disputes, governance).
@@ -307,6 +308,9 @@ async function generate(config: ArcadiaConfig, started: number) {
   for (const org of ORGS) {
     const owner = client(`sandbox:owner-${org.key}`);
     const ownerId = await owner.register(`${org.title} (owner)`);
+    const ownerWallet = await newSigner();
+    await owner.linkWallet("litesvm", ownerWallet.address);
+    await owner.setPaymentProfile({ chain: "litesvm", receiveAddress: ownerWallet.address, acceptAssets: ["DEV_USDC"] });
     const agentId = await owner.spawnAgent({ label: `${org.title} agent`, role: "organization_agent" });
     for (const capability of ["message.send", "claim.capability"]) {
       await steward.issueGrant({ grantee: agentId, capability, scope: ARCADIA_WORLD });
@@ -518,5 +522,7 @@ async function generate(config: ArcadiaConfig, started: number) {
       balances,
     },
   };
-  return { k, manifest, integrity };
+  // For Node callers: the chain-side means to pay as You (a browser sandbox has no chain).
+  const treasury = { payerKernel: you, rail: paymentRail, router: market.router, payer: prepared.wallet, sponsor: chain.sponsor };
+  return { k, manifest, integrity, treasury, market };
 }

@@ -51,13 +51,22 @@ export function HorizonRoutes({ engine, model, onChanged }: { engine: WorldEngin
   const companion = model.avatars.find((a) => a.avatar_type === "ai_companion") ?? model.avatars[0] ?? null;
   const actorId = companion?.agent_id ?? engine.manifest.you.actorId;
   const goal = engine.supplyGoal(model);
+  const following = engine.depositGoal(model);
   const [horizon, setHorizon] = useState<Horizon | null>(null);
+  const [next, setNext] = useState<Horizon | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
     let live = true;
-    if (goal) void engine.horizon(actorId, goal).then((h) => live && setHorizon(h));
+    if (goal) {
+      void engine.horizon(actorId, goal).then(async (h) => {
+        if (!live) return;
+        setHorizon(h);
+        // The World that reached one goal has a new Horizon: what comes next from here.
+        setNext(h.satisfied && following ? await engine.horizon(actorId, following) : null);
+      });
+    }
     return () => {
       live = false;
     };
@@ -71,7 +80,7 @@ export function HorizonRoutes({ engine, model, onChanged }: { engine: WorldEngin
     setBusy(true);
     setNote(null);
     try {
-      const plan = await engine.plan(route.orgRef, goal, actorId);
+      const plan = await engine.plan(route.orgRef, route.goal, actorId);
       const step = plan.recorded?.steps[0];
       const outcome = plan.recorded && step ? await engine.perform(plan.recorded, step.transition) : null;
       setNote(outcome ? `${step!.title}: ${outcome.status.replace(/_/g, " ")}${outcome.detail ? ` (${outcome.detail})` : ""}` : "This route changed; look again.");
@@ -108,6 +117,22 @@ export function HorizonRoutes({ engine, model, onChanged }: { engine: WorldEngin
           </ol>
         </div>
       ))}
+      {next && next.routes.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p className={label}>Next: {next.goal.title}</p>
+          {next.routes.map((route) => (
+            <div key={route.id} className="flex flex-col gap-2">
+              <p className="text-xs text-muted">{route.executable ? (route.needsHuman ? "executable, needs you" : "executable") : `blocked: ${route.blockedBy.join("; ")}`}</p>
+              <ol className="flex flex-col gap-2">
+                {route.steps.map((s, i) => (
+                  <Step key={i} step={s} n={i + 1} who={name(s.actorId)} next={i === 0 && route.executable} busy={busy} onDo={() => run(route)} />
+                ))}
+              </ol>
+            </div>
+          ))}
+        </div>
+      )}
+      {next?.satisfied && <p className="text-sm text-positive">Deposit paid ({next.satisfied.status}).</p>}
       {horizon && horizon.excluded.length > 0 && (
         <div className="flex flex-col gap-1">
           <p className={label}>Not a route</p>

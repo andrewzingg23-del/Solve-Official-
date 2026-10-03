@@ -90,6 +90,8 @@ export type Transition = {
   payload(b: Binding, w: WorldState, goal: Goal): Record<string, unknown>;
   consequences(b: Binding, w: WorldState, goal: Goal): Consequence[];
   guards?(b: Binding, w: WorldState, goal: Goal): KernelGuard[];
+  // Money the transition moves, so authority is decided for the amount.
+  amount?(b: Binding, w: WorldState, goal: Goal): { amount: string; asset: string } | null;
   uncertainty(b: Binding, w: WorldState, goal: Goal): Uncertainty;
   predicted?(b: Binding, w: WorldState, goal: Goal): Fact[];
 };
@@ -254,6 +256,46 @@ export const accept: Transition = {
   predicted: (b, w, g) => [inferred(b.org, "supplies:agreed", b.world, { capability: b.capability, quantity: g.quantity ?? null, unit_price_usd: priceOf(w, b.org, b.world) })],
 };
 
+// A good-faith deposit to the agreed supplier: money through the proven payment physics, under the
+// same guards and reconciliation as everything else. Nominal, on test assets.
+export const DEPOSIT_USD = 25;
+
+export const deposit: Transition = {
+  id: "supplier.deposit",
+  kind: "supplier.deposit",
+  capability: "payment.send",
+  provider: "payment.send",
+  native: false,
+  expectedEvidence: "The kernel's payment record, confirmed on chain with its payment marker.",
+  failures: ["the payment fails on chain", "the outcome stays unknown until reconciled", "the payer's authority or budget does not cover it"],
+  requires: [
+    { label: "an agreed supplier", pattern: { subject: "?org", predicate: "supplies:agreed", object: "?world" }, because: "the agreement is recorded" },
+    { label: "no deposit paid yet", pattern: { subject: "?world", predicate: "pays:paid", object: "?org", value: { purpose: "deposit" } }, present: false, because: "nothing paid" },
+  ],
+  produces: [{ subject: "?world", predicate: "pays:paid", object: "?org", value: { purpose: "deposit" } }],
+  scope: (b, w) => scopeOf(w, b.world),
+  title: (b, w) => `Pay ${titleOf(w, b.org)} a $${DEPOSIT_USD} good-faith deposit (test assets)`,
+  amount: () => ({ amount: String(DEPOSIT_USD * 1_000_000), asset: "DEV_USDC" }),
+  payload: (b) => ({ purpose: "deposit", organization: b.org, amount: String(DEPOSIT_USD * 1_000_000), asset: "DEV_USDC" }),
+  consequences: (b, w) => [
+    {
+      op: "relation.create",
+      kind: "pays",
+      from_ref: b.world,
+      to_ref: b.org,
+      scope: scopeOf(w, b.world)!,
+      attributes: { status: "paid", purpose: "deposit", asset: "DEV_USDC" },
+      result_keys: ["payment_id", "tx_signature", "amount", "recipient", "provider"],
+    },
+  ],
+  guards: (b) => [
+    { op: "relation.exists", kind: "supplies", from_ref: b.org, to_ref: b.world, attributes: { status: "agreed" } },
+    { op: "relation.absent", kind: "pays", from_ref: b.world, to_ref: b.org, attributes: { purpose: "deposit" } },
+  ],
+  uncertainty: () => ({ level: "medium", because: "a chain transaction: its outcome is evidence, never assumed" }),
+  predicted: (b) => [inferred(b.world, "pays:paid", b.org, { purpose: "deposit", amount: String(DEPOSIT_USD * 1_000_000), asset: "DEV_USDC" })],
+};
+
 const VERBS: Record<string, string> = { "message.send": "contact suppliers (not purchase)", "commitment.make": "make commitments", "verification.request": "request verification" };
 
 export const delegate: Transition = {
@@ -274,8 +316,8 @@ export const delegate: Transition = {
   uncertainty: () => ({ level: "low", because: "a kernel-native grant" }),
 };
 
-export const STANDARD = new Transitions([inquire, verify, accept, delegate]);
-export const TRANSITIONS = { inquire, verify, accept, delegate } as const;
+export const STANDARD = new Transitions([inquire, verify, accept, deposit, delegate]);
+export const TRANSITIONS = { inquire, verify, accept, deposit, delegate } as const;
 
 // --- Goals ----------------------------------------------------------------------------------
 
@@ -290,6 +332,17 @@ export function supplyGoal(input: { worldRef: string; scope: string; capability:
     world: input.worldRef,
     capability: input.capability,
     quantity,
+  };
+}
+
+export function depositGoal(input: { worldRef: string; scope: string; title: string }): Goal {
+  return {
+    kind: "pay_deposit",
+    title: `a good-faith deposit to ${input.title}'s agreed supplier`,
+    scope: input.scope,
+    desired: [{ subject: input.worldRef, predicate: "pays:paid", object: "?org", value: { purpose: "deposit" } }],
+    bind: { world: input.worldRef },
+    world: input.worldRef,
   };
 }
 

@@ -73,6 +73,7 @@ async function concrete(x: Executor, route: RecordedRoute, index: number, world:
   // recorded plan stands, and the kernel refuses the actor rather than the shape.
   const scope = t?.scope(step.binding, world, route.goal) ?? null;
   if (!t || !scope) return step;
+  const money = t.amount?.(step.binding, world, route.goal) ?? null;
   return {
     ...step,
     scope,
@@ -80,6 +81,8 @@ async function concrete(x: Executor, route: RecordedRoute, index: number, world:
     payload: t.payload(step.binding, world, route.goal),
     consequences: t.consequences(step.binding, world, route.goal),
     guards: t.guards?.(step.binding, world, route.goal) ?? [],
+    amount: money?.amount ?? null,
+    asset: money?.asset ?? null,
   };
 }
 
@@ -120,7 +123,7 @@ export async function executeStep(x: Executor, route: RecordedRoute, index: numb
   if (done) return { index, actionId: done.action_id, status: "completed", detail: "already completed", provider: null };
   const last = prior.at(-1);
   if (last?.status === "rejected") {
-    const now = await k.authorize({ capability: step.capability, scope: step.scope });
+    const now = await k.authorize({ capability: step.capability, scope: step.scope, amount: step.amount ?? undefined, asset: step.asset ?? undefined });
     if (now.decision === "DENY") return { index, actionId: last.action_id, status: "denied", detail: now.reasons.join("; ") || "denied", provider: null };
   }
   const attempt = prior.filter((a) => a.status === "rejected").length;
@@ -132,6 +135,8 @@ export async function executeStep(x: Executor, route: RecordedRoute, index: numb
       capability: step.capability,
       scope: step.scope,
       targetRef: step.targetRef ?? undefined,
+      amount: step.amount ?? undefined,
+      asset: step.asset ?? undefined,
       payload: {
         ...step.payload,
         route: `event:${route.eventId}`,

@@ -206,6 +206,9 @@ try {
   await page.getByRole("button", { name: "Cause", exact: true }).click();
   await page.getByRole("region", { name: "Horizon" }).getByText(/Reached:/).waitFor({ timeout: 30_000 });
   check(true, "after reload the Horizon starts from the reached goal");
+  await page.getByRole("region", { name: "Horizon" }).getByText(/Next:/).waitFor({ timeout: 30_000 });
+  const nextText = await page.getByRole("region", { name: "Horizon" }).innerText();
+  check(/good-faith deposit/.test(nextText) && /no provider for payment.send/.test(nextText), "the next Horizon is a deposit, honestly blocked: no chain is connected to this browser");
   await page.getByRole("button", { name: "Space", exact: true }).click();
 
   // 7. The steward projection: SOV operating SOV, read with the steward's authority.
