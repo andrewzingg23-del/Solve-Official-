@@ -8,7 +8,14 @@ once complete. Never edit or delete a directive — only the founder does that.
 
 ## ACTIVE
 
-(none)
+### 2026-10-03 — Build the memory kernel first
+Before any Room, any feature: set up the system's memory correctly. The kernel:
+- Every action is an event with provenance (who did what, when, authorized by whom).
+- The ledger is double-entry (balances are derived from entries, never stored as source of truth).
+- History is append-only (nothing edited, nothing deleted — corrections are new events).
+- Evidence attaches to events (proof, not claims).
+- Identity, authority, and permissions gate every write.
+This is the stable master code. Build it clean enough to never revisit.
 
 ## DONE
 
