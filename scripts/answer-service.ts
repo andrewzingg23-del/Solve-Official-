@@ -47,7 +47,8 @@ async function main() {
     orgRef,
     kernelFor,
     providers: new Providers([]),
-    log: (e) => log({ kind: e.kind, detail: e.detail, outcomes: e.report?.outcomes }),
+    // needs_review and stalled lines are the operator's queue: reconcile, then restart or release.
+    log: (e) => log({ kind: e.kind, detail: e.detail, inquiry: e.inquiry, outcomes: e.report?.outcomes }),
   }).start();
   const watch = watchInbox({ kernel, intervalMs: pollMs, onDelivery: () => service.wake(), onError: (error) => log({ kind: "watch-error", detail: String(error) }) }).start();
 

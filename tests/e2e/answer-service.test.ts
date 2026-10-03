@@ -135,7 +135,9 @@ describe("the delivery-woken answer service", () => {
     const { route, inquiry } = await ask();
     const service = serviceFor("halden", faulty(S.as(halden.agentId), [{ method: "enactAction", mode: "lost", times: 1 }]), timers).start();
     const failed = await service.wake();
-    assert.match(failed.error ?? "", /unavailable: the reply to enactAction was lost/);
+    assert.equal(failed.error, null, "the pass ran; this inquiry's outcome is what is unknown");
+    assert.deepEqual(failed.outcomes.map((o) => [o.state, o.attempts]), [["unknown", 1]]);
+    assert.match(failed.outcomes[0].detail, /unavailable: the reply to enactAction was lost/);
     assert.deepEqual([service.status().failures, service.status().nextRetryAt], [1, timers.now() + 1_000]);
     assert.deepEqual(timers.delays(), [1_000]);
     // The kernel holds the truth: the reply exists and the asker's step settles from it.
@@ -156,7 +158,7 @@ describe("the delivery-woken answer service", () => {
     const orrin = S.manifest.orgs.orrin;
     const { route, inquiry } = await ask(5000, "orrin");
     const service = serviceFor("orrin", faulty(S.as(orrin.agentId), [{ method: "proposeAction", mode: "lost", times: 1 }]), timers).start();
-    assert.match((await service.wake()).error ?? "", /reply to proposeAction was lost/);
+    assert.match((await service.wake()).outcomes[0].detail, /reply to proposeAction was lost/);
     const [proposed] = await S.k.owner("select id, payload from kernel.actions where in_reply_to = $1", [inquiry]);
     assert.ok(proposed, "the kernel recorded the answer although the agent never heard back");
 
@@ -203,6 +205,71 @@ describe("the delivery-woken answer service", () => {
     assert.deepEqual(delays, [1_000, 2_000, 3_000], "exponential, capped");
     assert.deepEqual(report.outcomes.map((o) => o.state), ["answered"]);
     assert.deepEqual([service.status().failures, service.status().nextRetryAt], [0, null]);
+    assert.equal(await replies(inquiry), 1);
+    service.stop();
+  });
+
+  it("spends a bounded retry budget, then holds the inquiry as needing reconciliation for review", async () => {
+    const { S, halden, replies, events, ask, serviceFor } = await exchange();
+    const timers = fakeTimers();
+    const { inquiry } = await ask();
+    const log: { kind: string; inquiry?: string }[] = [];
+    // Every proposal fails before reaching the kernel, more times than the budget allows.
+    const service = serviceFor("halden", faulty(S.as(halden.agentId), [{ method: "proposeAction", mode: "down", times: 10 }]), timers, {
+      backoff: { baseMs: 1_000, maxMs: 60_000, maxAttempts: 3 },
+      log: (e) => log.push({ kind: e.kind, inquiry: e.inquiry }),
+    }).start();
+    const states: string[] = [];
+    let report = await service.wake();
+    states.push(report.outcomes[0].state);
+    while (timers.delays().length) {
+      await timers.advance(timers.delays()[0]);
+      await service.idle();
+      report = service.status().last!;
+      states.push(report.outcomes[0]?.state ?? "none");
+    }
+    assert.deepEqual(states, ["unknown", "unknown", "needs_reconciliation"], "three attempts, then held");
+    const [held] = service.status().review;
+    assert.deepEqual([held.inquiry, held.attempts], [`action:${inquiry}`, 3]);
+    assert.match(held.detail, /unavailable: fetch failed \(proposeAction\)/);
+    assert.deepEqual(log.filter((e) => e.kind === "needs_review").map((e) => e.inquiry), [`action:${inquiry}`], "surfaced once");
+    assert.deepEqual([service.status().nextRetryAt, timers.delays()], [null, []], "no stuck retries");
+
+    // Held means held: a later wake (another delivery) leaves it alone and writes nothing for it.
+    const before = await events();
+    assert.deepEqual((await service.wake()).outcomes, []);
+    assert.equal(await events(), before);
+
+    // The operator releases it (the kernel is reachable again): a fresh budget, answered once.
+    // (A fresh session stands for the reachable kernel; held state lives in the service.)
+    service.stop();
+    const healthy = serviceFor("halden", S.as(halden.agentId), timers);
+    assert.deepEqual((await healthy.release(`action:${inquiry}`)).outcomes.map((o) => o.state), ["answered"]);
+    assert.equal(await replies(inquiry), 1);
+  });
+
+  it("stalls instead of polling a kernel that keeps failing, and recovers on the next wake", async () => {
+    const { S, halden, replies, ask, serviceFor } = await exchange();
+    const timers = fakeTimers();
+    const { inquiry } = await ask();
+    const service = serviceFor("halden", faulty(S.as(halden.agentId), [{ method: "inbox", mode: "down", times: 3 }]), timers, {
+      backoff: { baseMs: 1_000, maxMs: 60_000, maxAttempts: 3 },
+      safetyNetMs: 30_000,
+    }).start();
+    await service.wake();
+    while (!service.status().stalled) {
+      await timers.advance(timers.delays()[0]);
+      await service.idle();
+    }
+    const { stalled } = service.status();
+    assert.deepEqual([stalled!.passes, timers.delays()], [3, []], "no retry timer and no safety net while stalled");
+    assert.match(stalled!.detail, /unavailable: fetch failed \(inbox\)/);
+    assert.equal(await replies(inquiry), 0);
+
+    // A wake (a delivery, or the operator) is new information: the kernel answers again.
+    assert.deepEqual((await service.wake()).outcomes.map((o) => o.state), ["answered"]);
+    assert.equal(service.status().stalled, null);
+    assert.deepEqual(timers.delays(), [30_000], "back to the safety net");
     assert.equal(await replies(inquiry), 1);
     service.stop();
   });
