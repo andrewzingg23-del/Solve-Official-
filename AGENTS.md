@@ -14,3 +14,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Then read `BUILD-BOOK.md`, `VISION-CANON.md`, `docs/MONETARY-CONSTITUTION.md` and `BUILD_STATUS.md`.
 - Kernel memory is reached only through `kernel_api` (`supabase/migrations/`). Never grant API roles access to the `kernel` schema, and never edit an applied migration; add a new one.
 - Before pushing: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`. Update `BUILD_STATUS.md`.
+- Keep `BUILD-STREAM.md` current: append a short timestamped entry when work starts, a coherent slice finishes, direction changes, or a blocker appears. Include the slice, affected paths, checks actually run and their outcomes, and the next step or blocker.
+- Push each completed coherent slice with its stream update; do not hold updates until the full feature is finished. If code is intentionally uncommitted or checks are still running, say so explicitly in the stream and checkpoint before switching tasks.
+- GitHub Actions in `.github/workflows/build.yml` runs tests, typecheck, lint, and build for every pushed branch. Never report a green build until that workflow succeeds.
