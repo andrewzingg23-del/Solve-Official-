@@ -1,6 +1,6 @@
 // Copies what the browser needs into public/: PGlite's untouched ESM, WASM and data files, the
 // kernel migrations as one JSON file, and the CesiumJS build. Runs before dev and build.
-import { copyFileSync, cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = process.cwd();
@@ -29,6 +29,12 @@ const cesiumOut = join(root, "public/cesium");
 rmSync(cesiumOut, { recursive: true, force: true });
 for (const part of ["Cesium.js", "Assets", "ThirdParty", "Widgets", "Workers"]) {
   cpSync(join(cesiumSrc, part), join(cesiumOut, part), { recursive: true });
+}
+
+// The renderer's runtime topology must arrive whole: runtime, workers, assets, third-party code,
+// widget styles, and the imagery the offline Earth uses. A partial copy fails here, not in a browser.
+for (const required of ["Cesium.js", "Workers", "Assets/Textures/NaturalEarthII/tilemapresource.xml", "ThirdParty", "Widgets/widgets.css"]) {
+  if (!existsSync(join(cesiumOut, required))) throw new Error(`CesiumJS runtime incomplete: missing ${required}`);
 }
 
 console.log(`browser assets: ${copied} PGlite files, ${migrations.length} kernel migrations, CesiumJS`);
