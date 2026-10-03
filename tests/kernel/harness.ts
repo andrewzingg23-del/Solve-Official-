@@ -1,116 +1,45 @@
-// Runs the real migrations in an in-memory Postgres (PGlite) and calls kernel_api the way
-// PostgREST does: SET LOCAL ROLE plus request.jwt.claims for each request.
+// Runs the real migrations in an embedded Postgres (PGlite) and calls kernel_api the way
+// PostgREST does. The runtime is pluggable: Node by default, the browser via setKernelRuntime.
 import { PGlite } from "@electric-sql/pglite";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { KernelDb, migrate, type PGliteLike } from "../../lib/kernel/local";
+
+export { anon, KernelDb, service, user, type Row, type Session } from "../../lib/kernel/local";
+
+export type KernelRuntime = { create(): Promise<PGliteLike>; migrations(): Promise<string[]> };
 
 // Tests run from the repo root (npm test).
-const migrationsDir = join(process.cwd(), "supabase/migrations");
+const nodeRuntime: KernelRuntime = {
+  create: async () => new PGlite() as unknown as PGliteLike,
+  migrations: async () => {
+    const dir = join(process.cwd(), "supabase/migrations");
+    return readdirSync(dir)
+      .filter((f) => f.endsWith(".sql"))
+      .sort()
+      .map((f) => readFileSync(join(dir, f), "utf8"));
+  },
+};
 
-export type Session =
-  | { role: "authenticated"; sub: string; is_anonymous?: boolean }
-  | { role: "service_role" }
-  | { role: "anon" };
+let runtime = nodeRuntime;
+let template: Promise<PGliteLike> | undefined;
 
-export type Row = Record<string, unknown>;
-
-let template: Promise<PGlite> | undefined;
-
-async function migrate() {
-  const db = new PGlite();
-  // Roles Supabase provides out of the box.
-  await db.exec(`
-    create role anon nologin;
-    create role authenticated nologin;
-    create role service_role nologin;
-  `);
-  for (const file of readdirSync(migrationsDir).filter((f) => f.endsWith(".sql")).sort()) {
-    await db.exec(readFileSync(join(migrationsDir, file), "utf8"));
-  }
-  return db;
+export function setKernelRuntime(next: KernelRuntime) {
+  runtime = next;
+  template = undefined;
 }
 
 // A fresh, fully migrated database per call, cloned from one migrated template.
 export async function createKernelDb() {
-  template ??= migrate();
-  return new KernelDb((await (await template).clone()) as PGlite);
+  template ??= (async () => {
+    const db = await runtime.create();
+    await migrate(db, await runtime.migrations());
+    return db;
+  })();
+  const base = await template;
+  if (!base.clone) throw new Error("this PGlite build cannot clone");
+  return new KernelDb(await base.clone());
 }
-
-export class KernelDb {
-  constructor(readonly db: PGlite) {}
-
-  // Runs SQL as the database owner (no API role).
-  async owner(sql: string, params: unknown[] = []): Promise<Row[]> {
-    return (await this.db.query<Row>(sql, params)).rows;
-  }
-
-  // Runs SQL under an API role with the given JWT claims, inside one transaction.
-  async as(session: Session, sql: string, params: unknown[] = []): Promise<Row[]> {
-    return this.db.transaction(async (tx) => {
-      await tx.exec(`set local role ${session.role}`);
-      await tx.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify(session)]);
-      return (await tx.query<Row>(sql, params)).rows;
-    });
-  }
-
-  private argTypes = new Map<string, Map<string, string>>();
-
-  // Input argument types of kernel_api.<fn>, so arrays encode the way PostgREST would.
-  private async typesOf(fn: string) {
-    let types = this.argTypes.get(fn);
-    if (!types) {
-      const rows = await this.owner(
-        `select unnest(p.proargnames[1:p.pronargs]) as name, unnest(p.proargtypes::regtype[]::text[]) as type
-         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-         where n.nspname = 'kernel_api' and p.proname = $1`,
-        [fn],
-      );
-      types = new Map(rows.map((r) => [r.name as string, r.type as string]));
-      this.argTypes.set(fn, types);
-    }
-    return types;
-  }
-
-  // Calls kernel_api.<fn> with named arguments, as PostgREST's rpc does.
-  async rpc(session: Session, fn: string, args: Record<string, unknown> = {}): Promise<Row[]> {
-    const types = await this.typesOf(fn);
-    const names = Object.keys(args);
-    const sql = `select * from kernel_api.${fn}(${names.map((n, i) => `${n} => $${i + 1}`).join(", ")})`;
-    const values = names.map((n) => {
-      const v = args[n];
-      if (Array.isArray(v) && types.get(n)?.endsWith("[]")) return v;
-      return v !== null && typeof v === "object" && !(v instanceof Date) ? JSON.stringify(v) : v;
-    });
-    return this.as(session, sql, values);
-  }
-
-  private setReturning = new Map<string, boolean>();
-
-  // Whether kernel_api.<fn> returns rows (PostgREST returns an array) or a scalar.
-  async returnsSet(fn: string) {
-    let value = this.setReturning.get(fn);
-    if (value === undefined) {
-      const [row] = await this.owner(
-        `select p.proretset from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-         where n.nspname = 'kernel_api' and p.proname = $1`,
-        [fn],
-      );
-      value = Boolean(row?.proretset);
-      this.setReturning.set(fn, value);
-    }
-    return value;
-  }
-
-  // Calls a kernel_api function that returns a single value.
-  async value<T = string>(session: Session, fn: string, args: Record<string, unknown> = {}): Promise<T> {
-    const [row] = await this.rpc(session, fn, args);
-    return Object.values(row)[0] as T;
-  }
-}
-
-export const user = (sub: string): Session => ({ role: "authenticated", sub });
-export const service: Session = { role: "service_role" };
-export const anon: Session = { role: "anon" };
 
 // Matches a Postgres error by SQLSTATE for assert.rejects.
 export const sqlstate = (code: string) => (error: unknown) => {

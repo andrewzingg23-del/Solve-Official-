@@ -40,3 +40,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated browser assets and test bundles
+/public/pglite
+/public/kernel
+/.browser-tests

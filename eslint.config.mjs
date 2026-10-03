@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated: PGlite's untouched browser files, kernel migrations JSON, browser test bundles.
+    "public/pglite/**",
+    "public/kernel/**",
+    ".browser-tests/**",
   ]),
 ]);
 
