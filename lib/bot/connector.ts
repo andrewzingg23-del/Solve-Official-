@@ -115,7 +115,7 @@ export const TOOLS = [
   {
     name: "learn_business",
     title: "Learn business context",
-    description: "Stores one owner-approved section of a person's business context in their sealed, searchable bot memory. Use after asking focused questions; record facts only, preserve unknowns as unknown, and never include customer personal data, passwords, API keys, tokens, or financial account credentials.",
+    description: "Stores one owner-approved section of a person's business context in sealed, searchable bot memory. Ask focused questions, separate observed evidence from estimates, and never include customer personal data or secrets.",
     inputSchema: {
       type: "object",
       properties: {
