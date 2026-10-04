@@ -270,6 +270,11 @@ it("creates attributed pixel art in a World and makes retries idempotent", async
   assert.match(malformed.content[0].text, /same width/);
   assert.equal((await readWorldAsBot(botAs(bot.avatar!.agent_id), worldId)).artifacts.length, 1, "invalid input writes nothing");
 
+  await approveConnection(ana, await ana.whoami().then((who) => who.actor_id), bot.avatar!.agent_id, {
+    clientId: CLAUDE,
+    clientName: "Claude",
+    mode: "read",
+  }, "pixel-read-only");
   const readOnly = await call(session(ana, CLAUDE), "create_pixel_art", input);
-  assert.equal(readOnly.isError, true, "the connection still needs explicit add permission");
+  assert.equal(readOnly.isError, true, "read-only assistant cannot write the image");
 });
