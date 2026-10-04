@@ -7,6 +7,7 @@ import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { loadCreativeWorld, type CreativeArtifact, type CreativePosition } from "@/lib/world/creative";
 import { createArtifactAction, updateArtifactAction } from "./actions";
+import { WorldAccessPanel } from "./access-panel";
 
 function eventTitle(type: string) {
   switch (type) {
@@ -181,6 +182,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
 
       {saved === "artifact" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Revision saved to World history.</p>}
       {error === "world-missing" && <p role="alert" className="rounded border border-negative/30 bg-negative/10 px-3 py-2 text-sm text-negative">This World could not be found in the selected scope.</p>}
+      <WorldAccessPanel worldId={worldId} scope={world.scope} saved={saved === "collaborator"} error={typeof error === "string" ? error : undefined} />
 
       <section aria-label="World canvas" className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(19rem,0.38fr)] xl:items-start">
         <div className="flex min-w-0 flex-col gap-4">
