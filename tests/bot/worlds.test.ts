@@ -10,7 +10,7 @@ import { createConnector, type Session } from "../../lib/bot/connector";
 import { approveConnection } from "../../lib/bot/memory";
 import { saveBot } from "../../lib/bot/store";
 import { botGrantsIn, setBotAccess, worldsForBot } from "../../lib/bot/worlds";
-import { createCreativeResourceEntry, createCreativeWorld, loadCreativeWorld } from "../../lib/world/creative";
+import { createCreativeResourceEntry, createCreativeWorld, loadCreativeWorld, updateCreativeResourceEntry } from "../../lib/world/creative";
 import { createKernelDb, service, user } from "../kernel/harness";
 
 const CLAUDE = "00000000-0000-4000-8000-0000000c1a0d";
@@ -67,6 +67,14 @@ it("lets the bot into a World only as far as its owner allows, and out again", a
   assert.equal((await call(ana, "read_world", { world_id: WORLD })).isError, true, "not let in: nothing to read");
 
   await setBotAccess(ana, { scope: world.scope, botAgentId: anaBot, access: "read" }, "in-1");
+  const cannotMapYet = await call(ana, "map_world_resource", {
+    world_id: WORLD,
+    type: "need",
+    category: "time",
+    title: "Installer",
+    details: "Needs an hour.",
+  });
+  assert.equal(cannotMapYet.isError, true, "read access cannot write structured resources");
   const read = await call(ana, "read_world", { world_id: WORLD });
   assert.match(read.content[0].text, /World: Kitchen remodel/);
   assert.ok(read.content[0].text.length <= 12_000, "World context stays within its character budget");
@@ -85,6 +93,37 @@ it("lets the bot into a World only as far as its owner allows, and out again", a
   assert.match(refused.content[0].text, /may not add to that World/);
 
   await setBotAccess(ana, { scope: world.scope, botAgentId: anaBot, access: "add" }, "in-2");
+  const mappedArgs = {
+    world_id: WORLD,
+    type: "need",
+    category: "time",
+    title: "Find a Saturday installation helper",
+    details: "I can use two people for four hours this Saturday.",
+    time_window: "Saturday, 10am–2pm",
+  };
+  const mapped = await call(ana, "map_world_resource", mappedArgs);
+  assert.equal(mapped.isError, undefined, mapped.content[0].text);
+  const mappedId = (mapped.structuredContent as { resource_id: string }).resource_id;
+  const retriedMap = await call(ana, "map_world_resource", mappedArgs);
+  assert.equal((retriedMap.structuredContent as { resource_id: string }).resource_id, mappedId, "a retried map is one entry");
+  const botEntry = (await loadCreativeWorld(ana, WORLD)).resources.find((entry) => entry.entityId === mappedId)!;
+  assert.deepEqual([botEntry.entryType, botEntry.category, botEntry.reportedBy, botEntry.reportedOnBehalfOf, botEntry.updatedBy], ["need", "time", anaBot, anaId, anaBot]);
+  const creationEvent = (await ana.readEvents(world.scope)).find((event) => event.type === "kernel.entity.created" && event.payload.entity_id === mappedId);
+  assert.deepEqual([creationEvent?.actor_id, creationEvent?.on_behalf_of], [anaBot, anaId], "the kernel records the bot acting for its owner");
+
+  await updateCreativeResourceEntry(ana, {
+    scope: world.scope,
+    entityId: mappedId,
+    requestId: "owner-revises-bot-entry",
+    title: "Find a Saturday installation helper",
+    description: "I can use one person for three hours this Saturday.",
+    timeWindow: "Saturday, 11am–2pm",
+    sourceUrl: "",
+    status: "open",
+  });
+  const revisedBotEntry = (await loadCreativeWorld(ana, WORLD)).resources.find((entry) => entry.entityId === mappedId)!;
+  assert.deepEqual([revisedBotEntry.reportedBy, revisedBotEntry.reportedOnBehalfOf, revisedBotEntry.updatedBy], [anaBot, anaId, anaId]);
+
   const added = await call(ana, "add_to_world", { world_id: WORLD, title: "Budget", body: "Cabinets first, then counters. <script>x</script>" });
   assert.equal(added.isError, undefined, added.content[0].text);
   const again = await call(ana, "add_to_world", { world_id: WORLD, title: "Budget", body: "Cabinets first, then counters. <script>x</script>" });
