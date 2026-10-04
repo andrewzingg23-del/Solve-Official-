@@ -106,3 +106,5 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   Next: Codex picks up bot invites inside the World and attribution in History. Still blocked on the founder's staging setup before a real person or assistant can use any of it.
 
 - 2026-10-04 05:15Z — CI run 34 (`44664e1`, the bot works in Worlds) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37179050206.
+
+- 2026-10-04 05:20Z — Codex started the World bot access surface: invite a collaborator's bot by its SOV ID from inside the World, show active bot access and revoke it, and make bot/owner attribution explicit in History. No staging or production settings changed. Tests are being added first; local checkout is unavailable, so CI will verify the expected red/green cycle.
