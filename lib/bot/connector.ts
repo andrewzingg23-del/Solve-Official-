@@ -9,6 +9,7 @@ import { createHash } from "node:crypto";
 import type { Kernel } from "@/lib/kernel/client";
 import { KernelError } from "@/lib/kernel/client";
 import { personaBrief } from "./persona";
+import { encodePixelArt } from "./pixel-art";
 import { companionOf, readPersona } from "./store";
 import { addToWorld, proposeCapability, readWorldAsBot, startWorld, WORLD_LIMITS, WorldInputError, worldsForAssistant, worldUrl } from "./worlds";
 import {
@@ -169,6 +170,25 @@ export const TOOLS = [
         artifact_id: { type: "string", description: "Revise this piece instead of adding a new one." },
       },
       required: ["world_id", "title", "body"],
+      additionalProperties: false,
+    },
+    annotations: ADD,
+  },
+  {
+    name: "create_pixel_art",
+    title: "Create pixel art",
+    description: "Creates or revises a small pixel-art image as a visible, versioned World artifact. Turn the prompt (or a vision-capable assistant's reference-image analysis) into a 1–32 pixel grid. Use palette indexes 0–9 in each row; dot means transparent. The palette is a list of six-digit hex colors. Nothing is sent to an image provider.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        world_id: { type: "string", description: "An authorized World from list_worlds." },
+        title: { type: "string", maxLength: WORLD_LIMITS.title },
+        prompt: { type: "string", maxLength: 500, description: "What the image depicts and any style or reference-image details." },
+        rows: { type: "array", minItems: 1, maxItems: 32, items: { type: "string", minLength: 1, maxLength: 32 }, description: "Equal-width strings of palette indexes 0–9; dot is transparent." },
+        palette: { type: "array", minItems: 1, maxItems: 10, items: { type: "string", pattern: "^#[0-9a-fA-F]{6}$" }, description: "Six-digit hex colors indexed by the digits in rows." },
+        artifact_id: { type: "string", description: "Optional existing pixel-art artifact to revise." },
+      },
+      required: ["world_id", "title", "prompt", "rows", "palette"],
       additionalProperties: false,
     },
     annotations: ADD,
@@ -344,7 +364,7 @@ export function createConnector(s: Session) {
       }
     }
 
-    if (name === "start_world" || name === "add_to_world" || name === "propose_capability") {
+    if (name === "start_world" || name === "add_to_world" || name === "propose_capability" || name === "create_pixel_art") {
       if (!canRemember) return fail(`This connection (${connection.clientName}) is read only. The person can allow it to add in Sovereign.`);
       if (!s.botAs) return fail("This deployment cannot act as the bot yet. Nothing was written.");
       const bot = s.botAs(avatar.agent_id);
@@ -358,6 +378,25 @@ export function createConnector(s: Session) {
           return ok(`${existing ? "Already started" : "Started"} "${world.title}", a private World. ${persona.name} can add to it. Open it: ${url}`, { world_id: world.worldId, title: world.title, url, existing });
         }
         const worldId = typeof args.world_id === "string" ? args.world_id : "";
+        if (name === "create_pixel_art") {
+          const prompt = typeof args.prompt === "string" ? args.prompt : "";
+          let body: string;
+          try {
+            body = encodePixelArt({ prompt, rows: args.rows, palette: args.palette });
+          } catch (error) {
+            throw new WorldInputError(error instanceof Error ? error.message : "pixel art input is invalid");
+          }
+          const artifactId = typeof args.artifact_id === "string" && args.artifact_id ? args.artifact_id : null;
+          const requestId = createHash("sha256").update([s.clientId, worldId, "pixel-art", artifactId ?? "", String(args.title ?? ""), body].join("|")).digest("hex").slice(0, 40);
+          const saved = await addToWorld(bot, { worldId, title: args.title, body, artifactId }, requestId);
+          return ok(`${saved.revised ? "Revised" : "Created"} pixel art as ${persona.name}: ${worldUrl(s.appUrl, worldId)}`, {
+            artifact_id: saved.entityId,
+            world_id: worldId,
+            revised: saved.revised,
+            media_type: "image/svg+xml",
+            renderer: "sovereign-pixel-grid",
+          });
+        }
         if (name === "propose_capability") {
           const proposalKey = [s.clientId, worldId, "capability", args.goal, args.outcome, args.current_tools, args.data_needs, args.acceptance_test].map(String).join("|");
           const requestId = createHash("sha256").update(proposalKey).digest("hex").slice(0, 40);
