@@ -1,6 +1,6 @@
 # Live build stream
 
-Active build branch: `claude/keen-cerf-tpd7io`
+Active build branch: `codex/gateway-oidc-fallback`
 
 This file is the shared, committed progress feed. It is readable from the repository at any time; it does not expose uncommitted edits in a builder's private working tree.
 
@@ -155,3 +155,4 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 
 
 - 2026-10-04 09:10Z — Codex, starting: make the existing reasoning route use Vercel's deployment OIDC token for AI Gateway when no explicit gateway key is configured. Paths: `app/api/reason/route.ts`, `lib/world/reasoning-config.ts`, `tests/e2e/reasoning-oidc.test.ts`, build/status docs. Vercel's current docs confirm OIDC support for Anthropic Messages. The latest preview reports no model configured. Start with a route-level failing test, then add the server-side fallback and verify CI. Staging Supabase OAuth remains a separate blocker.
+- 2026-10-04 — Started the runtime OIDC fix after the preview reported no reasoning model. GitHub Actions run 65 exposed that the first test imported a Next server-only route under Node and failed before exercising behavior; the harness now tests the extracted provider selector directly. The code and focused regression coverage are in this commit. Full CI and preview verification are pending.
