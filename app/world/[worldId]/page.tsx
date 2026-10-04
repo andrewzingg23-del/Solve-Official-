@@ -158,8 +158,10 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
     profiles = await kernel.readActors([...new Set(events.map((event) => event.actor_id))]);
     const ownerIds = [...new Set(profiles.map((profile) => profile.accountable_party).filter((id): id is string => Boolean(id)))];
     const knownProfileIds = new Set(profiles.map((profile) => profile.actor_id));
-    const resourceReporterIds = [...new Set(resources.map((entry) => entry.reportedBy))];
-    const missingActorIds = [...new Set([...ownerIds, ...resourceReporterIds])].filter((id) => !knownProfileIds.has(id));
+    const resourceActorIds = [...new Set(resources
+      .flatMap((entry) => [entry.reportedBy, entry.reportedOnBehalfOf, entry.updatedBy, entry.updatedOnBehalfOf])
+      .filter((id): id is string => typeof id === "string"))];
+    const missingActorIds = [...new Set([...ownerIds, ...resourceActorIds])].filter((id) => !knownProfileIds.has(id));
     if (missingActorIds.length) profiles = [...profiles, ...(await kernel.readActors(missingActorIds))];
   } catch (error) {
     if (error instanceof KernelError && error.name === "unauthenticated") redirect("/account");
