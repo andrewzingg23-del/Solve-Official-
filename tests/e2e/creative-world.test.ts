@@ -98,3 +98,32 @@ it("creates a private World, records artifact revisions, and grants write access
   assert.ok(history.some((event) => event.type === "kernel.entity.updated" && event.actor_id === bobId));
   assert.ok(history.some((event) => event.type === "kernel.grant.issued" && event.actor_id === aliceId));
 });
+
+it("starts a private World with its goal as the first piece and retries without duplicates", async () => {
+  const db = await createKernelDb();
+  const alice = kernelClient(localSupabase(db, user("auth:creative-goal")));
+  const goalWorldId = "00000000-0000-4000-8000-000000000102";
+  await alice.register("Alice");
+  const input = {
+    worldId: goalWorldId,
+    title: "Mom's 60th",
+    goal: "Plan a 60th birthday celebration that feels personal and stays within budget.",
+  };
+
+  const world = await createCreativeWorld(alice, input);
+  const first = await loadCreativeWorld(alice, goalWorldId);
+  assert.deepEqual(first.artifacts.map(({ title, body, position }) => ({ title, body, position })), [
+    {
+      title: "Goal",
+      body: input.goal,
+      position: { x: 50, y: 25 },
+    },
+  ]);
+  const firstEvents = await alice.readEvents(world.scope, { limit: 20 });
+
+  const retried = await createCreativeWorld(alice, input);
+  const afterRetry = await loadCreativeWorld(alice, goalWorldId);
+  assert.deepEqual(retried, world);
+  assert.equal(afterRetry.artifacts.length, 1, "the same goal request creates one first piece");
+  assert.equal((await alice.readEvents(world.scope, { limit: 20 })).length, firstEvents.length, "retry adds no duplicate World or goal events");
+});
