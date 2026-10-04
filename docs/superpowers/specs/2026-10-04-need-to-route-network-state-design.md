@@ -48,6 +48,9 @@ The system returns a small number of actionable routes, explains why each fits, 
 
 The route is a product object that can be tested and improved. Needs and experience are owner-controlled context; they are not hidden advertising attributes or global status scores.
 
+When no credible route exists, make the gap useful: tell the person what is missing, offer a known workaround or human handoff if one exists, and ask before sharing the need as a product signal. Explore existing providers and integrations before proposing new software. Treat each untried route as a hypothesis until a small, honest test produces evidence.
+
+
 ## 5. User journey
 
 ### 5.1 Entry
@@ -111,6 +114,22 @@ Distribution therefore comes from:
 Measure completed outcomes, repeated use, successful handoffs, and useful invitations. Do not treat impressions, signups, raw invites, purchases, screen time, or recruiting alone as evidence of trust or contribution.
 
 Sales should feel like a relevant route through a real need. Commercial terms, sponsored placements, referral relationships, uncertainty, and data use remain visible. The interface must not disguise paid promotion as neutral advice or use psychological targeting to pressure a person.
+
+## 5.6 Operate SOV through SOV and discover missing routes
+
+SOV should use its own governed route system to operate and improve SOV. The team keeps an internal World for customer-approved friction, unmet needs, integration opportunities, hypotheses, experiments, and observed outcomes. AI can investigate and draft route or product proposals there, attributed to the acting agent and its accountable owner. It must use the same identity, permission, provenance, evidence, and review rules as any other participant.
+
+A repeated or blocked request is a discovery signal, not proof of demand. “Find secrets” means uncover non-obvious unmet jobs, costly workarounds, coordination failures, and overlooked integrations through consented conversations, volunteered requests, and appropriately aggregated opt-in product signals. It never means finding credentials, probing private Worlds, inferring sensitive traits, or covertly surveilling people. A person's private need stays private unless they explicitly choose to share a minimal, revocable product request.
+
+For each promising gap, follow this loop:
+
+1. Define the person, job, desired outcome, and current workaround using evidence and clearly labeled assumptions.
+2. Ideate genuinely different routes: connect an existing provider, coordinate a human workflow, partner, compose existing capabilities, create a Room or Pack, or explain why no safe route is available yet.
+3. Review each route against the founder vision, user value, privacy, authority, legal and operational risk, cost, and reuse across people. Explain uncertainty and who benefits.
+4. Have a responsible person choose the smallest reversible test. Prefer a manual or integration-backed pilot before building a platform capability.
+5. Record what happened, including failure, effort, and unintended effects. Refine the route; generalize it only when evidence shows it helps beyond one request.
+
+Prioritize build work using severity of need, evidence of recurrence, time to a useful outcome, whether people will commit to a pilot, reusable reach, delivery and support cost, and safety/compliance risk. Novel routes are welcome; novelty alone is not a reason to ship. No route should be promoted through fake certainty, hidden commercial influence, or recruitment pressure.
 
 ## 6. First-market path
 
@@ -185,6 +204,9 @@ A first release of this design is acceptable when:
 10. The experience works on phone and desktop, including empty, no-match, error, and returning-user states.
 11. Focused tests cover privacy, permissions, attribution, edit/revocation, source display, and route failure.
 12. Pilot reporting measures time to first useful outcome, outcome completion, return use, invite usefulness, support cost, and direct contribution margin, not raw recruitment counts.
+13. When no credible route exists, the person sees the limit and any useful workaround, and can choose whether to share a minimal product-gap request.
+14. Product-gap proposals distinguish evidence from assumptions, compare materially different routes, and name the smallest safe test and its cost or effort.
+15. The team can use an internal World to operate SOV and review proposed improvements under the same attribution, permission, provenance, and approval rules; private customer Worlds are not product-discovery inputs by default.
 
 ## 11. Explicitly outside this slice
 
@@ -207,3 +229,4 @@ A first release of this design is acceptable when:
 - Commercial recommendations are relevant and disclosed.
 - The first cohort is a learning environment, not a fabricated growth claim.
 - The path from an individual outcome to a community economy is explicit, with governance and physical presence deferred until earned.
+- SOV improves through consented evidence and its own governed Worlds; non-obvious unmet needs lead to tested routes, not automatic feature work.
