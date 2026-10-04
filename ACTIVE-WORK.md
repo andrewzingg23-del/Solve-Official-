@@ -9,4 +9,6 @@ One writer per architectural surface. Update this file when work starts, changes
 
 Shared contracts: DOMAIN-CONTRACTS.md, lib/kernel/client.ts (typed kernel_api), lib/kernel/local.ts (embedded kernel), lib/sandbox/pglite.ts (browser database boundary).
 
+**Planned next product stream (not started):** user-requested capability growth. When existing tools cannot satisfy a person's request, compose approved primitives into a private World-local proposal, test it in a sandbox, let the owner activate/revoke it, then review proven proposals for optional sharing as Sector Packs. Plan: [docs/plans/2026-10-04-user-requested-capabilities.md](docs/plans/2026-10-04-user-requested-capabilities.md). This follows the real sign-in, shared-World, and connected-assistant pilot.
+
 Production kernel changes and live service credentials are out of scope for this work until separately approved.
