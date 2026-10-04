@@ -8,6 +8,7 @@ import { getUser } from "@/lib/supabase/server";
 import { IDEA_RELATION_KINDS, IDEA_STATUSES, readIdeaGraph, type IdeaRecord, type IdeaRelationKind, type IdeaStatus } from "@/lib/world/ideas";
 import { loadCreativeWorld } from "@/lib/world/creative";
 import { createIdeaAction, relateIdeaAction, updateIdeaStatusAction } from "./actions";
+import { IdeaExpansion } from "./expansion";
 
 const words = (value: string) => value.replaceAll("_", " ");
 const relationTitles: Record<IdeaRelationKind, string> = {
@@ -47,6 +48,8 @@ function IdeaCard({ idea, ideas, worldId, relations }: {
           {idea.openQuestions.length > 0 && <div><p className={label}>Open questions</p><ul className="mt-1 list-disc pl-4 text-xs leading-5 text-muted">{idea.openQuestions.map((item, i) => <li key={i}>{item}</li>)}</ul></div>}
         </div>
       )}
+
+      <IdeaExpansion worldId={worldId} ideaId={idea.id} />
 
       {related.length > 0 && (
         <div className="border-t border-line pt-3">

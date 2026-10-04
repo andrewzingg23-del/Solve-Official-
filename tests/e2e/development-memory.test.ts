@@ -92,6 +92,22 @@ it("stores ideas, typed lineage and status history through the governed World ke
   assert.ok(history.some((event) => event.type === "kernel.entity.created" && event.actor_id === aliceId));
   assert.ok(history.filter((event) => event.type === "kernel.entity.updated").length >= 2, "status changes are versioned kernel events");
 
+  const expansion = await createIdea(alice, {
+    scope: world.scope,
+    requestId: "accepted-expansion",
+    title: "Keep source lineage",
+    description: "An accepted model draft becomes a proposed idea.",
+    origin: { kind: "assistant_expansion", model: "test-model", parentIdeaId: root },
+  });
+  const afterExpansion = await readIdeaGraph(alice, world.scope);
+  assert.equal(afterExpansion.ideas.find((idea) => idea.id === expansion)?.status, "proposed");
+  assert.deepEqual(afterExpansion.ideas.find((idea) => idea.id === expansion)?.origin, {
+    kind: "assistant_expansion",
+    model: "test-model",
+    parentIdeaId: root,
+  });
+  assert.ok(afterExpansion.links.some((link) => link.kind === "idea_derived_from" && link.fromId === expansion && link.toId === root));
+
   await assert.rejects(readIdeaGraph(bob, world.scope), (error: unknown) => error instanceof KernelError && error.name === "forbidden");
 });
 

@@ -35,6 +35,7 @@ export type IdeaRecord = {
   openQuestions: string[];
   version: number;
   updatedAt: string;
+  origin?: { kind: "assistant_expansion"; model: string; parentIdeaId: string };
 };
 
 export type IdeaLink = {
@@ -98,6 +99,12 @@ function asIdea(entity: WorldEntity): IdeaRecord | null {
     openQuestions: Array.isArray(a.openQuestions) ? a.openQuestions.filter((x): x is string => typeof x === "string") : [],
     version: entity.version,
     updatedAt: entity.updated_at,
+    origin: a.origin && typeof a.origin === "object" &&
+      (a.origin as Record<string, unknown>).kind === "assistant_expansion" &&
+      typeof (a.origin as Record<string, unknown>).model === "string" &&
+      typeof (a.origin as Record<string, unknown>).parentIdeaId === "string"
+      ? a.origin as IdeaRecord["origin"]
+      : undefined,
   };
 }
 
@@ -138,6 +145,7 @@ export async function createIdea(kernel: Kernel, input: {
   description: string;
   assumptions?: string[];
   openQuestions?: string[];
+  origin?: { kind: "assistant_expansion"; model: string; parentIdeaId: string };
 }): Promise<string> {
   const scope = requireScope(input.scope);
   const title = input.title.trim();
@@ -151,6 +159,18 @@ export async function createIdea(kernel: Kernel, input: {
     entity.kind === "world" && entity.attributes.worldId === worldId && entity.scope === scope
   );
   if (!worldExists) throw new KernelError("not_found", "World not found in this scope", "");
+  let origin: { kind: "assistant_expansion"; model: string; parentIdeaId: string } | undefined;
+  if (input.origin) {
+    const model = input.origin.model.trim();
+    if (input.origin.kind !== "assistant_expansion" || !UUID.test(input.origin.parentIdeaId) || !model || model.length > 120) {
+      throw new KernelError("invalid", "Invalid idea source", "");
+    }
+    const graph = await readIdeaGraph(kernel, scope);
+    if (!graph.ideas.some((idea) => idea.id === input.origin!.parentIdeaId)) {
+      throw new KernelError("not_found", "Source idea not found in this World", "");
+    }
+    origin = { kind: "assistant_expansion", model, parentIdeaId: input.origin.parentIdeaId };
+  }
   const actor = await kernel.whoami();
   const id = await kernel.upsertEntity({
     kind: "document",
@@ -161,7 +181,8 @@ export async function createIdea(kernel: Kernel, input: {
       documentType: "idea",
       schemaVersion: 1,
       description: input.description,
-      status: "captured",
+      status: origin ? "proposed" : "captured",
+      ...(origin ? { origin } : {}),
       assumptions: cleanList(input.assumptions, "Assumptions"),
       openQuestions: cleanList(input.openQuestions, "Open questions"),
       createdBy: actor.actor_id,
@@ -169,6 +190,15 @@ export async function createIdea(kernel: Kernel, input: {
     visibility: "members",
     idempotencyKey: requestKey(input.requestId, "create"),
   });
+  if (origin) {
+    await relateIdeas(kernel, {
+      scope,
+      fromId: id,
+      toId: origin.parentIdeaId,
+      kind: "idea_derived_from",
+      requestId: `${input.requestId.slice(0, 80)}:derived`,
+    });
+  }
   return id;
 }
 

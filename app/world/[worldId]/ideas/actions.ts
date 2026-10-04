@@ -20,6 +20,9 @@ async function requireSignedIn(worldId: string) {
 
 export async function createIdeaAction(worldId: string, formData: FormData) {
   await requireSignedIn(worldId);
+  const sourceIdeaId = text(formData.get("sourceIdeaId"));
+  const sourceModel = text(formData.get("sourceModel"));
+  if (Boolean(sourceIdeaId) !== Boolean(sourceModel)) fail(worldId, "input");
   try {
     await createIdea(await getKernel(), {
       scope: `world:${worldId}`,
@@ -28,6 +31,9 @@ export async function createIdeaAction(worldId: string, formData: FormData) {
       description: text(formData.get("description")),
       assumptions: list(text(formData.get("assumptions"))),
       openQuestions: list(text(formData.get("openQuestions"))),
+      ...(sourceIdeaId ? {
+        origin: { kind: "assistant_expansion", model: sourceModel, parentIdeaId: sourceIdeaId },
+      } : {}),
     });
   } catch (error) {
     fail(worldId, error instanceof KernelError && error.name === "forbidden" ? "access" : error instanceof KernelError && error.name === "invalid" ? "input" : "save");
