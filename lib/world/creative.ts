@@ -529,8 +529,8 @@ export async function updateCreativeResourceEntry(kernel: Kernel, input: UpdateC
   ) throw new KernelError("not_found", "Resource entry not found in this World", "");
   const actor = await kernel.whoami();
   const attribution = await resourceAttributionByEntity(kernel, scope, [existing]).then((map) => map.get(existing.entity_id));
-  if (attribution?.reportedBy !== actor.actor_id) {
-    throw new KernelError("forbidden", "Only the person who reported this entry can revise or withdraw it", "");
+  if (attribution?.reportedBy !== actor.actor_id && attribution?.reportedOnBehalfOf !== actor.actor_id) {
+    throw new KernelError("forbidden", "Only the original reporter or person it acted for can revise or withdraw this entry", "");
   }
   const title = requireTitle(input.title);
   const description = requireBody(input.description);
