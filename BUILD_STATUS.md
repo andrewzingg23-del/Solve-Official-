@@ -148,3 +148,10 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
   - The bot suite passes 38/38; typecheck, lint (one existing warning) and build are clean.
   - Chromium screenshots at desktop and 390-px phone width found a real bug: a non-wrapping chip row stretched the page to about 990 px on phones. It was fixed and re-checked: the page is 390 px wide, with no console errors.
 - **Not yet:** onboarding at sign-on, which should build on the World entrance's "Who should represent you" step (Codex), and "let your AI design it".
+- **Human | Machine (Claude, founder's inspiration references).** The agent stage has a basement.studio-style Human | Machine toggle. Machine draws the bot as a living particle cloud in its own colors, wired to You, its assistants, its Worlds and its sealed memory. Links it can write through flow; read-only links stay dim and dashed. Below it sit readouts in the spirit of the "bot swarm" dashboard reference:
+  - access ledger;
+  - blast radius (memory, Worlds add/read, money none, access none);
+  - 14-day activity from real memory timestamps;
+  - an audit count of the bot's kernel records.
+
+  Every node and number comes from `lib/bot/machine.ts` over real records. Signed out, it shows only You and an empty memory. Tests: machine data, node caps and readouts in `tests/bot/agent-screen.test.ts`; bot suite 39/39. Chromium screenshots at desktop and phone width: no overflow, no console errors (a temporary preview page, deleted before commit).

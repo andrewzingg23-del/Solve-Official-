@@ -81,4 +81,4 @@ The server's `initialize` instructions tell the assistant to speak as the bot (f
 
 Tests live in `tests/bot/`. They run on the embedded kernel, and the connector tests use fake tokens and no network.
 
-**Agent screen (2026-10-04).** `/bot` is a HUD command center with seven customization tabs (Form, Face, Finish, Color, Gear, Motion, Personality), ten state previews and an agent-contract card read from real records. The avatar stays code-drawn (founder's pick), with four finishes, brows, marks, motion energy and idle styles.
+**Agent screen (2026-10-04).** `/bot` is a HUD command center with seven customization tabs (Form, Face, Finish, Color, Gear, Motion, Personality), ten state previews and an agent-contract card read from real records. The avatar stays code-drawn (founder's pick), with four finishes, brows, marks, motion energy and idle styles. A Human | Machine toggle shows the bot's reach as a live network with access, reach, activity and audit readouts, all from real records.

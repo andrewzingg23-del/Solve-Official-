@@ -1,18 +1,24 @@
 "use client";
 
 // The bot's stage: a HUD around the character, with the brand's vignette and grain and a plain
-// readout of its state and build. The HUD is interface, so it keeps the brand's single cyan; the
-// character inside keeps its own colors.
+// readout of its state and build. A Human | Machine toggle flips it to the machine underneath: what
+// the bot can reach, from real records. The HUD is interface, so it keeps the brand's single cyan;
+// the character inside keeps its own colors.
+import { useState } from "react";
+import type { MachineData } from "@/lib/bot/machine";
 import type { Persona } from "@/lib/bot/persona";
 import { BotCharacter, STATE_LABELS, type BotState } from "./character";
+import { MachineReadouts, MachineView } from "./machine-view";
 
 const GRAIN = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='.55'/></svg>")`;
 
 const QUIET: BotState[] = ["unavailable", "sleeping"];
 
-export function AgentStage({ persona, state, size = 260, note }: { persona: Persona; state: BotState; size?: number; note?: string }) {
+export function AgentStage({ persona, state, size = 260, note, machine }: { persona: Persona; state: BotState; size?: number; note?: string; machine?: MachineData }) {
   const ticks = Array.from({ length: 72 }, (_, i) => i);
   const live = !QUIET.includes(state);
+  const [view, setView] = useState<"human" | "machine">("human");
+  const showMachine = view === "machine" && machine;
   return (
     <div className="relative isolate flex flex-col items-center overflow-hidden rounded-md border border-line bg-[#03060b] px-4 pb-5 pt-12">
       <style>{`
@@ -41,36 +47,58 @@ export function AgentStage({ persona, state, size = 260, note }: { persona: Pers
         </span>
       </div>
 
-      <div className="relative grid aspect-square w-full place-items-center" style={{ maxWidth: size * 1.28 }}>
-        <svg aria-hidden viewBox="0 0 200 200" className="absolute inset-0 h-full w-full">
-          <g className="sovstage-spin" stroke="var(--accent)" fill="none">
-            {ticks.map((i) => (
-              <line key={i} x1="100" y1="3" x2="100" y2={i % 6 === 0 ? 10 : 6} strokeOpacity={i % 6 === 0 ? 0.45 : 0.18} strokeWidth={i % 6 === 0 ? 0.8 : 0.5} transform={`rotate(${i * 5} 100 100)`} />
-            ))}
-          </g>
-          <circle cx="100" cy="100" r="86" fill="none" stroke="var(--accent)" strokeOpacity={0.14} strokeWidth={0.6} strokeDasharray="1 3" className="sovstage-spin-r" />
-          <circle cx="100" cy="100" r="78" fill="none" stroke="var(--line)" strokeWidth={0.6} />
-          {live && (
-            <g className="sovstage-sweep">
-              <path d="M100 22 A78 78 0 0 1 155 45" fill="none" stroke="var(--accent)" strokeOpacity={0.6} strokeWidth={1.2} strokeLinecap="round" />
+      {showMachine ? (
+        <MachineView persona={persona} state={state} machine={machine} size={size} />
+      ) : (
+        <div className="relative grid aspect-square w-full place-items-center" style={{ maxWidth: size * 1.28 }}>
+          <svg aria-hidden viewBox="0 0 200 200" className="absolute inset-0 h-full w-full">
+            <g className="sovstage-spin" stroke="var(--accent)" fill="none">
+              {ticks.map((i) => (
+                <line key={i} x1="100" y1="3" x2="100" y2={i % 6 === 0 ? 10 : 6} strokeOpacity={i % 6 === 0 ? 0.45 : 0.18} strokeWidth={i % 6 === 0 ? 0.8 : 0.5} transform={`rotate(${i * 5} 100 100)`} />
+              ))}
             </g>
-          )}
-        </svg>
-        <BotCharacter persona={persona} state={state} size={size} className="relative h-auto w-[78%]" />
-      </div>
-
-      <div className="mt-1 grid w-full max-w-md grid-cols-3 gap-px overflow-hidden rounded-md border border-line bg-line text-center text-[10px] uppercase tracking-[0.22em]">
-        {[
-          ["Finish", persona.material],
-          ["Motion", persona.motion.idle],
-          ["Energy", String(persona.motion.energy)],
-        ].map(([k, v]) => (
-          <div key={k} className="flex min-w-0 flex-col gap-1 bg-[#03060b] px-2 py-2">
-            <span className="truncate text-muted">{k}</span>
-            <span className="truncate tabular-nums text-foreground">{v}</span>
-          </div>
-        ))}
-      </div>
+            <circle cx="100" cy="100" r="86" fill="none" stroke="var(--accent)" strokeOpacity={0.14} strokeWidth={0.6} strokeDasharray="1 3" className="sovstage-spin-r" />
+            <circle cx="100" cy="100" r="78" fill="none" stroke="var(--line)" strokeWidth={0.6} />
+            {live && (
+              <g className="sovstage-sweep">
+                <path d="M100 22 A78 78 0 0 1 155 45" fill="none" stroke="var(--accent)" strokeOpacity={0.6} strokeWidth={1.2} strokeLinecap="round" />
+              </g>
+            )}
+          </svg>
+          <BotCharacter persona={persona} state={state} size={size} className="relative h-auto w-[78%]" />
+        </div>
+      )}
+      {machine ? (
+        <div className="my-3 flex rounded-full border border-line p-0.5 text-[10px] font-semibold uppercase tracking-[0.24em]" role="group" aria-label="Stage view">
+          {(["human", "machine"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setView(v)}
+              aria-pressed={view === v}
+              className={`rounded-full px-3.5 py-1 uppercase tracking-[0.24em] transition-colors duration-300 ease-calm ${view === v ? "bg-accent text-background" : "text-muted hover:text-foreground"}`}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {showMachine ? (
+        <MachineReadouts machine={machine} />
+      ) : (
+        <div className="mt-1 grid w-full max-w-md grid-cols-3 gap-px overflow-hidden rounded-md border border-line bg-line text-center text-[10px] uppercase tracking-[0.22em]">
+          {[
+            ["Finish", persona.material],
+            ["Motion", persona.motion.idle],
+            ["Energy", String(persona.motion.energy)],
+          ].map(([k, v]) => (
+            <div key={k} className="flex min-w-0 flex-col gap-1 bg-[#03060b] px-2 py-2">
+              <span className="truncate text-muted">{k}</span>
+              <span className="truncate tabular-nums text-foreground">{v}</span>
+            </div>
+          ))}
+        </div>
+      )}
       {note ? <p className="mt-3 text-center text-[11px] text-muted">{note}</p> : null}
     </div>
   );

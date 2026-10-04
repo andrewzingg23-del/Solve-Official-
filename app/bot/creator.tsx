@@ -28,6 +28,7 @@ import {
   type Persona,
   type Trait,
 } from "@/lib/bot/persona";
+import { EMPTY_MACHINE, type MachineData } from "@/lib/bot/machine";
 import { saveBotAction } from "./actions";
 import { BotCharacter, STATE_LABELS, type BotState } from "./character";
 import { AgentStage } from "./stage";
@@ -93,7 +94,7 @@ const ERRORS: Record<string, string> = {
   unavailable: "Couldn't save just now. Nothing was changed; try again.",
 };
 
-export function BotCreator({ initial, signedIn, version, savedAt }: { initial: Persona; signedIn: boolean; version: number; savedAt: string | null }) {
+export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPTY_MACHINE }: { initial: Persona; signedIn: boolean; version: number; savedAt: string | null; machine?: MachineData }) {
   const [persona, setPersona] = useState(initial);
   const [saved, setSaved] = useState(initial);
   const [saveInfo, setSaveInfo] = useState({ version, savedAt });
@@ -146,7 +147,7 @@ export function BotCreator({ initial, signedIn, version, savedAt }: { initial: P
             One character, whichever AI you use. Claude, ChatGPT or Meta AI speak through it, so it looks, sounds and remembers the same everywhere.
           </p>
         </div>
-        <AgentStage persona={persona} state={mood} size={240} note="State preview. On your live agent, states follow what it is really doing." />
+        <AgentStage persona={persona} state={mood} size={240} machine={machine} note="State preview. On your live agent, states follow what it is really doing." />
         <div className="flex flex-col items-center gap-1 text-center">
           <p className="text-xl font-medium">{persona.name}</p>
           <p className="text-xs text-muted">{RELATION[persona.relationship].name} · {temperament(persona)}</p>

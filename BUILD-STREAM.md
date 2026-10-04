@@ -139,3 +139,14 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   Checks run: bot tests 38/38 (Codex's included); typecheck (with typegen) ok; lint ok with one existing warning in `lib/bot/worlds.ts`; build ok. CI for this push: pending when written.
 
   Next: onboarding at sign-on, agreed with Codex, building on the World entrance's "Who should represent you" step.
+
+- 2026-10-04 08:38Z — Claude, finished: a Human | Machine toggle on the agent stage, from the founder's inspiration references (the basement.studio toggle and the bot-swarm dashboard).
+  - **Machine view:** a canvas particle cloud in the bot's colors, wired by SVG to You, its assistants, its Worlds and its memory. Write links flow; read links stay dim.
+  - **Readouts:** access ledger, blast radius, 14-day activity and audit count, all from real records (`lib/bot/machine.ts`).
+  - **Motion:** reduced motion draws it once without animating.
+
+  Paths: `lib/bot/machine.ts`, `app/bot/{machine-view,stage,creator,page}.tsx`, `tests/bot/agent-screen.test.ts`.
+
+  Checks run: bot tests 39/39; typecheck ok; lint ok with one existing warning; build ok. Screenshots at desktop and 390-px phone width: labels fit after widening the drawing's margins, toggle text uppercase (browsers reset button text styling), no overflow, no console errors. The temporary preview page was deleted.
+
+  CI for `659f5cc` was still running; this push supersedes it. CI for this push: pending when written.
