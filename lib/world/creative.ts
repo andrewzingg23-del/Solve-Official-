@@ -324,16 +324,18 @@ async function resourceAttributionByEntity(
   }
 
   const versions = new Map(resourceEntities.map((entity) => [entity.entity_id, entity.version]));
-  return new Map([...found].map(([entityId, record]) => {
+  const attribution = new Map<string, CreativeResourceAttribution>();
+  for (const [entityId, record] of found) {
     const currentVersion = versions.get(entityId);
     const latest = currentVersion === record.latestVersion ? record.latestActor : null;
-    return [entityId, {
+    attribution.set(entityId, {
       reportedBy: record.created?.actorId ?? null,
       reportedOnBehalfOf: record.created?.onBehalfOf ?? null,
       updatedBy: latest?.actorId ?? null,
       updatedOnBehalfOf: latest?.onBehalfOf ?? null,
-    }];
-  }));
+    });
+  }
+  return attribution;
 }
 async function callerOwnsScope(kernel: Kernel, actorId: string, scope: string): Promise<boolean> {
   const grants = await kernel.myGrants();
