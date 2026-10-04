@@ -5,6 +5,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { claudeReasoner, gatewayReasoner, GATEWAY_URL, type Reasoner } from "./claude";
 
 type ReasoningEnvironment = {
+  NODE_ENV?: string;
   ANTHROPIC_API_KEY?: string;
   AI_GATEWAY_API_KEY?: string;
   VERCEL_OIDC_TOKEN?: string;
