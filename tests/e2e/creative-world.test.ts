@@ -150,9 +150,19 @@ it("maps project offers and needs with provenance, idempotency, privacy, and aut
   };
   const offerId = await createCreativeResourceEntry(alice, offerInput);
   const afterOffer = await alice.readEvents(world.scope, { limit: 30 });
+  await assert.rejects(
+    createCreativeResourceEntry(alice, {
+      ...offerInput,
+      requestId: "unsafe-resource-source",
+      sourceUrl: "javascript:alert(1)",
+    }),
+    (error: unknown) => error instanceof KernelError && error.name === "invalid",
+    "a source pointer cannot use a script URL",
+  );
   assert.equal(await createCreativeResourceEntry(alice, offerInput), offerId, "retry returns the same offer");
   assert.equal((await alice.readEvents(world.scope, { limit: 30 })).length, afterOffer.length, "retry creates no duplicate entity or relation");
 
+  await alice.issueGrant({ grantee: bobId, capability: "kernel.read", scope: world.scope });
   await alice.issueGrant({ grantee: bobId, capability: "world.entity.write", scope: world.scope });
   const needId = await createCreativeResourceEntry(bob, {
     scope: world.scope,
@@ -206,8 +216,10 @@ it("maps project offers and needs with provenance, idempotency, privacy, and aut
   assert.equal(revised?.status, "withdrawn");
   assert.equal(revised?.reportedBy, bobId, "revision preserves the original reporter");
   assert.ok((await alice.readEvents(world.scope, { limit: 50 })).some((event) => event.type === "kernel.entity.updated" && event.actor_id === bobId));
+  const stranger = kernelClient(localSupabase(db, user("auth:resource-stranger")));
+  await stranger.register("Stranger");
   await assert.rejects(
-    loadCreativeWorld(kernelClient(localSupabase(db, user("auth:resource-stranger"))), resourceWorldId),
+    loadCreativeWorld(stranger, resourceWorldId),
     denied,
     "an unrelated person cannot read the resource map",
   );
