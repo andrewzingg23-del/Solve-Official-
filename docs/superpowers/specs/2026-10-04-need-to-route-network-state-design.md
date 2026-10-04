@@ -1,6 +1,6 @@
 # Need-to-Route: Individual Value and Network-State Growth
 
-Status: Founder-approved direction; design submitted for review. No product code is included in this change.
+Status: Founder-directed product thesis; goal-first World creation is implemented on the working branch. Resource coordination is the next build slice.
 
 Date: 2026-10-04
 Base reviewed: claude/keen-cerf-tpd7io
@@ -49,6 +49,17 @@ The system returns a small number of actionable routes, explains why each fits, 
 The route is a product object that can be tested and improved. Needs and experience are owner-controlled context; they are not hidden advertising attributes or global status scores.
 
 When no credible route exists, make the gap useful: tell the person what is missing, offer a known workaround or human handoff if one exists, and ask before sharing the need as a product signal. Explore existing providers and integrations before proposing new software. Treat each untried route as a hypothesis until a small, honest test produces evidence.
+
+A project is a coordination problem over scarce inputs, not just a list of tasks. SOV should help people inventory and mobilize time, skill, ideas, capital, labor, and relevant tools/materials/information. It must keep these states distinct:
+- an owner-described resource or need;
+- a source-backed fact or offer;
+- an AI-generated proposal;
+- a person-accepted commitment;
+- delivery evidence and an observed outcome.
+
+The initial tool should make the gap visible without pretending to source or reserve resources it cannot access. A resource entry records its category, who supplied it, the status and uncertainty, constraints/time window, source or evidence when available, and what would count as delivery. Agents may draft or connect routes within grants; only the responsible person can accept a commitment or authorize a consequential action. Keep the same workflow reusable across personal, interpersonal, business, and community projects.
+
+Trust should increase throughput: collaborators can act on a shared, current, attributable record instead of repeatedly checking who said what, who agreed, and whether the work happened. Measure the time from need to first useful commitment and from commitment to evidenced delivery, along with reversals, unresolved dependencies, and support effort.
 
 
 ## 5. User journey
