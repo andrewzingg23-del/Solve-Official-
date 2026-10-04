@@ -27,6 +27,15 @@ const LIVE = {
   actors: 1,
 };
 
+// What v4 produced on the isolated Supabase staging copy (taeikshnbcsjlgbattyp) on 2026-10-04, the
+// same as this local rehearsal. Any edit to v4 after that rehearsal fails here.
+const AFTER_V4 = {
+  kernel: { functions: 75, fingerprint: "fdabdcf00e34924fff96fa45fdad448f" },
+  kernel_api: { functions: 64, fingerprint: "521177daffbd690407160768dfa6b9dd" },
+  columns: { h: "b910f3ed788243e8fcd4a8004ce32033", tables: 36 },
+  constraints: "513b75b2fd8a7244aa53d11ffe7f8eb1",
+};
+
 const FUNCTIONS = `select n.nspname as schema, count(*)::int as functions,
   md5(string_agg(p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' || p.prosecdef::text || coalesce(array_to_string(p.proconfig, ','), '') || p.prosrc, '|' order by p.proname, pg_get_function_identity_arguments(p.oid))) as fingerprint
   from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname in ('kernel', 'kernel_api') group by n.nspname order by n.nspname`;
@@ -99,6 +108,14 @@ describe("kernel v4 staging rehearsal", { skip: url ? false : "needs a Supabase-
     const seconds = (Date.now() - started) / 1000;
     const after = { functions: await k.owner(FUNCTIONS), columns: (await k.owner(COLUMNS))[0], constraints: (await k.owner(CONSTRAINTS))[0].h };
     console.log(`v4 applied in ${seconds.toFixed(2)}s; post-v4 fingerprints: ${JSON.stringify(after)}`);
+    assert.deepEqual(after, {
+      functions: [
+        { schema: "kernel", ...AFTER_V4.kernel },
+        { schema: "kernel_api", ...AFTER_V4.kernel_api },
+      ],
+      columns: AFTER_V4.columns,
+      constraints: AFTER_V4.constraints,
+    });
     assert.ok(seconds < 60, "well inside the store's statement limits");
 
     // History survives: the genesis event is untouched and the chain verifies across the boundary.
