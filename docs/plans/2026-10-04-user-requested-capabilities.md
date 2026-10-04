@@ -2,7 +2,7 @@
 
 Date: 2026-10-04
 Branch: `claude/keen-cerf-tpd7io`
-Status: proposed product workstream; not implemented as a user-facing feature
+Status: first user-facing slice implemented; general capability building remains proposed
 
 ## Purpose
 
@@ -15,7 +15,7 @@ This implements the Vision Canon's “stable master code + evolving Sector Code�
 - The vision already describes user-created Sector Packs and Forge discovering recurring gaps and proposing tested mechanics.
 - The current creative World supports durable text artifacts and history. Connected bots can start Worlds and add or revise text pieces with scoped, expiring grants.
 - The Arcadia self-improvement proof creates and reviews a narrow read-only diagnostic. It validates part of the governance pattern; it is not a general capability builder.
-- Users cannot yet ask for a new capability and have Sovereign build, test, install, or share it.
+- Connected assistants can record a structured capability proposal in an authorized World; the draft cannot execute, contact providers, grant access, or perform external actions.\n- The connector can learn owner-approved business context in small sections, including operations, equipment, economics and measures.\n- `create_pixel_art` accepts a validated 1–32 pixel grid and palette, then saves a versioned artifact the World canvas renders. The connected model supplies the grid; the tool does not run an image model or stream generation.\n- Users still cannot ask Sovereign to build, sandbox-test, activate, revoke or share a general new capability.
 
 ## Product behavior
 
