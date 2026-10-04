@@ -20,35 +20,32 @@ SOV ID keeps human and agent identity, ownership, and grants clear. Currency rai
 - The product gap is collaborative authoring: there is no staging-backed shared canvas where multiple humans and external agents can make visible, persistent changes together.
 - The exact local snapshot matches all 164 GitHub blob hashes. Typecheck, lint, build, and the isolated kernel test pass. One local npm test run alongside typecheck and lint exited nonzero at file level; the latest branch CI is the full-suite green gate.
 
-## Provisional page and surface outline
+## Page and surface outline
 
-Keep one World as the product. These are entry points and contextual surfaces, not a menu of disconnected apps.
+Keep the World at the center. Most destinations are views or contextual tools inside it, not standalone pages.
 
-1. **World arrival — /**  
-   First visit: the existing frontier-to-Earth entry leads into the user's World and invites creation. Returning visit: resume the last active World quickly. Horizon stays available as a prompt, not a required workflow. No dashboard tile grid.
+1. **World entrance — `/`**  
+   Keep the existing spatial World as the entry point. Return to the active World quickly; offer creation or joining from there when durable World membership is available. Do not insert a dashboard or social feed.
 
-2. **Creative World — /world/[worldId]**  
-   The main open canvas. A creator can add, arrange, revise, and connect general objects and artifacts. The representation can be spatial 2D or 3D as the work needs; an empty canvas is a valid start. Preserve the existing Earth/World visual grammar.
+2. **The World — current root shell, future persistent World route**  
+   One underlying World can be viewed spatially, as a canvas, or in 3D when the work needs it. The current build is the Arcadia Earth prototype; a truly open, kernel-backed creative canvas is still future work. Starting blank with optional examples is the default.
 
-3. **Context inspector — contextual side sheet**  
-   Selecting a thing reveals what it is, its relationships, source, status, and editable properties. Changes show whether they are drafts, proposals, applied edits, or verified facts. Keep the main scene visible.
+3. **Everyday views inside the World**  
+   Keep four wayfinding choices visible: **World** (spatial view), **Path** (what is moving or blocked), **People** (people and agents), and **History** (what changed). They are projections of the same state.
 
-4. **People and agents — contextual panel**  
-   Show who is present, which agent belongs to whom, what each can see/do, and what they are contributing. Invitations and grants are explicit. Do not turn activity into a feed.
+4. **Specialist views under More**  
+   **Authority**, **Value**, **Proof**, and **You** remain available without crowding the first screen.
 
-5. **Changes and evidence — TIME/PROOF lenses**  
-   Review who changed what, why, with what evidence, and whether it can be undone or needs approval. The kernel stays the record of consequential changes.
+5. **Contextual tools, not feed pages**  
+   Selection opens an inspector. Presence and invitations belong beside the shared work. Changes and evidence stay available through History and Proof. Connections to files, tools, services, and outside agents begin from the World that needs them. The current prototype does not yet implement live presence, invitations, or generic shared authoring.
 
-6. **Connections — contextual action from the World**  
-   Bring in files, tools, services, data, models, or outside agents when a creation needs them. Show scope, owner, permissions, provenance, and consequences. No broad app marketplace in the first slice.
+6. **Identity and account — existing `/account`**  
+   SOV ID, human/agent distinction, grants, and memory controls. Reachable when needed; secondary to the World.
 
-7. **Identity and account — existing /account**  
-   SOV ID, human/agent distinction, active grants, memory and representation controls. Keep this out of the way until needed.
+7. **Money — existing `/money`, separate and gated**  
+   Economic tools remain separate. No currency, purchase, or token action is required to create.
 
-8. **Money — existing /money, separate and gated**  
-   Economic tools remain available for real payment work, but never interrupt ordinary creation.
-
-On phone, the canvas stays primary with reachable contextual sheets. On laptop, the same World can sit beside richer inspector and collaboration surfaces. Do not shrink a desktop dashboard onto a phone.
+On phone, keep the World full-screen, use reachable sheets, and show the Arcadia sandbox label. On laptop, offer wider side panels without turning the product into a dashboard.
 
 ## Build sequence
 
@@ -80,13 +77,11 @@ Use the app with two people and their agents on one actual project. Capture one 
 - No payment, token, marketplace, or production migration is needed to create.
 - The World remains legible on phone and laptop, with no social feed or marker clutter.
 
-## Current gates and questions
+## Current gates and accepted defaults
 
-The staging v4 migration is applied and the event chain is healthy. Staging app sign-in and the collaborative canvas are not yet verified. Production stays untouched until a separate founder decision.
+The founder said “Go” after review of the recommended page structure. Use these working defaults:
 
-Questions that affect the first page slice:
-
-1. **First canvas:** should first-time creation open on a truly blank canvas, with optional starter examples, or show one default example World that can be reshaped? Recommended default: blank canvas plus optional examples.
-2. **First outside agent:** should we optimize first for your brother connecting the AI he already uses through a provider-neutral MCP/API, or start with a built-in SOV companion and add external agents next? Recommended default: provider-neutral connection first, so the experience solves the cross-agent handoff problem.
-
-I can proceed with those defaults unless you steer them differently.
+- New creative Worlds can start blank, with optional examples.
+- Keep one World model with multiple views. Preserve the spatial Earth experience and add canvas or 3D representations as useful; do not require a map or a 3D scene for every creation.
+- Connect an existing outside agent through a provider-neutral API/MCP before prioritizing a built-in companion for shared creative work.
+- Keep production untouched. The verified v4 database is staging; sign-in and the staging-backed authoring path remain to be demonstrated.

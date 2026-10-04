@@ -1,6 +1,6 @@
 # BUILD_STATUS
 
-Updated 2026-10-03. Branch `claude/keen-cerf-tpd7io`.
+Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
 
 ## Current Checkpoint — 2026-10-04
 
@@ -11,6 +11,8 @@ Updated 2026-10-03. Branch `claude/keen-cerf-tpd7io`.
 - All 164 tracked files in the local test snapshot match GitHub blob hashes. Typecheck, lint, build, and isolated tests/kernel/kernel.test.ts (1/1) pass.
 - One npm test invocation run concurrently with typecheck/lint exited nonzero at file level (10 of 23 files). The isolated kernel test passes; this local full-suite attempt is not reported green. The exact code commit's GitHub CI remains green.
 - Product gap: the root app is an Arcadia-backed World prototype, not a staging-backed shared canvas. Multi-person real-time authoring and connecting external agents to one World remain unbuilt.
+- World-shell wayfinding slice: the existing eight lenses are grouped into four primary views (`World`, `Path`, `People`, `History`) and four specialist views under `More`; the sandbox label is visible on mobile. This reorganizes existing views only and does not add real-time presence or shared authoring.
+- Checks for this UI slice: `npm run lint`, `npm run typecheck`, and `npm run build` passed locally. The sandbox initially blocked the build's `tsx` IPC socket; a permitted retry passed.
 - Plan and page outline: docs/plans/2026-10-04-open-creative-world.md.
 
 ## DONE
