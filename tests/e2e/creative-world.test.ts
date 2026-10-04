@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { it } from "node:test";
 import { KernelError, kernelClient } from "../../lib/kernel/client";
 import { localSupabase } from "../../lib/kernel/local";
-import { createCreativeArtifact, createCreativeWorld, listCreativeWorlds, loadCreativeWorld, updateCreativeArtifact } from "../../lib/world/creative";
+import { createCreativeArtifact, createCreativeResourceEntry, createCreativeWorld, listCreativeWorlds, loadCreativeWorld, updateCreativeArtifact, updateCreativeResourceEntry } from "../../lib/world/creative";
 import { createKernelDb, user } from "../kernel/harness";
 
 const worldId = "00000000-0000-4000-8000-000000000101";
@@ -126,4 +126,89 @@ it("starts a private World with its goal as the first piece and retries without 
   assert.deepEqual(retried, world);
   assert.equal(afterRetry.artifacts.length, 1, "the same goal request creates one first piece");
   assert.equal((await alice.readEvents(world.scope, { limit: 20 })).length, firstEvents.length, "retry adds no duplicate World or goal events");
+});
+
+it("maps project offers and needs with provenance, idempotency, privacy, and author-owned revisions", async () => {
+  const db = await createKernelDb();
+  const alice = kernelClient(localSupabase(db, user("auth:resource-alice")));
+  const bob = kernelClient(localSupabase(db, user("auth:resource-bob")));
+  const aliceId = await alice.register("Alice");
+  const bobId = await bob.register("Bob");
+  const resourceWorldId = "00000000-0000-4000-8000-000000000103";
+  const world = await createCreativeWorld(alice, { worldId: resourceWorldId, title: "Repair the community workshop" });
+
+  const offerInput = {
+    scope: world.scope,
+    worldEntityId: world.entityId,
+    requestId: "resource-offer-1",
+    entryType: "offer" as const,
+    category: "skill" as const,
+    title: "CAD modeling help",
+    description: "I can review and adjust the replacement bracket model.",
+    timeWindow: "Four hours on Saturday",
+    sourceUrl: "https://example.com/portfolio",
+  };
+  const offerId = await createCreativeResourceEntry(alice, offerInput);
+  const afterOffer = await alice.readEvents(world.scope, { limit: 30 });
+  assert.equal(await createCreativeResourceEntry(alice, offerInput), offerId, "retry returns the same offer");
+  assert.equal((await alice.readEvents(world.scope, { limit: 30 })).length, afterOffer.length, "retry creates no duplicate entity or relation");
+
+  await alice.issueGrant({ grantee: bobId, capability: "world.entity.write", scope: world.scope });
+  const needId = await createCreativeResourceEntry(bob, {
+    scope: world.scope,
+    worldEntityId: world.entityId,
+    requestId: "resource-need-1",
+    entryType: "need",
+    category: "resource",
+    title: "Replacement filament",
+    description: "Need one spool of PETG, black, before Saturday.",
+    timeWindow: "Needed by Saturday",
+    sourceUrl: "",
+  });
+  const loaded = await loadCreativeWorld(alice, resourceWorldId);
+  const offer = loaded.resources.find((entry) => entry.entityId === offerId);
+  const need = loaded.resources.find((entry) => entry.entityId === needId);
+  assert.equal(offer?.entryType, "offer");
+  assert.equal(offer?.category, "skill");
+  assert.equal(offer?.reportedBy, aliceId);
+  assert.equal(offer?.sourceUrl, "https://example.com/portfolio");
+  assert.equal(offer?.status, "open");
+  assert.equal(need?.entryType, "need");
+  assert.equal(need?.category, "resource");
+  assert.equal(need?.reportedBy, bobId);
+  assert.equal(need?.status, "open");
+
+  await assert.rejects(
+    updateCreativeResourceEntry(alice, {
+      scope: world.scope,
+      entityId: needId,
+      requestId: "alice-revise-bob-need",
+      title: "Changed without Bob",
+      description: "A different requirement.",
+      timeWindow: "Later",
+      sourceUrl: "",
+      status: "withdrawn",
+    }),
+    denied,
+    "a World owner cannot rewrite a contributor's self-reported need",
+  );
+  await updateCreativeResourceEntry(bob, {
+    scope: world.scope,
+    entityId: needId,
+    requestId: "bob-withdraw-need",
+    title: "Replacement filament",
+    description: "No longer needed; a local shop supplied it.",
+    timeWindow: "Resolved by the contributor",
+    sourceUrl: "",
+    status: "withdrawn",
+  });
+  const revised = (await loadCreativeWorld(alice, resourceWorldId)).resources.find((entry) => entry.entityId === needId);
+  assert.equal(revised?.status, "withdrawn");
+  assert.equal(revised?.reportedBy, bobId, "revision preserves the original reporter");
+  assert.ok((await alice.readEvents(world.scope, { limit: 50 })).some((event) => event.type === "kernel.entity.updated" && event.actor_id === bobId));
+  await assert.rejects(
+    loadCreativeWorld(kernelClient(localSupabase(db, user("auth:resource-stranger"))), resourceWorldId),
+    denied,
+    "an unrelated person cannot read the resource map",
+  );
 });
