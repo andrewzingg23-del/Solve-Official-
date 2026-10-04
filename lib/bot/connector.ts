@@ -261,14 +261,15 @@ function fitRecords<T>(
     used += line.length + 1;
   }
   if (omitted) {
-    const marker = "- (" + omitted + " more " + label + " left out for length)";
-    while (lines.length && used + marker.length + 1 > budget) {
+    const markerForCount = (count: number) => "- (" + count + " more " + label + " left out for length)";
+    while (lines.length && used + markerForCount(omitted).length + 1 > budget) {
       const removed = lines.pop()!;
       included.pop();
       used -= removed.length + 1;
       omitted++;
     }
-    if (marker.length <= budget) lines.push("- (" + omitted + " more " + label + " left out for length)");
+    const marker = markerForCount(omitted);
+    if (used + marker.length <= budget) lines.push(marker);
   }
   return { lines, included, omitted };
 }
@@ -424,7 +425,8 @@ export function createConnector(s: Session) {
         };
         const pieceLine = (artifact: typeof artifacts[number]) =>
           "- [" + boundedInert(artifact.entityId, 120) + "] " + boundedInert(artifact.title, 500) +
-          ": " + boundedInert(artifact.body, 2_600);
+          ": " + boundedInert(artifact.body, 2_600) +
+          (artifact.body.length > 2_600 ? " [body shortened for context]" : "");
         const selectedResources = fitRecords(resources, resourceBudget, "resource entries", resourceLine);
         const selectedPieces = fitRecords(artifacts, pieceBudget, "pieces", pieceLine);
         const pieceText = selectedPieces.lines.join("\n") || (artifacts.length ? "" : "(empty)");
