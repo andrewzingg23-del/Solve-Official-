@@ -2,6 +2,17 @@
 
 Updated 2026-10-03. Branch `claude/keen-cerf-tpd7io`.
 
+## Current Checkpoint — 2026-10-04
+
+- Branch code at fd09d67 has green GitHub CI. A documentation-only takeover plan has since been added.
+- Supabase staging project solve-staging is active on Postgres 17. All four kernel migrations, including v4, are recorded. kernel_api.verify_chain() returned ok=true across 35 events.
+- Read-only grants check: anon lacks kernel_api usage; authenticated has kernel_api usage but no kernel schema usage or direct kernel.events SELECT; service_role also has no direct events-table SELECT.
+- Production has not received v4; no production database changes were made.
+- All 164 tracked files in the local test snapshot match GitHub blob hashes. Typecheck, lint, build, and isolated tests/kernel/kernel.test.ts (1/1) pass.
+- One npm test invocation run concurrently with typecheck/lint exited nonzero at file level (10 of 23 files). The isolated kernel test passes; this local full-suite attempt is not reported green. The exact code commit's GitHub CI remains green.
+- Product gap: the root app is an Arcadia-backed World prototype, not a staging-backed shared canvas. Multi-person real-time authoring and connecting external agents to one World remain unbuilt.
+- Plan and page outline: docs/plans/2026-10-04-open-creative-world.md.
+
 ## DONE
 
 - **Memory kernel (directive 1), code and tests.** `supabase/migrations/20261003064603_memory_kernel.sql`: events with provenance, append-only tables, SHA-256 hash chain, double-entry ledger with issuer-scoped supply, evidence with basis rules, identity-gated writes, cascading grant revocation, AI agents bounded by their owner.
@@ -17,9 +28,9 @@ Updated 2026-10-03. Branch `claude/keen-cerf-tpd7io`.
   - Kernel v3 pins the recipient's published address and accepted assets, rejects stale quotes, recipient mismatch and inputs beyond the slippage bound, and records one confirmation per payment.
   - Venues co-sign only after checking their own flows against live inventory.
 - **Kernel in the browser.** The exact kernel migrations run in the visitor's browser: PGlite served untouched from `/public/pglite` and imported natively (no bundler transform), persisted in IndexedDB. `npm run test:browser` runs the kernel tests in Chromium against it.
-- **Kernel v4 — authority, actions, World Graph (in the repo, not yet on the store).** `supabase/migrations/20261003110000_actions_and_world.sql`. Authority, not humanness, decides: `decide` returns ALLOW, REQUIRE_SECOND_AUTHORITY, REQUIRE_QUORUM, REQUIRE_DELAY, REQUIRE_CHALLENGE_WINDOW, REQUIRE_MULTISIG or DENY. One action lifecycle (proposed → authorized → enacting → completed / failed / needs_reconciliation) for every consequential write; native kinds bound to their capability; capability leases; agents spawning agents with provenance; self-expansion outside governance denied; messages and commitments with a reply-depth stop; World Graph entities and relations with truth states; tasks; avatars with representations. Kept editable until the World slice stabilizes it, then applied as a new migration.
-- **Arcadia sandbox.** A fictional test civilization (you, Bob, eight organizations at real cities with owners and agents, verified / self-reported / challenged claims, two Network States) built through the real kernel into a snapshot (`npm run arcadia`, 179 events) and booted in the browser.
-- **The World at `/`.** Cesium Earth (offline imagery, no ion), Horizon ("What do you want to make real?"), lenses SPACE / PEOPLE / POWER / FLOW / CAUSE / PROOF / TIME / SELF over one World Graph, one shared interaction context with deixis, validated presentation commands, ≤ 3 actions per answer, avatar onboarding (Be me / Create my AI / Keep it abstract). The interpreter is rule-based and says so; no AI model is connected. The car-company loop runs in the UI: intent → venture World and route (contract manufacturing ≈ $140M vs own plant ≈ $1.21B, labelled estimates) → candidates on the globe (one challenged) → "Can they make 10,000?" → DENY without a grant → you delegate contact → the supplier's agent answers from verified records → you accept under your own authority → kernel event, visible in POWER / FLOW / PROOF / SELF.
+- **Kernel v4 — authority, actions, World Graph.** Applied to isolated Supabase staging and verified there. Still unapplied to the production store; see the current checkpoint and rollout runbook.
+- **Arcadia sandbox.** A reproducible fictional test civilization (current build Arcadia/8: 389 events, 8 organizations) is generated through the real kernel into a snapshot and booted in the browser. This proves mechanics, not live user collaboration.
+- **The World at /.** Cesium Earth, Horizon, eight lenses, one World Graph, shared interaction context, validated presentation commands, and avatar onboarding. The deterministic Arcadia scenario exercises the car-company loop. A remote Claude reasoning provider is implemented behind the validated interface, but sign-in and its deployment API key are not active; the default browser experience remains the labeled rules interpreter.
 - **SOV operates SOV (first self-operation proof).** `npx tsx scripts/self-operation.ts` prints it. A payment's chain response is lost → the payment service's monitor opens an operational task (cause, inputs, risk, evidence, distinct-party verification) → its worker agent claims it under a lease limited to that task and proposes the reconciliation as a governed action (REQUIRE_SECOND_AUTHORITY) → the trust service's verifier agent re-derives the facts and authorizes → the payment service reconciles only for that authorized action, recording chain evidence → the verifier confirms the consequence and closes the task. A crash mid-enactment resumes without a second record; a revoked lease stops the worker before the consequence; a false finding is never authorized; task-limited authority ends with the task. After two such failures the operations service records a learning event and a Class A build proposal (computed class, reuse analysis, rollback). Code: `lib/ops/`.
 - **Kernel v4 hardening.** Limited leases are invisible to capability-only checks (previously a task-limited lease would have passed `record_payment` or `read_events`); task-limited authority ends when the task closes; tasks carry creator-set inputs; actions expose their task ref.
 - **Arcadia runtime foundations.** Reproducible generation (`arcadia/2`, seeded keys, semantic digest in `lib/sandbox/digest.ts`, provenance in the manifest, natural `arcadia_key`s); the snapshot is reloaded and must reproduce the digest before it ships. Spatial view model (`lib/world/spatial.ts`) and a replaceable SceneController (`lib/world/scene.ts`, Cesium in `app/world/cesium-scene.ts`) with semantic camera operations and zoom bands; selection resolves to canonical refs (shift adds to a set); no invented geography (the venture World is listed off Earth); a recorded refusal marks a supplier not reachable and an agreement turns its real logistics route emerald, each playing once from its kernel event. `npm run test:world` proves it in Chromium against the built app and records performance against `perf/world-baseline.json`.
@@ -41,24 +52,25 @@ Updated 2026-10-03. Branch `claude/keen-cerf-tpd7io`.
 
 ## DOING
 
-- **Path to one real agent task (founder, 2026-10-03).** Done: the delivery-woken answer service with bounded retries and a review hold; the v4 rehearsal on a Supabase-shaped Postgres 17 (report: `docs/plans/2026-10-03-kernel-v4-rollout.md`); task-scoped supplier-contact consent for the pilot; a reasoning model behind the provider boundary. Blocked on the founder: (1) an isolated *Supabase* staging copy needs a plan decision (free plan: no branching, both active-project slots used); (2) the go-ahead to apply v4 to the live store; (3) dashboard settings for sign-in (Auth redirect URLs, `kernel_api` exposed in the Data API); (4) `ANTHROPIC_API_KEY` in the deployment for the model. Then restore sign-in and run the narrow pilot.
+- **Open creative World collaboration (Codex takeover).** Build a premium, open-ended shared World where humans and their separately owned agents make and revise work together. First slice: one private World, two people on separate devices, scoped agent access, authored objects/artifacts, presence, attribution, durable history, and a visible handoff. No social feed, mandatory Room template, payment, or production-store change. See docs/plans/2026-10-04-open-creative-world.md.
 
 ## BLOCKED
 
-- **Sign-in on the live preview (founder).** The account exists and the link was opened, but Supabase never received the app's code exchange: the link redirected away from the app. Add `https://solve-git-claude-keen-cerf-tpd7io-sovigrn.vercel.app/**` under Authentication → URL Configuration → Redirect URLs, and set the Site URL to the same host. Also add `kernel_api` under Data API → Exposed schemas. The built-in mailer allows only a few emails per hour (429s seen); wait or add custom SMTP.
-- **Devnet.** This build sandbox's network policy blocks `api.devnet.solana.com`, so DEV-SOLVE genesis has not run on devnet. Allow the host in the environment's network settings, or run genesis from a machine with access. The RPC gateway (`lib/chain/rpc-gateway.ts`) is written but unverified.
-- **Live settlement.** The deployed app needs the Supabase secret (service-role) key, a funded devnet sponsor key and the settlement key in Vercel before it can settle on devnet.
-- **Directive 1 not moved to DONE.** Stays ACTIVE until sign-in → SOV ID → history runs on the live store. Only the founder edits directives.
+- **Staging app sign-in is not demonstrated yet.** The staged kernel is migrated and integrity-checked, but Auth redirect configuration, Data API exposure of kernel_api, and a sign-in/callback through the app need verification on staging.
+- **Real-time shared authoring is not built.** The current browser root boots Arcadia in local PGlite. Add a staging-backed path before the two-person pilot.
+- **External-agent joining is not built.** The kernel-mediated inquiry loop and HTTP supplier provider exist; a provider-neutral way for collaborators to connect their own agents to the same creative World is still required.
+- **Production rollout is separately gated.** Do not apply v4 to the production project without a separate founder go-ahead.
+- **Devnet and live settlement** are separate future work, not prerequisites for a useful shared creative canvas.
 
 ## NEXT
 
-1. Apply kernel v4 to the store; then the World runs against the live kernel for signed-in users as well as the sandbox. (Founder-visible step: it changes the live database.)
-2. World and avatar depth: embodiment (workshop scene), scoped and encrypted avatar memory, presence, return experience, a real reasoning provider behind the same validated command interface.
-3. Devnet genesis and rail bootstrap once devnet is reachable; then live settlement and payments on devnet.
-4. First Network State, State market, privacy, real-world exit, State credit, AI economic agents (constitution order).
-5. Payment router: an on-chain AMM venue (audited program) in place of RFQ makers; external aggregator adapter.
-6. Concurrency test against real Postgres; vesting and treasury programs.
-7. Whop bridge Pack (directive 3) once sign-in runs on the store.
+1. Verify staging Auth redirects and kernel_api Data API exposure; sign in through the staging app without using production credentials.
+2. Add a staging-backed World path while preserving Arcadia as an explicitly labeled sandbox.
+3. Build the first open canvas: create, place, edit, and undo general World objects/artifacts through the kernel-gated interface, preserving attribution and history.
+4. Add real-time presence and change notifications; persist every meaningful edit and refresh authorized state through the kernel API.
+5. Let a second person and each owner's agent join with separate identities and scoped grants; prove a useful task end to end.
+6. Measure one observed coordination friction, ship one small improvement, and test affected paths plus touched safety boundaries.
+7. Expand 3D authoring, outer-world integrations, and 10+ participant load as actual creators need them.
 
 ## Decisions waiting on the founder
 
