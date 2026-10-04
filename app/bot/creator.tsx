@@ -141,13 +141,13 @@ export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPT
       {/* Stage */}
       <div className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-6">
         <div className="flex flex-col gap-2">
-          <p className={label}>Your agent</p>
+          <p className={label}>Your bot</p>
           <h1 className="text-3xl font-medium leading-tight tracking-tight md:text-4xl">Make it yours.</h1>
           <p className="max-w-lg text-sm leading-6 text-muted">
             One character, whichever AI you use. Claude, ChatGPT or Meta AI speak through it, so it looks, sounds and remembers the same everywhere.
           </p>
         </div>
-        <AgentStage persona={persona} state={mood} size={240} machine={machine} note="State preview. On your live agent, states follow what it is really doing." />
+        <AgentStage persona={persona} state={mood} size={240} machine={machine} note="State preview. On your live bot, states follow what it is really doing." />
         <div className="flex flex-col items-center gap-1 text-center">
           <p className="text-xl font-medium">{persona.name}</p>
           <p className="text-xs text-muted">{RELATION[persona.relationship].name} · {temperament(persona)}</p>

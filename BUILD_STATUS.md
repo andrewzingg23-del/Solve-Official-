@@ -155,3 +155,15 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
   - an audit count of the bot's kernel records.
 
   Every node and number comes from `lib/bot/machine.ts` over real records. Signed out, it shows only You and an empty memory. Tests: machine data, node caps and readouts in `tests/bot/agent-screen.test.ts`; bot suite 39/39. Chromium screenshots at desktop and phone width: no overflow, no console errors (a temporary preview page, deleted before commit).
+
+## 2026-10-04 checkpoint — Brand direction and a calmer bot screen (Claude)
+
+- **Brand direction (proposed):** `docs/brand/2026-10-04-the-construct.md`, from the founder's conversation.
+  - **The idea:** stay in your seat; the world builds around you, and every result is real.
+  - **Grounding:** vision quotes, 2025–2026 consumer research with sources, lessons from earlier technology revolutions, the ontology as the felt reason worlds assemble, brand rules, the ad's shot list, the production pipeline and Higgsfield prompts per world.
+  - **Status:** the Build Book's "Tony Stark HUD" lock stays until the founder changes it.
+- **Founder feedback acted on:** the HUD look read as "vibe coded", so `/bot` was stripped back.
+  - The stage is a quiet room with a lit floor and horizon (the construct a World assembles on); spinning tick rings, sweep, corner brackets and grain are gone.
+  - A plain Character | Reach switch replaces Human | Machine. Reach shows the bot itself at the center with plain lines and labels, no particle cloud, and readouts in plain words: assistants, what it can touch, last 14 days, on the record.
+  - The page says "Your bot" again, since the brand rules drop "agents".
+- **Checks:** bot suite 39/39 (the stage test now asserts no rings or grain); typecheck, lint (one existing warning) and build ok. Chromium screenshots at desktop and phone: no overflow, no console errors (a temporary preview page, deleted before commit).

@@ -152,3 +152,13 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   CI for `659f5cc` was still running; this push supersedes it. CI for this push: pending when written.
 
 - 2026-10-04 08:46Z — CI run 62 (`659f5cc`, agent screen) and run 63 (`4f8575f`, Human | Machine toggle) both succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37189605812. Founder feedback since: the HUD and particle look reads as "vibe coded"; brand direction under discussion (the construct concept: the chair stays, the world changes). Strip-back waits on the founder's yes.
+
+- 2026-10-04 09:10Z — Claude, finished (founder: "go back to building").
+  - **Brand direction (proposed):** `docs/brand/2026-10-04-the-construct.md`: positioning, consumer research with sources, lessons from earlier revolutions, brand rules, the ad's shot list, the production pipeline and Higgsfield prompts.
+  - **Bot screen stripped back** after the founder said the HUD look read as "vibe coded": a calm lit floor and horizon, plain Character | Reach, Reach as the bot plus plain lines and plain-word readouts, no rings, grain, brackets or particle cloud. Copy says "Your bot" again.
+
+  Paths: `app/bot/{stage,machine-view,creator,page}.tsx`, `tests/bot/agent-screen.test.ts`, `docs/brand/`, `ACTIVE-WORK.md`, `BUILD_STATUS.md`.
+
+  Checks run: bot tests 39/39; typecheck ok; lint ok with one existing warning; build ok; Chromium screenshots at desktop and phone, with no overflow and no console errors. CI for this push: pending when written.
+
+  Next: the first "make a real thing" loop, agreed with Codex (3D viewer in the World, a design tool in the connector, a proof photo on the record). Waiting on the founder: brand lock decision, wedge choice, staging sign-in steps, filming the plate.

@@ -18,7 +18,7 @@ import { BotPortraitCreator } from "./portrait-creator";
 import { LiveBot } from "./live-bot";
 import { WorldsPanel } from "./worlds-panel";
 
-export const metadata: Metadata = { title: "Your agent — solve" };
+export const metadata: Metadata = { title: "Your bot — solve" };
 
 type Loaded =
   | { kind: "signed-out" }
@@ -59,7 +59,7 @@ export default async function BotPage() {
         <div className="flex items-center gap-4">
           <Link href="/" className="text-sm font-semibold uppercase tracking-[0.3em] text-accent">solve</Link>
           <span className="text-muted">/</span>
-          <span className="text-xs font-semibold uppercase tracking-[0.2em]">Your agent</span>
+          <span className="text-xs font-semibold uppercase tracking-[0.2em]">Your bot</span>
         </div>
         <nav className="flex items-center gap-5">
           <Link href="/worlds" className={quietLink}>Worlds</Link>

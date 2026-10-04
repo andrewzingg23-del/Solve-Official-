@@ -36,11 +36,12 @@ it("draws every body in every finish and every state", () => {
   }
 });
 
-it("labels the stage with the bot's state and build", () => {
+it("labels the stage with the bot's name, state and build, without HUD chrome", () => {
   const html = renderToStaticMarkup(createElement(AgentStage, { persona: { ...DEFAULT_PERSONA, material: "chrome" }, state: "waiting" }));
-  assert.match(html, /Agent · Nova/);
+  assert.match(html, />Nova</);
   assert.match(html, /Waiting for approval/);
-  assert.match(html, />chrome</);
+  assert.match(html, /chrome · bob · energy 50/);
+  assert.doesNotMatch(html, /sovstage-spin|feTurbulence/, "no spinning rings or grain");
 });
 
 it("states only what the bot's connections and grants allow", () => {
@@ -97,5 +98,5 @@ it("draws the machine view from real records only", async () => {
 
   const stage = renderToStaticMarkup(createElement(AgentStage, { persona: DEFAULT_PERSONA, state: "idle", machine: m }));
   assert.match(stage, /aria-label="Stage view"/);
-  assert.match(stage, />machine</);
+  assert.match(stage, />Reach</);
 });
