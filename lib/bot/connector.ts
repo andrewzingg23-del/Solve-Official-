@@ -445,8 +445,8 @@ export function createConnector(s: Session) {
         evidence_and_risks: "Evidence and risks",
       };
       const details = cleanText(args.details, 1800);
-      if (!businessName || !sections[section] || !details) return fail("Nothing was stored. Provide a business name, a supported section, and owner-confirmed details.");
-      if (/(?:api[_ -]?key|password|secret|bearer|private[_ -]?key)\\s*[:=]|\\b(?:sk|pk|rk)-[a-z0-9]{16,}\\b|eyJ[a-zA-Z0-9_-]{15,}\\.[a-zA-Z0-9_-]{15,}\\./i.test(details)) {
+      if (!businessName || !Object.hasOwn(sections, section) || !details) return fail("Nothing was stored. Provide a business name, a supported section, and owner-confirmed details.");
+      if (/(?:api[_ -]?key|password|secret|bearer|private[_ -]?key)\s*[:=]|\b(?:sk|pk|rk)-[a-z0-9]{16,}\b|eyJ[a-zA-Z0-9_-]{15,}\.[a-zA-Z0-9_-]{15,}\./i.test(details)) {
         return fail("Nothing was stored. Remove passwords, keys, tokens, and other credentials first.");
       }
       const now = (s.now ?? (() => new Date()))();
