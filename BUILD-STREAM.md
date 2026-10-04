@@ -1,6 +1,6 @@
 # Live build stream
 
-Active build branch: `claude/keen-cerf-tpd7io`
+Active build branch: `codex/need-to-route-network-state-spec`
 
 This file is the shared, committed progress feed. It is readable from the repository at any time; it does not expose uncommitted edits in a builder's private working tree.
 
@@ -172,3 +172,5 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - `DECISIONS.md` entry; `ACTIVE-WORK.md` note for Codex's entrance and intro; the construct doc marked adopted.
 
   Checks: docs and one static SVG; the mark was rendered in Chromium to check it. CI for this push: pending when written. Still the founder's: trademark and domain search, the wedge choice, staging sign-in steps, filming the plate.
+
+- 2026-10-04 — Started: goal-first private World creation. Replace blank-only entry with an optional plain-language goal saved as the first attributed World piece; preserve blank creation, privacy, and retry safety. Plan: `docs/superpowers/plans/2026-10-04-goal-first-world.md`. Tests/checks not yet run. Local clone is blocked; using GitHub branch commits and push-triggered CI/Vercel preview.
