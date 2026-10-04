@@ -54,7 +54,7 @@ function ResourceEntryCard({
           User-supplied source · not verified
         </a>
       )}
-      {entry.reportedBy === currentActorId ? (
+      {entry.reportedBy === currentActorId || entry.reportedOnBehalfOf === currentActorId ? (
         <details className="border-t border-line pt-2">
           <summary className="cursor-pointer list-none text-[10px] font-semibold uppercase tracking-[0.14em] text-muted hover:text-accent">Revise or withdraw</summary>
           <form action={update} className="mt-3 flex flex-col gap-3">
@@ -87,7 +87,7 @@ function ResourceEntryCard({
           </form>
         </details>
       ) : (
-        <p className="border-t border-line pt-2 text-[10px] leading-4 text-muted">Only the original event author can revise or withdraw this entry.</p>
+        <p className="border-t border-line pt-2 text-[10px] leading-4 text-muted">The original event author, or the person they acted for, can revise or withdraw this entry.</p>
       )}
     </article>
   );
