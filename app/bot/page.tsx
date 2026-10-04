@@ -12,6 +12,7 @@ import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { Connections } from "./connections";
 import { BotCreator } from "./creator";
+import { BotPortraitCreator } from "./portrait-creator";
 import { LiveBot } from "./live-bot";
 import { WorldsPanel } from "./worlds-panel";
 
@@ -75,6 +76,7 @@ export default async function BotPage() {
             version={state.kind === "ready" ? state.version : 0}
             savedAt={state.kind === "ready" ? state.savedAt : null}
           />
+          {state.kind === "ready" ? <BotPortraitCreator persona={state.persona} /> : null}
           {state.kind === "ready" && state.exists ? (
             <Connections
               botName={state.persona.name}
