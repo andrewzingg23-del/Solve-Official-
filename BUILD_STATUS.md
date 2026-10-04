@@ -108,3 +108,12 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
 - Naming: SOLVE (reserve) vs SOV (identity, card); the legacy game's virtual SOV collides.
 - First real reward policy and evidence thresholds; Earn release capacity and who holds the Earn cold key.
 - Vesting/treasury programs: build or adopt audited ones. Anchor cadence. Governance path.
+
+
+## 2026-10-04 checkpoint — World bot access and attribution
+
+- The World owner can grant a collaborator's identified bot Read or Add access from the World, review active bot name, owner, role and expiry, and remove the grant. The bot owner can copy the Bot SOV ID from `/bot` to share it with the World owner.
+- World History labels AI companions as “bot for [owner]” using the kernel actor profile and accountable party. Other agents retain the “agent for [owner]” label.
+- Verification: CI run 37 passed tests, typecheck, lint and build. Run 35 was the expected red before implementation; run 36 passed tests and exposed one query-parameter narrowing issue fixed in run 37.
+- Uses existing scoped grants and kernel actor profiles. No migration, staging database change, or production change.
+- Staging remains unverified for real assistant use. The Preview secret key was added by Claude after the user supplied it; Auth Site URL/redirect, `kernel_api` Data API exposure, OAuth Server, and staging application of kernel v5 plus the bot-presence policy remain open.
