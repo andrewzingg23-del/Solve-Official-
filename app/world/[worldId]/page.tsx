@@ -211,7 +211,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
 
         <aside className="flex flex-col gap-6">
           <CreateArtifactForm worldId={worldId} position={nextPosition} error={error === "artifact-input" || error === "artifact-save" || error === "access" ? error : undefined} />
-          <WorldBotAccessPanel worldId={worldId} saved={saved === "bot-access"} error={error} />
+          <WorldBotAccessPanel worldId={worldId} saved={saved === "bot-access"} error={typeof error === "string" ? error : undefined} />
           <section id="history" className="scroll-mt-6 flex flex-col gap-3 rounded-md border border-line bg-surface/45 p-5">
             <div className="flex items-baseline justify-between gap-4">
               <h2 className={label}>History</h2>
