@@ -44,7 +44,10 @@ export type CreativeResourceEntry = {
   sourceUrl: string;
   sourceStatus: "none" | "user_supplied_unverified";
   status: CreativeResourceStatus;
-  reportedBy: string;
+  reportedBy: string | null;
+  reportedOnBehalfOf: string | null;
+  updatedBy: string | null;
+  updatedOnBehalfOf: string | null;
   version: number;
   updatedAt: string;
 };
@@ -214,12 +217,26 @@ function artifactFromEntity(entity: WorldEntity): CreativeArtifact | null {
   };
 }
 
-function resourceFromEntity(entity: WorldEntity): CreativeResourceEntry | null {
+type CreativeResourceAttribution = {
+  reportedBy: string | null;
+  reportedOnBehalfOf: string | null;
+  updatedBy: string | null;
+  updatedOnBehalfOf: string | null;
+};
+
+function resourceFromEntity(
+  entity: WorldEntity,
+  attribution: CreativeResourceAttribution = {
+    reportedBy: null,
+    reportedOnBehalfOf: null,
+    updatedBy: null,
+    updatedOnBehalfOf: null,
+  },
+): CreativeResourceEntry | null {
   const attributes = entity.attributes;
   const entryType = attributes.resourceType;
   const category = attributes.resourceCategory;
   const status = attributes.status;
-  const reportedBy = attributes.reportedBy;
   if (
     (entity.kind !== "resource" && entity.kind !== "need") ||
     (entryType !== "offer" && entryType !== "need") ||
@@ -228,7 +245,6 @@ function resourceFromEntity(entity: WorldEntity): CreativeResourceEntry | null {
     typeof category !== "string" ||
     !isCreativeResourceCategory(category) ||
     (status !== "open" && status !== "withdrawn") ||
-    typeof reportedBy !== "string" ||
     attributes.worldId !== entity.scope.slice("world:".length)
   ) return null;
 
@@ -250,12 +266,75 @@ function resourceFromEntity(entity: WorldEntity): CreativeResourceEntry | null {
     sourceUrl,
     sourceStatus: sourceUrl ? "user_supplied_unverified" : "none",
     status,
-    reportedBy,
+    ...attribution,
     version: entity.version,
     updatedAt: entity.updated_at,
   };
 }
 
+// Entity attributes are editable data. Attribution comes from the immutable event actor instead.
+// The bounded history scan fails closed: entries outside the 10,000-event window have no editor
+// and cannot be revised through this adapter until their provenance can be read.
+async function resourceAttributionByEntity(
+  kernel: Kernel,
+  scope: string,
+  entities: WorldEntity[],
+): Promise<Map<string, CreativeResourceAttribution>> {
+  const resourceEntities = entities.filter((entity) =>
+    (entity.kind === "resource" || entity.kind === "need") &&
+    entity.attributes.worldId === scope.slice("world:".length)
+  );
+  const found = new Map<string, {
+    created: { actorId: string; onBehalfOf: string | null } | null;
+    latestVersion: number;
+    latestActor: { actorId: string; onBehalfOf: string | null } | null;
+  }>();
+  for (const entity of resourceEntities) {
+    found.set(entity.entity_id, { created: null, latestVersion: 0, latestActor: null });
+  }
+  if (!found.size) return new Map();
+
+  const wanted = new Set(found.keys());
+  let afterSeq = 0;
+  for (let page = 0; page < 20; page++) {
+    const events = await kernel.readEvents(scope, { afterSeq, limit: 500 });
+    for (const event of events) {
+      if (event.type !== "kernel.entity.created" && event.type !== "kernel.entity.updated") continue;
+      const payload = event.payload;
+      const entityId = typeof payload.entity_id === "string"
+        ? payload.entity_id
+        : typeof (payload.request as Record<string, unknown> | undefined)?.entity_id === "string"
+          ? String((payload.request as Record<string, unknown>).entity_id)
+          : "";
+      if (!wanted.has(entityId)) continue;
+      const version = typeof payload.version === "number" ? payload.version : Number(payload.version);
+      if (!Number.isSafeInteger(version) || version < 1) continue;
+      const record = found.get(entityId)!;
+      const actor = { actorId: event.actor_id, onBehalfOf: event.on_behalf_of };
+      if (event.type === "kernel.entity.created" && version === 1 && !record.created) record.created = actor;
+      if (version >= record.latestVersion) {
+        record.latestVersion = version;
+        record.latestActor = actor;
+      }
+    }
+    if (events.length < 500) break;
+    const last = events.at(-1);
+    if (!last || last.seq <= afterSeq) break;
+    afterSeq = last.seq;
+  }
+
+  const versions = new Map(resourceEntities.map((entity) => [entity.entity_id, entity.version]));
+  return new Map([...found].map(([entityId, record]) => {
+    const currentVersion = versions.get(entityId);
+    const latest = currentVersion === record.latestVersion ? record.latestActor : null;
+    return [entityId, {
+      reportedBy: record.created?.actorId ?? null,
+      reportedOnBehalfOf: record.created?.onBehalfOf ?? null,
+      updatedBy: latest?.actorId ?? null,
+      updatedOnBehalfOf: latest?.onBehalfOf ?? null,
+    }];
+  }));
+}
 async function callerOwnsScope(kernel: Kernel, actorId: string, scope: string): Promise<boolean> {
   const grants = await kernel.myGrants();
   if (!grants.some((grant) => grant.scope === scope && grant.capability === "*")) return false;
@@ -357,7 +436,10 @@ export async function loadCreativeWorld(kernel: Kernel, rawWorldId: string) {
   const world = entities.map(worldFromEntity).find((candidate) => candidate?.worldId === worldId);
   if (!world) throw new KernelError("not_found", "World not found", "");
   const artifacts = entities.map(artifactFromEntity).filter((artifact): artifact is CreativeArtifact => artifact !== null);
-  const resources = entities.map(resourceFromEntity).filter((entry): entry is CreativeResourceEntry => entry !== null);
+  const attribution = await resourceAttributionByEntity(kernel, scope, entities);
+  const resources = entities
+    .map((entity) => resourceFromEntity(entity, attribution.get(entity.entity_id)))
+    .filter((entry): entry is CreativeResourceEntry => entry !== null);
   return { world, artifacts, resources };
 }
 
@@ -408,7 +490,6 @@ export async function createCreativeResourceEntry(kernel: Kernel, input: CreateC
   const description = requireBody(input.description);
   const timeWindow = requireTimeWindow(input.timeWindow ?? "");
   const sourceUrl = requireSourceUrl(input.sourceUrl ?? "");
-  const actor = await kernel.whoami();
   const kind = entryType === "offer" ? "resource" : "need";
   const entityId = await kernel.upsertEntity({
     kind,
@@ -425,7 +506,6 @@ export async function createCreativeResourceEntry(kernel: Kernel, input: CreateC
       sourceStatus: sourceUrl ? "user_supplied_unverified" : "none",
       status: "open",
       basis: "self_reported",
-      reportedBy: actor.actor_id,
     },
     visibility: "members",
     idempotencyKey: requestKey(`resource-create:${entryType}`, input.requestId),
@@ -446,7 +526,8 @@ export async function updateCreativeResourceEntry(kernel: Kernel, input: UpdateC
     !resourceFromEntity(existing)
   ) throw new KernelError("not_found", "Resource entry not found in this World", "");
   const actor = await kernel.whoami();
-  if (existing.attributes.reportedBy !== actor.actor_id) {
+  const attribution = await resourceAttributionByEntity(kernel, scope, [existing]).then((map) => map.get(existing.entity_id));
+  if (attribution?.reportedBy !== actor.actor_id) {
     throw new KernelError("forbidden", "Only the person who reported this entry can revise or withdraw it", "");
   }
   const title = requireTitle(input.title);
