@@ -190,3 +190,11 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
   - **Proposed business:** free to bring your AI; paid when an outcome settles; platforms pay to verify; settlement later, gated. Moat: the record graph, neutrality, the authority engine and the human network. North star: verified outcomes per person per month and time to first proof.
   - `BRAND.md` and the construct doc are updated to match.
   - Visual brand book (private artifact): https://claude.ai/artifact/NAtCcEYspQzpPBLoKMdeY3
+
+## Shared World collaboration slice — 2026-10-04
+
+- Added owner-managed human viewer/editor access by SOV ID, with explicit removal of both scoped capabilities and rejection of agent IDs.
+- Added private per-person Realtime invalidation. A kernel event trigger checks each recipient’s active `kernel.read` grant and publishes only World ID and event sequence; the browser refreshes the persisted kernel view after updates and reconnect.
+- New end-to-end tests cover editor and viewer authority, provenance through the existing kernel path, revocation, delegation refusal, and human-only invitations.
+- Validation: test-only CI run #99 failed before implementation as expected; implementation CI and staging Auth/two-person live validation are pending.
+- Production was untouched.

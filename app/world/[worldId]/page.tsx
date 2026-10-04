@@ -10,6 +10,8 @@ import { formatWorldActorAttribution } from "@/lib/world/attribution";
 import { parsePixelArt } from "@/lib/bot/pixel-art";
 import { createArtifactAction, updateArtifactAction } from "./actions";
 import { WorldBotAccessPanel } from "./bot-access-panel";
+import { WorldAccessPanel } from "./access-panel";
+import { WorldLiveSync } from "./live-sync";
 
 function eventTitle(type: string) {
   switch (type) {
@@ -192,6 +194,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
           <h2 className="text-2xl font-medium tracking-tight md:text-4xl">{world.title}</h2>
         </div>
         <div className="flex items-center gap-3 text-xs text-muted">
+          <WorldLiveSync worldId={worldId} authUserId={user.id} />
           <span className="inline-flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-positive" /> Saved to kernel</span>
           <span className="hidden font-mono md:inline">{worldId.slice(0, 8)}</span>
         </div>
@@ -236,6 +239,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
 
         <aside className="flex flex-col gap-6">
           <CreateArtifactForm worldId={worldId} position={nextPosition} error={error === "artifact-input" || error === "artifact-save" || error === "access" ? error : undefined} />
+          <WorldAccessPanel worldId={worldId} scope={world.scope} saved={saved === "collaborator"} error={typeof error === "string" ? error : undefined} />
           <WorldBotAccessPanel worldId={worldId} saved={saved === "bot-access"} error={typeof error === "string" ? error : undefined} />
           <section id="history" className="scroll-mt-6 flex flex-col gap-3 rounded-md border border-line bg-surface/45 p-5">
             <div className="flex items-baseline justify-between gap-4">
