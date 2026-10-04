@@ -416,9 +416,11 @@ export function createConnector(s: Session) {
           const description = boundedInert(entry.description, 1_800);
           const window = entry.timeWindow ? " · window: " + boundedInert(entry.timeWindow, 240) : "";
           const source = entry.sourceUrl ? " · source (not verified): " + boundedInert(entry.sourceUrl, 600) : "";
+          const shortened = entry.description.length > 1_800 || entry.timeWindow.length > 240 || entry.sourceUrl.length > 600;
           return "- [" + boundedInert(entry.entityId, 120) + "] " + entry.entryType.toUpperCase() +
             " · " + entry.category + " · " + entry.status + " · reported by " + reporter + representedFor +
-            ": " + title + " — " + description + window + source + lastEditor;
+            ": " + title + " — " + description + window + source + lastEditor +
+            (shortened ? " · some fields shortened for context" : "");
         };
         const pieceLine = (artifact: typeof artifacts[number]) =>
           "- [" + boundedInert(artifact.entityId, 120) + "] " + boundedInert(artifact.title, 500) +
@@ -435,6 +437,7 @@ export function createConnector(s: Session) {
           artifact_id: artifact.entityId,
           title: artifact.title.slice(0, 160),
           body: artifact.body.slice(0, 2_600),
+          body_truncated: artifact.body.length > 2_600,
           version: artifact.version,
           updated_at: artifact.updatedAt,
         }));
@@ -445,9 +448,12 @@ export function createConnector(s: Session) {
           status: entry.status,
           title: entry.title.slice(0, 160),
           description: entry.description.slice(0, 1_800),
+          description_truncated: entry.description.length > 1_800,
           time_window: entry.timeWindow.slice(0, 240),
+          time_window_truncated: entry.timeWindow.length > 240,
           source_status: entry.sourceStatus,
           source_url: entry.sourceUrl.slice(0, 600),
+          source_url_truncated: entry.sourceUrl.length > 600,
           reported_by: entry.reportedBy,
           reported_on_behalf_of: entry.reportedOnBehalfOf,
           updated_by: entry.updatedBy,
