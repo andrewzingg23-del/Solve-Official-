@@ -7,6 +7,7 @@ import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { loadCreativeWorld, type CreativeArtifact, type CreativePosition } from "@/lib/world/creative";
 import { formatWorldActorAttribution } from "@/lib/world/attribution";
+import { parsePixelArt } from "@/lib/bot/pixel-art";
 import { createArtifactAction, updateArtifactAction } from "./actions";
 import { WorldBotAccessPanel } from "./bot-access-panel";
 
@@ -30,9 +31,31 @@ function canvasColumn(position: CreativePosition) {
   return position.x < 34 ? 1 : position.x < 67 ? 2 : 3;
 }
 
+function PixelArtPreview({ body, title }: { body: string; title: string }) {
+  const art = parsePixelArt(body);
+  if (!art) return null;
+  const width = art.rows[0].length;
+  return (
+    <figure className="flex flex-col gap-2 rounded border border-line bg-background/70 p-3">
+      <div
+        role="img"
+        aria-label={`${title}: ${art.prompt}`}
+        className="mx-auto w-full max-w-64"
+        style={{ display: "grid", gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`, aspectRatio: `${width} / ${art.rows.length}`, imageRendering: "pixelated" }}
+      >
+        {art.rows.flatMap((row, y) => [...row].map((cell, x) => (
+          <span key={`${y}-${x}`} style={{ backgroundColor: cell === "." ? "transparent" : art.palette[Number(cell)] }} />
+        )))}
+      </div>
+      <figcaption className="text-xs leading-5 text-muted">{art.prompt} · {width}×{art.rows.length} pixels</figcaption>
+    </figure>
+  );
+}
+
 function ArtifactCard({ worldId, artifact }: { worldId: string; artifact: CreativeArtifact }) {
   const position = positionFromArtifact(artifact);
   const update = updateArtifactAction.bind(null, worldId);
+  const isPixelArt = parsePixelArt(artifact.body) !== null;
   return (
     <article className="flex w-full flex-col gap-3 rounded-md border border-line bg-surface/95 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.25)] backdrop-blur-md">
       <header className="flex items-start justify-between gap-3">
@@ -42,7 +65,9 @@ function ArtifactCard({ worldId, artifact }: { worldId: string; artifact: Creati
         </div>
         <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full bg-accent shadow-[0_0_14px_var(--accent)]" />
       </header>
-      {artifact.body ? (
+      {isPixelArt ? (
+        <PixelArtPreview body={artifact.body} title={artifact.title} />
+      ) : artifact.body ? (
         <p className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-sm leading-6 text-muted">{artifact.body}</p>
       ) : (
         <p className="text-sm italic text-muted">No text yet.</p>
