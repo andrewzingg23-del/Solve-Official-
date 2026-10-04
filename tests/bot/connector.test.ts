@@ -7,6 +7,8 @@ import { it } from "node:test";
 import { kernelClient, type Kernel } from "../../lib/kernel/client";
 import { localSupabase } from "../../lib/kernel/local";
 import { createConnector, INSTRUCTIONS, PROTOCOL_VERSIONS, TOOLS, type Session } from "../../lib/bot/connector";
+import { readWorldAsBot } from "../../lib/bot/worlds";
+import { parsePixelArt } from "../../lib/bot/pixel-art";
 import { approveConnection, MEMORY_NOTED, memoryScope, noteMemory, readMemories, revokeConnection } from "../../lib/bot/memory";
 import { protectedResourceMetadata, serveMcp } from "../../lib/bot/mcp-http";
 import { saveBot } from "../../lib/bot/store";
@@ -44,7 +46,7 @@ it("speaks the protocol: initialize, ping, tools, notifications and errors", asy
   assert.equal(unknownVersion.result.protocolVersion, PROTOCOL_VERSIONS[0], "otherwise the newest version is offered");
   assert.deepEqual(await c.handle({ jsonrpc: "2.0", id: 3, method: "ping" }), { jsonrpc: "2.0", id: 3, result: {} });
   const list = (await c.handle({ jsonrpc: "2.0", id: 4, method: "tools/list" })) as { result: { tools: { name: string }[] } };
-  assert.deepEqual(list.result.tools.map((t) => t.name), ["whoami", "get_context", "search", "fetch", "remember", "learn_business", "list_worlds", "read_world", "start_world", "add_to_world", "propose_capability"]);
+  assert.deepEqual(list.result.tools.map((t) => t.name), ["whoami", "get_context", "search", "fetch", "remember", "learn_business", "list_worlds", "read_world", "start_world", "add_to_world", "create_pixel_art", "propose_capability"]);
   assert.equal(TOOLS.find((t) => t.name === "remember")!.annotations.readOnlyHint, false);
   assert.equal(await c.handle({ jsonrpc: "2.0", method: "notifications/initialized" }), null, "notifications get no response");
   assert.equal((await c.handle({ jsonrpc: "2.0", id: 5, method: "resources/list" }) as { error: { code: number } }).error.code, -32601);
@@ -230,4 +232,44 @@ it("learns owner-approved business context incrementally, with provenance and se
   await approveConnection(ana, anaId, bot.avatar!.agent_id, { clientId: CLAUDE, clientName: "Claude", mode: "read" }, "business-read-only");
   const readOnly = await call(session(ana, CLAUDE), "learn_business", overview);
   assert.equal(readOnly.isError, true, "read-only connections cannot add business memory");
+});
+
+it("creates attributed pixel art in a World and makes retries idempotent", async () => {
+  const { ana, bot, session, call, botAs } = await setting();
+  await approveConnection(ana, await ana.whoami().then((who) => who.actor_id), bot.avatar!.agent_id, {
+    clientId: CLAUDE,
+    clientName: "Claude",
+    mode: "remember",
+  }, "pixel-approve");
+  const s = session(ana, CLAUDE);
+  const started = await call(s, "start_world", { title: "Pixel studio" });
+  const worldId = (started.structuredContent as { world_id: string }).world_id;
+  const input = {
+    world_id: worldId,
+    title: "Blue robot",
+    prompt: "A friendly blue robot, transparent background",
+    rows: [".11.", "1001", ".11."],
+    palette: ["#1967d2", "#f5faff"],
+  };
+  const first = await call(s, "create_pixel_art", input);
+  assert.equal(first.isError, undefined, first.content[0].text);
+  assert.equal((first.structuredContent as { media_type: string }).media_type, "application/vnd.sov.pixel-grid+json");
+  const retry = await call(s, "create_pixel_art", input);
+  assert.deepEqual(
+    [(retry.structuredContent as { artifact_id: string }).artifact_id, (retry.structuredContent as { revised: boolean }).revised],
+    [(first.structuredContent as { artifact_id: string }).artifact_id, false],
+  );
+  const loaded = await readWorldAsBot(botAs(bot.avatar!.agent_id), worldId);
+  assert.equal(loaded.artifacts.length, 1, "a retry leaves one saved artifact");
+  const art = parsePixelArt(loaded.artifacts[0].body);
+  assert.equal(art?.prompt, input.prompt);
+  assert.deepEqual(art?.rows, input.rows);
+
+  const malformed = await call(s, "create_pixel_art", { ...input, rows: ["11", "1"] });
+  assert.equal(malformed.isError, true);
+  assert.match(malformed.content[0].text, /same width/);
+  assert.equal((await readWorldAsBot(botAs(bot.avatar!.agent_id), worldId)).artifacts.length, 1, "invalid input writes nothing");
+
+  const readOnly = await call(session(ana, CLAUDE), "create_pixel_art", input);
+  assert.equal(readOnly.isError, true, "the connection still needs explicit add permission");
 });
