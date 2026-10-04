@@ -3,7 +3,8 @@
 // World keeps working without it. No network: the model client is a stand-in that records requests.
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { claudeReasoner, REASONING_MODEL, type MessagesApi } from "../../lib/world/claude";
+import Anthropic from "@anthropic-ai/sdk";
+import { claudeReasoner, gatewayReasoner, GATEWAY_REASONING_MODEL, GATEWAY_URL, REASONING_MODEL, type GatewayMessagesApi, type MessagesApi } from "../../lib/world/claude";
 import { respond } from "../../lib/world/controller";
 import { ruleProvider } from "../../lib/world/horizon";
 import { handleReason, reasonAvailability } from "../../lib/world/reason-handler";
@@ -59,6 +60,32 @@ describe("the reasoning boundary", () => {
     assert.deepEqual(interpret.system, [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }]);
     assert.deepEqual(route.system, interpret.system, "the same static prefix on every request, so it caches");
     assert.match(interpret.messages[0].content, /Selected: Halden Works\.[\s\S]*Can they make 10,000\?/);
+  });
+
+  it("can reach the same model through Vercel AI Gateway, without Anthropic's beta-only refusal fallback", async () => {
+    const { api, requests } = stubModel([
+      { stop_reason: "end_turn", text: intent({ type: "capability_query", quantity: 10000 }) },
+      { stop_reason: "refusal", text: intent({ type: "commit" }) },
+    ]);
+    const reasoner = gatewayReasoner(api as unknown as GatewayMessagesApi);
+    assert.equal(reasoner.model, GATEWAY_REASONING_MODEL);
+    assert.deepEqual(await reasoner.interpret("Can they make 10,000?", ""), { type: "capability_query", quantity: 10000 });
+    assert.equal(await reasoner.interpret("commit for me", ""), null, "a refusal is still no answer");
+    const [sent] = requests as unknown as { model: string; output_config: unknown; system: unknown }[];
+    assert.equal(sent.model, "anthropic/claude-opus-5.5");
+    assert.equal("betas" in sent || "fallbacks" in sent, false);
+    assert.deepEqual(sent.output_config, { effort: "low", format: { type: "json_schema", schema: INTENT_SCHEMA } });
+    assert.deepEqual(sent.system, [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }]);
+
+    // The real client, pointed at the gateway, calls its plain Messages endpoint with the gateway key.
+    const seen: { url: string; key: string | null }[] = [];
+    const fetchStub = (async (url: string, init?: RequestInit) => {
+      seen.push({ url: String(url), key: new Headers(init?.headers).get("x-api-key") });
+      return Response.json({ id: "msg", type: "message", role: "assistant", model: sent.model, stop_reason: "end_turn", content: [{ type: "text", text: intent({ type: "expand_control" }) }], usage: { input_tokens: 1, output_tokens: 1 } });
+    }) as unknown as typeof fetch;
+    const client = new Anthropic({ apiKey: "test-gateway-key", baseURL: GATEWAY_URL, fetch: fetchStub, maxRetries: 0 });
+    assert.deepEqual(await gatewayReasoner(client.messages).interpret("what else do they control?", ""), { type: "expand_control" });
+    assert.deepEqual(seen, [{ url: "https://ai-gateway.vercel.sh/v1/messages", key: "test-gateway-key" }]);
   });
 
   it("uses nothing the model returns until it validates, and treats refusals and truncation as no answer", async () => {

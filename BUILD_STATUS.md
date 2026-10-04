@@ -17,6 +17,7 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
 - Checks for this UI slice: `npm run lint`, `npm run typecheck`, and `npm run build` passed locally. The sandbox initially blocked the build's `tsx` IPC socket; a permitted retry passed.
 - Creative World slice checks: `node --import tsx --test --test-force-exit --test-reporter=tap tests/e2e/creative-world.test.ts` passed (1/1); `npm run lint`, `npm run typecheck`, and `npm run build` passed. The first build attempt hit the sandbox's `tsx` IPC socket restriction; the same build passed with execution permission. Full suite and browser lanes were not rerun locally; push CI is the broad regression gate.
 - Plan and page outline: docs/plans/2026-10-04-open-creative-world.md.
+- Reasoning model through Vercel AI Gateway (Claude, at the founder's request, 2026-10-04): `/api/reason` now uses `AI_GATEWAY_API_KEY` when `ANTHROPIC_API_KEY` is absent. It sends the same schema-constrained request to the gateway's Anthropic-compatible endpoint as `anthropic/claude-opus-5.5` (`AI_GATEWAY_MODEL` overrides it), without Anthropic's beta-only refusal fallback. Signed-in people only; rules otherwise. The key is not set in Vercel yet: the Vercel connector is not authorized for the `sovigrn` scope, so the founder adds it as a Preview variable for this branch. A real gateway call is unverified, because this container cannot reach `ai-gateway.vercel.sh`.
 
 ## DONE
 
