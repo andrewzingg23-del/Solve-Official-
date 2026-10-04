@@ -4,12 +4,12 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
 
 ## Current Checkpoint — 2026-10-04
 
-- Branch code at fd09d67 has green GitHub CI. A documentation-only takeover plan has since been added.
+- Baseline code commit fd09d67 had green GitHub Actions CI. The current World wayfinding commit 2d94a60 passed its Vercel check; the ready preview is https://solve-git-claude-keen-cerf-tpd7io-sovigrn.vercel.app.
 - Supabase staging project solve-staging is active on Postgres 17. All four kernel migrations, including v4, are recorded. kernel_api.verify_chain() returned ok=true across 35 events.
 - Read-only grants check: anon lacks kernel_api usage; authenticated has kernel_api usage but no kernel schema usage or direct kernel.events SELECT; service_role also has no direct events-table SELECT.
 - Production has not received v4; no production database changes were made.
-- All 164 tracked files in the local test snapshot match GitHub blob hashes. Typecheck, lint, build, and isolated tests/kernel/kernel.test.ts (1/1) pass.
-- One npm test invocation run concurrently with typecheck/lint exited nonzero at file level (10 of 23 files). The isolated kernel test passes; this local full-suite attempt is not reported green. The exact code commit's GitHub CI remains green.
+- The local code snapshot at fd09d67 was blob-verified before this slice. This slice changes only app/world/shell.tsx in application code. Typecheck, lint, build, and isolated tests/kernel/kernel.test.ts (1/1) pass.
+- One earlier npm test invocation run concurrently with typecheck/lint exited nonzero at file level (10 of 23 files). The isolated kernel test passes; that local full-suite attempt is not reported green. Baseline fd09d67 had green GitHub Actions CI; the current UI slice has local build checks plus a successful Vercel check.
 - Product gap: the root app is an Arcadia-backed World prototype, not a staging-backed shared canvas. Multi-person real-time authoring and connecting external agents to one World remain unbuilt.
 - World-shell wayfinding slice: the existing eight lenses are grouped into four primary views (`World`, `Path`, `People`, `History`) and four specialist views under `More`; the sandbox label is visible on mobile. This reorganizes existing views only and does not add real-time presence or shared authoring.
 - Checks for this UI slice: `npm run lint`, `npm run typecheck`, and `npm run build` passed locally. The sandbox initially blocked the build's `tsx` IPC socket; a permitted retry passed.

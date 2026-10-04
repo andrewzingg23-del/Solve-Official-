@@ -46,3 +46,5 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 
 - 2026-10-04 01:40Z — Started: founder said “Go” to the World-centered navigation direction. Reviewed the current shell and scoped this slice to four primary views (`World`, `Path`, `People`, `History`), specialist views under `More`, and a visible Arcadia sandbox label on phones. No shared presence or persisted authoring is added by this slice.
 - 2026-10-04 01:50Z — Finished: `app/world/shell.tsx` groups the existing lenses and labels the local sandbox on mobile. Checks: `npm run lint`, `npm run typecheck`, and `npm run build` pass. The first build attempt was blocked when `tsx` could not create its temporary IPC socket in the sandbox; the same local build passed on retry with execution permission. Next: verify staging sign-in, then start kernel-backed shared authoring.
+
+- 2026-10-04 01:58Z — Vercel check succeeded for `2d94a601`; preview deployment is ready at https://solve-git-claude-keen-cerf-tpd7io-sovigrn.vercel.app. Local lint, typecheck, and production build also passed. Next: verify staging sign-in, then start kernel-backed shared authoring.
