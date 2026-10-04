@@ -10,11 +10,17 @@ function ResourceEntryCard({
   worldId,
   entry,
   reportedByLabel,
+  reportedOnBehalfOfLabel,
+  updatedByLabel,
+  updatedOnBehalfOfLabel,
   currentActorId,
 }: {
   worldId: string;
   entry: CreativeResourceEntry;
   reportedByLabel: string;
+  reportedOnBehalfOfLabel: string | null;
+  updatedByLabel: string;
+  updatedOnBehalfOfLabel: string | null;
   currentActorId: string;
 }) {
   const update = updateResourceEntryAction.bind(null, worldId);
@@ -31,8 +37,15 @@ function ResourceEntryCard({
           <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-accent">{stateLabel}</span>
           <span className="text-[10px] text-muted">v{entry.version}</span>
         </div>
-        <span className="text-[10px] text-muted">Entered by {reportedByLabel}</span>
+        <span className="text-[10px] text-muted">
+          Reported by {reportedByLabel}{reportedOnBehalfOfLabel ? " for " + reportedOnBehalfOfLabel : ""}
+        </span>
       </div>
+      {entry.version > 1 && (
+        <p className="text-[10px] text-muted">
+          Latest revision by {updatedByLabel}{updatedOnBehalfOfLabel ? " for " + updatedOnBehalfOfLabel : ""}
+        </p>
+      )}
       <h4 className="break-words text-sm font-medium">{entry.title}</h4>
       <p className="whitespace-pre-wrap break-words text-sm leading-5 text-muted">{entry.description}</p>
       {entry.timeWindow && <p className="text-xs text-muted">Time or constraint: {entry.timeWindow}</p>}
@@ -74,7 +87,7 @@ function ResourceEntryCard({
           </form>
         </details>
       ) : (
-        <p className="border-t border-line pt-2 text-[10px] leading-4 text-muted">Only the person who entered this can revise or withdraw it.</p>
+        <p className="border-t border-line pt-2 text-[10px] leading-4 text-muted">Only the original event author can revise or withdraw this entry.</p>
       )}
     </article>
   );
@@ -140,7 +153,10 @@ export function ResourceMapPanel({
                       key={entry.entityId}
                       worldId={worldId}
                       entry={entry}
-                      reportedByLabel={actorLabels.get(entry.reportedBy) ?? entry.reportedBy.slice(0, 8)}
+                      reportedByLabel={entry.reportedBy ? actorLabels.get(entry.reportedBy) ?? entry.reportedBy.slice(0, 8) : "Attribution unavailable"}
+                      reportedOnBehalfOfLabel={entry.reportedOnBehalfOf ? actorLabels.get(entry.reportedOnBehalfOf) ?? entry.reportedOnBehalfOf.slice(0, 8) : null}
+                      updatedByLabel={entry.updatedBy ? actorLabels.get(entry.updatedBy) ?? entry.updatedBy.slice(0, 8) : "Attribution unavailable"}
+                      updatedOnBehalfOfLabel={entry.updatedOnBehalfOf ? actorLabels.get(entry.updatedOnBehalfOf) ?? entry.updatedOnBehalfOf.slice(0, 8) : null}
                       currentActorId={currentActorId}
                     />
                   ))}
@@ -187,7 +203,7 @@ export function ResourceMapPanel({
             <input name="sourceUrl" type="url" maxLength={2048} autoComplete="url" placeholder="https://…" className="h-10 rounded border border-line bg-surface px-3 text-sm text-foreground outline-none focus:border-accent" />
           </label>
           <p className="md:col-span-2 text-xs leading-5 text-muted">
-            This remains private to people and agents granted access to this World. A supplied URL is an unverified pointer. SOV does not match, assign, message, purchase, or publish from this entry.
+            This remains private to people and agents granted access to this World. A supplied URL is an unverified pointer; do not paste secrets, signed private links, or sensitive personal details. SOV does not match, assign, message, purchase, or publish from this entry.
           </p>
           <button type="submit" className={primaryAction}>Add to resource map</button>
         </form>
