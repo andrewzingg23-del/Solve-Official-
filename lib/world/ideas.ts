@@ -200,14 +200,23 @@ export async function relateIdeas(kernel: Kernel, input: {
       cursor = parentByChild.get(cursor);
     }
   }
-  return kernel.relate({
-    kind: input.kind,
-    fromRef: `entity:${input.fromId}`,
-    toRef: `entity:${input.toId}`,
-    scope,
-    attributes: { schemaVersion: 1 },
-    idempotencyKey: requestKey(input.requestId, "relate"),
-  });
+  try {
+    return await kernel.relate({
+      kind: input.kind,
+      fromRef: `entity:${input.fromId}`,
+      toRef: `entity:${input.toId}`,
+      scope,
+      attributes: { schemaVersion: 1 },
+      idempotencyKey: requestKey(input.requestId, "relate"),
+    });
+  } catch (error) {
+    // A concurrent request with a different request id can win the semantic unique index.
+    const raced = (await readIdeaGraph(kernel, scope)).links.find(
+      (link) => link.kind === input.kind && link.fromId === input.fromId && link.toId === input.toId
+    );
+    if (raced) return raced.id;
+    throw error;
+  }
 }
 
 export async function updateIdeaStatus(kernel: Kernel, input: {

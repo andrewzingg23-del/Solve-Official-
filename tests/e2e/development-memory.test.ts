@@ -83,6 +83,11 @@ it("stores ideas, typed lineage and status history through the governed World ke
   assert.equal(graph.ideas.find((idea) => idea.id === child)?.status, "rejected");
   assert.equal(graph.links.length, 1);
   assert.equal(graph.links[0].id, edgeId);
+  const [supportA, supportB] = await Promise.all([
+    relateIdeas(alice, { scope: world.scope, fromId: root, toId: child, kind: "idea_supports", requestId: "support-a" }),
+    relateIdeas(alice, { scope: world.scope, fromId: root, toId: child, kind: "idea_supports", requestId: "support-b" }),
+  ]);
+  assert.equal(supportA, supportB, "concurrent duplicate semantic edges converge on one canonical relation");
   const history = await alice.readEvents(world.scope, { limit: 50 });
   assert.ok(history.some((event) => event.type === "kernel.entity.created" && event.actor_id));
   assert.ok(history.filter((event) => event.type === "kernel.entity.updated").length >= 2, "status changes are versioned kernel events");

@@ -11,3 +11,8 @@ alter table kernel.relations add constraint relations_kind_check check (kind in 
 
 comment on constraint relations_kind_check on kernel.relations is
   'Canonical World relations, including typed Idea Graph lineage edges.';
+
+-- Prevent concurrent writers from creating duplicate active semantic links.
+create unique index kernel_idea_relations_active_once
+  on kernel.relations (kind, from_ref, to_ref, scope)
+  where kind like 'idea_%';
