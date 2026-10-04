@@ -20,7 +20,7 @@ export type CreativeArtifact = {
   updatedAt: string;
 };
 
-export type CreateCreativeWorldInput = { worldId: string; title: string };
+export type CreateCreativeWorldInput = { worldId: string; title: string; goal?: string };
 export type CreateCreativeArtifactInput = {
   scope: string;
   worldEntityId: string;
@@ -130,6 +130,7 @@ export async function createCreativeWorld(kernel: Kernel, input: CreateCreativeW
   const worldId = requireWorldId(input.worldId);
   const scope = `world:${worldId}`;
   const title = requireTitle(input.title);
+  const goal = requireBody(input.goal?.trim() ?? "");
   const actor = await kernel.whoami();
 
   if (!(await callerOwnsScope(kernel, actor.actor_id, scope))) {
@@ -152,7 +153,7 @@ export async function createCreativeWorld(kernel: Kernel, input: CreateCreativeW
     kind: "world",
     scope,
     title,
-    summary: "A private World. Start with a blank canvas and shape it as you go.",
+    summary: goal ? goal.slice(0, 2_000) : "A private World. Start with a blank canvas and shape it as you go.",
     attributes: { worldId, createdBy: actor.actor_id, canvasVersion: 1 },
     visibility: "members",
     idempotencyKey: `creative:world:${worldId}`,
@@ -165,6 +166,17 @@ export async function createCreativeWorld(kernel: Kernel, input: CreateCreativeW
     attributes: { basis: "scope_claim" },
     idempotencyKey: `creative:owner:${worldId}`,
   });
+
+  if (goal) {
+    await createCreativeArtifact(kernel, {
+      scope,
+      worldEntityId: entityId,
+      requestId: `goal:${worldId}`,
+      title: "Goal",
+      body: goal,
+      position: { x: 50, y: 25 },
+    });
+  }
 
   const [entity] = (await kernel.readWorld(scope)).filter((row) => row.entity_id === entityId);
   const world = entity && worldFromEntity(entity);
