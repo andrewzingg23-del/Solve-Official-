@@ -135,7 +135,7 @@ export async function addToWorld(
   const title = cleanText(input.title, WORLD_LIMITS.title);
   const body = typeof input.body === "string" ? cleanText(input.body, WORLD_LIMITS.body) : "";
   if (!title) throw new WorldInputError("a piece needs a title");
-  const { world } = await loadCreativeWorld(bot, input.worldId);
+  const { world, artifacts } = await loadCreativeWorld(bot, input.worldId);
   if (input.artifactId) {
     const existing = artifacts.find((a) => a.entityId === input.artifactId);
     if (!existing) throw new WorldInputError("no such piece in this World");
