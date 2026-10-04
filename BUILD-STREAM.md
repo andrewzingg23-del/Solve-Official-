@@ -118,3 +118,10 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 - 2026-10-04 05:52Z — CI run 37 (`bd1d3e1`, World bot access and explicit History attribution) succeeded: tests, typecheck, lint and build. https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37180813203.
 
 - 2026-10-04 07:21Z — Finished: optional Higgsfield portrait concept flow. Added a user-key-per-session image generation route and UI on `/bot`; keeps generated art separate from the kernel-backed persona, so generation does not change SOV identity or permissions. Paths: `app/api/bot/avatar/route.ts`, `app/bot/portrait-creator.tsx`, `lib/bot/higgsfield.ts`, `tests/bot/higgsfield.test.ts`, `app/bot/page.tsx`, `BUILD_STATUS.md`. Focused helper tests passed 5/5 under Node 24 type stripping. GitHub Actions run 61 succeeded (tests, typecheck, lint and build): https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37185932347. Live provider verification remains next.
+
+- 2026-10-04 08:19Z — Claude, started (founder: "your pick" for avatar graphics, which is the code-drawn option): the agent screen and a richer avatar.
+  - **Persona:** material, brows, marks, motion energy and idle style. Old saved bots keep working.
+  - **Character:** matte, glass, hologram and chrome finishes. The Build Book's states: waiting for approval, needs input, completed, unavailable.
+  - **`/bot`:** becomes a command center with a HUD stage and seven customization tabs, plus an agent-contract card built from real grants and connections.
+
+  Ownership claimed in `ACTIVE-WORK.md`; Codex's portrait creator and connector tools are untouched. Next after this: onboarding at sign-on, agreed with Codex.
