@@ -140,6 +140,13 @@ integrations
 execution
 That gives you the larger loop:
 Imagine → Design → Simulate → Price → Validate → Gather people → Fund → Build → Operate → Prove
+
+Project resource coordination
+Every project depends on a finite mix of resources, time, skill, ideas, capital, and labor, often alongside materials, information, access, and tools. Sovereign helps people see what is already available, what is missing or uncertain, who can contribute, what each commitment requires, and what would prove that it was delivered.
+
+People and AI coordinate around the same project record, with distinct identities, accountable owners, permissions, and sources. AI can research, connect, plan, and prepare actions across the work; it cannot invent a commitment, claim a resource, or exceed the authority it was given. The record distinguishes a person's offer, an open need, an AI proposal, an accepted commitment, and an evidenced outcome.
+
+Truth is an operating advantage. Clear provenance, terms, owners, permissions, state, and outcome evidence reduce repeated checking and rework, so a trusted group can move faster without hiding uncertainty or bypassing consent. The same resource coordination should work for a personal goal, a business, a community, and ultimately networks of communities.
 Self-creating world
 Eventually Sovereign itself evolves.
 Not uncontrolled AI rewriting production.
