@@ -86,3 +86,5 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - typecheck, lint and build ok.
 
   Not done: v5 is not on staging. The Supabase connector timed out twice on `apply_migration` (it waits for a confirmation this session can't give), and nothing changed. CI for this push: pending when written. Next: the founder applies v5 and presence on staging, or confirms in a session that can; then the bot–World bridge with Codex.
+
+- 2026-10-04 04:48Z — CI run 32 (`2bfd26f`, erasable memory, live presence, connector hardening) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37177744046. Still waiting on the founder: v5 and presence on staging, staging OAuth and secret key, the v4 go-ahead.
