@@ -227,7 +227,7 @@ it("learns owner-approved business context incrementally, with provenance and se
   assert.match(secret.content[0].text, /Remove passwords, keys, tokens/);
   assert.equal((await readMemories(ana, anaId)).length, 2, "credentials never enter memory");
 
-  const unsupported = await call(s, "learn_business", { business_name: "Zingg Works", section: "secrets", details: "none" });
+  const unsupported = await call(s, "learn_business", { business_name: "Zingg Works", section: "toString", details: "none" });
   assert.equal(unsupported.isError, true, "the connector validates section values even if a caller skips the MCP schema");
 
   await approveConnection(ana, anaId, bot.avatar!.agent_id, { clientId: CLAUDE, clientName: "Claude", mode: "read" }, "business-read-only");
