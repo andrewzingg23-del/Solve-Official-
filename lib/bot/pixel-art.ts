@@ -1,4 +1,4 @@
-const PREFIX = "SOV_PIXEL_ART_V1\\n";
+const PREFIX = "SOV_PIXEL_ART_V1\n";
 const MAX_SIDE = 32;
 const MAX_CELLS = MAX_SIDE * MAX_SIDE;
 
