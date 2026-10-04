@@ -1,10 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { forgetMemory, noteMemory, revokeConnection } from "@/lib/bot/memory";
 import { saveBot } from "@/lib/bot/store";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
-import { getUser } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 
 export type SaveResult = { ok: true; version: number; savedAt: string | null } | { ok: false; error: "signed-out" | "identity" | "forbidden" | "unavailable" };
 
@@ -21,4 +22,37 @@ export async function saveBotAction(requestId: string, persona: unknown): Promis
     if (error instanceof KernelError && error.name === "forbidden") return { ok: false, error: "forbidden" };
     return { ok: false, error: "unavailable" };
   }
+}
+
+const field = (v: FormDataEntryValue | null) => (typeof v === "string" ? v : "");
+
+// Disconnects an assistant: the kernel stops honoring it at once, and Supabase forgets the grant
+// so it has to ask again.
+export async function disconnectAction(formData: FormData) {
+  const clientId = field(formData.get("client_id"));
+  if (!clientId || !(await getUser())) return;
+  const kernel = await getKernel();
+  const me = await kernel.whoami();
+  await revokeConnection(kernel, me.actor_id, clientId, field(formData.get("request_id")) || crypto.randomUUID());
+  await (await createClient()).auth.oauth.revokeGrant({ clientId }).catch(() => null);
+  revalidatePath("/bot");
+}
+
+// The person feeds their bot directly.
+export async function addMemoryAction(formData: FormData) {
+  if (!(await getUser())) return;
+  const kernel = await getKernel();
+  const me = await kernel.whoami();
+  const source = { kind: "person", title: field(formData.get("title")) || null, url: field(formData.get("url")) || null };
+  await noteMemory(kernel, me.actor_id, { text: field(formData.get("text")), source }, { client_id: null, client_name: null }, field(formData.get("request_id")) || crypto.randomUUID()).catch(() => null);
+  revalidatePath("/bot");
+}
+
+export async function forgetMemoryAction(formData: FormData) {
+  const memoryId = field(formData.get("memory_id"));
+  if (!memoryId || !(await getUser())) return;
+  const kernel = await getKernel();
+  const me = await kernel.whoami();
+  await forgetMemory(kernel, me.actor_id, memoryId);
+  revalidatePath("/bot");
 }
