@@ -45,7 +45,7 @@ The founder chose to pause `sov2.0` to free a project slot. `solve-staging` (`ta
 
 **One bookkeeping difference for the live apply.** `apply_migration` records the time it runs as the migration's version: staging shows `20261004001423`…`20261004004912`. Live recorded the three applied migrations under the repository's file versions (`20261003064603`, `20261003072025`, `20261003080203`). Applied the same way, v4 would be recorded on live as `20261004…`, not `20261003110000`. See step 3.
 
-**Staging state.** The project holds test actors, a market World and the posting described above, and it uses the organization's second active slot. Keeping, pausing or deleting it is the founder's call.
+**Staging state.** The project holds test actors, a market World and the posting described above, and it uses the organization's second active slot. Since the handoff (2026-10-04), Codex has pointed this branch's Vercel preview at it. One test actor (auth subject `00000000-0000-4000-8000-000000000001`, not a real user) holds the staging root grant from the bootstrap rehearsal. `kernel.grant_root` refuses a second active root, so revoke that grant before granting root to a real staging user.
 
 ## What was rehearsed earlier, and where
 

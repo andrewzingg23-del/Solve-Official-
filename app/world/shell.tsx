@@ -16,7 +16,7 @@ import { CONSEQUENTIAL } from "@/lib/world/reasoning";
 import type { HorizonResult, PresentationCommand, ProposedAction } from "@/lib/world/presentation";
 import type { SceneController, SceneMetrics } from "@/lib/world/scene";
 import { buildSpatialView, type SpatialView } from "@/lib/world/spatial";
-import { emptyContext, LENSES, type InteractionContext, type LensId } from "@/lib/world/types";
+import { emptyContext, type InteractionContext, type LensId } from "@/lib/world/types";
 import { AvatarArt, type Seed } from "./avatar-art";
 import { ContextDrawer } from "./drawer";
 import { Earth } from "./earth";
@@ -26,6 +26,21 @@ import { Onboarding } from "./onboarding";
 import { StewardPanel } from "./steward";
 
 const MOTION = "(prefers-reduced-motion: reduce)";
+
+// Keep the everyday wayfinding visible; specialist readings remain one tap away.
+const PRIMARY_VIEWS: { id: LensId; label: string; question: string }[] = [
+  { id: "space", label: "World", question: "Explore the living World." },
+  { id: "cause", label: "Path", question: "See what is moving and what is blocked." },
+  { id: "people", label: "People", question: "See the people and agents in this World." },
+  { id: "time", label: "History", question: "See what changed and who changed it." },
+];
+
+const MORE_VIEWS: { id: LensId; label: string; question: string }[] = [
+  { id: "power", label: "Authority", question: "Who controls this?" },
+  { id: "flow", label: "Value", question: "Where did value move?" },
+  { id: "proof", label: "Proof", question: "What evidence supports this?" },
+  { id: "self", label: "You", question: "What does this mean for me?" },
+];
 
 function useReducedMotion() {
   return useSyncExternalStore(
@@ -92,6 +107,7 @@ export function WorldShell() {
   const [providerLabel, setProviderLabel] = useState(ruleProvider.label);
   const [indexOpen, setIndexOpen] = useState(false);
   const [stewardOpen, setStewardOpen] = useState(false);
+  const [moreViewsOpen, setMoreViewsOpen] = useState(false);
   // Events up to this sequence were history when the World opened: state, not effects.
   const [watermark, setWatermark] = useState(Number.MAX_SAFE_INTEGER);
   const reducedMotion = useReducedMotion();
@@ -251,6 +267,7 @@ export function WorldShell() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       setIndexOpen(false);
+      setMoreViewsOpen(false);
       select(null);
     };
     window.addEventListener("keydown", onKey);
@@ -360,22 +377,69 @@ export function WorldShell() {
               </span>
             </span>
           )}
+          {sandbox && (
+            <span
+              title="Arcadia uses fictional data and test assets; it is not shared live work."
+              aria-label="Sandbox: fictional data and test assets"
+              className="rounded border border-line px-1.5 py-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted md:hidden"
+            >
+              Sandbox
+            </span>
+          )}
         </header>
 
-        {/* Lenses: same reality, different projection. */}
-        <nav aria-label="Lenses" className="pointer-events-auto absolute inset-x-3 top-[3.75rem] z-20 flex gap-1 overflow-x-auto rounded-md border border-line bg-surface/80 p-1 backdrop-blur-md md:inset-x-auto md:right-5 md:top-5">
-          {LENSES.map((l) => (
+        {/* One World, a few clear ways to work in it; specialist readings stay contextual. */}
+        <nav aria-label="World views" className="pointer-events-auto absolute inset-x-3 top-[3.75rem] z-20 flex items-center justify-between gap-1 rounded-md border border-line bg-surface/80 p-1 backdrop-blur-md md:inset-x-auto md:right-5 md:top-5 md:justify-start">
+          {PRIMARY_VIEWS.map((l) => (
             <button
               key={l.id}
               type="button"
               aria-pressed={lens === l.id}
               title={l.question}
-              onClick={() => setCtx((c) => ({ ...c, currentLens: l.id }))}
-              className={`shrink-0 rounded px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] transition-colors ${lens === l.id ? "bg-accent/15 text-accent" : "text-muted hover:text-foreground"}`}
+              onClick={() => {
+                setCtx((c) => ({ ...c, currentLens: l.id }));
+                setMoreViewsOpen(false);
+              }}
+              className={`flex-1 rounded px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] transition-colors md:flex-none md:px-2.5 md:tracking-[0.18em] ${lens === l.id ? "bg-accent/15 text-accent" : "text-muted hover:text-foreground"}`}
             >
               {l.label}
             </button>
           ))}
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={moreViewsOpen}
+              aria-label={`More World views${MORE_VIEWS.some((l) => l.id === lens) ? `, current view ${MORE_VIEWS.find((l) => l.id === lens)?.label}` : ""}`}
+              title="Specialist views"
+              onClick={() => setMoreViewsOpen((open) => !open)}
+              className={`flex items-center gap-1.5 rounded px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] transition-colors md:px-2.5 md:tracking-[0.18em] ${MORE_VIEWS.some((l) => l.id === lens) || moreViewsOpen ? "bg-accent/15 text-accent" : "text-muted hover:text-foreground"}`}
+            >
+              More
+              {MORE_VIEWS.some((l) => l.id === lens) && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-accent" />}
+              <span aria-hidden="true" className="text-[9px]">▾</span>
+            </button>
+            {moreViewsOpen && (
+              <div role="menu" aria-label="Specialist World views" className="absolute right-0 top-full z-30 mt-2 flex min-w-40 flex-col gap-1 rounded-md border border-line bg-surface/95 p-1.5 shadow-xl backdrop-blur-md">
+                {MORE_VIEWS.map((l) => (
+                  <button
+                    key={l.id}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={lens === l.id}
+                    title={l.question}
+                    onClick={() => {
+                      setCtx((c) => ({ ...c, currentLens: l.id }));
+                      setMoreViewsOpen(false);
+                    }}
+                    className={`rounded px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.16em] transition-colors ${lens === l.id ? "bg-accent/15 text-accent" : "text-muted hover:bg-foreground/5 hover:text-foreground"}`}
+                  >
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </nav>
 
         {/* What matters now but has no place on Earth: listed, never given convenient coordinates. */}
