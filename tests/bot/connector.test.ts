@@ -189,6 +189,7 @@ it("serves Streamable HTTP: 401 with metadata, JSON-RPC over POST, batches and n
 
 it("learns owner-approved business context incrementally, with provenance and secret rejection", async () => {
   const { ana, anaId, bot, session, call } = await setting();
+  await approveConnection(ana, anaId, bot.avatar!.agent_id, { clientId: CLAUDE, clientName: "Claude", mode: "remember" }, "business-learn-approve");
   const s = session(ana, CLAUDE);
   const overview = {
     business_name: "Zingg Works",
