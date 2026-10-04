@@ -4,8 +4,15 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { claudeReasoner, gatewayReasoner, GATEWAY_URL, type Reasoner } from "./claude";
 
+type ReasoningEnvironment = {
+  ANTHROPIC_API_KEY?: string;
+  AI_GATEWAY_API_KEY?: string;
+  VERCEL_OIDC_TOKEN?: string;
+  AI_GATEWAY_MODEL?: string;
+};
+
 export function reasonerFromEnv(
-  env: NodeJS.ProcessEnv = process.env,
+  env: ReasoningEnvironment = process.env,
   requestOidcToken?: string | null,
 ): Reasoner | null {
   const anthropicKey = env.ANTHROPIC_API_KEY?.trim();
@@ -24,7 +31,7 @@ export function reasonerFromEnv(
 
 export function reasonerForRequest(
   request: Pick<Request, "headers">,
-  env: NodeJS.ProcessEnv = process.env,
+  env: ReasoningEnvironment = process.env,
 ): Reasoner | null {
   return reasonerFromEnv(env, request.headers.get("x-vercel-oidc-token"));
 }
