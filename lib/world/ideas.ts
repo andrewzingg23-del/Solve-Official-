@@ -193,11 +193,20 @@ export async function relateIdeas(kernel: Kernel, input: {
     return graph.links.find((link) => link.kind === input.kind && link.fromId === input.fromId && link.toId === input.toId)!.id;
   }
   if (input.kind === "idea_derived_from") {
-    const parentByChild = new Map(graph.links.filter((link) => link.kind === "idea_derived_from").map((link) => [link.fromId, link.toId]));
-    let cursor: string | undefined = input.toId;
-    while (cursor) {
+    const parentsByChild = new Map<string, string[]>();
+    for (const link of graph.links.filter((candidate) => candidate.kind === "idea_derived_from")) {
+      const parents = parentsByChild.get(link.fromId) ?? [];
+      parents.push(link.toId);
+      parentsByChild.set(link.fromId, parents);
+    }
+    const pending = [input.toId];
+    const seen = new Set<string>();
+    while (pending.length) {
+      const cursor = pending.pop()!;
       if (cursor === input.fromId) throw new KernelError("invalid", "Derived-from links cannot form a cycle", "");
-      cursor = parentByChild.get(cursor);
+      if (seen.has(cursor)) continue;
+      seen.add(cursor);
+      pending.push(...(parentsByChild.get(cursor) ?? []));
     }
   }
   try {

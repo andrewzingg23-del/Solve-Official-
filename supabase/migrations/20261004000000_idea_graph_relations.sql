@@ -15,4 +15,7 @@ comment on constraint relations_kind_check on kernel.relations is
 -- Prevent concurrent writers from creating duplicate active semantic links.
 create unique index kernel_idea_relations_active_once
   on kernel.relations (kind, from_ref, to_ref, scope)
-  where kind like 'idea_%';
+  where kind in (
+    'idea_derived_from', 'idea_supports', 'idea_contradicts', 'idea_supersedes',
+    'idea_implemented_by', 'idea_tested_by', 'idea_evidenced_by', 'idea_blocked_by'
+  );
