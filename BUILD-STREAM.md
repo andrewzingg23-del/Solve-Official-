@@ -152,3 +152,6 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   CI for `659f5cc` was still running; this push supersedes it. CI for this push: pending when written.
 
 - 2026-10-04 08:46Z — CI run 62 (`659f5cc`, agent screen) and run 63 (`4f8575f`, Human | Machine toggle) both succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37189605812. Founder feedback since: the HUD and particle look reads as "vibe coded"; brand direction under discussion (the construct concept: the chair stays, the world changes). Strip-back waits on the founder's yes.
+
+
+- 2026-10-04 09:10Z — Codex, starting: make the existing reasoning route use Vercel's deployment OIDC token for AI Gateway when no explicit gateway key is configured. Paths: `app/api/reason/route.ts`, `lib/world/reasoning-config.ts`, `tests/e2e/reasoning-oidc.test.ts`, build/status docs. Vercel's current docs confirm OIDC support for Anthropic Messages. The latest preview reports no model configured. Start with a route-level failing test, then add the server-side fallback and verify CI. Staging Supabase OAuth remains a separate blocker.
