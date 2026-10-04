@@ -12,7 +12,7 @@ it("stores ideas, typed lineage and status history through the governed World ke
   const db = await createKernelDb();
   const alice = kernelClient(localSupabase(db, user("auth:ideas-alice")));
   const bob = kernelClient(localSupabase(db, user("auth:ideas-bob")));
-  await alice.register("Alice");
+  const aliceId = await alice.register("Alice");
   await bob.register("Bob");
   const world = await createCreativeWorld(alice, { worldId, title: "Development memory" });
 
@@ -89,7 +89,7 @@ it("stores ideas, typed lineage and status history through the governed World ke
   ]);
   assert.equal(supportA, supportB, "concurrent duplicate semantic edges converge on one canonical relation");
   const history = await alice.readEvents(world.scope, { limit: 50 });
-  assert.ok(history.some((event) => event.type === "kernel.entity.created" && event.actor_id));
+  assert.ok(history.some((event) => event.type === "kernel.entity.created" && event.actor_id === aliceId));
   assert.ok(history.filter((event) => event.type === "kernel.entity.updated").length >= 2, "status changes are versioned kernel events");
 
   await assert.rejects(readIdeaGraph(bob, world.scope), (error: unknown) => error instanceof KernelError && error.name === "forbidden");

@@ -163,6 +163,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
         </div>
         <nav aria-label="World navigation" className="flex items-center gap-1 rounded-md border border-line bg-surface/75 p-1">
           <span aria-current="page" className="rounded bg-accent/15 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">World</span>
+          <Link href={`/world/${worldId}/ideas`} className="rounded px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted hover:text-foreground">Ideas</Link>
           <a href="#history" className="rounded px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted hover:text-foreground">History</a>
         </nav>
       </header>
