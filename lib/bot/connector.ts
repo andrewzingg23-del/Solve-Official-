@@ -177,7 +177,7 @@ export const TOOLS = [
   {
     name: "create_pixel_art",
     title: "Create pixel art",
-    description: "Creates or revises a small pixel-art image as a visible, versioned World artifact. Turn the prompt (or a vision-capable assistant's reference-image analysis) into a 1–32 pixel grid. Use palette indexes 0–9 in each row; dot means transparent. The palette is a list of six-digit hex colors. Nothing is sent to an image provider.",
+    description: "Creates or revises a small pixel-art image as a visible, versioned World artifact. Turn the prompt (or a vision-capable assistant's reference-image analysis) into a 1–32 pixel grid. Use palette indexes 0–9 in each row; dot means transparent. The palette is a list of six-digit hex colors. The pixel image is rendered directly by Sovereign; no external image provider is called.",
     inputSchema: {
       type: "object",
       properties: {
@@ -393,7 +393,7 @@ export function createConnector(s: Session) {
             artifact_id: saved.entityId,
             world_id: worldId,
             revised: saved.revised,
-            media_type: "image/svg+xml",
+            media_type: "application/vnd.sov.pixel-grid+json",
             renderer: "sovereign-pixel-grid",
           });
         }
