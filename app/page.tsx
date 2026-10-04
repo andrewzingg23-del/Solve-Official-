@@ -1,7 +1,9 @@
+import { redirect } from "next/navigation";
+import { getUser } from "@/lib/supabase/server";
 import { WorldShell } from "./world/shell";
 
-// The World is the interface: Earth, You, Horizon. Sign-in is off for now; the World runs on the
-// real kernel in your browser, seeded from Arcadia.
-export default function Home() {
+export default async function Home() {
+  // Signed-in people return to durable work. Visitors can explore Arcadia before creating an ID.
+  if (await getUser()) redirect("/worlds");
   return <WorldShell />;
 }

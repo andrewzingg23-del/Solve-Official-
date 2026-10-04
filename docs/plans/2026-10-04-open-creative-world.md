@@ -16,19 +16,21 @@ SOV ID keeps human and agent identity, ownership, and grants clear. Currency rai
 - The branch CI for the reviewed commit is green.
 - Supabase staging project solve-staging is active on Postgres 17. Its migration history includes v4; the chain check returned ok=true across 35 events, and inspected grants do not give API roles direct access to kernel tables.
 - Production was not migrated.
+- The branch-specific Vercel Preview is set to solve-staging; the pre-creative preview for commit 812153d is READY. Auth redirect settings remain unverified, so the staging-backed sign-in path has not been exercised.
 - The current root app is an Arcadia-backed globe, Horizon, lenses, and deterministic interaction loop. The kernel, authority model, provider boundary, answer service, agent inquiry exchange, and reasoning-provider code are implemented and tested.
-- The product gap is collaborative authoring: there is no staging-backed shared canvas where multiple humans and external agents can make visible, persistent changes together.
-- The exact local snapshot matches all 164 GitHub blob hashes. Typecheck, lint, build, and the isolated kernel test pass. One local npm test run alongside typecheck and lint exited nonzero at file level; the latest branch CI is the full-suite green gate.
+- First creative slice added: signed-in `/` opens `/worlds`; people can create and reopen a private, blank World at `/world/[worldId]`, then add, move, revise, and reload text artifacts backed by versioned kernel entities and a visible event history. `/arcadia` stays the labeled sandbox. This code path has not yet been exercised through staging Auth.
+- The remaining product gap is live collaboration: there is no invitation UI, real-time change sync or presence, or provider-neutral path for a collaborator's existing agent to contribute to this creative World.
+- At takeover, the recovered snapshot matched 164 GitHub blob hashes at fd09d67. For the creative slice, its focused kernel test passes 1/1, with typecheck, lint, and production build passing locally; the push CI remains the full-suite gate.
 
 ## Page and surface outline
 
 Keep the World at the center. Most destinations are views or contextual tools inside it, not standalone pages.
 
-1. **World entrance — `/`**  
-   Keep the existing spatial World as the entry point. Return to the active World quickly; offer creation or joining from there when durable World membership is available. Do not insert a dashboard or social feed.
+1. **World entrance — `/` and `/worlds`**  
+   Signed-out visitors enter the Arcadia sample. Signed-in people arrive at their Worlds, where they can reopen work or start a new blank World. This is a compact work index, not a social feed. The sample is also available at `/arcadia`.
 
-2. **The World — current root shell, future persistent World route**  
-   One underlying World can be viewed spatially, as a canvas, or in 3D when the work needs it. The current build is the Arcadia Earth prototype; a truly open, kernel-backed creative canvas is still future work. Starting blank with optional examples is the default.
+2. **The World — `/world/[worldId]`**  
+   One private kernel-backed workspace opens blank. The first canvas slice supports text artifacts with saved position, revision history, and explicit access boundaries. It currently lays pieces out as a responsive board; richer free placement, other artifact types, and 3D remain future work. Arcadia keeps the spatial Earth prototype separate.
 
 3. **Everyday views inside the World**  
    Keep four wayfinding choices visible: **World** (spatial view), **Path** (what is moving or blocked), **People** (people and agents), and **History** (what changed). They are projections of the same state.
@@ -37,7 +39,7 @@ Keep the World at the center. Most destinations are views or contextual tools in
    **Authority**, **Value**, **Proof**, and **You** remain available without crowding the first screen.
 
 5. **Contextual tools, not feed pages**  
-   Selection opens an inspector. Presence and invitations belong beside the shared work. Changes and evidence stay available through History and Proof. Connections to files, tools, services, and outside agents begin from the World that needs them. The current prototype does not yet implement live presence, invitations, or generic shared authoring.
+   Changes and evidence stay available through History and Proof. Connections to files, tools, services, and outside agents begin from the World that needs them. The creative World now has kernel event history; live presence, invitations, and outside-agent joining are still unbuilt.
 
 6. **Identity and account — existing `/account`**  
    SOV ID, human/agent distinction, grants, and memory controls. Reachable when needed; secondary to the World.
@@ -53,13 +55,13 @@ On phone, keep the World full-screen, use reachable sheets, and show the Arcadia
 Confirm branch head and CI, confirm staging project/migrations/integrity/grants, preserve the production boundary, and reconcile build status. The staging project currently has v4; production does not.
 
 ### 1. Make the staging app path real
-Verify Auth redirect URLs and Data API exposure on staging, wire the app to staging-only configuration, and demonstrate account registration and World load through kernel_api. Keep Arcadia available as a labeled sandbox; do not present its activity as real collaboration.
+The branch preview has staging-only Supabase configuration, and the signed-in route now calls the kernel. Still verify Auth redirect URLs and Data API exposure, then demonstrate account registration and World load through kernel_api. Keep Arcadia available as a labeled sandbox; do not present its activity as real collaboration.
 
 ### 2. Build durable creative primitives
-Use the existing World Graph/kernel contract where it fits. A creator should be able to add, move, revise, connect, and undo generic items without choosing a Sector Pack first. Persist meaningful edits through the kernel-gated interface with actor, owner/agent relationship, scope, and history. Store larger binary/3D artifacts outside the event payload and attach versioned references plus content hashes.
+First slice implemented: claim a private World scope; create its root entity and owner relation; create, move, and revise text documents; persist each revision with idempotent kernel writes; show actor-attributed World history. Remaining: generic shapes and imported files, connect and undo, richer placement, and content-addressed storage for larger artifacts.
 
 ### 3. Make two people see the same World live
-Add authenticated World membership and scoped grants first. Use ephemeral presence/cursor signals for “who is here”; use the kernel event as the durable record and realtime notifications only to prompt authorized clients to refresh. Avoid broadcasting private payloads. Define conflict behavior for same-object edits and test reload, offline/reconnect, revoked access, and concurrent edits.
+Add an in-app invitation and scoped-grant flow. Use ephemeral presence/cursor signals for “who is here”; use the kernel event as the durable record and realtime notifications only to prompt authorized clients to refresh. Avoid broadcasting private payloads. Define conflict behavior for same-object edits and test reload, offline/reconnect, revoked access, and concurrent edits.
 
 ### 4. Bring each person's agent into the project
 Expose a provider-neutral, permission-checked World interface (MCP/API adapter) so a collaborator can connect the agent they already use. Each agent keeps its own identity and owner; it receives only the World/task context it was granted. Start with reversible edits and visible proposals; external commitments still require the existing approval/authority path.

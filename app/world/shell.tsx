@@ -3,6 +3,7 @@
 // The World. One environment: Earth as the root, You and your avatar inside it, Horizon for
 // intent, lenses for how reality is shown, and the context drawer for what matters now. World,
 // Horizon and avatar share one interaction context; every change comes from the kernel.
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { RepresentationKind } from "@/lib/kernel/client";
 import { bootSandbox, resetSandbox, type Sandbox } from "@/lib/sandbox/boot";
@@ -386,6 +387,9 @@ export function WorldShell() {
               Sandbox
             </span>
           )}
+          <Link href="/worlds" aria-label="Your Worlds" className="border-l border-line pl-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted hover:text-accent">
+            Worlds
+          </Link>
         </header>
 
         {/* One World, a few clear ways to work in it; specialist readings stay contextual. */}
