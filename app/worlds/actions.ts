@@ -21,7 +21,7 @@ export async function createWorldAction(formData: FormData) {
     !title.trim() ||
     title.trim().length > 160 ||
     goal.length > 7_000 ||
-    hasUnsupportedControl,
+    hasUnsupportedControl
   ) {
     redirect("/worlds?error=world-input");
   }
