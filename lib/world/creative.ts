@@ -21,6 +21,69 @@ export type CreativeArtifact = {
 };
 
 export type CreateCreativeWorldInput = { worldId: string; title: string; goal?: string };
+export const CREATIVE_RESOURCE_CATEGORIES = [
+  { value: "time", label: "Time" },
+  { value: "skill", label: "Skill" },
+  { value: "idea", label: "Idea" },
+  { value: "capital", label: "Capital" },
+  { value: "labor", label: "Labor" },
+  { value: "resource", label: "Tools, materials, or information" },
+] as const;
+
+export type CreativeResourceCategory = (typeof CREATIVE_RESOURCE_CATEGORIES)[number]["value"];
+export type CreativeResourceEntryType = "offer" | "need";
+export type CreativeResourceStatus = "open" | "withdrawn";
+
+export type CreativeResourceEntry = {
+  entityId: string;
+  entryType: CreativeResourceEntryType;
+  category: CreativeResourceCategory;
+  title: string;
+  description: string;
+  timeWindow: string;
+  sourceUrl: string;
+  sourceStatus: "none" | "user_supplied_unverified";
+  status: CreativeResourceStatus;
+  reportedBy: string;
+  version: number;
+  updatedAt: string;
+};
+
+export type CreateCreativeResourceEntryInput = {
+  scope: string;
+  worldEntityId: string;
+  requestId: string;
+  entryType: CreativeResourceEntryType;
+  category: CreativeResourceCategory;
+  title: string;
+  description: string;
+  timeWindow?: string;
+  sourceUrl?: string;
+};
+
+export type UpdateCreativeResourceEntryInput = {
+  scope: string;
+  entityId: string;
+  requestId: string;
+  title: string;
+  description: string;
+  timeWindow?: string;
+  sourceUrl?: string;
+  status: CreativeResourceStatus;
+};
+
+export function isCreativeResourceCategory(value: string): value is CreativeResourceCategory {
+  return CREATIVE_RESOURCE_CATEGORIES.some((category) => category.value === value);
+}
+
+export function isCreativeResourceEntryType(value: string): value is CreativeResourceEntryType {
+  return value === "offer" || value === "need";
+}
+
+export function isCreativeResourceStatus(value: string): value is CreativeResourceStatus {
+  return value === "open" || value === "withdrawn";
+}
+
 export type CreateCreativeArtifactInput = {
   scope: string;
   worldEntityId: string;
@@ -40,6 +103,47 @@ export type UpdateCreativeArtifactInput = {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_BODY_LENGTH = 7000;
+
+const RESOURCE_CATEGORY_VALUES = CREATIVE_RESOURCE_CATEGORIES.map((category) => category.value);
+
+function requireResourceCategory(value: string): CreativeResourceCategory {
+  if (!RESOURCE_CATEGORY_VALUES.includes(value as CreativeResourceCategory)) {
+    throw new KernelError("invalid", "Choose a supported resource category", "");
+  }
+  return value as CreativeResourceCategory;
+}
+
+function requireResourceType(value: string): CreativeResourceEntryType {
+  if (value !== "offer" && value !== "need") throw new KernelError("invalid", "Choose an offer or a need", "");
+  return value;
+}
+
+function requireResourceStatus(value: string): CreativeResourceStatus {
+  if (value !== "open" && value !== "withdrawn") throw new KernelError("invalid", "Choose an open or withdrawn entry", "");
+  return value;
+}
+
+function requireTimeWindow(value: string): string {
+  const text = requireBody(value.trim());
+  if (text.length > 300) throw new KernelError("invalid", "Time window must be 300 characters or less", "");
+  return text;
+}
+
+function requireSourceUrl(value: string): string {
+  const text = value.trim();
+  if (!text) return "";
+  if (text.length > 2048) throw new KernelError("invalid", "Source URL must be 2,048 characters or less", "");
+  let url: URL;
+  try {
+    url = new URL(text);
+  } catch {
+    throw new KernelError("invalid", "Source must be a valid HTTP or HTTPS URL", "");
+  }
+  if ((url.protocol !== "http:" && url.protocol !== "https:") || url.username || url.password) {
+    throw new KernelError("invalid", "Source must be an HTTP or HTTPS URL without embedded credentials", "");
+  }
+  return url.toString();
+}
 
 function requireWorldId(worldId: string): string {
   if (!UUID.test(worldId)) throw new KernelError("invalid", "World id must be a UUID", "");
@@ -105,6 +209,48 @@ function artifactFromEntity(entity: WorldEntity): CreativeArtifact | null {
     title: entity.title,
     body: typeof entity.attributes.content === "string" ? entity.attributes.content : "",
     position: { x, y },
+    version: entity.version,
+    updatedAt: entity.updated_at,
+  };
+}
+
+function resourceFromEntity(entity: WorldEntity): CreativeResourceEntry | null {
+  const attributes = entity.attributes;
+  const entryType = attributes.resourceType;
+  const category = attributes.resourceCategory;
+  const status = attributes.status;
+  const reportedBy = attributes.reportedBy;
+  if (
+    (entity.kind !== "resource" && entity.kind !== "need") ||
+    (entryType !== "offer" && entryType !== "need") ||
+    (entryType === "offer" && entity.kind !== "resource") ||
+    (entryType === "need" && entity.kind !== "need") ||
+    typeof category !== "string" ||
+    !isCreativeResourceCategory(category) ||
+    (status !== "open" && status !== "withdrawn") ||
+    typeof reportedBy !== "string" ||
+    attributes.worldId !== entity.scope.slice("world:".length)
+  ) return null;
+
+  let sourceUrl = "";
+  if (typeof attributes.sourceUrl === "string" && attributes.sourceUrl) {
+    try {
+      sourceUrl = requireSourceUrl(attributes.sourceUrl);
+    } catch {
+      sourceUrl = "";
+    }
+  }
+  return {
+    entityId: entity.entity_id,
+    entryType,
+    category,
+    title: entity.title,
+    description: typeof attributes.description === "string" ? attributes.description : entity.summary,
+    timeWindow: typeof attributes.timeWindow === "string" ? attributes.timeWindow : "",
+    sourceUrl,
+    sourceStatus: sourceUrl ? "user_supplied_unverified" : "none",
+    status,
+    reportedBy,
     version: entity.version,
     updatedAt: entity.updated_at,
   };
@@ -211,7 +357,8 @@ export async function loadCreativeWorld(kernel: Kernel, rawWorldId: string) {
   const world = entities.map(worldFromEntity).find((candidate) => candidate?.worldId === worldId);
   if (!world) throw new KernelError("not_found", "World not found", "");
   const artifacts = entities.map(artifactFromEntity).filter((artifact): artifact is CreativeArtifact => artifact !== null);
-  return { world, artifacts };
+  const resources = entities.map(resourceFromEntity).filter((entry): entry is CreativeResourceEntry => entry !== null);
+  return { world, artifacts, resources };
 }
 
 export async function createCreativeArtifact(kernel: Kernel, input: CreateCreativeArtifactInput): Promise<string> {
@@ -252,3 +399,77 @@ export async function updateCreativeArtifact(kernel: Kernel, input: UpdateCreati
     idempotencyKey: requestKey(`artifact-update:${input.entityId}`, input.requestId),
   });
 }
+export async function createCreativeResourceEntry(kernel: Kernel, input: CreateCreativeResourceEntryInput): Promise<string> {
+  const { worldId, scope } = requireScope(input.scope);
+  const world = await assertWorldEntity(kernel, scope, input.worldEntityId);
+  const entryType = requireResourceType(input.entryType);
+  const category = requireResourceCategory(input.category);
+  const title = requireTitle(input.title);
+  const description = requireBody(input.description);
+  const timeWindow = requireTimeWindow(input.timeWindow ?? "");
+  const sourceUrl = requireSourceUrl(input.sourceUrl ?? "");
+  const actor = await kernel.whoami();
+  const kind = entryType === "offer" ? "resource" : "need";
+  const entityId = await kernel.upsertEntity({
+    kind,
+    scope,
+    title,
+    summary: description.trim().slice(0, 240),
+    attributes: {
+      worldId,
+      resourceType: entryType,
+      resourceCategory: category,
+      description,
+      timeWindow,
+      sourceUrl,
+      sourceStatus: sourceUrl ? "user_supplied_unverified" : "none",
+      status: "open",
+      basis: "self_reported",
+      reportedBy: actor.actor_id,
+    },
+    visibility: "members",
+    idempotencyKey: requestKey(`resource-create:${entryType}`, input.requestId),
+  });
+  // Resource entries live in the same private scope as the World. A separate relation would
+  // require world.relation.write, which an Add-only collaborator does not receive.
+  if (world.scope !== scope) throw new KernelError("not_found", "World not found in this scope", "");
+  return entityId;
+}
+
+export async function updateCreativeResourceEntry(kernel: Kernel, input: UpdateCreativeResourceEntryInput): Promise<string> {
+  const { worldId, scope } = requireScope(input.scope);
+  const existing = (await kernel.readWorld(scope)).find((entity) => entity.entity_id === input.entityId);
+  if (
+    !existing ||
+    (existing.kind !== "resource" && existing.kind !== "need") ||
+    existing.attributes.worldId !== worldId ||
+    !resourceFromEntity(existing)
+  ) throw new KernelError("not_found", "Resource entry not found in this World", "");
+  const actor = await kernel.whoami();
+  if (existing.attributes.reportedBy !== actor.actor_id) {
+    throw new KernelError("forbidden", "Only the person who reported this entry can revise or withdraw it", "");
+  }
+  const title = requireTitle(input.title);
+  const description = requireBody(input.description);
+  const timeWindow = requireTimeWindow(input.timeWindow ?? "");
+  const sourceUrl = requireSourceUrl(input.sourceUrl ?? "");
+  const status = requireResourceStatus(input.status);
+  return kernel.upsertEntity({
+    entityId: existing.entity_id,
+    kind: existing.kind,
+    scope,
+    title,
+    summary: description.trim().slice(0, 240),
+    attributes: {
+      ...existing.attributes,
+      description,
+      timeWindow,
+      sourceUrl,
+      sourceStatus: sourceUrl ? "user_supplied_unverified" : "none",
+      status,
+    },
+    visibility: "members",
+    idempotencyKey: requestKey(`resource-update:${input.entityId}`, input.requestId),
+  });
+}
+
