@@ -80,3 +80,5 @@ The server's `initialize` instructions tell the assistant to speak as the bot (f
 **Status (2026-10-04).** Slices A, B and C are built, plus the hardening pass: erasable sealed memory (kernel v5), live presence, search over the whole history, and injection guards. They are tested on the embedded kernel and on Postgres 17 (`tests/bot/`, 23 tests). None of it has been exercised with a real assistant yet: that waits on the staging setup above, and v5 is not applied to staging yet. The bot also works in Worlds now: the four World tools and "Where your bot works" on `/bot` (`docs/plans/2026-10-04-bot-world-bridge.md`).
 
 Tests live in `tests/bot/`. They run on the embedded kernel, and the connector tests use fake tokens and no network.
+
+**Agent screen (2026-10-04).** `/bot` is a HUD command center with seven customization tabs (Form, Face, Finish, Color, Gear, Motion, Personality), ten state previews and an agent-contract card read from real records. The avatar stays code-drawn (founder's pick), with four finishes, brows, marks, motion energy and idle styles.

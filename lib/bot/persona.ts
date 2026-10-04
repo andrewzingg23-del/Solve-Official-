@@ -9,6 +9,10 @@ export const MOUTHS = ["smile", "line", "open", "none"] as const;
 export const TOPS = ["none", "antenna", "halo", "ears", "crest"] as const;
 export const ACCESSORIES = ["none", "scarf", "headset", "cape", "badge"] as const;
 export const AURAS = ["none", "orbit", "pulse", "sparkle"] as const;
+export const MATERIALS = ["matte", "glass", "hologram", "chrome"] as const;
+export const BROWS = ["none", "soft", "sharp", "raised"] as const;
+export const MARKS = ["none", "blush", "stripes", "circuit"] as const;
+export const IDLES = ["bob", "float", "drift", "still"] as const;
 export const RELATIONSHIPS = ["assist", "represent", "guide", "create_with"] as const satisfies readonly AvatarRelationship[];
 export const TRAITS = ["warmth", "playfulness", "boldness", "formality"] as const;
 
@@ -18,12 +22,28 @@ export const SWATCHES = [
   "#22d3ee", "#00e5a0", "#60a5fa", "#a78bfa", "#e879f9", "#f472b6", "#ff7a8a", "#a3e635", "#e2f1ff", "#94a3b8", "#1e293b", "#0b1324",
 ] as const;
 
+// Named color sets for one tap. All of them keep clear of gold, which the brand never uses.
+export const PALETTES = [
+  { name: "Abyss", primary: "#22d3ee", secondary: "#1e293b", glow: "#a78bfa" },
+  { name: "Signal", primary: "#00e5a0", secondary: "#0b1324", glow: "#22d3ee" },
+  { name: "Ice", primary: "#e2f1ff", secondary: "#1e293b", glow: "#60a5fa" },
+  { name: "Violet", primary: "#a78bfa", secondary: "#0b1324", glow: "#e879f9" },
+  { name: "Ember", primary: "#ff7a8a", secondary: "#1e293b", glow: "#f472b6" },
+  { name: "Grove", primary: "#a3e635", secondary: "#0b1324", glow: "#00e5a0" },
+  { name: "Steel", primary: "#94a3b8", secondary: "#0b1324", glow: "#22d3ee" },
+  { name: "Night", primary: "#1e293b", secondary: "#0b1324", glow: "#22d3ee" },
+] as const;
+
 export type Body = (typeof BODIES)[number];
 export type Eyes = (typeof EYES)[number];
 export type Mouth = (typeof MOUTHS)[number];
 export type Top = (typeof TOPS)[number];
 export type Accessory = (typeof ACCESSORIES)[number];
 export type Aura = (typeof AURAS)[number];
+export type Material = (typeof MATERIALS)[number];
+export type Brows = (typeof BROWS)[number];
+export type Marks = (typeof MARKS)[number];
+export type Idle = (typeof IDLES)[number];
 export type Trait = (typeof TRAITS)[number];
 
 export type Persona = {
@@ -35,6 +55,11 @@ export type Persona = {
   top: Top;
   accessory: Accessory;
   aura: Aura;
+  material: Material;
+  brows: Brows;
+  marks: Marks;
+  // How lively its motion is (0 calm to 100 brisk), and how it moves when nothing is happening.
+  motion: { energy: number; idle: Idle };
   traits: Record<Trait, number>;
   voice: string;
   about: string;
@@ -53,6 +78,10 @@ export const DEFAULT_PERSONA: Persona = {
   top: "antenna",
   accessory: "none",
   aura: "orbit",
+  material: "glass",
+  brows: "none",
+  marks: "none",
+  motion: { energy: 50, idle: "bob" },
   traits: { warmth: 70, playfulness: 55, boldness: 45, formality: 30 },
   voice: "On it. Tell me what matters and I'll keep it in mind.",
   about: "Your master bot. Whichever AI you're talking to speaks through me, so I stay the same everywhere.",
@@ -77,6 +106,7 @@ export function validatePersona(raw: unknown, base: Persona = DEFAULT_PERSONA): 
   const r = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   const palette = r.palette && typeof r.palette === "object" ? (r.palette as Record<string, unknown>) : {};
   const traits = r.traits && typeof r.traits === "object" ? (r.traits as Record<string, unknown>) : {};
+  const motion = r.motion && typeof r.motion === "object" ? (r.motion as Record<string, unknown>) : {};
   const values = Array.isArray(r.values)
     ? [...new Set(r.values.map((v) => clean(v, LIMITS.value)).filter(Boolean))].slice(0, LIMITS.values)
     : base.values;
@@ -93,6 +123,10 @@ export function validatePersona(raw: unknown, base: Persona = DEFAULT_PERSONA): 
     top: pick(TOPS, r.top, base.top),
     accessory: pick(ACCESSORIES, r.accessory, base.accessory),
     aura: pick(AURAS, r.aura, base.aura),
+    material: pick(MATERIALS, r.material, base.material),
+    brows: pick(BROWS, r.brows, base.brows),
+    marks: pick(MARKS, r.marks, base.marks),
+    motion: { energy: level(motion.energy, base.motion.energy), idle: pick(IDLES, motion.idle, base.motion.idle) },
     traits: Object.fromEntries(TRAITS.map((t) => [t, level(traits[t], base.traits[t])])) as Record<Trait, number>,
     voice: typeof r.voice === "string" ? clean(r.voice, LIMITS.voice) : base.voice,
     about: typeof r.about === "string" ? clean(r.about, LIMITS.about) : base.about,
@@ -115,6 +149,10 @@ export function randomPersona(name: string, random: () => number = Math.random):
     top: any(TOPS),
     accessory: any(ACCESSORIES),
     aura: any(AURAS),
+    material: any(MATERIALS),
+    brows: any(BROWS),
+    marks: any(MARKS),
+    motion: { energy: Math.round(random() * 100), idle: any(IDLES) },
     traits: Object.fromEntries(TRAITS.map((t) => [t, Math.round(random() * 100)])),
   });
 }

@@ -126,3 +126,25 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
 - Generated output is a downloadable preview only. It does not replace the persistent vector character, write a persona event, change authority, or enter History.
 - Added validation for key/prompt/request ID, safe HTTPS-only image results, normalized provider status and sanitized provider errors.
 - Local full-repository checks could not be run because this workspace does not contain the repository checkout. The focused Higgsfield helper tests passed 5/5 under Node 24 type stripping. GitHub Actions run 61 passed the repository tests, typecheck, lint and build. Live Higgsfield account behavior remains unverified. Live Higgsfield account behavior remains unverified.
+
+## 2026-10-04 checkpoint — Agent screen and a richer avatar (Claude)
+
+- **The founder picked** the code-drawn avatar over 3D or Rive: every look stays on brand, costs nothing and runs fast on phones.
+- **`/bot` is now the agent screen.**
+  - A HUD stage with corner brackets, tick rings, a sweep while active, vignette and grain. It reads out the bot's state, finish, motion and energy.
+  - Seven customization tabs: Form, Face, Finish, Color, Gear, Motion and Personality.
+  - Previews for all ten states: the Build Book's listening, reasoning, waiting for approval, working, needs input, completed and unavailable, plus idle, happy and resting.
+- **The persona gained:**
+  - a finish (matte, glass, hologram with scanlines, polished chrome);
+  - brows and face marks (blush, stripes, circuit traces);
+  - motion: an energy that scales every animation and an idle style (bob, float, drift, still);
+  - eight named color sets, none of them gold.
+
+  Older saved bots load with defaults; no migration.
+- **"What <name> may do".** The agent contract (Build Book §5) lists the assistants it speaks through and their modes, memory, and World grants with their 30-day expiry. All of it is read from real records. It also states the fixed limits: the connector gives assistants no tool to spend, sign, publish or change access, and real-world actions are proposals only.
+- **Layout.** Codex's Higgsfield portrait creator moved below the Worlds panel. The page title is now "Your agent".
+- **Checks:**
+  - `tests/bot/agent-screen.test.ts` covers old personas, every body × finish × state rendering, the stage readout and the contract's wording.
+  - The bot suite passes 38/38; typecheck, lint (one existing warning) and build are clean.
+  - Chromium screenshots at desktop and 390-px phone width found a real bug: a non-wrapping chip row stretched the page to about 990 px on phones. It was fixed and re-checked: the page is 390 px wide, with no console errors.
+- **Not yet:** onboarding at sign-on, which should build on the World entrance's "Who should represent you" step (Codex), and "let your AI design it".

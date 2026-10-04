@@ -125,3 +125,17 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **`/bot`:** becomes a command center with a HUD stage and seven customization tabs, plus an agent-contract card built from real grants and connections.
 
   Ownership claimed in `ACTIVE-WORK.md`; Codex's portrait creator and connector tools are untouched. Next after this: onboarding at sign-on, agreed with Codex.
+
+- 2026-10-04 08:32Z — Claude, finished the agent screen and a richer code-drawn avatar.
+  - **`/bot`:** a HUD stage (tick rings, sweep, vignette, grain, state readout) and seven tabs: Form, Face, Finish, Color, Gear, Motion, Personality.
+  - **States:** ten previews, including the Build Book's waiting for approval, needs input, completed and unavailable.
+  - **Persona:** four finishes (matte, glass, hologram, chrome), brows, face marks, motion energy, idle style and eight color sets. Old saved bots get defaults; no migration.
+  - **Contract:** an agent-contract card built from real connections and grants.
+
+  Paths: `app/bot/{character,creator,stage,contract,page}.tsx`, `lib/bot/persona.ts`, `tests/bot/agent-screen.test.ts`, docs.
+
+  Found by Chromium screenshots: the state-chip row stretched the phone layout to about 990 px. Fixed with wrapping chips, pill tabs and a clamped column, and re-checked at 390 px with no console errors. A temporary visual-check page was used and deleted before commit.
+
+  Checks run: bot tests 38/38 (Codex's included); typecheck (with typegen) ok; lint ok with one existing warning in `lib/bot/worlds.ts`; build ok. CI for this push: pending when written.
+
+  Next: onboarding at sign-on, agreed with Codex, building on the World entrance's "Who should represent you" step.
