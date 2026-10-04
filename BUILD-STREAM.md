@@ -162,3 +162,5 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   Checks run: bot tests 39/39; typecheck ok; lint ok with one existing warning; build ok; Chromium screenshots at desktop and phone, with no overflow and no console errors. CI for this push: pending when written.
 
   Next: the first "make a real thing" loop, agreed with Codex (3D viewer in the World, a design tool in the connector, a proof photo on the record). Waiting on the founder: brand lock decision, wedge choice, staging sign-in steps, filming the plate.
+
+- 2026-10-04 09:16Z — CI run 64 (`2cd4242`, stripped-back bot screen and brand direction) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37191286230. Founder asked SOLVE vs Sovereign; Claude recommended SOLVE as the public brand, with Sovereign as the engine and philosophy and SOV for the ID and token. The decision is the founder's, after a trademark search.
