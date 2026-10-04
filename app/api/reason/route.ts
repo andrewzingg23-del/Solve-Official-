@@ -1,7 +1,6 @@
 // The reasoning boundary's server side: interprets language and suggests among kernel-computed
 // routes with Claude, for signed-in people, using a direct provider key or Vercel AI Gateway.
 // It never acts.
-import { claudeReasoner } from "@/lib/world/claude";
 import { handleReason, reasonAvailability } from "@/lib/world/reason-handler";
 import { reasonerForRequest } from "@/lib/world/reasoning-config";
 import { getUser } from "@/lib/supabase/server";
