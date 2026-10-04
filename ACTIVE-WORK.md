@@ -13,6 +13,7 @@ One writer per architectural surface. Update this file when work starts, changes
 - the World entrance and intro follow the new signature intro (an empty room and one seat, the world assembles around it, the wordmark lands on the floor line, hold to enter);
 - calm screens with motion as assembly, no glitch, HUD or particle effects;
 - copy never says "agents" or "AI-powered" as a headline.
+- *Proposed, pending the founder (2026-10-04):* the brand is rebuilt around the product's three functions, **Ask. Allow. Prove.** (`docs/brand/2026-10-04-first-principles.md`). The point (`solve.`) appears only for a person's yes and for results that are really on the record. Simulated results (Arcadia) get the dashed "simulated" label, never the point. If confirmed, the next shared slice is a receipt with the seal on finished real outcomes: the component on Claude's side, the World outcome surfaces on Codex's.
 
 Shared contracts: DOMAIN-CONTRACTS.md, lib/kernel/client.ts (typed kernel_api), lib/kernel/local.ts (embedded kernel), lib/sandbox/pglite.ts (browser database boundary).
 

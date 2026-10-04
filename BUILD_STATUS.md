@@ -183,3 +183,10 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
   - **Token:** choose a ticker other than SOV, which Sovryn already uses.
 
   Domains checked on Vercel's registrar; nothing bought. The v1 lines in the Build Book hold until the founder confirms.
+- **First-principles rethink (Claude, pending the founder).** `docs/brand/2026-10-04-first-principles.md` rebuilds the business from what the app actually does: proof, permission, neutral hands for any AI, execution, verification, settlement, ownership and collaboration.
+  - **Thesis:** *everyone wants you to trust their AI; solve removes the need to.* This is the Build Book's own line.
+  - **The opposite of the market:** no own AI, consent over autonomy, a portable record, receipts over claims, results over attention, people brought in.
+  - **The brand line becomes the product's loop:** **Ask. Allow. Prove.**
+  - **Proposed business:** free to bring your AI; paid when an outcome settles; platforms pay to verify; settlement later, gated. Moat: the record graph, neutrality, the authority engine and the human network. North star: verified outcomes per person per month and time to first proof.
+  - `BRAND.md` and the construct doc are updated to match.
+  - Visual brand book (private artifact): https://claude.ai/artifact/NAtCcEYspQzpPBLoKMdeY3

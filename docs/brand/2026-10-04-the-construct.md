@@ -3,7 +3,7 @@
 Date: 2026-10-04. Status: **adopted by the founder** (2026-10-04). The canonical brand is `docs/brand/BRAND.md`, and the Build Book's brand lock (§2) points to it. This doc keeps the reasoning, the research, the ad's shot list and the production prompts.
 
 **v2 update, same day, pending the founder's confirmation.** Deeper research (`docs/brand/research/`) changes three things here:
-- The line is now **"You decide. The world builds."** "Stay in your seat" read as passive.
+- The line is now **"Ask. Allow. Prove."** "Stay in your seat" read as passive. See `2026-10-04-first-principles.md`.
 - The person is visibly deciding in the film.
 - **Every world in the paid film is a real place, filmed.** Generated imagery is only for storyboards.
 
@@ -11,7 +11,7 @@ The sections below are updated to match.
 
 ## The idea
 
-**You decide. The world builds. Every result is real, and on the record.**
+**Ask. Allow. Prove.** The person asks, the world assembles, they allow the step that matters, and the proof lands.
 
 The seat is the driver's seat, not the couch: the person never leaves it, and they are deciding the whole time.
 
@@ -93,7 +93,7 @@ Every shot is locked off at the same framing: the person at the desk, centered.
 3. **Proof beat.** A close-up of the screen: "Order 1042 shipped." A real record.
 4. **Montage of keystrokes.** Each one a new world at the same framing: a car design studio (clay model, designers), a restaurant kitchen at rush, a streaming stage, an agency floor, a house going up.
 5. **Return.** The empty apartment again. On the screen is their World, holding all of it.
-6. **Super:** *You decide. The world builds.* Then: *Every world in this film is real. On the record.* The wordmark `solve.` lands, the point last.
+6. **Super:** *Ask. Allow. Prove.* Then: *Every world in this film is real. On the record.* The wordmark `solve.` lands, the point last.
 
 **The 15-second social cut (the 3D-print mini).** "Asked SOLVE for a phone stand." The design turns on screen, the printer runs, the part is in hand, and the record reads "Designed by Nova, printed Oct 4."
 

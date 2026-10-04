@@ -184,3 +184,15 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   Checks: SVGs parse (xmllint) and were rendered in Chromium on review boards; docs only otherwise. CI for this push: pending when written.
 
   Next: the founder's new ask, a first-principles rethink of the business around what the app actually does ("what's the opposite of what everyone else is doing").
+
+- 2026-10-04 12:58Z — Claude, first-principles rethink (founder: "think of the functionalities of the app and make it around that… what's the opposite of what everyone else is doing").
+  - `docs/brand/2026-10-04-first-principles.md`: built functions, market truths, the consensus and its opposite, the product as Ask → Allow → Prove, the business rebuilt (who first, revenue, moat, growth, north star), what we stop, and the next steps.
+  - `BRAND.md` now carries the thesis and the line *Ask. Allow. Prove.* (superseding v2's "You decide. The world builds."); the point marks only the yes and real results. The construct doc's super is updated.
+  - `ACTIVE-WORK.md`: a proposed note for Codex (the receipt-with-seal slice, if the founder confirms).
+  - Brand book page published as a private artifact: https://claude.ai/artifact/NAtCcEYspQzpPBLoKMdeY3
+
+  Paths: `docs/brand/`, `ACTIVE-WORK.md`, `BUILD_STATUS.md`.
+
+  Checks: docs only (this push skips the build workflow). The brand book was rendered once in Chromium at 1280 px dark and 390 px light: no horizontal overflow, no console errors besides the sandbox blocking Google Fonts. Comparison tables stack at phone width. CI for the brand v2 push (`0b1327a`): pending when written.
+
+  Next: founder decisions (the line and thesis, the door, "paid when it's real"); then the receipt-with-seal slice on one real loop.

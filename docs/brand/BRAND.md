@@ -1,12 +1,13 @@
 # solve: the brand (v2)
 
-**Status.** The founder adopted v1 on 2026-10-04. v2 applies four research tracks done the same day: naming, competition, people and precedents (`docs/brand/research/`). The changes from v1 are listed in §1. **They take effect when the founder confirms them.** Until then, the v1 lines in the Build Book (§2) hold. The construct ad, production and prompts are in `docs/brand/2026-10-04-the-construct.md`. Brand changes go through the founder.
+**Status.** The founder adopted v1 on 2026-10-04. Later the same day, a first-principles rethink of the business (`docs/brand/2026-10-04-first-principles.md`) rebuilt the brand around the app's three functions: **Ask. Allow. Prove.** v2 applies four research tracks done the same day: naming, competition, people and precedents (`docs/brand/research/`). The changes from v1 are listed in §1. **They take effect when the founder confirms them.** Until then, the v1 lines in the Build Book (§2) hold. The construct ad, production and prompts are in `docs/brand/2026-10-04-the-construct.md`. Brand changes go through the founder.
 
 ## 1. What v2 changes, and why
 
 | v1 | v2 | Why |
 |---|---|---|
-| Promise: *"Stay in your seat. The world builds around you."* | **"You decide. The world builds."** The seat stays as the film's image, but it is the driver's seat. | Three tracks flagged "stay in your seat" as passive, each on its own evidence:<br>- **Effort and labor research:** people value what they put effort into.<br>- **The AI-user laziness penalty:** AI users are judged lazier.<br>- **Gen Z's fear of getting worse:** 61% of adults under 30 expect AI to make people worse at creative thinking.<br>"The world builds around you" alone also sounds like Meta Muse and OpenAI's Dots ("keeps working while you're away"). |
+| The idea was a feeling: the world builds around you | **The brand is the product's three functions: Ask. Allow. Prove.** Thesis: *Everyone wants you to trust their AI. solve removes the need to.* | The first-principles rethink. Intelligence is a commodity; permission and proof are scarce. The industry sells power and trust campaigns; solve sells accountability. The thesis is the founder's own Build Book line (§12). |
+| Promise: *"Stay in your seat. The world builds around you."* | **"Ask. Allow. Prove."** (An intermediate draft, "You decide. The world builds.", is superseded.) The seat stays as the film's image, but it is the driver's seat. | Three tracks flagged "stay in your seat" as passive, each on its own evidence:<br>- **Effort and labor research:** people value what they put effort into.<br>- **The AI-user laziness penalty:** AI users are judged lazier.<br>- **Gen Z's fear of getting worse:** 61% of adults under 30 expect AI to make people worse at creative thinking.<br>"The world builds around you" alone also sounds like Meta Muse and OpenAI's Dots ("keeps working while you're away"). |
 | The lead was "the world builds" | The lead is **proof and authority**: *on the record* and *your yes*; convenience is the reward | The open ground in the market is provable outcomes plus authority that stays with the person, on top of whatever AI they already use. No consumer brand owns it. |
 | A working mark: a point above a horizon | **The point:** the wordmark `solve.`, the symbol `s.`, the record seal and a simulated-evidence label | The horizon read as a sunrise icon. The bare word *solve* is crowded in trademark terms, so the brand needs a distinctive device. A point that appears only where something is real gives the device a meaning that can't be faked. |
 | Generated imagery allowed where the world changes, disclosed | **No generated imagery in paid brand ads.** Every world in the film is a real place, filmed. Generated imagery is for storyboards only. | 50% of US consumers prefer brands that avoid generative AI in consumer content. AI ads are rated more annoying, and the dislike spills onto the brand. A film whose worlds are all real is itself the proof. |
@@ -17,7 +18,8 @@
 
 - **Purpose:** the world should build around the person, not the other way around.
 - **The enemy: pretending.** The internet is filling with things that only look real: generated content, fake results, and agents that say "done" when nothing happened. solve is for what is real.
-- **Promise:** **You decide. The world builds.**
+- **Thesis:** everyone wants you to trust their AI. solve removes the need to.
+- **Promise:** **Ask. Allow. Prove.** Ask for anything, allow only what you choose, and get proof of what happened.
 - **Proof:** every result is real, and on the record.
 
 **Positioning.** For people with something they want to make real, solve is the world that builds it with them:
@@ -34,15 +36,18 @@ Other AI gives you answers and says "done". solve gives you results you can prov
 
 | Use | Line |
 |---|---|
-| Brand line | **You decide. The world builds.** |
+| Thesis (manifesto, press, pitch) | **Everyone wants you to trust their AI. solve removes the need to.** |
+| Brand line | **Ask. Allow. Prove.** |
 | Invitation (the product's first words) | **Ask for a way.** |
 | Proof (every result, every receipt) | **On the record.** |
 | Ownership | **Your world. Your record. Your call.** |
-| The film's super (the ad's closing text) | *You decide. The world builds.* Then: *Every world in this film is real. On the record.* |
+| The film's super (the ad's closing text) | *Ask. Allow. Prove.* Then: *Every world in this film is real. On the record.* |
 
 ## 4. Messaging house
 
-**Roof:** You decide. The world builds. On the record.
+**Roof:** Ask. Allow. Prove. Every result on the record.
+
+The pillars map onto the line: **Any AI** and **The whole path** are *Ask*, **Yours** is *Allow*, and **Real** is *Prove*.
 
 | Pillar | Says | Proof in the product today | Still to build |
 |---|---|---|---|
@@ -142,7 +147,7 @@ Working files in `public/brand/` are outlined from Archivo (SIL OFL) at weight 6
 - **The point.** The brand's one device: a solid circle, cyan `#22d3ee` on dark, ink on light. It means *real*.
   - It ends the wordmark: `solve.`, a finished result.
   - It is the person: the one thing that stays still while the world builds around it.
-  - **Rule: the point is never decoration.** It appears only for the brand itself, a person's live presence or yes, and a result that is really on the record.
+  - **Rule: the point is never decoration.** It marks the two moments that matter, *your yes* (Allow) and *a result that is real* (Prove), plus the brand itself and a person's live presence.
 - **Wordmark.** `solve.` Files:
   - `solve-wordmark.svg` (currentColor);
   - `solve-wordmark-on-dark.svg` (ice white, cyan point);
@@ -196,7 +201,7 @@ Terse, confident, plain. Old money, not hype. Say what the AI did and what the p
 
 ## 12. Iconic assets, built once and repeated for years
 
-1. **The construct film.** You decide; the world builds. Every world in it is real.
+1. **The construct film.** Ask, allow, prove. Every world in it is real.
 2. **The point.** It lands last, everywhere.
 3. **The record seal.**
 4. **"Ask for a way."**
@@ -231,9 +236,10 @@ Costly, structural commitments are what make a brand believable.
 
 ## 15. Founder decisions open
 
-1. Confirm v2's changes (§1): the brand line, the point identity, real-only imagery in paid ads.
-2. Trademark counsel: a clearance search for the composite mark.
-3. Domain: buy a modified domain (for example solve.new or solve.place), or wait.
-4. The token ticker, if and when a token is real.
-5. The commitments in §13 that aren't yet true.
-6. The wedge: makers or Whop verification. Both are on the record.
+1. Confirm v2's changes (§1): the thesis and the line *Ask. Allow. Prove.*, the point identity, real-only imagery in paid ads.
+2. The business principles in `2026-10-04-first-principles.md` §5: "paid when it's real" pricing, and verified outcomes per person as the north star.
+3. Trademark counsel: a clearance search for the composite mark.
+4. Domain: buy a modified domain (for example solve.new or solve.place), or wait.
+5. The token ticker, if and when a token is real.
+6. The commitments in §13 that aren't yet true.
+7. The wedge: makers or Whop verification. Both are on the record.
