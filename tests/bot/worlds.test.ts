@@ -116,4 +116,45 @@ it("lets a World's owner bring in someone else's bot, and stops a member passing
   // A read-only connection never writes to a World.
   await approveConnection(ben, benId, benBot, { clientId: CLAUDE, clientName: "ChatGPT", mode: "read" }, "ben-read-only");
   assert.match((await call(ben, "add_to_world", { world_id: WORLD, title: "More", body: "x" })).content[0].text, /read only/);
+
+it("lets an invited collaborator's bot record an idempotent, non-executable capability proposal", async () => {
+  const { ana, ben, benId, benBot, call } = await setting();
+  const world = await createCreativeWorld(ana, { worldId: WORLD, title: "Workshop" });
+  const args = {
+    world_id: WORLD,
+    goal: "Coordinate a 3D printer queue",
+    outcome: "Prepare an ordered print queue with material and time estimates.",
+    current_tools: "The bot can currently make a text plan in this World.",
+    data_needs: "Printer model, available filament, queued jobs, and estimated print times.",
+    acceptance_test: "Given three sample jobs and two spools, produce a feasible order and flag any missing material.",
+  };
+
+  const refused = await call(ben, "propose_capability", args);
+  assert.equal(refused.isError, true, "a bot not invited by SOV ID cannot add a proposal");
+  assert.deepEqual((await loadCreativeWorld(ana, WORLD)).artifacts, []);
+
+  await setBotAccess(ana, { scope: world.scope, botAgentId: benBot, access: "add" }, "ana-invites-ben-bot");
+  const saved = await call(ben, "propose_capability", args);
+  assert.equal(saved.isError, undefined, saved.content[0].text);
+  assert.match(saved.content[0].text, /draft capability proposal/);
+  const record = saved.structuredContent as { proposal_id: string; status: string; url: string };
+  assert.deepEqual([record.status, record.url], ["draft", `https://sov.test/world/${WORLD}`]);
+
+  const retried = await call(ben, "propose_capability", args);
+  assert.equal((retried.structuredContent as { proposal_id: string }).proposal_id, record.proposal_id, "same request is idempotent");
+  const { artifacts } = await loadCreativeWorld(ana, WORLD);
+  assert.equal(artifacts.length, 1, "the retry creates no duplicate");
+  assert.match(artifacts[0].title, /^Capability proposal · Coordinate a 3D printer queue$/);
+  assert.match(artifacts[0].body, /STATUS: Draft proposal — not executable/);
+  assert.match(artifacts[0].body, /CURRENT TOOLS CONSIDERED\nThe bot can currently make a text plan/);
+  assert.match(artifacts[0].body, /DATA OR ACCESS NEEDED\nPrinter model/);
+  assert.match(artifacts[0].body, /This proposal does not run code, contact providers, grant access, or perform external actions\./);
+
+  const event = (await ana.readEvents(world.scope, { newestFirst: true, limit: 1 }))[0];
+  assert.deepEqual([event.type, event.actor_id, event.on_behalf_of], ["kernel.entity.created", benBot, benId], "the World owner can see which person's bot made the proposal");
+  await approveConnection(ben, benId, CLAUDE, { clientId: CLAUDE, clientName: "ChatGPT", mode: "read" }, "ben-downgrades-connection");
+  const readOnly = await call(ben, "propose_capability", args);
+  assert.equal(readOnly.isError, true, "read-only assistant connection cannot create a proposal");
+  assert.match(readOnly.content[0].text, /read only/);
+});
 });
