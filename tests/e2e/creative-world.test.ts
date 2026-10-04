@@ -186,7 +186,36 @@ it("maps project offers and needs with provenance, idempotency, privacy, and aut
   assert.equal(need?.entryType, "need");
   assert.equal(need?.category, "resource");
   assert.equal(need?.reportedBy, bobId);
+  assert.equal(need?.updatedBy, bobId);
   assert.equal(need?.status, "open");
+  assert.equal(offer?.updatedBy, aliceId);
+
+  // Simulate a valid direct kernel write with a forged editable reporter attribute.
+  // Event authorship must remain the source of truth for attribution and edit rights.
+  await alice.upsertEntity({
+    entityId: needId,
+    kind: "need",
+    scope: world.scope,
+    title: "Replacement filament",
+    summary: "Need one spool of PETG, black, before Saturday.",
+    attributes: {
+      worldId: resourceWorldId,
+      resourceType: "need",
+      resourceCategory: "resource",
+      description: "Need one spool of PETG, black, before Saturday.",
+      timeWindow: "Needed by Saturday",
+      sourceUrl: "",
+      sourceStatus: "none",
+      status: "open",
+      basis: "self_reported",
+      reportedBy: aliceId,
+    },
+    visibility: "members",
+    idempotencyKey: "resource-forged-reporter",
+  });
+  const attributedNeed = (await loadCreativeWorld(alice, resourceWorldId)).resources.find((entry) => entry.entityId === needId);
+  assert.equal(attributedNeed?.reportedBy, bobId, "editable entity fields cannot replace the original event author");
+  assert.equal(attributedNeed?.updatedBy, aliceId, "the latest revision is attributed to its real actor");
 
   await assert.rejects(
     updateCreativeResourceEntry(alice, {
