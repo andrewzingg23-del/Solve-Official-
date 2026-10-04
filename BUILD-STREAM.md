@@ -172,3 +172,15 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - `DECISIONS.md` entry; `ACTIVE-WORK.md` note for Codex's entrance and intro; the construct doc marked adopted.
 
   Checks: docs and one static SVG; the mark was rendered in Chromium to check it. CI for this push: pending when written. Still the founder's: trademark and domain search, the wedge choice, staging sign-in steps, filming the plate.
+
+- 2026-10-04 12:36Z — Claude, brand v2 checkpoint (founder: "this is the best you got, do deep research").
+  - Four research agents (naming, competition, people, precedents). Their sourced findings are in `docs/brand/research/`. Web fetches were blocked, so the claims come from search extracts and are marked for spot-checks.
+  - `docs/brand/BRAND.md` v2: what changes and why, the enemy (pretending), the messaging house, audiences, the competitive position, the name on conditions, the point identity, voice, commitments and open decisions. The construct doc is updated: the yes beat, every world filmed for real, Higgsfield for storyboards only.
+  - Identity outlined from Archivo glyphs: `public/brand/solve-{wordmark,wordmark-on-dark,wordmark-on-light,mark,app-icon,favicon,record-seal,simulated-seal}.svg`. `solve-mark.svg` is now `s.`.
+  - Domain availability and prices checked on Vercel's registrar; nothing bought.
+
+  Paths: `docs/brand/`, `public/brand/`, `BUILD_STATUS.md`.
+
+  Checks: SVGs parse (xmllint) and were rendered in Chromium on review boards; docs only otherwise. CI for this push: pending when written.
+
+  Next: the founder's new ask, a first-principles rethink of the business around what the app actually does ("what's the opposite of what everyone else is doing").

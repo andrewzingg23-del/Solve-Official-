@@ -1,10 +1,19 @@
 # SOLVE brand direction: the construct
 
-Date: 2026-10-04. Status: **adopted by the founder** (2026-10-04). The canonical brand is `docs/brand/BRAND.md` and the Build Book's brand lock (§2) now points to it. This doc keeps the reasoning, the research, the ad's shot list and the production prompts.
+Date: 2026-10-04. Status: **adopted by the founder** (2026-10-04). The canonical brand is `docs/brand/BRAND.md`, and the Build Book's brand lock (§2) points to it. This doc keeps the reasoning, the research, the ad's shot list and the production prompts.
+
+**v2 update, same day, pending the founder's confirmation.** Deeper research (`docs/brand/research/`) changes three things here:
+- The line is now **"You decide. The world builds."** "Stay in your seat" read as passive.
+- The person is visibly deciding in the film.
+- **Every world in the paid film is a real place, filmed.** Generated imagery is only for storyboards.
+
+The sections below are updated to match.
 
 ## The idea
 
-**Stay in your seat. The world builds around you, and every result is real.**
+**You decide. The world builds. Every result is real, and on the record.**
+
+The seat is the driver's seat, not the couch: the person never leaves it, and they are deciding the whole time.
 
 The founder's image: the Matrix construct scene, where the chair stays and the world changes around it. Here, a person sits in an empty apartment at a computer. As they work, the room becomes a pen factory with a clean white floor, the line running, and them still coding in the same chair while it produces. Then a car studio, a kitchen at rush hour, a stage. One world for every product angle.
 
@@ -61,7 +70,8 @@ The world in SOLVE doesn't appear by magic. It **assembles**: people, machines, 
 - **Lock the framing.** The camera never moves; the world changes.
 - **Show assembly, not glitch.** Things build into place, physically.
 - **End on proof:** a shipped order, a printed part, a confirmed supplier, a record.
-- **Real footage of the person.** Generated imagery only where the world changes, kept grounded and realistic, and disclosed.
+- **Real footage, real places.** Every world in a paid ad is a real place, filmed with the desk set in it at the same framing. Generated imagery is only for storyboards and previs. Consumers prefer brands that avoid generative AI in consumer content, and AI ads lower brand liking (`research/2026-10-04-people.md`). A film whose worlds are all real is itself the proof.
+- **Show the yes.** In every world, one beat shows the person approving a step on screen.
 - **Write in terse, confident plain words** (Build Book §2).
 - **Keep screens calm:** the World and the person first, few panels, no chrome for its own sake.
 
@@ -79,22 +89,23 @@ Every shot is locked off at the same framing: the person at the desk, centered.
 
 1. **Empty apartment, night.** Desk, laptop, a lamp. They type into SOLVE: "I want to make pens." Silence.
 2. **The construct.** On a keystroke, the walls fall away to a clean white floor, and a pen factory builds itself around the desk: molding machines, the line starting, workers, boxes with the brand. They keep working.
+2b. **The yes.** On screen: "Approve: 2,000 units from the molding shop, ships Friday?" They click yes. The line speeds up.
 3. **Proof beat.** A close-up of the screen: "Order 1042 shipped." A real record.
 4. **Montage of keystrokes.** Each one a new world at the same framing: a car design studio (clay model, designers), a restaurant kitchen at rush, a streaming stage, an agency floor, a house going up.
 5. **Return.** The empty apartment again. On the screen is their World, holding all of it.
-6. **Super:** *SOLVE. The world builds around you.*
+6. **Super:** *You decide. The world builds.* Then: *Every world in this film is real. On the record.* The wordmark `solve.` lands, the point last.
 
 **The 15-second social cut (the 3D-print mini).** "Asked SOLVE for a phone stand." The design turns on screen, the printer runs, the part is in hand, and the record reads "Designed by Nova, printed Oct 4."
 
 ## Production pipeline
 
 - **The plate.** One locked-off shot of the founder at the desk in the empty apartment: phone on a tripod, 10-second takes, natural light plus the laptop glow.
-- **The character.** 15–20 photos of the founder, used for a consistent likeness in Higgsfield.
-- **The worlds.** Higgsfield stills at the exact plate framing, then 3–5 second image-to-video clips. If a real factory is reachable, film the hero world for real.
+- **The worlds, filmed for real.** Take the desk to each real place (a molding shop, a kitchen at rush, a stage, a build site) and shoot at the plate's framing. Makers' shops and small factories often agree in exchange for being credited in the film and on the record.
+- **Storyboards only:** 15–20 photos of the founder for a consistent likeness, plus Higgsfield stills at the plate framing to plan each world and pitch locations. None of it goes in the paid film.
 - **Transitions.** A whiteout or assembly cut in the edit. On the web, a unicorn.studio transition.
 - **Website.** Lenis smooth scroll pins the seat while scrolling swaps the world behind it, ending on "Enter your World".
 
-### Higgsfield prompt pattern, one per world
+### Higgsfield prompt pattern, one per world (storyboards and previs only)
 
 > Locked-off medium-wide shot, same framing as the reference plate. The person from the reference sits at a plain desk with a laptop at the center of the frame, working. Around them, [WORLD], with a clean white concrete floor. Realistic, natural light, documentary feel, no text, no glow, no sci-fi effects.
 

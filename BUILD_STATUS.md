@@ -174,3 +174,12 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
   - **Also in it:** a manifesto, the ascent (seat → room → network → economy → interface for reality; market only what is real), the identity system (palette unchanged, motion as assembly, a working mark at `public/brand/solve-mark.svg`), voice and the "never" list.
 
   The Build Book §2 brand lock now points to it (the HUD direction and the market-line intro are retired). Recorded in `DECISIONS.md`; `ACTIVE-WORK.md` tells Codex's surfaces to follow it.
+- **Brand v2, research-backed (Claude, pending founder confirmation).** Four sourced research tracks in `docs/brand/research/` (naming, competition, people, precedents). `docs/brand/BRAND.md` v2 lists what changes and why:
+  - **Line:** *You decide. The world builds.* replaces "stay in your seat", which three tracks found passive.
+  - **Lead:** proof and authority first.
+  - **Identity:** the point. The wordmark is `solve.`, the symbol `s.`, plus the record seal and a simulated label. Working SVGs are outlined from Archivo in `public/brand/`.
+  - **Imagery:** real places only in paid ads.
+  - **Name:** solve holds on conditions. MIT holds an incontestable SOLVE registration, SolveAI raised $50M and Solve Intelligence applied for the bare word. So: a composite mark, a modified domain, and no paid media before counsel clears it.
+  - **Token:** choose a ticker other than SOV, which Sovryn already uses.
+
+  Domains checked on Vercel's registrar; nothing bought. The v1 lines in the Build Book hold until the founder confirms.
