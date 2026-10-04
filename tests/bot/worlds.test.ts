@@ -116,6 +116,7 @@ it("lets a World's owner bring in someone else's bot, and stops a member passing
   // A read-only connection never writes to a World.
   await approveConnection(ben, benId, benBot, { clientId: CLAUDE, clientName: "ChatGPT", mode: "read" }, "ben-read-only");
   assert.match((await call(ben, "add_to_world", { world_id: WORLD, title: "More", body: "x" })).content[0].text, /read only/);
+});
 
 it("lets an invited collaborator's bot record an idempotent, non-executable capability proposal", async () => {
   const { ana, ben, benId, benBot, call } = await setting();
@@ -156,5 +157,4 @@ it("lets an invited collaborator's bot record an idempotent, non-executable capa
   const readOnly = await call(ben, "propose_capability", args);
   assert.equal(readOnly.isError, true, "read-only assistant connection cannot create a proposal");
   assert.match(readOnly.content[0].text, /read only/);
-});
 });
