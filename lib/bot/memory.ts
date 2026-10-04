@@ -44,7 +44,8 @@ export type Memory = {
 // characters. The zero-width joiner stays, because emoji sequences need it.
 const CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g;
 const INVISIBLE = /[\u200b\u200c\u200e\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff]|[\u{e0000}-\u{e007f}]/gu;
-const clean = (v: unknown, max: number) => (typeof v === "string" ? v.replace(CONTROL, "").replace(INVISIBLE, "").trim().slice(0, max) : "");
+export const cleanText = (v: unknown, max: number) => (typeof v === "string" ? v.replace(CONTROL, "").replace(INVISIBLE, "").trim().slice(0, max) : "");
+const clean = cleanText;
 
 // Only http(s) links are kept; anything else is dropped rather than stored.
 function safeUrl(v: unknown): string | null {

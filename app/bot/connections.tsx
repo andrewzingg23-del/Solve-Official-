@@ -22,7 +22,7 @@ export function Connections({ botName, connectorUrl, connections, memories, live
           <p className={label}>Bring your own AI</p>
           <h2 className="text-xl font-medium">Let your assistant become {botName}</h2>
           <p className="text-sm leading-6 text-muted">
-            Add this connector to the assistant you already use. You approve it on Sovereign&apos;s own page and choose whether it may only read or also remember.
+            Add this connector to the assistant you already use. You approve it on Sovereign&apos;s own page and choose whether it may only read or also add.
           </p>
         </div>
         <CopyField value={connectorUrl} name="Connector URL" />
@@ -45,7 +45,7 @@ export function Connections({ botName, connectorUrl, connections, memories, live
                 <li key={c.clientId} className="flex items-center justify-between gap-3 rounded-md border border-line p-3">
                   <span className="flex flex-col">
                     <span className="text-sm">{c.clientName}</span>
-                    <span className="text-xs text-muted">{c.mode === "remember" ? "Reads and remembers" : "Read only"} · since {new Date(c.since).toLocaleDateString()}</span>
+                    <span className="text-xs text-muted">{c.mode === "remember" ? "Reads and adds" : "Read only"} · since {new Date(c.since).toLocaleDateString()}</span>
                   </span>
                   <form action={disconnectAction}>
                     <input type="hidden" name="client_id" value={c.clientId} />

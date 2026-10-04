@@ -70,7 +70,7 @@ export default async function ConsentPage({ searchParams }: PageProps<"/oauth/co
             <fieldset className="flex flex-col gap-2">
               <legend className={`${label} mb-2`}>What it may do</legend>
               <Mode value="read" title="Read only" hint="See who your bot is and what it remembers." defaultChecked />
-              <Mode value="remember" title="Read and remember" hint="Also add memories to your bot, labeled as coming from it. Memories are permanent records." />
+              <Mode value="remember" title="Read and add" hint="Also add memories, start private Worlds for your goals, and add drafts to Worlds you let your bot into. Everything it adds is labeled as your bot's, and you can erase memories." />
             </fieldset>
             <div className="flex flex-wrap gap-3 pt-1">
               <button formAction={approveConsentAction} className={primaryAction}>Connect</button>

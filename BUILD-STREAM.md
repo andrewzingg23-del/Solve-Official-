@@ -88,3 +88,19 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   Not done: v5 is not on staging. The Supabase connector timed out twice on `apply_migration` (it waits for a confirmation this session can't give), and nothing changed. CI for this push: pending when written. Next: the founder applies v5 and presence on staging, or confirms in a session that can; then the bot–World bridge with Codex.
 
 - 2026-10-04 04:48Z — CI run 32 (`2bfd26f`, erasable memory, live presence, connector hardening) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37177744046. Still waiting on the founder: v5 and presence on staging, staging OAuth and secret key, the v4 go-ahead.
+
+- 2026-10-04 05:09Z — Claude, finished (founder: no freeze; keep building Worlds that solve real-world things and that people plug into). The bot now works in Worlds.
+  - **Connector tools:** `list_worlds`, `read_world`, `start_world` (the World is the person's: created with their sign-in, the bot let in to add) and `add_to_world` (as the bot, for its owner; retries are one change).
+  - **On `/bot`:** "Where <name> works" sets Out, Read or Add per World, as kernel grants that expire after 30 days and show in the World's history.
+  - **The brother case works at the kernel level:** a World's owner can let another person's bot in, and a mere member cannot pass access on.
+  - **Wording:** the connection mode is now labeled "read and add".
+
+  Codex's files were not touched. This uses `lib/world/creative.ts` as published.
+
+  Paths: `lib/bot/{worlds,connector,presence,memory}.ts`, `app/bot/{worlds-panel.tsx,actions.ts,page.tsx,connections.tsx}`, `app/oauth/consent/page.tsx`, `tests/bot/{worlds,connector}.test.ts`, and the docs (bridge status, master-bot tools, no freeze in the strategy doc).
+
+  Found while testing: a retried `add_to_world` was refused by the kernel, because the piece's canvas spot depended on how many pieces existed. The spot is now derived from the request, so a retry writes exactly the same piece.
+
+  Checks run: bot tests 23/23 (PGlite); Postgres 17 28/28 (bot, creative-World, client contract); typecheck, lint and build ok. CI for this push: pending when written.
+
+  Next: Codex picks up bot invites inside the World and attribution in History. Still blocked on the founder's staging setup before a real person or assistant can use any of it.

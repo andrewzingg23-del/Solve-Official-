@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { forgetMemory, noteMemory, readConnections, readMemories, revokeConnection } from "@/lib/bot/memory";
 import { botPulse, type Pulse } from "@/lib/bot/pulse";
 import { loadBot, saveBot } from "@/lib/bot/store";
+import { setBotAccess, worldScope, type WorldAccess } from "@/lib/bot/worlds";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { createClient, getUser } from "@/lib/supabase/server";
@@ -56,6 +57,23 @@ export async function forgetMemoryAction(formData: FormData) {
   const kernel = await getKernel();
   const me = await kernel.whoami();
   await forgetMemory(kernel, me.actor_id, memoryId).catch(() => null);
+  revalidatePath("/bot");
+}
+
+const ACCESS: readonly string[] = ["none", "read", "add"];
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+// Lets the person's bot into one of their Worlds, changes what it may do there, or takes it out.
+// The kernel refuses unless the person holds that access themselves (in practice: owns the World).
+export async function setWorldAccessAction(formData: FormData) {
+  const worldId = field(formData.get("world_id")).toLowerCase();
+  const access = field(formData.get("access"));
+  if (!UUID.test(worldId) || !ACCESS.includes(access) || !(await getUser())) return;
+  const kernel = await getKernel();
+  const bot = await loadBot(kernel);
+  if (!bot.avatar) return;
+  const requestId = field(formData.get("request_id")) || crypto.randomUUID();
+  await setBotAccess(kernel, { scope: worldScope(worldId), botAgentId: bot.avatar.agent_id, access: access as WorldAccess }, requestId).catch(() => null);
   revalidatePath("/bot");
 }
 

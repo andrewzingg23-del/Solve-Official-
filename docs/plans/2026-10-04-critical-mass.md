@@ -146,7 +146,4 @@ Codex (ChatGPT) owns the World, the kernel's core domains and the build status. 
 
 1. **Go-ahead for v4 on live, then v5.** v5 adds a mutable key store beside the append-only history. History itself is never edited or deleted. Erasing a memory deletes only its key, and that deletion is itself recorded. Confirm this reading of "nothing edited, nothing deleted."
 2. **Staging setup** so a real assistant can connect: the OAuth server, Data API exposure for `kernel_api`, and `SUPABASE_SECRET_KEY` in the preview. See the master bot plan.
-3. **A pilot freeze.** Suggested directive text, for the founder to add if wanted (only the founder edits `DIRECTIVES.md`):
-
-   > ### 2026-10-04 — Pilot freeze
-   > Until two people have each connected their own assistant, and both bots have contributed to one shared World ending in one verified real outcome on staging, agents build only: blockers for that pilot, security and safety fixes, and tests and docs for what exists. No new surfaces, domains or simulations. The founder lifts this by editing it.
+3. **No freeze (founder, 2026-10-04).** Keep building: keep the style, and keep making it easy to create Worlds that solve real-world things, which people plug into with their own AI. The first piece is built: a person's assistant can start a World for a goal and add to Worlds the person let their bot into (`docs/plans/2026-10-04-bot-world-bridge.md`).

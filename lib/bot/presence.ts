@@ -28,6 +28,10 @@ export function describeActivity(a: Pick<Activity, "tool" | "client">, botName: 
     search: `is searching ${botName}'s memory`,
     fetch: `is reading one of ${botName}'s memories`,
     remember: `is giving ${botName} something to remember`,
+    list_worlds: `is looking over ${botName}'s Worlds`,
+    read_world: `is reading a World with ${botName}`,
+    start_world: `is starting a new World with ${botName}`,
+    add_to_world: `is adding to a World as ${botName}`,
   };
   return `${a.client} ${doing[a.tool] ?? `is working with ${botName}`}`;
 }
