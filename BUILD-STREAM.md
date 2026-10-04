@@ -108,3 +108,5 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 - 2026-10-04 05:15Z — CI run 34 (`44664e1`, the bot works in Worlds) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37179050206.
 
 - 2026-10-04 05:20Z — Codex started the World bot access surface: invite a collaborator's bot by its SOV ID from inside the World, show active bot access and revoke it, and make bot/owner attribution explicit in History. No staging or production settings changed. Tests are being added first; local checkout is unavailable, so CI will verify the expected red/green cycle.
+
+- 2026-10-04 05:34Z — Finished the World-side bot invite and History attribution slice. The World owner can grant an identified bot Read/Add access, review active bot name/owner/access and remove it; bot owners can copy their Bot SOV ID from `/bot`. History explicitly says “bot for” for AI companions and keeps “agent for” for other agents. RED confirmed: CI run 35 failed because the new access module did not exist yet. Implementation is pushed; full CI is pending. No database migration or staging/production setting changed.

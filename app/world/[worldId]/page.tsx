@@ -2,11 +2,13 @@ import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { label, primaryAction, quietLink, secondaryAction } from "@/app/ui";
-import { KernelError, type ActorProfile } from "@/lib/kernel/client";
+import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { loadCreativeWorld, type CreativeArtifact, type CreativePosition } from "@/lib/world/creative";
+import { formatWorldActorAttribution } from "@/lib/world/attribution";
 import { createArtifactAction, updateArtifactAction } from "./actions";
+import { WorldBotAccessPanel } from "./bot-access-panel";
 
 function eventTitle(type: string) {
   switch (type) {
@@ -18,14 +20,6 @@ function eventTitle(type: string) {
     case "kernel.grant.revoked": return "Access removed";
     default: return type.replace(/^kernel\./, "").replaceAll(".", " ");
   }
-}
-
-function actorAttribution(actorId: string, profiles: Map<string, ActorProfile>, labels: Map<string, string>) {
-  const actor = profiles.get(actorId);
-  const name = labels.get(actorId) ?? actorId.slice(0, 8);
-  if (actor?.kind !== "agent" || !actor.accountable_party) return name;
-  const owner = labels.get(actor.accountable_party) ?? actor.accountable_party.slice(0, 8);
-  return `${name} · agent for ${owner}`;
 }
 
 function positionFromArtifact(artifact: CreativeArtifact): CreativePosition {
@@ -217,6 +211,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
 
         <aside className="flex flex-col gap-6">
           <CreateArtifactForm worldId={worldId} position={nextPosition} error={error === "artifact-input" || error === "artifact-save" || error === "access" ? error : undefined} />
+          <WorldBotAccessPanel worldId={worldId} saved={saved === "bot-access"} error={error} />
           <section id="history" className="scroll-mt-6 flex flex-col gap-3 rounded-md border border-line bg-surface/45 p-5">
             <div className="flex items-baseline justify-between gap-4">
               <h2 className={label}>History</h2>
@@ -227,7 +222,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
                 <li key={event.id} className="flex items-start justify-between gap-4 py-3 text-sm">
                   <div className="flex min-w-0 flex-col gap-1">
                     <span>{eventTitle(event.type)}</span>
-                    <span className="truncate text-xs text-muted">{actorAttribution(event.actor_id, profilesById, actorLabels)}</span>
+                    <span className="truncate text-xs text-muted">{formatWorldActorAttribution(event.actor_id, profilesById, actorLabels)}</span>
                   </div>
                   <time className="shrink-0 text-right text-[10px] leading-4 text-muted" dateTime={event.occurred_at}>
                     {new Date(event.occurred_at).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" })}

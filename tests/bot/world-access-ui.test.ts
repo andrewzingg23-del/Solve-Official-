@@ -25,6 +25,11 @@ async function setup() {
 it("lets a World owner invite another person's named bot and remove its access", async () => {
   const { owner, brother, brotherId, botId, world } = await setup();
 
+  await assert.rejects(
+    setWorldBotAccess(owner, { worldId: WORLD_ID, botAgentId: brotherId, access: "read", requestId: "human-is-not-a-bot" }),
+    (error: unknown) => error instanceof KernelError && error.name === "invalid",
+  );
+
   const invited = await setWorldBotAccess(owner, {
     worldId: WORLD_ID, botAgentId: botId, access: "add", requestId: "world-bot-invite-1",
   });
