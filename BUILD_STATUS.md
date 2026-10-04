@@ -1,6 +1,16 @@
 # BUILD_STATUS
 
-Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
+Updated 2026-10-04. Branch `codex/need-to-route-network-state-spec`.
+
+## Current checkpoint — 2026-10-04
+
+- The goal-first private World change is implemented on this branch. It stores an optional user goal as the first text artifact, keeps the World private, and uses a stable request key so a retry does not create a second goal.
+- The Vercel preview for code commit `931acef` is READY at https://solve-f2yfyphdx-sovigrn.vercel.app. This confirms its production build/typecheck completed; the full GitHub test workflow has not yet been confirmed green.
+- The product vision now includes resource coordination: projects mobilize time, skill, ideas, capital, labor, and other resources through accountable people and AI; provenance and evidence are operating tools for trust and speed.
+- Started the structured World Resource Map per `docs/superpowers/plans/2026-10-04-world-resource-map.md`. Initial scope is private, self-reported offers and needs, grouped by resource category, with actor attribution and optional source pointers. Offers are not commitments, source links are not verification, and no matching, messaging, spending, or physical-world action is automatic.
+- Live research suggests family-care coordination is a candidate for further interviews but is sensitive: the 2025 C-TAC/NAC brief reports 55% of caregivers perform medical/nursing tasks and 22% received training, while noting it is a secondary practice/policy brief without the underlying survey method. The NAC/AARP technology summary reports 19% use electronic schedules/task lists but does not give sample details on its page. A September 2026 repair-industry article describes current software and AI options for shop administration; it is not evidence of an unserved market. Neither market is selected.
+- Production database and live deployment were not changed. The branch preview remains connected to staging.
+
 
 ## Current Checkpoint — 2026-10-04
 
