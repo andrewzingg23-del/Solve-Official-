@@ -10,6 +10,7 @@ import { formatWorldActorAttribution } from "@/lib/world/attribution";
 import { parsePixelArt } from "@/lib/bot/pixel-art";
 import { createArtifactAction, updateArtifactAction } from "./actions";
 import { WorldBotAccessPanel } from "./bot-access-panel";
+import { ResourceMapPanel } from "./resource-map";
 
 function eventTitle(type: string) {
   switch (type) {
@@ -143,18 +144,23 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
   const kernel = await getKernel();
   let world: Awaited<ReturnType<typeof loadCreativeWorld>>["world"];
   let artifacts: CreativeArtifact[];
+  let resources: Awaited<ReturnType<typeof loadCreativeWorld>>["resources"];
+  let currentActorId = "";
   let events: Awaited<ReturnType<typeof kernel.readEvents>> = [];
   let profiles: Awaited<ReturnType<typeof kernel.readActors>> = [];
   try {
     const loaded = await loadCreativeWorld(kernel, worldId);
     world = loaded.world;
     artifacts = loaded.artifacts;
+    resources = loaded.resources;
+    currentActorId = (await kernel.whoami()).actor_id;
     events = await kernel.readEvents(world.scope, { newestFirst: true, limit: 12 });
     profiles = await kernel.readActors([...new Set(events.map((event) => event.actor_id))]);
     const ownerIds = [...new Set(profiles.map((profile) => profile.accountable_party).filter((id): id is string => Boolean(id)))];
     const knownProfileIds = new Set(profiles.map((profile) => profile.actor_id));
-    const missingOwnerIds = ownerIds.filter((id) => !knownProfileIds.has(id));
-    if (missingOwnerIds.length) profiles = [...profiles, ...(await kernel.readActors(missingOwnerIds))];
+    const resourceReporterIds = [...new Set(resources.map((entry) => entry.reportedBy))];
+    const missingActorIds = [...new Set([...ownerIds, ...resourceReporterIds])].filter((id) => !knownProfileIds.has(id));
+    if (missingActorIds.length) profiles = [...profiles, ...(await kernel.readActors(missingActorIds))];
   } catch (error) {
     if (error instanceof KernelError && error.name === "unauthenticated") redirect("/account");
     if (error instanceof KernelError && (error.name === "forbidden" || error.name === "not_found" || error.name === "invalid")) notFound();
@@ -237,6 +243,14 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
         <aside className="flex flex-col gap-6">
           <CreateArtifactForm worldId={worldId} position={nextPosition} error={error === "artifact-input" || error === "artifact-save" || error === "access" ? error : undefined} />
           <WorldBotAccessPanel worldId={worldId} saved={saved === "bot-access"} error={typeof error === "string" ? error : undefined} />
+          <ResourceMapPanel
+            worldId={worldId}
+            entries={resources}
+            actorLabels={actorLabels}
+            currentActorId={currentActorId}
+            saved={saved === "resource"}
+            error={typeof error === "string" && ["resource-input", "resource-save", "access"].includes(error) ? error : undefined}
+          />
           <section id="history" className="scroll-mt-6 flex flex-col gap-3 rounded-md border border-line bg-surface/45 p-5">
             <div className="flex items-baseline justify-between gap-4">
               <h2 className={label}>History</h2>
