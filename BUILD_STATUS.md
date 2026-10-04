@@ -4,13 +4,14 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
 
 ## Current Checkpoint — 2026-10-04
 
-- Baseline code commit fd09d67 had green GitHub Actions CI. The current World wayfinding commit 2d94a60 passed its Vercel check; the ready preview is https://solve-git-claude-keen-cerf-tpd7io-sovigrn.vercel.app.
+- Baseline code commit fd09d67 had green GitHub Actions CI. World wayfinding commit 2d94a60 passed its Vercel check. Its preview used the shared Supabase production environment and must not be used for sign-in. Branch-specific Preview overrides now point this build branch at solve-staging; a new Vercel deployment must finish before the preview is used.
 - Supabase staging project solve-staging is active on Postgres 17. All four kernel migrations, including v4, are recorded. kernel_api.verify_chain() returned ok=true across 35 events.
 - Read-only grants check: anon lacks kernel_api usage; authenticated has kernel_api usage but no kernel schema usage or direct kernel.events SELECT; service_role also has no direct events-table SELECT.
-- Production has not received v4; no production database changes were made.
+- Production has not received v4; no production database changes were made. Existing Vercel production Supabase variables still match the production project; staging overrides are scoped to Preview on this build branch only.
 - The local code snapshot at fd09d67 was blob-verified before this slice. This slice changes only app/world/shell.tsx in application code. Typecheck, lint, build, and isolated tests/kernel/kernel.test.ts (1/1) pass.
 - One earlier npm test invocation run concurrently with typecheck/lint exited nonzero at file level (10 of 23 files). The isolated kernel test passes; that local full-suite attempt is not reported green. Baseline fd09d67 had green GitHub Actions CI; the current UI slice has local build checks plus a successful Vercel check.
 - Product gap: the root app is an Arcadia-backed World prototype, not a staging-backed shared canvas. Multi-person real-time authoring and connecting external agents to one World remain unbuilt.
+- Staging Preview configuration: branch-specific `NEXT_PUBLIC_SUPABASE_URL` and publishable key were added for `claude/keen-cerf-tpd7io`; read-only comparison confirms they match solve-staging. The existing shared variables and Production targets remain unchanged.
 - World-shell wayfinding slice: the existing eight lenses are grouped into four primary views (`World`, `Path`, `People`, `History`) and four specialist views under `More`; the sandbox label is visible on mobile. This reorganizes existing views only and does not add real-time presence or shared authoring.
 - Checks for this UI slice: `npm run lint`, `npm run typecheck`, and `npm run build` passed locally. The sandbox initially blocked the build's `tsx` IPC socket; a permitted retry passed.
 - Plan and page outline: docs/plans/2026-10-04-open-creative-world.md.
