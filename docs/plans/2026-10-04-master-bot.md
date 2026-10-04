@@ -28,11 +28,11 @@ Supabase Auth OAuth server ◀── consent at /oauth/consent (the person appro
 - **Sign-in is Sovereign's.** Supabase Auth's OAuth 2.1 server issues the tokens; people sign in with their Sovereign account. `/.well-known/oauth-protected-resource` tells clients where that server is. A request without a valid token gets 401 with the metadata pointer, as the MCP spec requires.
 - **The bot is the actor.** The connector checks the token, finds the person's actor and their bot, then calls `kernel_api` as the bot (service key, acting as the bot agent). The kernel decides with the bot's grants, so a connected AI can never do more than the person delegated to the bot. A new bot can only observe its owner's scope.
 - **Connections are the person's acts.** Approving a client records `bot.connection.approved` {client, mode} in the person's scope; revoking records `bot.connection.revoked`. The connector enforces the latest record for that client, read-only or read and remember. Remembering also needs the bot to hold `bot.memory.*` on the owner's scope, which the person grants when they first allow it. Grants stay the backstop.
-- **Persona and memory are kernel events in the owner's scope.** There is no new migration.
+- **Persona and memory are kernel events in the owner's scope.** Erasable memory adds kernel v5 (keys outside history); nothing else needs a migration.
   - `bot.persona.set` is recorded by the person, versioned by sequence, latest wins.
   - `bot.memory.noted` {text ≤ 2,000 chars, source, via} is recorded by the bot. The connector sets `via` from the token, never the model.
   - `bot.memory.forgotten` {memory} hides a memory from every view and tool.
-- **Presence is ephemeral.** "Claude is thinking through Nova" is a live signal, not history. Slice C adds a Realtime broadcast per owner, sent by the connector on each call, so history doesn't fill with noise.
+- **Presence is ephemeral.** "Claude is reading Nova's context" is a live signal, not history: a private Realtime broadcast on `bot-live:<auth user id>`, sent by the connector on each tool call and receivable only by that person (`lib/bot/presence.ts`, `supabase/migrations/20261004040100_bot_presence.sql`). It names the assistant and the tool, never content.
 
 ## Tools the connector offers
 
@@ -48,7 +48,7 @@ The server's `initialize` instructions tell the assistant to speak as the bot (f
 
 ## Honest limits
 
-- **Memories are permanent records.** The kernel is append-only, so "forget" hides a memory but cannot erase it. The UI says so; secrets don't belong there. Encrypted memory that can be destroyed by deleting its key is future work.
+- **Erasing memories (kernel v5).** History is append-only, so a memory's words are sealed with a key of its own that lives outside history. "Erase" destroys the key, so the words are gone for good, and history records that a memory existed and was erased. Backups keep a destroyed key until they expire, and the database operator could read keys before erasure: this makes memories erasable, not secret. Memories recorded before v5 can only be hidden. Passwords and keys still don't belong there.
 - **Muse.** Consumer Muse adds custom connectors by URL through Muse itself. Appearing in Muse's directory needs Meta's review. Muse asks connectors to offer read-only access, and read-only is a first-class mode here.
 - **ChatGPT.** Custom connectors need Developer Mode (Plus, Pro, Business, Enterprise, Edu). ChatGPT checks for `search` and `fetch`.
 - **Nothing here purchases, pays or commits.**
@@ -73,6 +73,6 @@ The server's `initialize` instructions tell the assistant to speak as the bot (f
 - **B. The connector.** `/mcp`, protected-resource metadata, token validation, the consent screen at `/oauth/consent`, connection records, the five tools, and memory. Done when one assistant connects on staging, reads the persona, and adds a memory that persists, with provenance naming the bot, the person and the client. A read-only connection cannot write, and revoking stops access.
 - **C. Alive.** Live presence while an assistant works, the feed-your-bot box, the relationship view from real history, and setup guides inside the app.
 
-**Status (2026-10-04).** Slices A, B and C are built and tested on the embedded kernel (`tests/bot/`, 15 tests). None of it has been exercised with a real assistant yet: that waits on the staging setup above. Live "reading right now" presence (an ephemeral Realtime signal from the connector) is the remaining piece of slice C; today the bot's mood follows durable records only.
+**Status (2026-10-04).** Slices A, B and C are built, plus the hardening pass: erasable sealed memory (kernel v5), live presence, search over the whole history, and injection guards. They are tested on the embedded kernel and on Postgres 17 (`tests/bot/`, 20 tests). None of it has been exercised with a real assistant yet: that waits on the staging setup above, and v5 is not applied to staging yet. Next: the bot–World bridge with Codex (`docs/plans/2026-10-04-bot-world-bridge.md`).
 
 Tests live in `tests/bot/`. They run on the embedded kernel, and the connector tests use fake tokens and no network.

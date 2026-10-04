@@ -112,6 +112,15 @@ These need the store itself, and some need the founder's dashboard:
 
 **Rollback.** There is no automated down-migration. A failed apply changes nothing. If the post-checks fail after commit, the store holds only genesis and, at most, the founder's actor, so the options are a restore from the project's backups or a reverting migration. Both are founder decisions.
 
+## Step 3b: kernel v5 and bot presence (after step 3, separate go-ahead)
+
+Two more migrations follow v4, in order. Each gets the same treatment as v4: frozen file, hash-checked `do` block, post-check, schema cache reload.
+
+1. `supabase/migrations/20261004040000_erasable_content.sql`, sha256 `39293c226aa7db366d4a3e4acd7a2a35b9fc9e2bf4f7e96f51a344f582296f42`. It adds the `kernel_keys` schema and `seal_key`, `unseal_keys` and `destroy_key` in `kernel_api`. Post-check: no API role can select from `kernel_keys.*`; `verify_chain` passes; the three functions exist.
+2. `supabase/migrations/20261004040100_bot_presence.sql`, sha256 `470ce3b25511113af01245204fe72041df9edfd8fc5b7c7a5deab064b8b9f21e`. It adds one select policy on `realtime.messages` for the topic `bot-live:<auth uid>`, and touches nothing in the kernel.
+
+Staging has neither yet. On 2026-10-04 the connector timed out twice on `apply_migration` for v5, once plain and once in the hash-checked wrapper; it waits for a confirmation, and nothing was applied. Apply both on staging first, from the dashboard SQL editor or a session that can confirm, then repeat the post-checks.
+
 ## Step 4: the pilot (after step 3)
 
 The narrowest real use: the founder signs in, creates an AI companion, explicitly delegates one capability to it in one scope, and the companion completes one useful task through the live loop. The kernel records the decision, the evidence and the consequence, and they persist across reloads. The pilot names one friction point observed in real use. The founder picks the task; a candidate is in the status report.

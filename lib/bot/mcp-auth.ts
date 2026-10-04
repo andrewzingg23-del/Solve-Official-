@@ -2,11 +2,14 @@ import "server-only";
 
 // Verifies a connector token with Supabase Auth and builds the two kernel sessions the connector
 // uses: as the person (their own OAuth token) and as their bot (the service key, acting as the bot
-// agent; null when this deployment has no service key, so the bot cannot write).
+// agent; null when this deployment has no service key, so the bot cannot write). With the service
+// key it also tells the owner's open /bot page, live, which assistant is using which tool.
 import { createClient } from "@supabase/supabase-js";
+import { after } from "next/server";
 import { kernelClient } from "@/lib/kernel/client";
 import { isSupabaseConfigured, supabasePublishableKey, supabaseUrl } from "@/lib/supabase/config";
 import type { McpAuth } from "./mcp-http";
+import { broadcastActivity } from "./presence";
 
 const noSession = { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } as const;
 
@@ -35,5 +38,12 @@ export async function authenticateConnector(token: string): Promise<McpAuth | nu
     clientId,
     person: kernelClient(asPerson),
     botAs: service ? (agentId: string) => kernelClient(service, { actAs: agentId }) : null,
+    onActivity: service
+      ? (activity) => {
+          // Sent at once; after() keeps the function alive until it lands.
+          const sent = broadcastActivity(service, data.user.id, activity);
+          after(() => sent);
+        }
+      : undefined,
   };
 }

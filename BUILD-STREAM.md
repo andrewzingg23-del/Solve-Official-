@@ -67,3 +67,22 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 - 2026-10-04 03:46Z — Claude, finished master bot slice C: the bot comes alive from real activity. `lib/bot/pulse.ts` turns kernel records into a mood (working, happy, listening, resting, idle), one line in the bot's voice and relationship counts, with no model call. `app/bot/live-bot.tsx` shows it, refreshed while visible; the panels are laid out for phones. Paths: `lib/bot/pulse.ts`, `app/bot/{live-bot,connections,page,actions}`, `tests/bot/pulse.test.ts`, plan status. Checks run: bot tests 15/15; typecheck ok; lint ok; build ok. Screenshots of the signed-in panels at desktop and phone sizes came from a temporary page with sample data, which was deleted before this commit. CI for this push: pending when written; CI for slice B (run 23) was still running when written. Not built: live presence while an assistant only reads. Still blocked on the founder's staging setup (OAuth server, `SUPABASE_SECRET_KEY`) before any real assistant can connect.
 
 - 2026-10-04 03:54Z — CI run 24 (`c41e335`, master bot slices A to C) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37175017475. Run 22 (slice A) also succeeded; run 23 (slice B) was cancelled by the next push, and run 24 covers its code.
+
+- 2026-10-04 04:41Z — Claude, finished (founder: "fix all of these" for the ten forecast problems, plus strategy). Built:
+  - **Erasable memory, kernel v5.** `supabase/migrations/20261004040000_erasable_content.sql` adds the `kernel_keys` store and `seal_key`, `unseal_keys` and `destroy_key` in `kernel_api`. `lib/bot/seal.ts` does AES-256-GCM with one key per memory. "Erase" destroys the key; history stays append-only.
+  - **Live presence.** `lib/bot/presence.ts` plus the guarded Realtime policy `20261004040100_bot_presence.sql`. A private per-person broadcast, never content; `/bot` shows "Claude is reading Nova's context".
+  - **Full-history search.** Paged, capped at 10,000 events, and says when it is incomplete.
+  - **Injection guards.** Invisible and bidi characters are stripped; memories go in a marked block with `<`, `>` and `&` escaped; context is capped at 12,000 characters.
+  - **Docs.** `docs/plans/2026-10-04-critical-mass.md` (competition, fun, architecture, costs, critical-mass gates, suggested pilot-freeze directive text for the founder) and `docs/plans/2026-10-04-bot-world-bridge.md` (proposal for Codex).
+
+  Shared contract, additive: `sealKey`, `unsealKeys` and `destroyKey` in `lib/kernel/client.ts`, plus three lines in Codex's `tests/kernel/client.test.ts`, whose contract test requires every function to be exercised.
+
+  Paths: `lib/bot/{seal,presence,memory,connector,mcp-auth,mcp-http}.ts`, `app/bot/{live-bot,connections,page,actions}`, `tests/bot/{erasure,presence,connector,memory,pulse}.test.ts`, the two migrations, `ACTIVE-WORK.md`, `BUILD_STATUS.md`, the master-bot plan, and the v4 runbook (new step 3b).
+
+  Checks run:
+  - bot tests 20/20 (PGlite);
+  - bot and kernel suites 94/94 on Postgres 17;
+  - full `npm test` 190/191: the one failure was the client contract test lacking the new functions, fixed, and the re-run passes 4/4;
+  - typecheck, lint and build ok.
+
+  Not done: v5 is not on staging. The Supabase connector timed out twice on `apply_migration` (it waits for a confirmation this session can't give), and nothing changed. CI for this push: pending when written. Next: the founder applies v5 and presence on staging, or confirms in a session that can; then the bot–World bridge with Codex.

@@ -19,16 +19,17 @@ type Loaded =
   | { kind: "signed-out" }
   | { kind: "identity" }
   | { kind: "unavailable" }
-  | { kind: "ready"; persona: Persona; version: number; savedAt: string | null; exists: boolean; connections: Connection[]; memories: Memory[]; pulse: Pulse | null };
+  | { kind: "ready"; userId: string; persona: Persona; version: number; savedAt: string | null; exists: boolean; connections: Connection[]; memories: Memory[]; pulse: Pulse | null };
 
 async function load(): Promise<Loaded> {
-  if (!(await getUser())) return { kind: "signed-out" };
+  const user = await getUser();
+  if (!user) return { kind: "signed-out" };
   try {
     const kernel = await getKernel();
     const bot = await loadBot(kernel);
     const [connections, memories] = bot.avatar ? await Promise.all([readConnections(kernel, bot.ownerId), readMemories(kernel, bot.ownerId)]) : [[], []];
     const pulse = bot.avatar ? botPulse({ persona: bot.persona, since: bot.avatar.created_at, memories, connections, history: bot.history, now: new Date() }) : null;
-    return { kind: "ready", persona: bot.persona, version: bot.history.length, savedAt: bot.saved?.at ?? null, exists: Boolean(bot.avatar), connections, memories: memories.slice(0, 50), pulse };
+    return { kind: "ready", userId: user.id, persona: bot.persona, version: bot.history.length, savedAt: bot.saved?.at ?? null, exists: Boolean(bot.avatar), connections, memories: memories.slice(0, 50), pulse };
   } catch (error) {
     if (error instanceof KernelError && error.name === "unauthenticated") return { kind: "identity" };
     return { kind: "unavailable" };
@@ -77,7 +78,7 @@ export default async function BotPage() {
               connectorUrl={await connectorUrl()}
               connections={state.connections}
               memories={state.memories}
-              live={state.pulse ? <LiveBot persona={state.persona} initial={state.pulse} /> : null}
+              live={state.pulse ? <LiveBot persona={state.persona} initial={state.pulse} userId={state.userId} /> : null}
             />
           ) : null}
         </>

@@ -63,11 +63,10 @@ export function Connections({ botName, connectorUrl, connections, memories, live
         <div className="flex flex-col gap-2">
           <p className={label}>{botName}&apos;s memory</p>
           <p className="text-sm leading-6 text-muted">
-            What you or your connected assistants have told {botName} to keep. Memories are permanent records: forgetting hides one everywhere, but cannot erase it, so don&apos;t store secrets.
+            What you or your connected assistants have told {botName} to keep. Each memory is sealed with its own key, so forgetting one erases its words for good; the record only keeps that it existed. Still, never store passwords or keys here.
           </p>
         </div>
         <form action={addMemoryAction} className="flex flex-col gap-2">
-          <input type="hidden" name="request_id" value={randomUUID()} />
           <textarea name="text" required maxLength={MEMORY_LIMITS.text} rows={3} placeholder={`Tell ${botName} something to remember`} className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm leading-6 outline-none focus:border-accent" />
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto]">
             <input name="title" maxLength={MEMORY_LIMITS.title} placeholder="Label (optional)" className="h-10 min-w-0 rounded-md border border-line bg-background px-3 text-sm outline-none focus:border-accent" />
@@ -84,7 +83,7 @@ export function Connections({ botName, connectorUrl, connections, memories, live
                 <span className="flex min-w-0 flex-col gap-1">
                   <span className="whitespace-pre-wrap break-words text-sm leading-6">{m.text}</span>
                   <span className="text-xs text-muted">
-                    {[m.source.title, m.via.client_name ? `via ${m.via.client_name}` : "from you", new Date(m.at).toLocaleString()].filter(Boolean).join(" · ")}
+                    {[m.source.title, m.via.client_name ? `via ${m.via.client_name}` : "from you", new Date(m.at).toLocaleString(), m.sealed ? null : "older memory: forgetting hides it"].filter(Boolean).join(" · ")}
                     {m.source.url ? (
                       <>
                         {" · "}
@@ -95,7 +94,7 @@ export function Connections({ botName, connectorUrl, connections, memories, live
                 </span>
                 <form action={forgetMemoryAction}>
                   <input type="hidden" name="memory_id" value={m.id} />
-                  <button className="text-xs uppercase tracking-[0.2em] text-muted transition-colors duration-300 ease-calm hover:text-negative">Forget</button>
+                  <button className="text-xs uppercase tracking-[0.2em] text-muted transition-colors duration-300 ease-calm hover:text-negative">{m.sealed ? "Erase" : "Forget"}</button>
                 </form>
               </li>
             ))}

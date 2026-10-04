@@ -45,16 +45,17 @@ export async function addMemoryAction(formData: FormData) {
   const kernel = await getKernel();
   const me = await kernel.whoami();
   const source = { kind: "person", title: field(formData.get("title")) || null, url: field(formData.get("url")) || null };
-  await noteMemory(kernel, me.actor_id, { text: field(formData.get("text")), source }, { client_id: null, client_name: null }, field(formData.get("request_id")) || crypto.randomUUID()).catch(() => null);
+  await noteMemory(kernel, me.actor_id, { text: field(formData.get("text")), source }, { client_id: null, client_name: null }).catch(() => null);
   revalidatePath("/bot");
 }
 
+// Erases a memory: its key is destroyed, so its words are gone for good.
 export async function forgetMemoryAction(formData: FormData) {
   const memoryId = field(formData.get("memory_id"));
   if (!memoryId || !(await getUser())) return;
   const kernel = await getKernel();
   const me = await kernel.whoami();
-  await forgetMemory(kernel, me.actor_id, memoryId);
+  await forgetMemory(kernel, me.actor_id, memoryId).catch(() => null);
   revalidatePath("/bot");
 }
 
