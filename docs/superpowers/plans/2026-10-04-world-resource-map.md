@@ -59,7 +59,7 @@ Sources:
 - Each entry shows whether it is an offer or need, who asserted it, its current state, details, time window, source link, and version.
 - A supplied URL is labeled as user-supplied and unverified.
 - A contributor can revise or withdraw only their own resource entry.
-- Replaying the same create request produces one entity and one relation.
+- Replaying the same create request produces one canonical entity.
 - Revoked or absent World grants prevent reading and writing entries.
 - No entry is represented as an accepted commitment, completed work, verified resource, or payment.
 
