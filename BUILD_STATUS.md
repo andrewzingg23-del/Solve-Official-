@@ -4,13 +4,19 @@ Updated 2026-10-04. Branch `codex/need-to-route-network-state-spec`.
 
 ## Current checkpoint — 2026-10-04
 
-- The goal-first private World change is implemented on this branch. It stores an optional user goal as the first text artifact, keeps the World private, and uses a stable request key so a retry does not create a second goal.
-- The Vercel preview for code commit `931acef` is READY at https://solve-f2yfyphdx-sovigrn.vercel.app. This confirms its production build/typecheck completed; the full GitHub test workflow has not yet been confirmed green.
-- The product vision now includes resource coordination: projects mobilize time, skill, ideas, capital, labor, and other resources through accountable people and AI; provenance and evidence are operating tools for trust and speed.
-- Started the structured World Resource Map per `docs/superpowers/plans/2026-10-04-world-resource-map.md`. Initial scope is private, self-reported offers and needs, grouped by resource category, with actor attribution and optional source pointers. Offers are not commitments, source links are not verification, and no matching, messaging, spending, or physical-world action is automatic.
-- Live research suggests family-care coordination is a candidate for further interviews but is sensitive: the 2025 C-TAC/NAC brief reports 55% of caregivers perform medical/nursing tasks and 22% received training, while noting it is a secondary practice/policy brief without the underlying survey method. The NAC/AARP technology summary reports 19% use electronic schedules/task lists but does not give sample details on its page. A September 2026 repair-industry article describes current software and AI options for shop administration; it is not evidence of an unserved market. Neither market is selected.
-- Production database and live deployment were not changed. The branch preview remains connected to staging.
+- The resource-coordination principle is now in `VISION-CANON.md`: SOV organizes project time, skill, ideas, capital, labor, tools, materials, and information with explicit identity, authority, provenance, and outcome evidence.
+- The private World Resource Map is implemented. People can record and revise offers and needs; connected bots can read those structured entries and, when asked, map the person’s exact statement through `map_world_resource`. Entries remain self-reported, nonbinding, and unassigned.
+- Resource authorship and latest edits come from append-only kernel events. Bot-created entries display the bot and the owner it acted for; that owner can correct the entry. Editable entity fields cannot forge the recorded reporter. The bot’s combined World context is capped at 12,000 characters and identifies shortened fields.
+- GitHub Actions run `37202067170` passed on code commit `9c51f71a9b39a16148acb6860fa1a73b53dbe393`: 212/212 tests, typecheck, lint, and build all succeeded.
+- Vercel did not build a preview for the latest commit: its check reports the project build-rate limit with an upgrade-to-Pro prompt. The latest READY staging preview is `https://solve-9v7jxs767-sovigrn.vercel.app` at commit `e855f672c45e8944c69590eddbae45bd0a792ec4`; it contains the resource-map UI and bot read path, but predates `map_world_resource`.
+- The latest code changes are on branch `codex/need-to-route-network-state-spec`. Production deployment and database were not changed.
+- Family caregiving and independent repair shops remain research candidates, not selected markets. The research notes below describe their sources and limitations.
 
+### Next sequence
+
+- Make inviting a specific person and authorizing their bot clear and reversible using SOV IDs.
+- Then design owner-approved resource matches and explicit commitments. Keep delivery evidence separate from self-reported offers.
+- Choose a narrow market only after interviewing the people who would use the first workflow.
 
 ## Current Checkpoint — 2026-10-04
 

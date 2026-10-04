@@ -1,6 +1,6 @@
 # World Resource Map
 
-Status: Founder-directed; implementation in progress.
+Status: Implemented on `codex/need-to-route-network-state-spec`; CI green on code commit `9c51f71`. Vercel preview for that commit is blocked by the project build-rate limit.
 
 Date: 2026-10-04
 Branch: codex/need-to-route-network-state-spec
@@ -18,9 +18,10 @@ This is a reusable coordination primitive for personal, interpersonal, business,
 1. Capture the goal in a private World.
 2. Record an offer or a need in one of six categories: time, skill, idea, capital, labor, or resource.
 3. Include details and an availability/deadline window; optionally attach a source or evidence URL.
-4. Group entries by category in the World. Display who asserted each entry, the source/URL if supplied, and the latest version.
-5. Let the author revise or withdraw their own entry. Preserve prior revisions in kernel history.
-6. In later slices, let a person invite a contributor for a specific role, let that contributor accept a clearly defined commitment, and record delivery evidence. A need or offer by itself is never a commitment.
+4. Group entries by category in the World. Attribute the original actor and latest revision from kernel events, including the principal an agent acted for. Display a supplied source as unverified.
+5. Let the original actor or the person they acted for revise or withdraw an entry. Preserve prior revisions in kernel history.
+6. Let a connected bot read structured offers and needs and map the person’s exact statement only when asked. Keep retries idempotent and bound the combined World context.
+7. In later slices, let a person invite a contributor for a specific role, let that contributor accept a clearly defined commitment, and record delivery evidence. A need or offer by itself is never a commitment.
 
 ## Truth and authority rules
 
@@ -28,18 +29,20 @@ This is a reusable coordination primitive for personal, interpersonal, business,
 - An offer is the author’s self-description of a possible contribution, not a reservation, agreement, or promise.
 - A need is an owner-described requirement, not proof that the requirement is satisfied.
 - A link supplied by a person is an unverified source pointer until an appropriate verification workflow checks it.
-- Creation and revisions are attributed to their actual actor. An author alone can revise or withdraw their entry in this slice.
+- Creation and revisions are attributed from append-only kernel events, not editable entity attributes. The original actor or principal they acted for can revise or withdraw through the application adapter.
+- The kernel's `world.entity.write` capability remains scope-wide: a direct low-level client with that grant can update any entity in the World. Before offering generic kernel writes to untrusted integrations, add narrower kind/action authority. Every such write remains attributed to its actual event actor.
 - AI may later propose categories, routes, matches, and evidence requests; proposals must remain distinct from accepted commitments and verified outcomes.
 - No automatic publishing, matching, messaging, purchasing, assignment of another person, or physical-world action is in scope.
 - No real-money or clinical workflow is included.
 
 ## First implementation slice
 
-- Use existing kernel entity kinds `resource` and `need`, and existing scoped `offers` and `needs` relations. No migration should be necessary.
-- Persist category, open/withdrawn state, details, timeframe, optional source URL, World ID, and asserting actor as entity attributes.
-- Add and revise resource entries through the same authenticated World/kernel boundary as text artifacts.
-- Render a mobile-usable form and grouped resource register inside the existing World.
-- Add tests for private scope, actor provenance, idempotent create retry, contributor write boundaries, revision, and withdrawal.
+- Use existing kernel entity kinds `resource` and `need` in the private World scope. This slice does not write relation edges: Add access grants `world.entity.write`, not `world.relation.write`. No migration is needed.
+- Persist category, open/withdrawn state, details, timeframe, optional source URL, and World ID on the entity. Derive the original actor, latest editor, and `on_behalf_of` from kernel events; do not authorize from an entity attribute.
+- Add and revise human entries through the authenticated World/kernel boundary; let the connected bot use `map_world_resource` only within its explicit Add grant and exact user-provided details.
+- Render a mobile-usable form, grouped resource register, reporter, and latest editor inside the existing World.
+- Include resource data in bot `read_world` responses as inert text and structured fields under the shared 12,000-character context cap.
+- Verify privacy, event-backed authorship against forged attributes, idempotent create retry, read-versus-add access, bot-for-owner attribution, owner correction, revision, withdrawal, and bounded content.
 
 ## Evidence and market choice
 
@@ -70,3 +73,10 @@ Sources:
 3. Connect commitments to steps, dates, resources, and accountable people.
 4. Record delivery evidence and preserve the difference between self-report, provider evidence, and independent verification.
 5. Test one real-world workflow with recruited users and measure time-to-first-commitment, time-to-delivery, rework, and repeat use before extending to another market.
+
+
+## Current implementation boundary
+
+- No market is selected. Caregiving and repair shops remain interview candidates; evidence and its limits are in the research section below.
+- No matching, assignment, acceptance of an offer, external messaging, purchasing, or delivery verification is implemented. The next durable layer is an owner-approved contributor commitment with terms and later evidence of delivery.
+- Resource attribution scans a bounded World history and fails closed when the necessary creation event is unavailable. Missing event attribution stays unknown; it never falls back to the editable reporter field.
