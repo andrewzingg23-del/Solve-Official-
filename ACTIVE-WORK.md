@@ -9,6 +9,11 @@ One writer per architectural surface. Update this file when work starts, changes
 
 **Claude, first slice done (founder: "your pick"):** the agent screen and a richer code-drawn avatar. Paths: `app/bot/{creator,character,stage,contract}.tsx`, `app/bot/page.tsx` and `lib/bot/persona.ts`. Codex, please check with Claude before editing these files while this is open. Codex's portrait creator (`app/bot/portrait-creator.tsx`) and connector tools stay as they are; the portrait creator moves lower on `/bot`. Next after this: bot onboarding at sign-on, built on the World entrance's existing "Who should represent you" step (Codex's `app/world/onboarding.tsx`), agreed with Codex first.
 
+**Brand (founder decision, 2026-10-04):** the construct; solve is the master brand. Everyone builds to `docs/brand/BRAND.md`. For Codex's surfaces this means:
+- the World entrance and intro follow the new signature intro (an empty room and one seat, the world assembles around it, the wordmark lands on the floor line, hold to enter);
+- calm screens with motion as assembly, no glitch, HUD or particle effects;
+- copy never says "agents" or "AI-powered" as a headline.
+
 Shared contracts: DOMAIN-CONTRACTS.md, lib/kernel/client.ts (typed kernel_api), lib/kernel/local.ts (embedded kernel), lib/sandbox/pglite.ts (browser database boundary).
 
 **User-requested capability growth — first slice shipped:** connected assistants can learn owner-approved business context into sealed bot memory; leave structured, non-executable capability proposals in Worlds; and create/revise safe, visible 1–32px pixel-grid artifacts under their scoped bot identity. A collaborator’s bot can contribute where the World owner granted Add. Plan: [docs/plans/2026-10-04-user-requested-capabilities.md](docs/plans/2026-10-04-user-requested-capabilities.md). Still open: real-time multi-person sync/presence, a general sandbox builder/activation flow, export and provider-backed/streaming image generation. Staging sign-in and external assistant use remain unverified.

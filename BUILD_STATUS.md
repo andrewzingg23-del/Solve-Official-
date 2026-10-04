@@ -167,3 +167,10 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
   - A plain Character | Reach switch replaces Human | Machine. Reach shows the bot itself at the center with plain lines and labels, no particle cloud, and readouts in plain words: assistants, what it can touch, last 14 days, on the record.
   - The page says "Your bot" again, since the brand rules drop "agents".
 - **Checks:** bot suite 39/39 (the stage test now asserts no rings or grain); typecheck, lint (one existing warning) and build ok. Chromium screenshots at desktop and phone: no overflow, no console errors (a temporary preview page, deleted before commit).
+- **Brand adopted (founder, 2026-10-04).** `docs/brand/BRAND.md` is the canonical brand: the construct.
+  - **Idea:** stay in your seat; the world builds around you; every result real, on the record.
+  - **Lines:** *The world builds around you* / *Ask for a way* / *On the record*.
+  - **Names:** solve is the master brand, Sovereign the engine and philosophy, SOV identity and the economy.
+  - **Also in it:** a manifesto, the ascent (seat → room → network → economy → interface for reality; market only what is real), the identity system (palette unchanged, motion as assembly, a working mark at `public/brand/solve-mark.svg`), voice and the "never" list.
+
+  The Build Book §2 brand lock now points to it (the HUD direction and the market-line intro are retired). Recorded in `DECISIONS.md`; `ACTIVE-WORK.md` tells Codex's surfaces to follow it.

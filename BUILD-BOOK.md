@@ -16,11 +16,14 @@ End state: a programmable interface for reality.
 
 ## 2. Brand lock
 
-- Tony Stark HUD. Abyssal blue-black `#04070d`–`#0a1220`. Ice white `#f2f7fb`. Hologram cyan `#22d3ee` — the single accent. **No gold, ever.**
-- Emerald `#00e5a0` = win/positive. Red `#ff4d5e` = loss/destructive.
-- Archivo. Engraved uppercase labels, generous tracking. Tabular, stable numbers. Tesla-calm easing. Restrained transform/opacity motion. Vignette/grain.
-- Signature intro: jagged rising market line climbs through tower forms, frontier pulse at the peak, wordmark lands, hold sigil to enter. Preserve this composition. No crown, shield, or coin mark.
-- Copy: terse, confident, old-money. No gamified voice, no hashtags, no hype.
+Founder decision, 2026-10-04: **the construct.** The canonical brand is `docs/brand/BRAND.md`; it replaces the earlier "Tony Stark HUD" direction.
+- **The idea:** stay in your seat; the world builds around you. Every result is real, on the record. Lines: *The world builds around you.* / *Ask for a way.* / *On the record.*
+- **Names:** solve is the master brand. Sovereign is the engine and philosophy underneath. SOV is identity and the future economy.
+- **Palette (unchanged):** abyssal blue-black `#04070d`–`#0a1220`. Ice white `#f2f7fb`. Cyan `#22d3ee` is the single accent. **No gold, ever.** Emerald `#00e5a0` = win/positive. Red `#ff4d5e` = loss/destructive.
+- **Type and motion:** Archivo. Engraved uppercase labels, generous tracking. Tabular, stable numbers. Calm easing. Motion is assembly (things settle into place); no glitch, particle swarms or spinning HUD.
+- **Imagery:** real people, a locked frame, real places. Generated imagery only where the world changes, grounded and disclosed. Every story ends on proof.
+- **Signature intro:** an empty room and one seat; the world assembles around it piece by piece; the wordmark lands on the floor line; hold to enter. No crown, shield, coin, chair or copied Matrix imagery. (Retired: the rising-market-line intro.)
+- **Copy:** terse, confident, old-money. No gamified voice, no hashtags, no hype. Never "agents", "superintelligence" or "AI-powered" as a headline.
 
 ## 3. The memory kernel (directive 1 — build first)
 

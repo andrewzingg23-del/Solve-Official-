@@ -164,3 +164,11 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   Next: the first "make a real thing" loop, agreed with Codex (3D viewer in the World, a design tool in the connector, a proof photo on the record). Waiting on the founder: brand lock decision, wedge choice, staging sign-in steps, filming the plate.
 
 - 2026-10-04 09:16Z — CI run 64 (`2cd4242`, stripped-back bot screen and brand direction) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37191286230. Founder asked SOLVE vs Sovereign; Claude recommended SOLVE as the public brand, with Sovereign as the engine and philosophy and SOV for the ID and token. The decision is the founder's, after a trademark search.
+
+- 2026-10-04 09:26Z — Claude: the founder adopted the brand ("make sure this is the branding, with the weight of ambition").
+  - Added `docs/brand/BRAND.md` as the canonical brand: purpose, promise and proof; lines; manifesto; architecture (solve, Sovereign underneath, SOV); the ascent toward the vision's end state; identity, voice, iconic assets and "never".
+  - Added a working mark (`public/brand/solve-mark.svg`, a point above a horizon) until a designer makes the final one.
+  - Build Book §2 brand lock updated (the HUD look and the market-line intro retired, palette unchanged).
+  - `DECISIONS.md` entry; `ACTIVE-WORK.md` note for Codex's entrance and intro; the construct doc marked adopted.
+
+  Checks: docs and one static SVG; the mark was rendered in Chromium to check it. CI for this push: pending when written. Still the founder's: trademark and domain search, the wedge choice, staging sign-in steps, filming the plate.

@@ -1,6 +1,6 @@
 # SOLVE brand direction: the construct
 
-Date: 2026-10-04. Status: **proposed**, from the founder's conversation with Claude. The founder decides. The Build Book's brand lock (§2, "Tony Stark HUD") stays in force until the founder changes it. This doc says what to change it to and why.
+Date: 2026-10-04. Status: **adopted by the founder** (2026-10-04). The canonical brand is `docs/brand/BRAND.md` and the Build Book's brand lock (§2) now points to it. This doc keeps the reasoning, the research, the ad's shot list and the production prompts.
 
 ## The idea
 
@@ -114,9 +114,10 @@ Values for `[WORLD]`:
 
 ## Decisions for the founder
 
-1. Replace the Build Book's "Tony Stark HUD" brand lock with this direction, or adjust it.
+1. ~~Replace the Build Book's "Tony Stark HUD" brand lock~~: done 2026-10-04 (solve is the master brand; see `BRAND.md`).
 2. Choose which door opens first: the Build Book's Whop verification wedge, or "make real things". Both run on the same proof engine.
 3. Film the plate.
+4. Run a trademark and domain search for solve.
 
 ## Sources
 
