@@ -1,8 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { forgetMemory, noteMemory, revokeConnection } from "@/lib/bot/memory";
-import { saveBot } from "@/lib/bot/store";
+import { forgetMemory, noteMemory, readConnections, readMemories, revokeConnection } from "@/lib/bot/memory";
+import { botPulse, type Pulse } from "@/lib/bot/pulse";
+import { loadBot, saveBot } from "@/lib/bot/store";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { createClient, getUser } from "@/lib/supabase/server";
@@ -55,4 +56,18 @@ export async function forgetMemoryAction(formData: FormData) {
   const me = await kernel.whoami();
   await forgetMemory(kernel, me.actor_id, memoryId);
   revalidatePath("/bot");
+}
+
+// The bot's current mood and line, from its kernel records. Polled by the live card.
+export async function pulseAction(): Promise<Pulse | null> {
+  if (!(await getUser())) return null;
+  try {
+    const kernel = await getKernel();
+    const bot = await loadBot(kernel);
+    if (!bot.avatar) return null;
+    const [memories, connections] = await Promise.all([readMemories(kernel, bot.ownerId), readConnections(kernel, bot.ownerId)]);
+    return botPulse({ persona: bot.persona, since: bot.avatar.created_at, memories, connections, history: bot.history, now: new Date() });
+  } catch {
+    return null;
+  }
 }

@@ -13,10 +13,11 @@ const ASSISTANTS = [
   { name: "Meta AI (Muse)", steps: "Ask Muse to add a custom connector with this URL, then sign in to Sovereign when it asks." },
 ];
 
-export function Connections({ botName, connectorUrl, connections, memories }: { botName: string; connectorUrl: string; connections: Connection[]; memories: Memory[] }) {
+export function Connections({ botName, connectorUrl, connections, memories, live }: { botName: string; connectorUrl: string; connections: Connection[]; memories: Memory[]; live?: React.ReactNode }) {
   return (
     <section className="grid gap-8 border-t border-line pt-8 lg:grid-cols-2">
       <div className="flex flex-col gap-6">
+        {live}
         <div className="flex flex-col gap-2">
           <p className={label}>Bring your own AI</p>
           <h2 className="text-xl font-medium">Let your assistant become {botName}</h2>
@@ -68,9 +69,9 @@ export function Connections({ botName, connectorUrl, connections, memories }: { 
         <form action={addMemoryAction} className="flex flex-col gap-2">
           <input type="hidden" name="request_id" value={randomUUID()} />
           <textarea name="text" required maxLength={MEMORY_LIMITS.text} rows={3} placeholder={`Tell ${botName} something to remember`} className="w-full rounded-md border border-line bg-background px-3 py-2 text-sm leading-6 outline-none focus:border-accent" />
-          <div className="flex flex-wrap gap-2">
-            <input name="title" maxLength={MEMORY_LIMITS.title} placeholder="Label (optional)" className="h-10 min-w-0 flex-1 rounded-md border border-line bg-background px-3 text-sm outline-none focus:border-accent" />
-            <input name="url" type="url" maxLength={MEMORY_LIMITS.url} placeholder="Source link (optional)" className="h-10 min-w-0 flex-1 rounded-md border border-line bg-background px-3 text-sm outline-none focus:border-accent" />
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto]">
+            <input name="title" maxLength={MEMORY_LIMITS.title} placeholder="Label (optional)" className="h-10 min-w-0 rounded-md border border-line bg-background px-3 text-sm outline-none focus:border-accent" />
+            <input name="url" type="url" maxLength={MEMORY_LIMITS.url} placeholder="Source link (optional)" className="h-10 min-w-0 rounded-md border border-line bg-background px-3 text-sm outline-none focus:border-accent" />
             <button className="h-10 rounded-md bg-accent px-4 text-xs font-semibold uppercase tracking-[0.2em] text-background">Remember</button>
           </div>
         </form>

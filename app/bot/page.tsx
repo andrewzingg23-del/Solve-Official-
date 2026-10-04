@@ -4,12 +4,14 @@ import Link from "next/link";
 import { quietLink } from "@/app/ui";
 import { DEFAULT_PERSONA, type Persona } from "@/lib/bot/persona";
 import { readConnections, readMemories, type Connection, type Memory } from "@/lib/bot/memory";
+import { botPulse, type Pulse } from "@/lib/bot/pulse";
 import { loadBot } from "@/lib/bot/store";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { Connections } from "./connections";
 import { BotCreator } from "./creator";
+import { LiveBot } from "./live-bot";
 
 export const metadata: Metadata = { title: "Your bot — solve" };
 
@@ -17,15 +19,16 @@ type Loaded =
   | { kind: "signed-out" }
   | { kind: "identity" }
   | { kind: "unavailable" }
-  | { kind: "ready"; persona: Persona; version: number; savedAt: string | null; exists: boolean; connections: Connection[]; memories: Memory[] };
+  | { kind: "ready"; persona: Persona; version: number; savedAt: string | null; exists: boolean; connections: Connection[]; memories: Memory[]; pulse: Pulse | null };
 
 async function load(): Promise<Loaded> {
   if (!(await getUser())) return { kind: "signed-out" };
   try {
     const kernel = await getKernel();
     const bot = await loadBot(kernel);
-    const [connections, memories] = bot.avatar ? await Promise.all([readConnections(kernel, bot.ownerId), readMemories(kernel, bot.ownerId, 50)]) : [[], []];
-    return { kind: "ready", persona: bot.persona, version: bot.history.length, savedAt: bot.saved?.at ?? null, exists: Boolean(bot.avatar), connections, memories };
+    const [connections, memories] = bot.avatar ? await Promise.all([readConnections(kernel, bot.ownerId), readMemories(kernel, bot.ownerId)]) : [[], []];
+    const pulse = bot.avatar ? botPulse({ persona: bot.persona, since: bot.avatar.created_at, memories, connections, history: bot.history, now: new Date() }) : null;
+    return { kind: "ready", persona: bot.persona, version: bot.history.length, savedAt: bot.saved?.at ?? null, exists: Boolean(bot.avatar), connections, memories: memories.slice(0, 50), pulse };
   } catch (error) {
     if (error instanceof KernelError && error.name === "unauthenticated") return { kind: "identity" };
     return { kind: "unavailable" };
@@ -69,7 +72,13 @@ export default async function BotPage() {
             savedAt={state.kind === "ready" ? state.savedAt : null}
           />
           {state.kind === "ready" && state.exists ? (
-            <Connections botName={state.persona.name} connectorUrl={await connectorUrl()} connections={state.connections} memories={state.memories} />
+            <Connections
+              botName={state.persona.name}
+              connectorUrl={await connectorUrl()}
+              connections={state.connections}
+              memories={state.memories}
+              live={state.pulse ? <LiveBot persona={state.persona} initial={state.pulse} /> : null}
+            />
           ) : null}
         </>
       )}

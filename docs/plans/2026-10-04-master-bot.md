@@ -73,4 +73,6 @@ The server's `initialize` instructions tell the assistant to speak as the bot (f
 - **B. The connector.** `/mcp`, protected-resource metadata, token validation, the consent screen at `/oauth/consent`, connection records, the five tools, and memory. Done when one assistant connects on staging, reads the persona, and adds a memory that persists, with provenance naming the bot, the person and the client. A read-only connection cannot write, and revoking stops access.
 - **C. Alive.** Live presence while an assistant works, the feed-your-bot box, the relationship view from real history, and setup guides inside the app.
 
+**Status (2026-10-04).** Slices A, B and C are built and tested on the embedded kernel (`tests/bot/`, 15 tests). None of it has been exercised with a real assistant yet: that waits on the staging setup above. Live "reading right now" presence (an ephemeral Realtime signal from the connector) is the remaining piece of slice C; today the bot's mood follows durable records only.
+
 Tests live in `tests/bot/`. They run on the embedded kernel, and the connector tests use fake tokens and no network.
