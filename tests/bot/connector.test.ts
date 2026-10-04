@@ -44,7 +44,7 @@ it("speaks the protocol: initialize, ping, tools, notifications and errors", asy
   assert.equal(unknownVersion.result.protocolVersion, PROTOCOL_VERSIONS[0], "otherwise the newest version is offered");
   assert.deepEqual(await c.handle({ jsonrpc: "2.0", id: 3, method: "ping" }), { jsonrpc: "2.0", id: 3, result: {} });
   const list = (await c.handle({ jsonrpc: "2.0", id: 4, method: "tools/list" })) as { result: { tools: { name: string }[] } };
-  assert.deepEqual(list.result.tools.map((t) => t.name), ["whoami", "get_context", "search", "fetch", "remember", "list_worlds", "read_world", "start_world", "add_to_world", "propose_capability"]);
+  assert.deepEqual(list.result.tools.map((t) => t.name), ["whoami", "get_context", "search", "fetch", "remember", "learn_business", "list_worlds", "read_world", "start_world", "add_to_world", "propose_capability"]);
   assert.equal(TOOLS.find((t) => t.name === "remember")!.annotations.readOnlyHint, false);
   assert.equal(await c.handle({ jsonrpc: "2.0", method: "notifications/initialized" }), null, "notifications get no response");
   assert.equal((await c.handle({ jsonrpc: "2.0", id: 5, method: "resources/list" }) as { error: { code: number } }).error.code, -32601);
@@ -182,4 +182,52 @@ it("serves Streamable HTTP: 401 with metadata, JSON-RPC over POST, batches and n
     resource_name: "Sovereign master bot",
     resource_documentation: "https://sov.test/bot",
   });
+});
+
+
+it("learns owner-approved business context incrementally, with provenance and secret rejection", async () => {
+  const { ana, anaId, bot, session, call } = await setting();
+  const s = session(ana, CLAUDE);
+  const overview = {
+    business_name: "Zingg Works",
+    section: "overview",
+    details: "Owner says the company works on industrial piping and mechanical systems for regional commercial projects.",
+  };
+  const learned = await call(s, "learn_business", overview);
+  assert.equal(learned.isError, undefined, learned.content[0].text);
+  const saved = learned.structuredContent as { id: string; section: string; duplicate: boolean };
+  assert.deepEqual([saved.section, saved.duplicate], ["overview", false]);
+  assert.match(learned.content[0].text, /sealed business memory/);
+
+  const retried = await call(s, "learn_business", overview);
+  assert.equal((retried.structuredContent as { id: string; duplicate: boolean }).id, saved.id);
+  assert.equal((retried.structuredContent as { duplicate: boolean }).duplicate, true, "retries do not create duplicate business memory");
+
+  const systems = await call(s, "learn_business", {
+    business_name: "Zingg Works",
+    section: "systems_and_equipment",
+    details: "The owner is exploring 3D printing for prototypes and real-time pixel generation for interactive visual work.",
+  });
+  assert.equal(systems.isError, undefined, systems.content[0].text);
+  const memories = await readMemories(ana, anaId);
+  assert.equal(memories.length, 2);
+  assert.match(memories[0].text, /real-time pixel generation/);
+  assert.match(memories[0].source.title ?? "", /Zingg Works/);
+  assert.deepEqual(memories[0].via, { client_id: CLAUDE, client_name: "Claude" });
+
+  const secret = await call(s, "learn_business", {
+    business_name: "Zingg Works",
+    section: "systems_and_equipment",
+    details: "api_key=sk-abcdefghijklmnopqrstuvwxyz012345",
+  });
+  assert.equal(secret.isError, true);
+  assert.match(secret.content[0].text, /Remove passwords, keys, tokens/);
+  assert.equal((await readMemories(ana, anaId)).length, 2, "credentials never enter memory");
+
+  const unsupported = await call(s, "learn_business", { business_name: "Zingg Works", section: "secrets", details: "none" });
+  assert.equal(unsupported.isError, true, "the connector validates section values even if a caller skips the MCP schema");
+
+  await approveConnection(ana, anaId, bot.avatar!.agent_id, { clientId: CLAUDE, clientName: "Claude", mode: "read" }, "business-read-only");
+  const readOnly = await call(session(ana, CLAUDE), "learn_business", overview);
+  assert.equal(readOnly.isError, true, "read-only connections cannot add business memory");
 });
