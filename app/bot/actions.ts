@@ -1,12 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { buildReceipt, receiptSecret, receiptUrl, ReceiptError, signReceipt } from "@/lib/bot/receipt";
 import { forgetMemory, noteMemory, readConnections, readMemories, revokeConnection } from "@/lib/bot/memory";
 import { botPulse, type Pulse } from "@/lib/bot/pulse";
 import { loadBot, saveBot } from "@/lib/bot/store";
-import { setBotAccess, worldScope, type WorldAccess } from "@/lib/bot/worlds";
+import { setBotAccess, startWorld, WorldInputError, worldScope, type WorldAccess } from "@/lib/bot/worlds";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { createClient, getUser } from "@/lib/supabase/server";
@@ -29,6 +30,33 @@ export async function saveBotAction(requestId: string, persona: unknown): Promis
 }
 
 const field = (v: FormDataEntryValue | null) => (typeof v === "string" ? v : "");
+
+// Creates a private workspace from the avatar screen. The World service owns validation, duplicate
+// protection, owner identity, and the avatar's add grant; this action only connects the form to
+// that existing authority path.
+export async function startWorldForBotAction(formData: FormData) {
+  if (!(await getUser())) redirect("/login?next=%2Fbot");
+  const title = field(formData.get("title"));
+  let worldId: string | null = null;
+  let errorCode: "invalid" | "identity" | "limit" | "unavailable" | null = null;
+  try {
+    const kernel = await getKernel();
+    const bot = await loadBot(kernel);
+    if (!bot.avatar) errorCode = "identity";
+    else {
+      const result = await startWorld(kernel, bot.avatar.agent_id, { title });
+      worldId = result.world.worldId;
+    }
+  } catch (error) {
+    if (error instanceof WorldInputError) errorCode = error.message.includes("already has") ? "limit" : "invalid";
+    else errorCode = "unavailable";
+  }
+  if (errorCode) redirect(`/bot?world_error=${errorCode}`);
+  if (!worldId) redirect("/bot?world_error=unavailable");
+  revalidatePath("/bot");
+  revalidatePath("/worlds");
+  redirect(`/world/${worldId}`);
+}
 
 // Disconnects an assistant: the kernel stops honoring it at once, and Supabase forgets the grant
 // so it has to ask again.
