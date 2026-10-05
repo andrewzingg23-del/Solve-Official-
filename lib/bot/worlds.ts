@@ -9,7 +9,7 @@
 // The World itself (its entities, canvas and history) is Codex's lib/world/creative.ts; this file
 // only decides who the bot is and what it was let into.
 import type { Kernel } from "@/lib/kernel/client";
-import { createCreativeArtifact, createCreativeWorld, listCreativeWorlds, loadCreativeWorld, updateCreativeArtifact, type CreativeWorld } from "@/lib/world/creative";
+import { createCreativeArtifact, createCreativeWorld, listCreativeWorlds, loadCreativeWorld, updateCreativeArtifact, type ArtifactVia, type CreativeWorld } from "@/lib/world/creative";
 import { cleanText } from "./memory";
 
 export type WorldAccess = "none" | "read" | "add";
@@ -129,7 +129,7 @@ function spotFor(requestId: string) {
 // change, not two.
 export async function addToWorld(
   bot: Kernel,
-  input: { worldId: string; title: unknown; body: unknown; artifactId?: string | null },
+  input: { worldId: string; title: unknown; body: unknown; artifactId?: string | null; via?: ArtifactVia },
   requestId: string,
 ): Promise<{ entityId: string; revised: boolean }> {
   const title = cleanText(input.title, WORLD_LIMITS.title);
@@ -139,10 +139,10 @@ export async function addToWorld(
   if (input.artifactId) {
     const existing = artifacts.find((a) => a.entityId === input.artifactId);
     if (!existing) throw new WorldInputError("no such piece in this World");
-    const entityId = await updateCreativeArtifact(bot, { scope: world.scope, entityId: existing.entityId, requestId, title, body, position: existing.position });
+    const entityId = await updateCreativeArtifact(bot, { scope: world.scope, entityId: existing.entityId, requestId, title, body, position: existing.position, via: input.via });
     return { entityId, revised: true };
   }
-  const entityId = await createCreativeArtifact(bot, { scope: world.scope, worldEntityId: world.entityId, requestId, title, body, position: spotFor(requestId) });
+  const entityId = await createCreativeArtifact(bot, { scope: world.scope, worldEntityId: world.entityId, requestId, title, body, position: spotFor(requestId), via: input.via });
   return { entityId, revised: false };
 }
 

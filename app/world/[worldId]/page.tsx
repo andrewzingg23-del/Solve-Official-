@@ -66,7 +66,7 @@ function ArtifactCard({ worldId, artifact, saves = [], taken = null, takenBy = "
     <article id={anchor ? `piece-${artifact.entityId}` : undefined} className="flex w-full scroll-mt-6 flex-col gap-3 rounded-md border border-line bg-surface/95 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.25)] backdrop-blur-md">
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-accent">Document · v{artifact.version}</p>
+          <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-accent">Document · v{artifact.version}{artifact.via ? ` · via ${artifact.via}` : ""}</p>
           <h3 className="mt-1 break-words text-base font-medium leading-snug">{artifact.title}</h3>
         </div>
       </header>

@@ -4,7 +4,7 @@
 import Link from "next/link";
 
 export type RoomPieceKind = "goal" | "routes" | "outreach" | "part" | "proposal" | "art" | "text";
-export type RoomPiece = { id: string; title: string; x: number; y: number; kind: RoomPieceKind; detail: string | null; saved: boolean };
+export type RoomPiece = { id: string; title: string; x: number; y: number; kind: RoomPieceKind; detail: string | null; saved: boolean; via?: string | null };
 
 const KIND_LABEL: Record<RoomPieceKind, string> = { goal: "Goal", routes: "Routes", outreach: "Outreach", part: "Part", proposal: "Can't do yet", art: "Pixel art", text: "Note" };
 
@@ -44,6 +44,7 @@ export function PiecesMap({ worldId, pieces }: { worldId: string; pieces: RoomPi
             </span>
             <span className={`break-words leading-snug ${p.kind === "goal" ? "text-base font-medium" : "text-sm"}`}>{p.title}</span>
             {p.detail ? <span className="text-[11px] leading-4 text-muted">{p.detail}</span> : null}
+            {p.via ? <span className="text-[10px] uppercase tracking-[0.16em] text-accent/80">via {p.via}</span> : null}
           </Link>
         ))}
       </div>
@@ -57,6 +58,7 @@ export function PiecesMap({ worldId, pieces }: { worldId: string; pieces: RoomPi
               </span>
               <span className="text-sm">{p.title}</span>
               {p.detail ? <span className="text-[11px] text-muted">{p.detail}</span> : null}
+              {p.via ? <span className="text-[10px] uppercase tracking-[0.16em] text-accent/80">via {p.via}</span> : null}
             </Link>
           </li>
         ))}

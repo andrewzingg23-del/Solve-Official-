@@ -17,7 +17,7 @@ import { readRepo, repoForWorld, roomRepos } from "@/lib/github/repo";
 import { KernelError, type ActorProfile } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
-import { loadCreativeWorld, type CreativeArtifact } from "@/lib/world/creative";
+import { loadCreativeWorld, viaOf, type CreativeArtifact } from "@/lib/world/creative";
 import { eventTitle } from "../../event-title";
 import { WorldLiveSync } from "../live-sync";
 import { addNoteAction, linkRepoAction } from "./actions";
@@ -46,7 +46,7 @@ function noticeFor(saved: unknown, error: unknown) {
 }
 
 function pieceOf(a: CreativeArtifact, journeys: Map<string, Journey>, saved: Set<string>): RoomPiece {
-  const base = { id: a.entityId, title: a.title, x: a.position.x, y: a.position.y, saved: saved.has(a.entityId) };
+  const base = { id: a.entityId, title: a.title, x: a.position.x, y: a.position.y, saved: saved.has(a.entityId), via: a.via };
   const routes = parseRoutes(a.body);
   if (routes) {
     const j = journeys.get(a.entityId);
@@ -105,7 +105,10 @@ async function load(worldId: string, viewer: { id: string; email?: string | null
       waiting: waitingFrom(ov.journeys, ov.approvals),
       gaps: ov.gaps,
       saves,
-      activity: events.slice(0, 10).map((e) => ({ id: e.id, what: eventTitle(e.type), who: name(e.actor_id), at: new Date(e.occurred_at).toISOString() })),
+      activity: events.slice(0, 10).map((e) => {
+        const via = viaOf((e.payload as { request?: { attributes?: Record<string, unknown> } } | null)?.request?.attributes);
+        return { id: e.id, what: eventTitle(e.type), who: via ? `${name(e.actor_id)} via ${via}` : name(e.actor_id), at: new Date(e.occurred_at).toISOString() };
+      }),
       repo: repo && read ? { read, paired: repo.paired } : null,
     };
   } catch (error) {
