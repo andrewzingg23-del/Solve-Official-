@@ -707,3 +707,5 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - Condition 2 (kernel as single source of truth): kernel_api is the typed boundary, events append-only, ledger derived. Architectural; trunk tests green.
   - Condition 3 (lane contracts in DECISIONS.md): fixed this run — builder lanes recorded as a dated decision.
   - Verdict stands: PASS WITH FIXES, fixes now recorded or in place.
+
+- 2026-10-05 22:35Z — Doris, MAIN MERGE on the founder's "run the main merge". Trunk (claude/keen-cerf-tpd7io) into main: 33f2a75..1018942. The birth of the product: the Room talks (PR #11), 10 venture landings (PR #10), Manus start route (PR #9), Codex memory + Idea Graph (PRs #1, #2), Worlds, auth, /api/reason live. Verdict conditions satisfied (lane contracts now in DECISIONS.md). Trunk CI green at merge time.
