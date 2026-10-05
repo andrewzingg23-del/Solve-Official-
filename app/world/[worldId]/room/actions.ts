@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
-import { parseRepoUrl, repoUrl } from "@/lib/github/repo";
+import { BuildProofError, saveBuild } from "@/lib/github/build-proof";
+import { parseRepoUrl, readRepo, repoForWorld, repoUrl, sameRepo } from "@/lib/github/repo";
+import { deploymentRooms } from "@/lib/github/rooms";
 import { createCreativeArtifact, createCreativeResourceEntry, loadCreativeWorld } from "@/lib/world/creative";
 import { nextSpot } from "./place";
 
@@ -72,4 +74,30 @@ export async function linkRepoAction(worldId: string, formData: FormData) {
   if (code) redirect(`${room(worldId)}?lens=pieces&error=repo-${code}`);
   revalidatePath(room(worldId));
   redirect(`${room(worldId)}?lens=build&saved=repo`);
+}
+
+// Saves a build as proof, after reading it from GitHub again: only a build GitHub reports as passed
+// is saved, whatever the form says.
+export async function saveBuildAction(worldId: string, formData: FormData) {
+  const user = await getUser();
+  if (!user) redirect(`/login?next=${encodeURIComponent(room(worldId))}`);
+  const buildId = Number(text(formData.get("buildId")));
+  if (!Number.isSafeInteger(buildId) || buildId <= 0) redirect(`${room(worldId)}?lens=build&error=build-input`);
+  let code: string | null = null;
+  try {
+    const kernel = await getKernel();
+    const { world, resources } = await loadCreativeWorld(kernel, worldId);
+    const linked = resources.filter((r) => r.status === "open" && r.sourceUrl);
+    const repo = repoForWorld({ worldId: world.worldId, viewerEmail: user.email, links: linked.map((r) => r.sourceUrl), rooms: deploymentRooms() });
+    if (!repo) throw new BuildProofError("no repository");
+    const read = await readRepo(repo.ref, { token: repo.paired ? process.env.GITHUB_TOKEN || null : null });
+    if (!read.ok) throw new BuildProofError("GitHub didn't answer");
+    const resource = linked.find((r) => { const ref = parseRepoUrl(r.sourceUrl); return ref !== null && sameRepo(ref, repo.ref); });
+    await saveBuild(kernel, { scope: world.scope, entityId: resource?.entityId ?? world.entityId, view: read.view, buildId });
+  } catch (error) {
+    code = error instanceof BuildProofError ? "build-unseen" : failure(error) === "access" ? "build-access" : "build-save";
+  }
+  if (code) redirect(`${room(worldId)}?lens=build&error=${code}`);
+  revalidatePath(room(worldId));
+  redirect(`${room(worldId)}?lens=build&saved=build`);
 }

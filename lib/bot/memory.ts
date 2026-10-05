@@ -174,7 +174,7 @@ export class MemoryUnavailableError extends Error {}
 
 // A deployment without kernel v5 has nowhere to keep a memory's key. Checked before anything is
 // recorded, so such a deployment refuses the memory instead of writing one nobody can read.
-async function requireSealing(kernel: Kernel) {
+export async function requireSealing(kernel: Kernel) {
   try {
     await kernel.unsealKeys([]);
   } catch (error) {

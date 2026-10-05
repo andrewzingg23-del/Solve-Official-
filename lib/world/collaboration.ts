@@ -104,6 +104,16 @@ async function activeCollaborators(kernel: Kernel, scope: string, ownerActorId: 
     .sort((a, b) => a.actorId.localeCompare(b.actorId));
 }
 
+// Who is in a World, for anyone in it rather than only its owner: the owner from the scope claim,
+// and everyone the owner let in (people and bots alike; tell them apart with readActors). Needs
+// kernel.read on the World, the same gate as reading it.
+export async function readWorldMembers(kernel: Kernel, rawScope: string): Promise<{ ownerActorId: string; members: WorldCollaborator[] }> {
+  const scope = worldScope(rawScope);
+  const claim = (await kernel.readEvents(scope, { limit: 1 })).find((event) => event.type === "kernel.scope.claimed");
+  if (!claim) throw new KernelError("not_found", "World not found", "");
+  return { ownerActorId: claim.actor_id, members: await activeCollaborators(kernel, scope, claim.actor_id) };
+}
+
 export async function listWorldCollaborators(kernel: Kernel, rawScope: string): Promise<WorldCollaborator[]> {
   const scope = worldScope(rawScope);
   const ownerActorId = await requireWorldOwner(kernel, scope);

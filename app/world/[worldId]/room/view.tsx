@@ -11,7 +11,7 @@ import type { Connection } from "@/lib/bot/memory";
 import type { SavedProof } from "@/lib/bot/proof";
 import { groupGaps, type Gap } from "@/lib/bot/gaps";
 import type { Journey, WaitingItem } from "@/lib/bot/waiting";
-import type { Pull, RepoRead, RepoRef } from "@/lib/github/repo";
+import type { Pull, RepoRead, RepoReadFailure, RepoRef } from "@/lib/github/repo";
 import { BuildMap, BuildMark } from "./build-map";
 import { PiecesMap, type RoomPiece } from "./pieces-map";
 import { TalkPanel } from "./talk";
@@ -36,10 +36,11 @@ export type RoomData = {
   gaps: Gap[];
   saves: SavedProof[];
   activity: RoomActivity[];
-  repo: { read: RepoRead; paired: boolean } | null;
+  repo: { read: RepoRead; paired: boolean; unread?: RepoReadFailure } | null; // unread: why GitHub itself wasn't read
   notice?: { tone: "ok" | "error"; text: string } | null;
   addNote?: (form: FormData) => void | Promise<void>;
   linkRepo?: (form: FormData) => void | Promise<void>;
+  saveBuild?: (form: FormData) => void | Promise<void>;
   requestId?: string;
   live?: ReactNode; // the bot's live line, when there is a bot
   sync?: ReactNode; // the room's live connection state
@@ -81,6 +82,21 @@ function reviews(read: RepoRead | undefined): Pull[] {
   return read.view.lanes.flatMap((l) => l.pulls.filter((p) => p.state === "open" && p.base === read.view.trunk));
 }
 
+// What it takes to read a private repository here: a read-only token, and a pairing unless one exists.
+function TokenNeeded({ paired, worldId, name, trunk }: { paired: boolean; worldId: string; name: string; trunk: string | null }) {
+  return (
+    <>
+      <p className="text-muted">
+        {paired
+          ? "It is paired with you here, but this deployment has no GitHub token yet. Add one where the app is deployed:"
+          : "It is private, or GitHub isn\u2019t answering this deployment without a token. To read it here, the deployment needs a read-only GitHub token and a pairing:"}
+      </p>
+      <pre className="overflow-x-auto rounded border border-line bg-background/80 p-3 font-mono text-xs leading-5">{`GITHUB_TOKEN=<a fine-grained token: read-only Actions, Contents, Metadata, Pull requests>${paired ? "" : `\nGITHUB_ROOMS=${worldId}=${name}${trunk ? `@${trunk}` : ""}`}`}</pre>
+      {paired ? null : <p className="text-xs text-muted">Or pair it in the repository itself, in solve.rooms.json. Pairing it with this World lets everyone you let into the World see it; pairing it with your sign-in email keeps it to you.</p>}
+    </>
+  );
+}
+
 function RepoUnavailable({ read, paired, worldId }: { read: Extract<RepoRead, { ok: false }>; paired: boolean; worldId: string }) {
   const ref: RepoRef = read.ref;
   const name = `${ref.owner}/${ref.repo}`;
@@ -89,9 +105,7 @@ function RepoUnavailable({ read, paired, worldId }: { read: Extract<RepoRead, { 
       <p className="font-medium">{name} isn&apos;t showing yet.</p>
       {read.reason === "not_connected" ? (
         <>
-          <p className="text-muted">It is private, or GitHub isn&apos;t answering this deployment without a token. To read it here, the deployment needs a read-only GitHub token and a pairing, set where the app is deployed:</p>
-          <pre className="overflow-x-auto rounded border border-line bg-background/80 p-3 font-mono text-xs leading-5">{`GITHUB_TOKEN=<a fine-grained token: read-only Actions, Contents, Metadata, Pull requests>\nGITHUB_ROOMS=${worldId}=${name}${ref.trunk ? `@${ref.trunk}` : ""}`}</pre>
-          <p className="text-xs text-muted">Pairing it with this World lets everyone you let into the World see it. Pair it with your sign-in email instead to keep it to you.</p>
+          <TokenNeeded paired={paired} worldId={worldId} name={name} trunk={ref.trunk} />
         </>
       ) : read.reason === "not_found" ? (
         <p className="text-muted">{paired ? "The token can't see this repository. Check the token's repository access." : "GitHub says it doesn't exist."}</p>
@@ -143,10 +157,10 @@ export function RoomView({ data }: { data: RoomData }) {
           <span className="text-muted">/</span>
           <span className="font-semibold uppercase tracking-[0.2em] text-accent">Room</span>
         </nav>
-        <div className="flex items-center gap-4 text-[10px] uppercase tracking-[0.16em] text-muted">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 whitespace-nowrap text-[10px] uppercase tracking-[0.16em] text-muted">
           {data.sync}
           <span className="tabular-nums">{here} here</span>
-          <span>Private</span>
+          <span className="hidden sm:inline">Private</span>
           <Link href={`/world/${data.worldId}`} className="hover:text-accent">Details</Link>
           <Link href="/command" className="hover:text-accent">Command Center</Link>
         </div>
@@ -159,7 +173,7 @@ export function RoomView({ data }: { data: RoomData }) {
       ) : null}
 
       <div className="grid flex-1 gap-4 p-4 md:p-6 lg:min-h-0 lg:grid-cols-[16rem_minmax(0,1fr)_20rem]">
-        <aside aria-label="Who and what" className="order-2 flex flex-col gap-4 lg:order-1 lg:min-h-0 lg:overflow-y-auto">
+        <aside aria-label="Who and what" className="order-3 flex flex-col gap-4 lg:order-1 lg:min-h-0 lg:overflow-y-auto">
           <Panel title="After" id="room-goal">
             <p className="break-words text-sm leading-6">{data.goal || data.title}</p>
           </Panel>
@@ -206,7 +220,7 @@ export function RoomView({ data }: { data: RoomData }) {
           </Panel>
         </aside>
 
-        <section aria-label="Room canvas" className="order-1 flex min-w-0 flex-col gap-3 lg:order-2 lg:min-h-0">
+        <section aria-label="Room canvas" className="order-2 flex min-w-0 flex-col gap-3 lg:order-2 lg:min-h-0">
           <div className="flex items-center justify-between gap-3">
             <div role="tablist" aria-label="Canvas" className="flex items-center gap-1 rounded-md border border-line bg-surface/60 p-1 backdrop-blur-md">
               {data.repo ? (
@@ -218,7 +232,17 @@ export function RoomView({ data }: { data: RoomData }) {
           </div>
           <div className="min-h-0 flex-1 lg:overflow-y-auto lg:pr-1">
             {lens === "build" && read ? (
-              read.ok ? <BuildMap view={read.view} now={data.now} /> : <RepoUnavailable read={read} paired={data.repo?.paired ?? false} worldId={data.worldId} />
+              read.ok ? (
+                <>
+                  {data.repo?.unread ? (
+                    <div className="mb-4 flex flex-col gap-2 rounded-xl border border-line bg-surface/55 p-4 text-xs leading-5">
+                      <p><span className="font-medium">The trunk as this app was deployed.</span> <span className="text-muted">Builds and open pull requests need GitHub, which this deployment can&apos;t read yet.</span></p>
+                      {data.repo.unread === "not_connected" || data.repo.unread === "not_found" ? <TokenNeeded paired={data.repo.paired} worldId={data.worldId} name={`${read.view.ref.owner}/${read.view.ref.repo}`} trunk={read.view.trunk} /> : null}
+                    </div>
+                  ) : null}
+                  <BuildMap view={read.view} now={data.now} save={data.saveBuild} savedLinks={new Set(data.saves.map((s) => s.link).filter((l): l is string => !!l))} />
+                </>
+              ) : <RepoUnavailable read={read} paired={data.repo?.paired ?? false} worldId={data.worldId} />
             ) : (
               <div className="flex flex-col gap-4">
                 <PiecesMap worldId={data.worldId} pieces={data.pieces} />
@@ -228,7 +252,7 @@ export function RoomView({ data }: { data: RoomData }) {
           </div>
         </section>
 
-        <aside aria-label="What needs you and what happened" className="order-3 flex flex-col gap-4 lg:min-h-0 lg:overflow-y-auto">
+        <aside aria-label="What needs you and what happened" className="order-1 flex flex-col gap-4 lg:order-3 lg:min-h-0 lg:overflow-y-auto">
           <Panel title="Waiting on you" id="room-waiting" aside={<span className="text-[10px] text-muted tabular-nums">{waitingCount}</span>}>
             {waitingCount ? (
               <ul className="flex flex-col divide-y divide-line">

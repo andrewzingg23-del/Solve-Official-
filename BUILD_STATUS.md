@@ -126,6 +126,15 @@ Updated 2026-10-04. Branch `codex/need-to-route-network-state-spec`.
 - Vesting/treasury programs: build or adopt audited ones. Anchor cadence. Governance path.
 
 
+## Development memory slice — 2026-10-04
+
+- Started on isolated branch `codex/development-memory-v1` from the live build branch head. Adds an additive migration for typed Idea Graph relations, a kernel-backed idea domain module, and focused tests for idempotent creation, scoped reads, lineage cycle rejection, and reasoned status changes. No UI, staging application, or production database changes are included in this first code slice.
+- Local tests were not run: the attached workspace has no repository checkout and direct clone is blocked. The GitHub Actions workflow is the verification gate; do not treat this slice as verified until its run succeeds. Next: inspect the CI result, then connect the graph to the World UI and real implementation/evidence references.
+
+
+## AI Ideation — 2026-10-04
+
+- Added a signed-in `/api/ideas/expand` route that reads the selected idea and up to eight related ideas from the authorized World through the kernel. The model returns a schema-validated draft only. The person can edit, accept or discard; acceptance records a proposed idea, source-model metadata and a `derived_from` relation. It performs no code execution, branch creation, or promotion. Real model availability depends on server configuration; no live model call has been verified.
 ## 2026-10-04 checkpoint — World bot access and attribution
 
 - The World owner can grant a collaborator's identified bot Read or Add access from the World, review active bot name, owner, role and expiry, and remove the grant. The bot owner can copy the Bot SOV ID from `/bot` to share it with the World owner.
@@ -397,7 +406,97 @@ Both were merged into the trunk by the founder's account while a review asked fo
   - **Bottom:** a command bar that adds a note to the World.
 - **The repo as a source** (`lib/github/repo.ts`): read-only, from GitHub's API, refreshed every minute while the room is open. A private repository needs `GITHUB_TOKEN`, and is read only where `GITHUB_ROOMS` pairs it with a World or a sign-in email, so nobody can read it by linking it into a World of their own. Linking a repository adds it to the World's resources (one concept, one home).
 - **Tests:** `tests/github/repo.test.ts`, `tests/bot/room.test.ts`.
-- **Founder steps to see the solve build in its room:**
+- **Update, same night ("figure it out"):** the pairing now lives in the repository (`solve.rooms.json`, with the founder's two sign-in emails stored only as fingerprints), so `GITHUB_ROOMS` isn't needed. Without any token, the room shows the deployed trunk's history (who did what, merges) from the deployed code itself. The only remaining step for live builds and pull requests is `GITHUB_TOKEN` in Vercel.
+- **Founder steps to see the solve build in its room (original; steps 2's GITHUB_ROOMS no longer needed):**
   1. A fine-grained GitHub token, read-only for Actions, Contents, Metadata and Pull requests on Solve-Official-.
   2. In Vercel, `GITHUB_TOKEN`, plus `GITHUB_ROOMS=<your sign-in email>=andrewzingg23-del/Solve-Official-@claude/keen-cerf-tpd7io`.
-  3. Then link `https://github.com/andrewzingg23-del/Solve-Official-/tree/claude/keen-cerf-tpd7io` in the room.
+  3. Sign in on the staging preview and open the Command Center: "Your build has no room yet", then "Open its room". It makes a private "Build solve" World with the repository linked and opens the build. (Or link `https://github.com/andrewzingg23-del/Solve-Official-/tree/claude/keen-cerf-tpd7io` in any room.)
+- **Later the same night:**
+  - Every change the bot makes names the assistant it came through ("via Claude").
+  - Builders are named by any branch prefix, so Doris shows too.
+  - The trunk's latest passed build can be saved as proof. The server reads it from GitHub again first, and saves it as a record linking to the run. It isn't marked "seen by solve", which needs a service actor.
+
+## 2026-10-05 — The ten venture doors, working (Claude, for the founder)
+
+- **On brand:** the ten doors (Doris's #10) are rebuilt on the white floor of brand v3, with ink type and the deep cyan point. Each has one working tool in place of a button to `/start`. `/ventures` lists all ten. A target is shown as "the goal", never as a count.
+- **Solar (`/solar`):** a live proposal tool.
+  - The homeowner moves their bill (and kWh, if they know it) and sees system size, panels, production, year-one savings, payback and 25-year savings, with their home in 3D carrying that many panels.
+  - The numbers use 2026's rules: no 30% federal credit (it ended for homeowner systems installed after 2025), about 16¢ per kWh in Florida, about 1,400 kWh per kW a year, $2.90 per watt.
+  - **Aurora:** "Design my roof" (with consent) creates a project in Zest Solar's Aurora account and opens the homeowner's own signed proposal page (`/solar/proposal/<token>`). That page reads the latest Aurora design each time it opens: real size, production and panel count once designed.
+  - Needs `AURORA_API_KEY` and `AURORA_TENANT_ID`; until then the form says requests aren't connected.
+  - *Superseded the same night: the founder can't get an Aurora API token, so the API path was removed for the solar desk (see "Communities" below).*
+- **Real estate (`/real-estate`, removed later that night at the founder's word):** a 3D concept model of the development. Three phases (sixteen homes, offices over retail, the estate on the rise) switch on and off, and there's a fly-through.
+- **The others:**
+  - Insurance: coverage need, the DIME way.
+  - Trading: position size from risk (Practice math).
+  - Samantha: what missed calls cost a month.
+  - Meta ads: break-even and target return on ad spend.
+  - Membership: the oath, to hold before applying.
+  - Zuber pen: a 3D render with "Ring it".
+  - Vantage: the fleet of doors, linking to the Command Center.
+- **Tests:** `tests/ventures/{solar,tools}.test.ts`. The pages were screenshotted in Chromium at desktop and phone sizes with no page errors.
+
+## 2026-10-05 — The doors, round two (Claude, founder's direction)
+
+- **Samantha and Vantage are out** of the doors; they are vertical page ideas inside solve. Eight doors remain.
+- **Solar goes all the way to price and qualification**, in four steps on `/solar`:
+  1. the bill and the system in 3D;
+  2. the price, as cash, a loan (APR, term and down payment shown together, monthly payment beside what's left of the bill) or a lease (no number until the design);
+  3. "Do you qualify?": six questions, no credit check, with cash, loan and lease fit and the reasons;
+  4. the real design through Aurora, and a live proposal page.
+- **Insurance is sales-facing: the agent's dialer** (`/insurance`, in Practice with sample leads).
+  - It has a lead queue, power dial, calls only inside 8am–9pm in the lead's time zone, a live script with the family's number, and outcomes that schedule every next step (`lib/insurance/dialer.ts`): retries, consent-only texts, appointment confirmations and reminders, onboarding after a sale, 90-day nurture, and do-not-call stopping everything.
+  - Real calling needs a phone line (for example Twilio) and the agency's leads in solve: the next slice.
+- **Real estate is residential:** phases of homes, a clubhouse, pool and park, and estate homes on the rise. No commercial.
+- **Zuber pen:** finds your phone and your pen, and pairs with a key finder (the 3D shows the tag ringing with the pen).
+- **Members Only goes higher-ticket:** the oath, then what sets it apart, then two tiers. **The prices are a proposal awaiting the founder:**
+  - founding seat $6,000 a year (or $550 a month), locked for the first fifty;
+  - Inner Circle $18,000 a year, ten seats.
+- Pages on the white floor render their form controls light.
+
+## 2026-10-05 — Communities, and solar without the Aurora API (Claude, founder's direction)
+
+The founder's words are in `DECISIONS.md`. Nothing here needed a migration.
+
+- **Communities (`/communities`, `/community/<id>`; `lib/community/`):**
+  - **Start one:** anyone signed in names it, says what it's for and picks packs. That makes a World (theirs) and a public profile.
+    - The profile lives in the owner's own scope, so only they can write it.
+    - Its id is derived from the owner and a nonce on the profile, so nobody can publish a look-alike for someone else's community.
+  - **Find one:** every community is listed for everyone signed in. The profile is public; everything inside stays with members.
+  - **Join:** a person asks, with a note, and can bring their AI. The owner sees the ask and lets them in (they can build) or says not now, and the person sees the answer.
+    - The ask is a kernel message from the person's own scope to the owner's inbox.
+    - An unanswered ask stands for a week, so asking twice doesn't send two.
+    - A member can later ask to bring their AI in.
+  - **AI:** a member's bot comes in with them under its own identity, for them (Add, 30 days, renewable as on any World). It reaches the community's room through the connector like any World it's let into.
+  - **Connect:** members see who's in, with the AIs they brought, and leave each other notes. A note is a kernel message, on the record with who sent it. Notes only go between people in the community, and only theirs are shown.
+  - **Packs** (`lib/community/packs.ts`): the build room, the solar desk, the sales dialer (Practice) and the risk tools. The owner can change them.
+  - **Links:** `/ventures` links here. The Command Center has a Communities section with what waits on you in each one you started (`myCommunities`).
+- **Solar without an Aurora API key (`lib/solar/desk.ts`, `/solar` step 4, `/solar/mine`):**
+  - The homeowner signs in (their numbers come with them) and asks for their design.
+    - Their name, address, contact and answers are sealed in their own scope, one scope per request, readable by the desk's owner alone.
+    - The owner sees each request on the community page with the estimate and how they pre-qualify. They design it in Aurora by hand and send back the proposal link, with size, panels, production and price if they like.
+    - The homeowner's page shows the design: the numbers re-run from it, their price as given, a 3D home with the real panel count, and a link to the full proposal.
+    - "Erase my request" destroys its key and revokes the desk's access. The details are gone for good; the record keeps that a request existed.
+  - **Which desk:** set by `SOLAR_COMMUNITY` or `solve.communities.json`. Until it's set, step 4 says the desk opens soon.
+  - **Removed:** `lib/solar/aurora.ts`, the signed proposal link and `/solar/proposal/<token>`. They are in git history (`e621a68`) if an admin ever issues an API token.
+- **Real estate removed** ("Leave out the real estate plan for now"). Seven doors remain.
+- **Shared code, additive:**
+  - `readWorldMembers` in `lib/world/collaboration.ts`: who's in a World, readable by anyone in it;
+  - `requireSealing` exported from `lib/bot/memory.ts`.
+- **Tests:** `tests/community/{community,solar-desk}.test.ts` (10, on the embedded kernel), covering:
+  - forged profiles refused;
+  - only the owner lets people in or answers;
+  - the AI comes in only with its own person;
+  - notes only between members;
+  - homeowner details never in the clear, and unreadable by anyone else;
+  - erasing really erases.
+- **Checks:** full suite 307/307; lint clean; typecheck ok; build ok. Community views (owner, guest, member on a phone) and the homeowner's page (waiting and designed, desktop and phone) were rendered with sample data in Chromium with no page errors. Fixes from that: a reply box collapsed on phones; the guest view's empty column; "your AI" for your own.
+- **Known limits:**
+  - Asks and solar requests show on the community page. The Command Center lists the person's communities with what waits on them (people asking, requests still readable), but sends no notification.
+  - The directory reads the kernel's public list, which returns at most 2,000 public entities.
+  - Open communities, where anyone joins without the owner, would need the owner's agent to admit on their behalf; not built.
+- **Founder steps to open Zest Solar's desk:**
+  1. Sign in on the preview and start a community, "Zest Solar", with the solar desk pack.
+  2. Copy its id from its page and set `SOLAR_COMMUNITY` in Vercel (or send it to Claude to commit).
+  3. Requests then land on the community page. Design each in Aurora, then paste the proposal link and the numbers.
+

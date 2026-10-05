@@ -8,9 +8,11 @@
 // Otherwise anyone could link the private repo into a World of their own and read it through solve.
 // A public repository a World's resource map links to is read without the token.
 
+import { createHash } from "node:crypto";
+
 export type RepoRef = { owner: string; repo: string; trunk: string | null };
 
-export type Builder = "Claude" | "Codex" | "Manus";
+export type Builder = string; // a builder's name, from its branches: Claude, Codex, Manus, Doris…
 export type BuildState = "running" | "passed" | "failed" | "cancelled" | "other";
 export type Build = { id: number; number: number; branch: string; sha: string; title: string; event: string; state: BuildState; url: string; at: string };
 export type PullState = "open" | "draft" | "merged" | "closed";
@@ -29,6 +31,7 @@ export type RepoView = {
   commits: Commit[]; // on the trunk, latest first
   lanes: Lane[]; // branches with something happening, latest first
   builders: BuilderSummary[]; // who has been working, latest first
+  source?: "github" | "deployment"; // read live from GitHub, or from the deployed code's own history
 };
 
 export type RepoReadFailure = "not_connected" | "not_found" | "rate_limited" | "unavailable";
@@ -71,6 +74,36 @@ export function roomRepos(value: string | undefined): Map<string, RepoRef> {
   return rooms;
 }
 
+// A person named in a pairing by a fingerprint of their sign-in email, so the pairing can live in the
+// repository without spelling the email out.
+export const viewerKey = (email: string) => `sha256:${createHash("sha256").update(email.trim().toLowerCase()).digest("hex")}`;
+
+// solve.rooms.json, committed in the repository the app is built from: who may see which repository's
+// build in their rooms. Whoever can commit to the repository decides; the token is still used only
+// for the pairs it names. { "rooms": [{ "repo": "owner/repo", "trunk": "main", "readers": ["sha256:…" | World id] }] }
+export function roomsFromFile(json: unknown): Map<string, RepoRef> {
+  const rooms = new Map<string, RepoRef>();
+  const list = (json as { rooms?: unknown })?.rooms;
+  if (!Array.isArray(list)) return rooms;
+  for (const room of list as Record<string, unknown>[]) {
+    const [owner, repo, extra] = typeof room.repo === "string" ? room.repo.split("/") : [];
+    const trunk = typeof room.trunk === "string" && BRANCH.test(room.trunk) ? room.trunk : null;
+    if (!owner || !repo || extra !== undefined || !NAME.test(owner) || !NAME.test(repo) || !Array.isArray(room.readers)) continue;
+    for (const reader of room.readers) {
+      if (typeof reader !== "string") continue;
+      const key = reader.trim().toLowerCase();
+      if (/^sha256:[0-9a-f]{64}$/.test(key) || /^[0-9a-f-]{36}$/.test(key)) rooms.set(key, { owner, repo, trunk });
+    }
+  }
+  return rooms;
+}
+
+// The repository paired with a signed-in person, by email or by its fingerprint.
+export function repoForViewer(email: string | null | undefined, rooms: Map<string, RepoRef>): RepoRef | undefined {
+  if (!email) return undefined;
+  return rooms.get(email.trim().toLowerCase()) ?? rooms.get(viewerKey(email));
+}
+
 export const repoUrl = (ref: RepoRef) => `https://github.com/${ref.owner}/${ref.repo}`;
 export const sameRepo = (a: RepoRef, b: RepoRef) => a.owner.toLowerCase() === b.owner.toLowerCase() && a.repo.toLowerCase() === b.repo.toLowerCase();
 
@@ -82,16 +115,24 @@ export function repoForWorld(input: { worldId: string; viewerEmail?: string | nu
   if (forWorld) return { ref: forWorld, paired: true };
   const ref = input.links.map(parseRepoUrl).find((r): r is RepoRef => r !== null);
   if (!ref) return null;
-  const forViewer = input.viewerEmail ? input.rooms.get(input.viewerEmail.trim().toLowerCase()) : undefined;
+  const forViewer = repoForViewer(input.viewerEmail, input.rooms);
   if (forViewer && sameRepo(ref, forViewer)) return { ref: { ...ref, trunk: ref.trunk ?? forViewer.trunk }, paired: true };
   return { ref, paired: false };
 }
 
-// Each builder works on branches named for it (claude/…, codex/…, manus/…). The pull requests all come
-// from the founder's account, so the branch is what says who did the work.
+// Each builder works on branches named for it (claude/…, codex/…, manus/…, doris/…). The pull requests
+// all come from the founder's account, so the branch is what says who did the work. Conventional
+// prefixes (feature/, fix/…) name no one.
+const KNOWN: Record<string, Builder> = { claude: "Claude", codex: "Codex", manus: "Manus", chatgpt: "ChatGPT", doris: "Doris" };
+const NOT_A_BUILDER = new Set(["feature", "feat", "fix", "bugfix", "hotfix", "chore", "release", "docs", "refactor", "test", "dependabot", "renovate", "main", "master", "dev", "develop", "staging"]);
+
 export function builderOf(branch: string): Builder | null {
-  const prefix = branch.split("/")[0]?.toLowerCase();
-  return prefix === "claude" ? "Claude" : prefix === "codex" ? "Codex" : prefix === "manus" ? "Manus" : null;
+  const parts = branch.split("/");
+  if (parts.length < 2) return null;
+  const prefix = parts[0].toLowerCase();
+  if (KNOWN[prefix]) return KNOWN[prefix];
+  if (NOT_A_BUILDER.has(prefix) || !/^[a-z][a-z0-9-]{1,30}$/.test(prefix)) return null;
+  return prefix[0].toUpperCase() + prefix.slice(1);
 }
 
 const text = (v: unknown, max: number = REPO_LIMITS.title) => (typeof v === "string" ? v.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max) : "");
@@ -162,13 +203,15 @@ export function shapeCommits(json: unknown): Commit[] {
 export function builderOfCommit(message: string): Builder | null {
   const merged = /^Merge pull request #\d+ from [^/\s]+\/(\S+)/.exec(message);
   if (merged) return builderOf(merged[1]);
-  const coauthor = /^Co-Authored-By:\s*(Claude|Codex|Manus)\b/im.exec(message);
-  return coauthor ? (coauthor[1] as Builder) : null;
+  const coauthor = /^Co-Authored-By:\s*([A-Za-z][A-Za-z0-9-]{1,30})\b/im.exec(message);
+  return coauthor ? (KNOWN[coauthor[1].toLowerCase()] ?? coauthor[1]) : null;
 }
 
 // Each builder's part, from the lanes and the trunk: open pull requests, what merged, their commits on
 // the trunk, and their latest build.
-export function buildersFrom(lanes: Lane[], commits: Commit[]): BuilderSummary[] {
+export function buildersFrom(lanes: Lane[], commits: Commit[], trunkBuilds: Build[] = []): BuilderSummary[] {
+  const trunkBuild = new Map<string, Build>();
+  for (const b of trunkBuilds) if (!trunkBuild.has(b.sha) || b.at > trunkBuild.get(b.sha)!.at) trunkBuild.set(b.sha, b);
   const by = new Map<Builder, BuilderSummary>();
   const of = (builder: Builder) => {
     let b = by.get(builder);
@@ -188,9 +231,16 @@ export function buildersFrom(lanes: Lane[], commits: Commit[]): BuilderSummary[]
     const b = of(c.builder);
     b.commits += 1;
     if (c.at > b.at) b.at = c.at;
+    // A builder working on the trunk is built there: its latest commit's build is its build.
+    const built = trunkBuild.get(c.sha);
+    if (built && (!b.build || built.at > b.build.at)) b.build = built;
   }
   return [...by.values()].sort((a, b) => b.at.localeCompare(a.at));
 }
+
+// A branch still in flight: an open pull request, or recent builds with no pull request yet. A branch
+// whose pull requests all merged or closed has landed; it counts toward its builder, not here.
+export const inFlight = (lane: Lane) => lane.pulls.some((p) => p.state === "open" || p.state === "draft") || lane.pulls.length === 0;
 
 // The branches with something happening: an open pull request, or a build or pull request in the
 // last few days. The trunk is shown on its own.
@@ -256,8 +306,8 @@ export async function readRepo(ref: RepoRef, opts: { token?: string | null; fetc
         readAt: now.toISOString(),
         trunkBuilds: builds.filter((b) => b.branch === trunk),
         commits,
-        lanes: lanes.slice(0, REPO_LIMITS.lanes),
-        builders: buildersFrom(lanes, commits),
+        lanes: lanes.filter(inFlight).slice(0, REPO_LIMITS.lanes),
+        builders: buildersFrom(lanes, commits, builds.filter((b) => b.branch === trunk)),
       },
     };
   } catch (error) {

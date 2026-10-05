@@ -1,0 +1,12 @@
+{
+  "rooms": [
+    {
+      "repo": "andrewzingg23-del/Solve-Official-",
+      "trunk": "claude/keen-cerf-tpd7io",
+      "readers": [
+        "sha256:1ea1293e79f5a4c4c21cac0a486cbe84451c040028829562e5e08e4931370bdb",
+        "sha256:e9013274887561c6c65336297c39a6ff93c2a8f3d5a92fe90bd62ee07c03cc07"
+      ]
+    }
+  ]
+}

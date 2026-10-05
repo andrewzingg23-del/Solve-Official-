@@ -63,12 +63,19 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 
 - 2026-10-04 03:33Z — Claude, finished master bot slice A: the bot's body and persona. `/bot` is a game-style creator: 5 procedural bodies (bot, humanoid, creature, orb, pixel), eyes, mouth, top, accessory, aura, colors, personality and relationship. It has a live animated preview in six moods (labeled as previews; on the live bot, moods will follow real activity), dice for a random look, and undo. Saving creates the AI-companion avatar and a versioned persona record in the owner's scope, with no migration. Paths: `lib/bot/persona.ts`, `lib/bot/store.ts`, `app/bot/{page,creator,character,actions}.tsx|ts`, `tests/bot/persona.test.ts`. Checks run: bot tests 4/4 (validation, the bot's persona brief, dice, kernel versioning: retry writes once, the bot's agent reads its persona but cannot change it, another person is refused); typecheck ok; lint ok; build ok. Screenshots checked in Chromium at desktop and phone sizes across bodies and moods. Not run: the full suite (no shared code changed). CI for this push: pending when written. Next: slice B, the connector (`/mcp`, OAuth consent, memory).
 
+- 2026-10-04 — Started and finished planning: development-memory / Idea Graph sequence aligned to the live branch and founder canon. Added `docs/plans/2026-10-04-development-memory.md`. Documentation only; no app code, migration, staging data, or production change. Checks: not run (no executable changes); documentation-only workflow is expected to skip the build. Existing Codex shared-World work and Claude master-bot work remain the active lanes. Next: finish the two-person/two-agent staging World proof, then start the smallest Idea Graph capture and lineage slice.
+
 - 2026-10-04 03:42Z — Claude, finished master bot slice B: the connector. Paths: `lib/bot/{connector,mcp-http,mcp-auth,memory}.ts`, `app/mcp/route.ts`, `app/.well-known/oauth-protected-resource{,/mcp}/route.ts`, `app/.well-known/oauth-authorization-server/route.ts`, `app/oauth/consent/{page,actions}.tsx|ts`, `app/bot/{connections,copy-field}.tsx`, `app/bot/{page,actions}`, `tests/bot/{connector,memory}.test.ts`. Checks run: bot tests 11/11 on the embedded kernel. They cover protocol; read vs remember; provenance (the bot as actor for its owner, the client recorded); dedupe; rate limit; revocation; no crossing between people; HTTP 401/405/202/batch; metadata. Also typecheck, lint and build ok, plus an HTTP smoke test against `next start` (401 with resource metadata, invalid_token, 405, CORS preflight, consent page, `/bot`). Not run: real assistants (blocked on setup below), the full suite (no shared code changed). CI for this push: pending when written. Blocked on the founder: in staging Supabase, enable Authentication → OAuth Server, set Authorization Path `/oauth/consent`, allow dynamic registration, and set the Site URL to the preview host; add `SUPABASE_SECRET_KEY` (staging) to the branch's Preview environment. Next: slice C (the bot animates from real activity, relationship view).
 
 - 2026-10-04 03:46Z — Claude, finished master bot slice C: the bot comes alive from real activity. `lib/bot/pulse.ts` turns kernel records into a mood (working, happy, listening, resting, idle), one line in the bot's voice and relationship counts, with no model call. `app/bot/live-bot.tsx` shows it, refreshed while visible; the panels are laid out for phones. Paths: `lib/bot/pulse.ts`, `app/bot/{live-bot,connections,page,actions}`, `tests/bot/pulse.test.ts`, plan status. Checks run: bot tests 15/15; typecheck ok; lint ok; build ok. Screenshots of the signed-in panels at desktop and phone sizes came from a temporary page with sample data, which was deleted before this commit. CI for this push: pending when written; CI for slice B (run 23) was still running when written. Not built: live presence while an assistant only reads. Still blocked on the founder's staging setup (OAuth server, `SUPABASE_SECRET_KEY`) before any real assistant can connect.
 
 - 2026-10-04 03:54Z — CI run 24 (`c41e335`, master bot slices A to C) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37175017475. Run 22 (slice A) also succeeded; run 23 (slice B) was cancelled by the next push, and run 24 covers its code.
 
+- 2026-10-04 — Started and checkpointed the first Development Memory code slice on `codex/development-memory-v1`: typed kernel relation kinds for idea lineage, an additive migration, `lib/world/ideas.ts` for scoped versioned ideas and relations, and focused tests for idempotency, scope, cycles, and reasoned status changes. Production untouched. Local checks unavailable because the attached workspace has no checkout and the network blocks `git clone`; CI is the verification gate. Next: wait for CI, fix any failures, then add the World UI and immutable implementation/evidence references.
+- 2026-10-04 — Hardened Idea Graph relation writes against concurrent duplicate submissions: the migration adds a unique semantic edge index, and the domain layer resolves a racing insert to its canonical relation. Added a concurrent-write test. No production or staging DB was changed; CI has not yet been observed.
+- 2026-10-04 — Added the first usable World Ideas surface at `/world/[worldId]/ideas`: capture ideas with assumptions/open questions, view graph links and versions, connect ideas, and move status with required reasons for rejection/blocking. Added World navigation entry. No AI expansion, branch provisioning, or production action is exposed in this slice. Local tests remain unavailable; waiting for branch CI before treating this as verified.
+
+- 2026-10-04 — Added AI expansion proposals: the signed-in endpoint loads only authorized World graph context, returns a bounded schema-validated draft, and persists nothing until the person edits and accepts. Accepted drafts become proposed ideas linked to their source; no code execution, branches, or promotion. Checks pending in CI.
 - 2026-10-04 04:41Z — Claude, finished (founder: "fix all of these" for the ten forecast problems, plus strategy). Built:
   - **Erasable memory, kernel v5.** `supabase/migrations/20261004040000_erasable_content.sql` adds the `kernel_keys` store and `seal_key`, `unseal_keys` and `destroy_key` in `kernel_api`. `lib/bot/seal.ts` does AES-256-GCM with one key per memory. "Erase" destroys the key; history stays append-only.
   - **Live presence.** `lib/bot/presence.ts` plus the guarded Realtime policy `20261004040100_bot_presence.sql`. A private per-person broadcast, never content; `/bot` shows "Claude is reading Nova's context".
@@ -480,6 +487,8 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **For Manus:** a working agreement and an updated `ACTIVE-WORK.md` row (research first, no self-merges while a review is open).
   - **Paths:** `app/start/{view,page}.tsx`, `app/bot/page.tsx`, `app/bot/context-ledger.tsx` (removed), `tests/bot/start.test.ts`, `docs/handoff/MANUS.md`, `ACTIVE-WORK.md`.
 
+- 2026-10-05 05:32Z — Manus finished: researched and documented provider-specific connection paths for Claude Code, Codex, eligible ChatGPT workspaces, and Meta Muse. Paths: `docs/research/connecting-builders.md`. Findings: solve’s `/mcp` Streamable HTTP + OAuth contract is compatible with Claude Code and Codex; ChatGPT custom MCP is workspace/plan dependent; Meta Muse’s official docs do not yet document arbitrary custom MCP connections. No external connection was attempted; staging remains unchanged. Next: verify one real Claude Code or Codex connection on staging after the founder applies the pending migrations and confirms the preview/Auth path.
+
 - 2026-10-05 05:45Z — Claude, research: Scale AI (founder: "look at scale ai").
   - **Findings:**
     - Scale marks up crowd work for AI labs. Since Meta took 49% it lost OpenAI and is turning toward AI applications.
@@ -534,6 +543,150 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
     - `app/worlds/{page,actions}.ts*`;
     - `tests/bot/worlds.test.ts`.
   - **Checks:** full suite 272/272; lint clean; build ok.
+
+- 2026-10-05 07:05Z — The founder merged pull requests #9 (Manus: how builders connect), #2 (Codex: the Idea Graph) and #1 (Codex: the development-memory plan) into the trunk at 06:35Z. The trunk's CI after #2 succeeded (run 152, `6923050`). The Idea Graph migration (`20261005070000_idea_graph_relations.sql`) still needs applying on solve-staging before `/world/<id>/ideas` can save links.
+
+- 2026-10-05 07:10Z — Claude, a one-step room for the founder's repository (founder-first slice 1, the "Build solve" World).
+  - When `GITHUB_ROOMS` pairs a repository with the signed-in person's email and they have no room for it, the Command Center offers "Open its room". It creates a private World (named "Build solve" for solve) with the repository linked, and opens the build.
+  - The World id is derived from the person and the repository, so opening it twice opens the same World.
+  - **Paths:** `lib/github/room-id.ts`, `app/command/{repo-actions.ts,repo-room.tsx,page.tsx,view.tsx}`, `tests/github/repo.test.ts`.
+  - **Checks:** full suite 277/277 on the merged trunk; typecheck ok; lint clean; build ok.
+
+- 2026-10-05 07:20Z — Claude.
+  - **Staging:** applied the Idea Graph migration (`idea_graph_relations`) to solve-staging, on the founder's "all permission". Checked after: the relation kinds include the eight idea kinds, and the duplicate-link index exists. It keeps all 18 earlier kinds, so existing relations are unaffected.
+  - **Builders by branch, generally:** the room names any builder from its branch prefix (`doris/…` is Doris, `chatgpt/…` is ChatGPT), not only Claude, Codex and Manus. Conventional prefixes (`feature/`, `fix/`…) name no one, and the build map shows up to eight stations.
+    - Doris is a new builder: its landing pages merged as #10 at 06:55Z, and run 154 passed.
+  - **`ACTIVE-WORK.md`:** the staging blocker is done; #1, #2, #9 and #10 are merged; a new blocker is seeing the solve build in its room (the founder's GitHub token and pairing).
+  - **Paths:** `lib/github/repo.ts`, `app/world/[worldId]/room/build-map.tsx`, `tests/github/repo.test.ts`, `ACTIVE-WORK.md`.
+  - **Checks:** GitHub and room tests 11/11; typecheck ok; lint clean.
+
+- 2026-10-05 07:40Z — Claude, a passed build saved as proof (founder-first slice 5; problem 6, "never report green until CI").
+  - In the room, the trunk's latest passed build has "Save as proof". The server reads the repository from GitHub again and saves only a build GitHub reports as passed. The save is an `artifact` (the run's link and a fingerprint of what GitHub said) on the World's repository resource, once per build.
+  - It is deliberately not `system_observed`; that needs a service actor, which is next.
+  - The wording for record saves is now "With the record attached" (it was "file").
+  - **Paths:** `lib/github/build-proof.ts`, `app/world/[worldId]/room/{actions.ts,page.tsx,view.tsx,build-map.tsx}`, `lib/bot/vouch.ts`, `tests/github/build-proof.test.ts`, `tests/bot/room.test.ts`, `BUILD_STATUS.md`.
+  - **Checks:** full suite 279/279; lint clean; build ok.
+
+- 2026-10-05 07:55Z — Claude, the room looked at, not only tested.
+  - Rendered from a temporary page with the real repository's GitHub data, screenshotted in Chromium at 1440×900 and 390×844. The page was deleted before this commit.
+  - **Fixed from what the screenshots showed:**
+    - Claude and Codex both showed "C"; builders sharing a first letter now show two ("Cl", "Co").
+    - A builder working on the trunk showed "no build yet"; it now shows the trunk's build of its latest commit.
+    - Branches whose pull requests all merged were listed as in flight; they now count toward their builder only.
+    - On a phone, what's waiting on you comes first, the builder stations sit two to a row, and the header links wrap cleanly.
+  - **Also:** an unused import in the Ideas page (lint warning).
+  - **Paths:** `lib/github/repo.ts`, `app/world/[worldId]/room/{build-map,view}.tsx`, `app/world/[worldId]/ideas/page.tsx`, `tests/github/repo.test.ts`.
+  - **Checks:** full suite 280/280; lint clean (0 warnings); build ok.
+
+- 2026-10-05 08:10Z — CI run 157 (`14b1eda`) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37349132652. Green now: the room and its polish, the repository reader, builders by branch, saving a passed build as proof, the one-step repository room, and the bot's "via" attribution.
+
+- 2026-10-05 18:40Z — Claude, the founder: "figure it out" (do the setup steps).
+  - **What blocked doing them directly:**
+    - The Vercel connector can list the `solve` project but gets 403 on its team `sovigrn`, so it can't read or set env.
+    - A GitHub token can only be made by the founder.
+    - Staging has no system authority to create a GitHub observer service actor.
+    - Staging's logs show the deployed app has never called it (only manual `curl` this morning), so whether Preview points at staging is unverified.
+  - **What changed so the founder needs less:**
+    - The pairing lives in the repository: `solve.rooms.json` names who may see the repo's build in solve, by email fingerprint (sha256), and `lib/github/rooms.ts` merges it with `GITHUB_ROOMS`. `GITHUB_ROOMS` is no longer needed.
+    - Without a token, a room on the deployed repository shows the deployed trunk's history: who did what, and merges by branch.
+      - `next.config.ts` records the last 30 commits at build, only on Vercel; it is inlined into server code only (checked: no client bundle has it). `lib/github/deployed.ts` reads it.
+      - The room says plainly that builds and open pull requests need GitHub, and asks only for `GITHUB_TOKEN` when the viewer is already paired.
+  - **Paths:** `solve.rooms.json`, `lib/github/{repo,rooms,deployed}.ts`, `next.config.ts`, `app/world/[worldId]/room/{page,view,build-map,actions}.tsx|ts`, `app/command/{page.tsx,repo-actions.ts}`, `tests/github/pairing.test.ts`, `tests/bot/room.test.ts`, `.env.example`, `BUILD_STATUS.md`.
+  - **Checks:**
+    - full suite 284/284; lint clean;
+    - build ok, both plain and with Vercel's git variables set (the trunk history is inlined in the room's server chunk only).
+  - **Founder, remaining:**
+    - sign in on the preview;
+    - Command Center, then "Open its room";
+    - optionally `GITHUB_TOKEN` for live builds and pull requests;
+    - reconnect the Vercel connector to the `sovigrn` team so Claude can check Preview's settings.
+
+- 2026-10-05 19:05Z — Claude, the founder: "connect it all".
+  - **Found:**
+    - The Vercel connector is the founder's own account, but its authorization doesn't include the `sovigrn` team, so env can't be read or set.
+    - Vercel hosts are blocked from this environment.
+    - `Solve-Official-` (the main store) has kernel migrations v1–v3 only, while the app needs the later ones, which only solve-staging has. Staging has never had app traffic, so the preview was almost certainly pointed at the main store, where Worlds, bots and rooms can't work.
+  - **Connected:** Vercel preview deployments now run on solve-staging, in code (`lib/supabase/config.ts`, with `NEXT_PUBLIC_SOLVE_DEPLOY` from `VERCEL_ENV` in `next.config.ts`).
+    - Staging's URL and publishable key are public by design. Production and local runs are unchanged.
+    - The server key is used only for the same project: `SUPABASE_STAGING_SECRET_KEY`, or the preview's own key when its settings already point at staging. Otherwise there's no bot connector on previews, never a mismatched key. `lib/bot/mcp-auth.ts` uses it.
+  - **Checks:**
+    - full suite 286/286; lint clean;
+    - build ok with `VERCEL_ENV=preview`: the staging URL is in the client bundle as expected, and no secret names.
+    - CI run 158 and Vercel succeeded for `5df0e1f`.
+  - **Founder, remaining:**
+    - re-authorize the Vercel connector for `sovigrn`;
+    - add `SUPABASE_STAGING_SECRET_KEY` in Preview (for the bot connector), and `GITHUB_TOKEN`;
+    - if the sign-in email link doesn't return to the preview, add `https://*-sovigrn.vercel.app/**` to staging's redirect URLs.
+
+- 2026-10-05 19:15Z — CI run 159 (`b5e074b`) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37357768450. The Vercel preview deployed: https://vercel.com/sovigrn/solve/HPRBimALyWKFYnM14U5FMu6ZJzak. This is the first preview built to run on solve-staging. Not yet visited; staging's logs will show the first sign-in.
+
+- 2026-10-05 19:48Z — Claude, the founder: "make me 10 landing routes… solar live customer facing proposal tool with aurora tied in and a 3d model for home owner to see… real estate 3d development".
+  - **Built** on Doris's ten doors (#10): the white floor of brand v3 and one working tool per door (see BUILD_STATUS).
+  - **Solar:**
+    - estimate from the bill with 2026's rules (no 25D credit, cited Florida rate);
+    - a three.js home with the panel count;
+    - Aurora design requests with consent;
+    - a signed, live proposal page reading the Aurora design.
+  - **Real estate:** a three.js development with phases and a fly-through.
+  - **The rest:** calculators from the visitor's inputs only; a pen render.
+  - **New dependency:** `three` (and `@types/three`), loaded only in the browser on those pages.
+  - **Paths:** `app/ventures.ts`, `app/venture-{template,style,tools}.ts*`, `app/ventures/`, `app/{solar,real-estate,zuber-pen,insurance,trading,samantha,meta-ads,membership,vantage,solve}/`, `lib/solar/`, `lib/ventures/`, `tests/ventures/`, `.env.example`.
+  - **Aurora sources:** POST /tenants/{id}/projects, GET …/projects/{id}/designs, GET …/designs/{id}/summary (docs.aurorasolar.com, via search; the docs host is blocked from this environment). The contact fields fall back to name and address if Aurora rejects them.
+  - **Checks:** full suite 293/293; lint clean; typecheck ok; build ok. Screenshots in Chromium of `/solar`, `/real-estate`, `/insurance`, `/zuber-pen` and `/ventures`, desktop and phone: no page errors. Fixes from them: the pen was framed too close; big solar figures wrapped on phones.
+  - **Founder:** set `AURORA_API_KEY` and `AURORA_TENANT_ID` (Preview) to open design requests; check the copy and the $2.90 per watt price.
+
+- 2026-10-05 20:03Z — Claude, the founder's second round on the doors: leave out Samantha and Vantage; solar all the way to price and qualifying; pen and key finder; residential real estate; insurance as a sales dialer with automations; Members Only higher-ticket.
+  - **Built:**
+    - `lib/solar/qualify.ts` (loan payment, pre-qualification) and the four-step `/solar`;
+    - `lib/insurance/dialer.ts` (automations with calling hours, consent and do-not-call) and the Practice dialer on `/insurance`;
+    - the residential development model; the pen with a key-finder tag;
+    - `app/membership/offer.tsx` (differences, tiers, what members get).
+    - Samantha and Vantage removed (routes, tool and fleet).
+  - **Credentials:** the founder pasted an Aurora login in chat. It was not used or stored anywhere, and the founder was asked to change it. The integration needs an Aurora API token (`AURORA_API_KEY`, `AURORA_TENANT_ID`), set in Vercel by the founder.
+  - **Checks:**
+    - full suite 298/298; lint clean; typecheck ok; build ok;
+    - click-throughs in Chromium: answering the six questions, a dialer call logged as an appointment and another as no answer, the oath. These caught two things:
+      - leads with a scheduled call showed "Ready" (fixed: a lead waits for its next scheduled call);
+      - form controls rendered dark on the white pages (fixed).
+  - **Founder:** confirm the membership prices; set the Aurora token; choose the phone provider for the real dialer.
+
+- 2026-10-05 20:20Z — CI for the two door commits did not run.
+  - Run 160 (`11739ef`) was cancelled by the next push.
+  - Run 161 (`e621a68`) failed before any step: "The job was not acquired by Runner of type hosted even after multiple attempts". No runner, so no test ran. It is not a code failure; the next push runs CI again.
+  - Vercel deployed both previews.
+  - (Two entries above had their times corrected to the commits': 19:48Z and 20:03Z.)
+
+- 2026-10-05 20:30Z — Claude, the founder: "As a limited team member don't think Ivan add auroa api / Leave out the real estate plan for now / How do we build this but not take away the vision of solve / Also others need to be able to start a community and build it within solve and have their agentic ai help and be able to connect to others in community".
+  - **Founder-first problem:** the solar door has to reach Zest Solar without an Aurora API token, and the ventures shouldn't become separate apps.
+  - **Built:**
+    - **Communities:** a World with a front door, plus packs.
+      - `lib/community/{community,packs}.ts`, `/communities`, `/community/<id>`.
+      - Start, find, ask to join (bringing your AI), let in or not now, members and their AIs, notes between members.
+    - **Solar desk** (`lib/solar/desk.ts`): the homeowner's request is sealed in their own scope for the desk's owner, answered with the Aurora proposal link, and erasable.
+      - `/solar` step 4 asks for it after sign-in; the homeowner's numbers come with them through the sign-in.
+      - `/solar/mine` is the homeowner's page.
+    - **Removed:** the Aurora API client and signed proposal route; the real estate door.
+    - **Recorded:** the founder's words in `DECISIONS.md`; Community gets its home in `ACTIVE-WORK.md`.
+  - **Paths:** `lib/community/`, `lib/solar/desk.ts`, `app/communities/`, `app/community/`, `app/solar/`, `app/ventures.ts`, `app/ventures/page.tsx`, `app/command/view.tsx` (one link), `app/membership/offer.tsx` (one line), `lib/world/collaboration.ts` and `lib/bot/memory.ts` (additive exports), `solve.communities.json`, `tests/community/`, `tests/ventures/solar.test.ts`, `.env.example`.
+  - **Checks:**
+    - 10 new kernel tests;
+    - full suite 307/307; lint clean; typecheck ok; build ok;
+    - the views rendered with sample data in Chromium (desktop and phone, no page errors). Three fixes came from it.
+  - **Next:** confirm this push's CI. Then the founder starts "Zest Solar" on the preview and sets `SOLAR_COMMUNITY`.
+
+- 2026-10-05 20:45Z — Claude: the Command Center now lists your communities, with what waits on you in the ones you started (people asking to join, requests you can still read; an erased request drops out).
+  - **Why:** the founder would otherwise have to open each community to see whether anyone asked.
+  - **Paths:** `lib/community/community.ts` (`myCommunities`), `app/command/{page,view}.tsx`, `tests/community/solar-desk.test.ts`, `tests/bot/command.test.ts`.
+  - **Checks:** community and command tests 14/14; typecheck, lint and build ok.
+  - **CI:** run 162 (`9eebd28`) is still queued with no runner, like 161. This push supersedes it.
+
+- 2026-10-05 21:05Z — Run 163 (`10da8c0`) failed like 161: "The job was not acquired by Runner of type hosted even after multiple attempts". No step ran.
+  - That is three runs in a row with no GitHub-hosted runner. The last confirmed green build is run 159 (`b5e074b`).
+  - Local checks for `10da8c0`: full suite 307/307 at `9eebd28`; community and command tests 14/14; typecheck, lint and build ok.
+  - **Possible cause:** the private repo's Actions minutes or spending limit. The founder can see this in GitHub Settings → Billing; this session can't.
+  - **Action:** one re-run of 163, to rule out a passing outage.
+  - Staging has had no sign-ins yet (0 auth users; its last kernel event was October 4, test data).
+
 
 - 2026-10-05 21:15Z — Doris, Room Talk panel: finishing the slice (Claude out of credits).
   - The "Inside" order: signed-in conversational chat inside the Room. Talk panel (talk.tsx) wired into room/view.tsx; /api/bot/chat validates input server-side and calls Anthropic with the cheapest capable model; lib/bot/chat.ts holds validation, system prompt, model picker.

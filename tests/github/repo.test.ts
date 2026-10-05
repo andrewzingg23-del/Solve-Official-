@@ -60,6 +60,10 @@ it("names the builder from the branch", () => {
   assert.equal(builderOf("codex/need-to-route"), "Codex");
   assert.equal(builderOf("manus/start-route-clean"), "Manus");
   assert.equal(builderOf("main"), null);
+  assert.equal(builderOf("doris/landing-routes"), "Doris");
+  assert.equal(builderOf("chatgpt/higgsfield-staging"), "ChatGPT");
+  assert.equal(builderOf("ana/first-try"), "Ana", "a new builder is named by its prefix");
+  assert.equal(builderOf("feature/login"), null, "a conventional prefix names no one");
 });
 
 it("shapes builds, pull requests and commits, dropping anything that isn't a GitHub link", () => {
@@ -127,4 +131,30 @@ it("credits each builder with its part: open pull requests, merges, trunk commit
     ["Manus", [9], 1, 0],
     ["Codex", [2], 0, 0],
   ]);
+});
+
+it("gives one person's room on one repository the same World id every time, a valid one", async () => {
+  const { repoRoomId, repoRoomTitle } = await import("../../lib/github/room-id");
+  const ref = { owner: "andrewzingg23-del", repo: "Solve-Official-", trunk: TRUNK };
+  const id = repoRoomId("actor-1", ref);
+  assert.match(id, /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  assert.equal(repoRoomId("actor-1", { ...ref, owner: "AndrewZingg23-del", trunk: null }), id, "case and trunk don't change the room");
+  assert.notEqual(repoRoomId("actor-2", ref), id, "each person has their own room");
+  assert.equal(repoRoomTitle(ref), "Build solve");
+  assert.equal(repoRoomTitle({ owner: "o", repo: "bakery", trunk: null }), "Build bakery");
+});
+
+it("credits a builder on the trunk with the trunk's build of its commit, and drops landed branches from flight", async () => {
+  const { buildersFrom, inFlight } = await import("../../lib/github/repo");
+  const trunkCommits = shapeCommits([{ sha: "c".repeat(40), html_url: "https://github.com/o/r/commit/c", commit: { message: "Put /start on the brand\n\nCo-Authored-By: Claude <noreply@anthropic.com>", committer: { date: "2026-10-05T05:27:08Z" } } }]);
+  const builds = shapeBuilds(runs);
+  const [claude] = buildersFrom([], trunkCommits, builds.filter((b) => b.branch === TRUNK));
+  assert.equal(claude.builder, "Claude");
+  assert.equal(claude.build?.number, 137, "Claude works on the trunk, so its build is the trunk's build of its commit");
+  const lanes = lanesFrom(shapePulls(prs), builds, TRUNK, NOW);
+  const landed = { ...lanes[0], pulls: lanes[0].pulls.filter((p) => p.state === "merged") };
+  assert.equal(inFlight(lanes[0]), true, "an open pull request is in flight");
+  assert.equal(inFlight(landed), false, "a branch whose pull requests merged has landed");
+  const { initialsFor } = await import("../../app/world/[worldId]/room/build-map");
+  assert.deepEqual([...initialsFor(["Claude", "Codex", "Manus", "Doris"])], [["Claude", "Cl"], ["Codex", "Co"], ["Manus", "M"], ["Doris", "D"]]);
 });
