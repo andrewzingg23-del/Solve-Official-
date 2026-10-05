@@ -2,35 +2,33 @@
 // real that is now on the record; the practice label marks anything simulated. The point appears
 // only on a real save, never in Practice and never as decoration.
 import type { EvidenceBasis } from "@/lib/kernel/client";
+import { saveNumber, vouch } from "@/lib/bot/vouch";
 
-const BASIS: Record<EvidenceBasis, string> = {
-  self_reported: "self-reported",
-  witnessed: "witnessed",
-  artifact: "with an artifact",
-  system_observed: "observed by the system",
-  externally_verified: "verified",
-};
-
-const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+// "Oct 5", with the year only when it is not this year.
+function day(iso: string, now = new Date()) {
+  const d = new Date(iso);
+  const sameYear = d.getUTCFullYear() === now.getUTCFullYear();
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }), timeZone: "UTC" });
+}
 
 // Only plain web links are ever rendered, whatever path the evidence took into the record.
 const webLink = (link?: string | null) => (link && /^https?:\/\//i.test(link) ? link : null);
 
-export function SavePoint({ what, basis, at, record, link }: { what: string; basis: EvidenceBasis; at: string; record: string; link?: string | null }) {
+export function SavePoint({ what, basis, at, number, link, who = "you" }: { what: string; basis: EvidenceBasis; at: string; number: number; link?: string | null; who?: string }) {
   const href = webLink(link);
   return (
     <div className="flex min-w-0 items-start gap-2.5 text-xs">
       <span aria-hidden className="mt-1 h-2 w-2 shrink-0 rounded-full bg-accent" />
       <span className="flex min-w-0 flex-col gap-0.5">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.2em]">Saved · on the record</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.2em] tabular-nums">Saved · {saveNumber(number)}</span>
         <span className="break-words text-foreground">{what}</span>
         <span className="text-muted tabular-nums">
-          {BASIS[basis] ?? basis} · {day(at)} · record {record}
+          {vouch(basis, who)} · {day(at)}
           {href ? (
             <>
               {" · "}
               <a href={href} target="_blank" rel="noopener noreferrer nofollow" className="underline decoration-line underline-offset-4 hover:text-accent">
-                proof
+                See proof
               </a>
             </>
           ) : null}

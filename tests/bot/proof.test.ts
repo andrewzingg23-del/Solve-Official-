@@ -45,14 +45,16 @@ it("saves the person's proof on their own piece as self-reported, once, and show
   const args = { world_id: WORLD, artifact_id: piece.artifact_id, what_happened: "Printed the stand in PETG", proof: "Photo shows the printed stand holding a phone", link: "https://photos.example.com/stand.jpg" };
   const saved = await call(ana, "add_proof", args);
   assert.equal(saved.isError, undefined, saved.content[0].text);
-  assert.match(saved.content[0].text, /^Saved\. On the record as self-reported proof, record [0-9a-f]{8}\. It is not independently verified\./);
-  const info = saved.structuredContent as { record: string; basis: string; verified: boolean };
+  assert.match(saved.content[0].text, /^Saved\. No\. \d+: Printed the stand in PETG\. On your word\. See it: https:\/\/sov\.test\/world\//);
+  const info = saved.structuredContent as { number: number; basis: string; verified: boolean };
   assert.deepEqual([info.basis, info.verified], ["self_reported", false]);
-  const again = await call(ana, "add_proof", args);
-  assert.equal((again.structuredContent as { record: string }).record, info.record, "a retried save is one save");
+  assert.ok(info.number > 0, "a save is numbered by its place in the record");
+  const again = await call(ana, "add_proof", { ...args, what_happened: "Printed the stand in PETG" });
+  assert.equal((again.structuredContent as { number: number }).number, info.number, "a retried save is one save");
 
   const proofs = await proofsIn(ana, world.scope);
   assert.equal(proofs.length, 1);
+  assert.equal(proofs[0].number, info.number);
   assert.deepEqual(
     [proofs[0].pieceId, proofs[0].what, proofs[0].proof, proofs[0].link, proofs[0].basis, proofs[0].by],
     [piece.artifact_id, "Printed the stand in PETG", "Photo shows the printed stand holding a phone", "https://photos.example.com/stand.jpg", "self_reported", anaId],
@@ -61,9 +63,9 @@ it("saves the person's proof on their own piece as self-reported, once, and show
   assert.deepEqual(attached.map((e) => [e.actor_id, e.on_behalf_of]), [[anaBot, anaId]], "the bot saved it, for Ana, once");
 
   const read = await call(ana, "read_world", { world_id: WORLD });
-  assert.match(read.content[0].text, /Stand v2: PETG, 15° tilt, 120 mm wide\. \[saved: Printed the stand in PETG \(self-reported, record [0-9a-f]{8}\)\]/);
-  const pieces = (read.structuredContent as { pieces: { saves: { basis: string; record: string }[] }[] }).pieces;
-  assert.deepEqual(pieces[0].saves.map((p) => [p.basis, p.record]), [["self_reported", info.record]]);
+  assert.match(read.content[0].text, /Stand v2: PETG, 15° tilt, 120 mm wide\. \[saved No\. \d+: Printed the stand in PETG \(on its maker's word\)\]/);
+  const pieces = (read.structuredContent as { pieces: { saves: { basis: string; number: number; verified: boolean }[] }[] }).pieces;
+  assert.deepEqual(pieces[0].saves.map((p) => [p.basis, p.number, p.verified]), [["self_reported", info.number, false]]);
 });
 
 it("records proof on someone else's piece as witnessed, never as verified", async () => {
@@ -75,7 +77,7 @@ it("records proof on someone else's piece as witnessed, never as verified", asyn
 
   const saved = await call(ana, "add_proof", { world_id: WORLD, artifact_id: benPiece, what_happened: "The 20 stands arrived", proof: "Tracking 1Z999AA10123456784 shows delivered" });
   assert.equal(saved.isError, undefined, saved.content[0].text);
-  assert.match(saved.content[0].text, /as witnessed proof/);
+  assert.match(saved.content[0].text, /^Saved\. No\. \d+: The 20 stands arrived\. Seen by you\./);
   assert.equal((await proofsIn(ana, world.scope))[0].basis, "witnessed");
 });
 
@@ -104,12 +106,14 @@ it("draws a save point only with its words, and never a link that is not a web a
   const { createElement } = await import("react");
   const { renderToStaticMarkup } = await import("react-dom/server");
   const { SavePoint, PracticeLabel } = await import("../../app/save-point");
-  const base = { what: "Printed the stand", basis: "self_reported" as const, at: "2026-10-05T12:00:00Z", record: "1a2b3c4d" };
+  const base = { what: "Printed the stand", basis: "self_reported" as const, at: `${new Date().getUTCFullYear()}-10-05T12:00:00Z`, number: 1042 };
   const html = renderToStaticMarkup(createElement(SavePoint, { ...base, link: "https://photos.example.com/stand.jpg" }));
   assert.match(html, /bg-accent/, "a save gets the point");
-  assert.match(html, /Saved · on the record/);
-  assert.match(html, /self-reported · Oct 5, 2026 · record 1a2b3c4d/);
-  assert.match(html, /href="https:\/\/photos\.example\.com\/stand\.jpg"/);
+  assert.match(html, /Saved · No\. 1042/);
+  assert.match(html, /On your word · Oct 5 · /);
+  assert.match(renderToStaticMarkup(createElement(SavePoint, { ...base, basis: "witnessed", who: "Ana" })), /Seen by Ana · Oct 5/);
+  assert.match(renderToStaticMarkup(createElement(SavePoint, { ...base, at: "2024-03-01T00:00:00Z" })), /On your word · Mar 1, 2024/, "an older save shows its year");
+  assert.match(html, /href="https:\/\/photos\.example\.com\/stand\.jpg"[^>]*>See proof</);
   assert.doesNotMatch(renderToStaticMarkup(createElement(SavePoint, { ...base, link: "javascript:alert(1)" })), /href=/, "only web links");
   const practice = renderToStaticMarkup(createElement(PracticeLabel, {}));
   assert.match(practice, /Practice/);

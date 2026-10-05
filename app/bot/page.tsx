@@ -8,7 +8,7 @@ import { machineData, type MachineData } from "@/lib/bot/machine";
 import { botPulse, type Pulse } from "@/lib/bot/pulse";
 import { loadBot } from "@/lib/bot/store";
 import { worldsForBot, type WorldWithAccess } from "@/lib/bot/worlds";
-import { latestSaves, shortRecord, type SavedProof } from "@/lib/bot/proof";
+import { latestSaves, type SavedProof } from "@/lib/bot/proof";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
@@ -92,7 +92,7 @@ export default async function BotPage() {
               live={state.pulse ? <LiveBot persona={state.persona} initial={state.pulse} userId={state.userId} /> : null}
             />
           ) : null}
-          {state.kind === "ready" && state.exists && state.botAgentId ? <WorldsPanel botName={state.persona.name} botAgentId={state.botAgentId} worlds={state.worlds} saves={Object.fromEntries(Object.entries(state.saves).map(([id, list]) => [id, list.map((p) => ({ ...p, record: shortRecord(p.recordId) }))]))} /> : null}
+          {state.kind === "ready" && state.exists && state.botAgentId ? <WorldsPanel botName={state.persona.name} botAgentId={state.botAgentId} worlds={state.worlds} saves={state.saves} /> : null}
           {state.kind === "ready" ? <BotPortraitCreator persona={state.persona} /> : null}
         </>
       )}

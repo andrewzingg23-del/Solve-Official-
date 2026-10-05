@@ -17,6 +17,7 @@ export const PROOF_LIMITS = { what: 300, proof: 500, link: 2000 } as const;
 
 export type ProofSave = {
   recordId: string;
+  number: number;
   pieceEventId: string;
   basis: EvidenceBasis;
 };
@@ -29,6 +30,7 @@ export type SavedProof = {
   basis: EvidenceBasis;
   at: string;
   recordId: string;
+  number: number;
   by: string;
 };
 
@@ -101,7 +103,8 @@ export async function addProof(
     { basis, content_hash: `sha256:${hash}`, media_type: link ? "text/uri-list" : "text/plain", uri: link ?? undefined, description: describe(what, proof || link!) },
     `proof:${requestId}`.slice(0, 200),
   );
-  return { recordId, pieceEventId: latest.id, basis };
+  const number = (await proofsIn(bot, world.scope)).find((p) => p.recordId === recordId)?.number ?? 0;
+  return { recordId, number, pieceEventId: latest.id, basis };
 }
 
 // Every proof saved in a World, by piece, oldest first. Read from the World's own history, so
@@ -126,6 +129,7 @@ export async function proofsIn(kernel: Kernel, scope: string): Promise<SavedProo
         basis,
         at: e.occurred_at,
         recordId: String(item.evidence_id ?? e.id),
+        number: e.seq,
         by: e.on_behalf_of ?? e.actor_id,
       });
     }
@@ -144,14 +148,3 @@ export async function latestSaves(kernel: Kernel, worlds: { worldId: string; sco
   );
   return out;
 }
-
-export const BASIS_WORDS: Record<EvidenceBasis, string> = {
-  self_reported: "self-reported",
-  witnessed: "witnessed",
-  artifact: "with an artifact",
-  system_observed: "observed by the system",
-  externally_verified: "verified",
-};
-
-// A record id short enough to read aloud.
-export const shortRecord = (id: string) => id.replace(/-/g, "").slice(0, 8);

@@ -227,3 +227,14 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   Checks: bot suite 43/43 (4 new proof tests; the connector's tool list updated); typecheck ok; lint ok (one existing warning). CI for this push: pending when written.
 
   Next: the founder applies v5 and presence on staging (two files in the SQL editor), then the first real pilot loop: start a World from Claude, add the plan, make the thing, save the proof.
+
+- 2026-10-05 01:28Z — Claude, save copy rewritten (founder: "don't love that copy").
+  - **Before:** "Saved. On the record as self-reported proof, record 1a2b3c4d. It is not independently verified."
+  - **After:** "Saved. No. 1042: Printed the stand in PETG. On your word."
+  - The number is the save's place in the record (the kernel event's sequence). Who vouches is in plain words (`lib/bot/vouch.ts`): *On your word*, *Seen by Ana*, *Verified* (only the system can verify).
+  - The assistant is told never to call a save on someone's word verified, and the structured result keeps `verified: false`.
+  - `SavePoint` shows "Saved · No. 1042", what happened, then "On your word · Oct 5 · See proof".
+
+  Paths: `lib/bot/{vouch,proof,connector}.ts`, `app/save-point.tsx`, `app/bot/{page,worlds-panel}.tsx`, `tests/bot/proof.test.ts`.
+
+  Checks: bot suite 43/43; typecheck ok; lint ok (one existing warning). CI for `7e836bf`: running when written; for this push: pending.
