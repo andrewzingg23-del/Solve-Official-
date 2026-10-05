@@ -248,3 +248,12 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - Additive edits to Codex's `app/world/[worldId]/page.tsx`: `PartPreview` for parts, `SavePoint` per piece, "Saved with proof" in history, and the decorative accent dot removed (brand v3). Noted in `ACTIVE-WORK.md`.
 
   Checks: bot suite 47/47 (4 new part tests: cleaning and refusals; closed, outward STL with exact volume; design → download access → proof; preview rendering); typecheck ok; lint ok (one existing warning). The full local suite was still running at push; CI is the full gate.
+
+- 2026-10-05 01:55Z — Claude, pilot readiness.
+  - **Memory without v5.** `noteMemory` checks that the kernel can keep a memory's key before recording anything. Without v5 (staging today), `remember` and `learn_business` now say "Memory isn't switched on here yet, so nothing was saved." Before, they wrote a sealed memory that nobody could read.
+  - **Arcadia** shows a fixed Practice label ("Arcadia is simulated, so nothing here counts.").
+  - **No change needed** for World-page bot access: its Add goes through `setBotAccess`, which already includes the proof capability. Notes corrected.
+
+  Paths: `lib/bot/{memory,connector}.ts`, `app/arcadia/page.tsx`, `tests/bot/proof.test.ts`, `ACTIVE-WORK.md`, `docs/plans/2026-10-04-bot-world-bridge.md`.
+
+  Checks: bot suite 48/48; typecheck ok; lint ok (one existing warning). CI for `444691f` (parts): running when written.

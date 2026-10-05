@@ -6,7 +6,7 @@
 // (kernel v5), so forgetting destroys the key and erases them for good; history keeps only that a
 // memory existed, its kind of source and who added it. Memories recorded before sealing keep plain
 // payloads and can only be hidden.
-import type { Kernel, KernelEvent } from "@/lib/kernel/client";
+import { KernelError, type Kernel, type KernelEvent } from "@/lib/kernel/client";
 import { isSealed, seal, unseal } from "./seal";
 
 export const MEMORY_NOTED = "bot.memory.noted";
@@ -150,6 +150,7 @@ export async function noteMemory(
     (m) => m.text === text && m.via.client_id === via.client_id && sameSource(m.source, source) && now.getTime() - Date.parse(m.at) < SAME_MEMORY_MS,
   );
   if (same) return { id: same.id, text, duplicate: true };
+  await requireSealing(kernel);
   const { sealed, key } = await seal({ text, title: source.title, url: source.url });
   const id = await kernel.recordEvent({ type: MEMORY_NOTED, scope: memoryScope(ownerId), payload: { sealed, source: { kind: source.kind }, via } });
   await kernel.sealKey(id, key);
@@ -169,6 +170,20 @@ export async function forgetMemory(kernel: Kernel, ownerId: string, memoryId: st
 }
 
 export class MemoryInputError extends Error {}
+export class MemoryUnavailableError extends Error {}
+
+// A deployment without kernel v5 has nowhere to keep a memory's key. Checked before anything is
+// recorded, so such a deployment refuses the memory instead of writing one nobody can read.
+async function requireSealing(kernel: Kernel) {
+  try {
+    await kernel.unsealKeys([]);
+  } catch (error) {
+    if (error instanceof KernelError && (error.code === "PGRST202" || /could not find the function|does not exist/i.test(error.message))) {
+      throw new MemoryUnavailableError("memory is not switched on for this deployment yet");
+    }
+    throw error;
+  }
+}
 
 // Plain term match over text, title and source: enough to find "what did I say about Lisbon".
 export function searchMemories(memories: Memory[], query: string, limit = 10): Memory[] {

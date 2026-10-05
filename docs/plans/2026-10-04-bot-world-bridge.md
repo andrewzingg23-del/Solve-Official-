@@ -51,7 +51,7 @@ The writing tools (`start_world`, `add_to_world`) need a connection allowed to a
 1. **An invite flow** in `/world/[worldId]`. It lists bots: the owner's own, plus those of people already in the World. It calls `setBotAccess` from `lib/bot/worlds.ts` (or issues the same grants), so History shows the grant events.
 2. **Attribution.** For entities whose latest version was written by an agent, History and the canvas show the bot's name. The bot's name comes from `readActors`. They also show its owner, and the client from the event's correlation, when the connector supplies one.
 3. **One read helper** for the bot side, so Claude never parses entities: `loadCreativeWorld` as it is works. If Codex changes the artifact shape, it keeps exporting `CreativeArtifact`.
-4. **Save points on the World page (2026-10-05).** Show `proofsIn(kernel, scope)` beside each piece with `SavePoint`, and add `kernel.evidence.attach` to the Add level in `lib/world/bot-access.ts` (`BOT_CAPABILITIES`), so bots let in from the World page can save proof too.
+4. **Save points on the World page (2026-10-05).** Show `proofsIn(kernel, scope)` beside each piece with `SavePoint`, Done by Claude on 2026-10-05, along with part previews. The World page's Add already issues `kernel.evidence.attach` through `setBotAccess`.
 
 ### Safety
 

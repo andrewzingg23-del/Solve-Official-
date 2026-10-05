@@ -119,3 +119,24 @@ it("draws a save point only with its words, and never a link that is not a web a
   assert.match(practice, /Practice/);
   assert.doesNotMatch(practice, /bg-accent/, "Practice never gets the point");
 });
+
+it("refuses a memory where the kernel cannot keep its key, before writing anything", async () => {
+  const { KernelError } = await import("../../lib/kernel/client");
+  const { noteMemory, MemoryUnavailableError } = await import("../../lib/bot/memory");
+  let recorded = false;
+  const noSealing = {
+    unsealKeys: async () => {
+      throw new KernelError("unavailable", "Could not find the function kernel_api.unseal_keys(p_event_ids) in the schema cache", "PGRST202");
+    },
+    recordEvent: async () => {
+      recorded = true;
+      return "00000000-0000-4000-8000-000000000001";
+    },
+    sealKey: async () => undefined,
+  } as unknown as Kernel;
+  await assert.rejects(
+    noteMemory(noSealing, "owner", { text: "Prefers PETG" }, { client_id: "c", client_name: "Claude" }, { recent: [] }),
+    (e: unknown) => e instanceof MemoryUnavailableError,
+  );
+  assert.equal(recorded, false, "nothing unreadable was written");
+});

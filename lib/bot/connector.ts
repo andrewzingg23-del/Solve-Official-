@@ -18,6 +18,7 @@ import { addToWorld, proposeCapability, readWorldAsBot, startWorld, WORLD_LIMITS
 import {
   MEMORY_LIMITS,
   MemoryInputError,
+  MemoryUnavailableError,
   noteMemory,
   readAllMemories,
   readConnections,
@@ -586,6 +587,7 @@ export function createConnector(s: Session) {
         });
       } catch (error) {
         if (error instanceof MemoryInputError) return fail("Nothing was stored. Add some owner-confirmed business details.");
+        if (error instanceof MemoryUnavailableError) return fail("Memory isn't switched on here yet, so nothing was stored. Everything else still works.");
         throw error;
       }
     }
@@ -605,6 +607,7 @@ export function createConnector(s: Session) {
         return ok(`${persona.name} will remember: ${saved.text}`, { id: `memory:${saved.id}` });
       } catch (error) {
         if (error instanceof MemoryInputError) return fail("A memory needs some text.");
+        if (error instanceof MemoryUnavailableError) return fail("Memory isn't switched on here yet, so nothing was saved. Everything else still works.");
         throw error;
       }
     }
