@@ -281,3 +281,13 @@ Updated 2026-10-04. Branch `codex/need-to-route-network-state-spec`.
 - New end-to-end tests cover editor and viewer authority, provenance through the existing kernel path, revocation, delegation refusal, and human-only invitations.
 - Validation: test-only CI run #99 failed before implementation as expected; implementation CI and staging Auth/two-person live validation are pending.
 - Production was untouched.
+
+## 2026-10-05: Codex's branches merged into the trunk (founder: "merge")
+
+- **What's in:** the AI Gateway OIDC fallback, live collaboration in Worlds (owner-managed collaborators, private content-free Realtime notices, migration `20261004040200_world_live_collaboration.sql`), and goal-first Worlds with the resource map.
+- **How they fit with the bot:** `read_world` keeps Codex's length-bounded context and resource list, and also carries the save, part and route notes. The connector's writing tools now include `map_world_resource`.
+- **Left out:** the branch's "Project resource coordination" section for `VISION-CANON.md`, until the founder says yes. Also `codex/development-memory-v1` (Idea Graph, draft pull request #2) and its plan (#1), which wait on the founder.
+- **Staging needs three SQL files, in order:** v5 (`20261004040000`), presence (`20261004040100`), live collaboration (`20261004040200`).
+- **Checks on the merged tree:** full suite 240/240; typecheck ok; lint ok (the one existing warning); `next build` ok.
+- **To watch:** the live-collaboration trigger checks every person's read grant on each World event. Fine for a pilot, but it needs an index or a member table before it grows.
+

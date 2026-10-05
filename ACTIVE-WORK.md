@@ -12,17 +12,19 @@ Updated 2026-10-05 by Claude. The founder overrides anything here.
 
 | Blocker | Who | State |
 |---|---|---|
-| v5 and presence migrations on solve-staging (`supabase/migrations/20261004040000_erasable_content.sql`, `20261004040100_bot_presence.sql`) | Founder: run them, or approve Claude's tool prompt | Open |
+| Three migrations on solve-staging, in order: `supabase/migrations/20261004040000_erasable_content.sql` (v5), `20261004040100_bot_presence.sql`, `20261004040200_world_live_collaboration.sql` | Founder pastes them into the SQL editor. Claude's tool prompt timed out a fourth time on 2026-10-05. | Open |
 | Sign-in by email link on the staging preview (Auth redirect URLs) | Founder | Never tried |
 | Connecting the builders to the founder's bot (MCP over HTTP with OAuth) | Manus to research; founder approves | Not started |
+
+**Branches.** Merged on 2026-10-05 (founder: "merge"): `codex/gateway-oidc-fallback`, `codex/world-live-collaboration` and `codex/need-to-route-network-state-spec` (without its canon section). Full suite 240/240, lint and build ok. Still open: the canon section and the Idea Graph.
 
 **Unmerged work: merge or close.** The trunk is `claude/keen-cerf-tpd7io`. Work that isn't on it can't help the founder.
 
 | Branch | What | Merge check against trunk (2026-10-05) | Proposed |
 |---|---|---|---|
-| `codex/world-live-collaboration` | Live collaboration between people in a World: grants by role, private Realtime notices, migration `20261004040200` | Conflicts in status docs only | Merge. It supersedes the collaboration copy in `development-memory-v1`. |
-| `codex/need-to-route-network-state-spec` (38 commits) | Goal-first World creation, resource map (the spec's Resource), bounded World context for bots, the need-to-route design. It also adds a "Project resource coordination" section to `VISION-CANON.md`. | Conflicts in `lib/bot/connector.ts` (Claude's) | Merge, with Claude resolving the connector conflicts. The canon section needs the founder's yes. |
-| `codex/gateway-oidc-fallback` | AI Gateway auth through Vercel OIDC | Docs conflicts only | Merge |
+| ~~`codex/world-live-collaboration`~~ merged | Live collaboration between people in a World: grants by role, private Realtime notices, migration `20261004040200` | Conflicts in status docs only | Merge. It supersedes the collaboration copy in `development-memory-v1`. |
+| ~~`codex/need-to-route-network-state-spec`~~ merged, without the canon section | Goal-first World creation, resource map (the spec's Resource), bounded World context for bots, the need-to-route design. It also adds a "Project resource coordination" section to `VISION-CANON.md`. | Conflicts in `lib/bot/connector.ts` (Claude's) | Merge, with Claude resolving the connector conflicts. The canon section needs the founder's yes. |
+| ~~`codex/gateway-oidc-fallback`~~ merged | AI Gateway auth through Vercel OIDC | Docs conflicts only | Merge |
 | `codex/development-memory-v1` (draft pull request #2) | Idea Graph (eight relation kinds, an Ideas page, AI idea expansion), plus an older copy of collaboration | Conflicts in the World page | Founder decides whether the Idea Graph is in scope (the spec doesn't list it). Before any merge, rename its migration `20261004000000`, which sorts before files already on the trunk, and drop its collaboration copy. |
 | `codex/development-memory-plan` (draft pull request #1) | The plan for #2 | Docs conflicts | Goes with #2 |
 | Manus's website (separate Webdev project) | A static narrative site | Not in the repo | Only as an additive `/about` or `/start` route; never replaces `/` (pull request #3, merged) |

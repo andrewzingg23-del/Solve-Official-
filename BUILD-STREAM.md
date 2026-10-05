@@ -356,3 +356,17 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Routes:** they now carry Codex's route-card fields (why it fits, takes, not yet known, done when), so there is one route object. `lib/bot/routes.ts`, `lib/bot/connector.ts`, `app/route-card.tsx`, `tests/bot/routes.test.ts`.
   - **Checks:** routes and connector tests 11/11; typecheck ok; lint ok.
   - **Next:** staging for the founder (slice 0), then "Waiting on you" (slice 2).
+
+- 2026-10-05 03:40Z — Claude. CI run 112 (`f18b963`, founder first) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37259245671.
+
+  The founder said "merge", so three Codex branches are now merged into the trunk:
+  - `codex/gateway-oidc-fallback`;
+  - `codex/world-live-collaboration`;
+  - `codex/need-to-route-network-state-spec`.
+
+  This serves the founder's problem 3: work spread over branches.
+  - **Conflicts:** docs keep both sides, in time order. The World page imports both panels. In the connector, `read_world` is Codex's length-bounded version plus the save, part and route notes; `map_world_resource` sits with the other writing tools, and the instructions mention both.
+  - **Left out:** the branch's `VISION-CANON.md` section, which needs the founder's yes.
+  - **Staging:** it now needs three SQL files.
+  - **Checks:** full suite 240/240; typecheck ok; lint ok (one existing warning); build ok.
+  - **Next:** "Waiting on you" (slice 2).
