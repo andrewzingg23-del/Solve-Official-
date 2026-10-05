@@ -577,3 +577,5 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Also:** an unused import in the Ideas page (lint warning).
   - **Paths:** `lib/github/repo.ts`, `app/world/[worldId]/room/{build-map,view}.tsx`, `app/world/[worldId]/ideas/page.tsx`, `tests/github/repo.test.ts`.
   - **Checks:** full suite 280/280; lint clean (0 warnings); build ok.
+
+- 2026-10-05 08:10Z — CI run 157 (`14b1eda`) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37349132652. Green now: the room and its polish, the repository reader, builders by branch, saving a passed build as proof, the one-step repository room, and the bot's "via" attribution.
