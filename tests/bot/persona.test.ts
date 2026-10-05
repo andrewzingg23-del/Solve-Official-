@@ -72,6 +72,11 @@ it("saves the bot as versioned kernel records that its own agent can read and ot
 
   const retried = await saveBot(ana, { name: "Juno", body: "orb", relationship: "create_with" }, "save-request-0001");
   assert.equal(retried.history.length, 1, "retrying the same save writes nothing new");
+  await assert.rejects(
+    saveBot(ana, { name: "Should not replace Juno" }, "save-request-0001"),
+    (e: unknown) => e instanceof KernelError && e.name === "conflict",
+    "a retry key cannot append a different persona version",
+  );
 
   const second = await saveBot(ana, { aura: "sparkle", traits: { playfulness: 90 } }, "save-request-0002");
   assert.equal(second.history.length, 2);
