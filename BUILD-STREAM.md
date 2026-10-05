@@ -680,3 +680,10 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Checks:** community and command tests 14/14; typecheck, lint and build ok.
   - **CI:** run 162 (`9eebd28`) is still queued with no runner, like 161. This push supersedes it.
 
+- 2026-10-05 21:05Z — Run 163 (`10da8c0`) failed like 161: "The job was not acquired by Runner of type hosted even after multiple attempts". No step ran.
+  - That is three runs in a row with no GitHub-hosted runner. The last confirmed green build is run 159 (`b5e074b`).
+  - Local checks for `10da8c0`: full suite 307/307 at `9eebd28`; community and command tests 14/14; typecheck, lint and build ok.
+  - **Possible cause:** the private repo's Actions minutes or spending limit. The founder can see this in GitHub Settings → Billing; this session can't.
+  - **Action:** one re-run of 163, to rule out a passing outage.
+  - Staging has had no sign-ins yet (0 auth users; its last kernel event was October 4, test data).
+
