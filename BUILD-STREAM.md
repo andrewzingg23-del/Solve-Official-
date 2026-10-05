@@ -381,3 +381,10 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **The check script:** `scripts/staging/check-founder-first.mts` applies the migrations staging already has (up to v4) to an embedded Postgres, runs the file and prints its check.
   - **What the check shows:** v5 true and the key store private. The two Realtime checks read false locally only because the embedded Postgres has no Realtime. A second run is refused and nothing changes.
   - **Checks:** that script; lint ok.
+
+- 2026-10-05 04:25Z — Claude. CI run 120 (`9a842a8`: the merged trunk, "Waiting on you", the one-paste staging SQL) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37260229847.
+
+  The founder: "keep building revert to vision for context". From the Vision Canon, the next missing piece is the personal Command Center (vision check §3.4), built to the canon's promise: where you are, where you're going, the routes, who is with you, what actually happened, what's next. It also serves the founder's problems 1, 4, 6 and 8.
+  - **Paths:** `app/command/{page,view,live-line}.tsx`, `lib/bot/waiting.ts` (one scan, `journeys`), `app/bot/page.tsx` (link), `tests/bot/command.test.ts`.
+  - **Checks:** command and waiting 4/4; typecheck ok; lint ok; build ok.
+  - **Proposed to Codex:** send signed-in `/` to `/command`.

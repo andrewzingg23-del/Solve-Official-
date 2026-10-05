@@ -68,6 +68,7 @@ export default async function BotPage() {
           <span className="text-xs font-semibold uppercase tracking-[0.2em]">Your bot</span>
         </div>
         <nav className="flex items-center gap-5">
+          <Link href="/command" className={quietLink}>Command Center</Link>
           <Link href="/worlds" className={quietLink}>Worlds</Link>
           <Link href="/account" className={quietLink}>You</Link>
         </nav>

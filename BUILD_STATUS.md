@@ -301,3 +301,18 @@ Updated 2026-10-04. Branch `codex/need-to-route-network-state-spec`.
 - The list reads the record with the person's own sign-in (`lib/bot/waiting.ts`, `app/bot/waiting.tsx`). It shows nothing when nothing waits.
 - **Tests:** `tests/bot/waiting.test.ts` covers choose and next across two Worlds, a read-only member who is not asked to choose, a finished route dropping off, a taken decision becoming its next step, and the rendering.
 
+## 2026-10-05: Command Center (`/command`)
+
+The vision's personal Command Center ("zoom toward their node, then into their personal Command Center"), and the founder's one page. Its sections follow the canon's promise, in order:
+- **Where you are:** Worlds, routes underway, recent saves.
+- **Waiting on you.**
+- **Where you're going:** every ask, proposed, underway (step N of M) or done.
+- **With you:** the bot, each connected assistant with its access and since when, and a live line of who is working right now from the private presence signal.
+- **What actually happened:** the latest saves across Worlds, with their save points.
+- **What's next.**
+
+Everything is read from the record with the person's own sign-in, and empty states say so plainly.
+- **Paths:** `app/command/`. `lib/bot/waiting.ts` now does one scan (`journeys`), and both "Waiting on you" and the Command Center read from it.
+- **Tests:** `tests/bot/command.test.ts` covers where each ask stands, a read-only member who chooses nothing, empty states, and the point only on saves.
+- **Linked from:** `/bot`. Signed-in `/` still goes to `/worlds` (Codex's `app/page.tsx`); sending it to `/command` is proposed to Codex.
+
