@@ -497,3 +497,18 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Checks:** docs only. CI run 137 (`c9df521`) still running.
 
 - 2026-10-05 05:50Z — CI run 137 (`c9df521`) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37267853818. Green now: `/start` on the brand, the duplicate bot panel removed, and the Manus working agreement. The Scale AI note after it is docs only.
+
+- 2026-10-05 06:50Z — Claude, the room (founder: "an immersive app built to be built within"; founder-first slices 5 and 3, problems 1 and 6).
+  - **What:** `/world/<id>/room`. Who is here, the goal and routes; the build read from GitHub (builders by branch, the trunk's builds, branches in flight); or the World's pieces where they were placed; waiting on you (including pull requests to merge), proof, activity and gaps; a command bar.
+  - **Read-only GitHub reader:** `lib/github/repo.ts`. A private repo is read only where `GITHUB_ROOMS` pairs it.
+  - **Rooms by default:** the Command Center, `/worlds` and new Worlds open the room. Waiting items link to their piece (`#piece-<id>`).
+  - **Also:** solve-staging has the founder-first SQL applied (migrations `founder_first_v5_presence_world_live`, `expose_kernel_api_to_postgrest` and a schema reload, at 05:21Z). It has no Worlds yet.
+  - **Paths:** `lib/github/repo.ts`, `app/world/[worldId]/room/*`, `app/world/event-title.ts`, `app/world/[worldId]/page.tsx` (additive: Room tab, piece anchors), `app/command/view.tsx`, `app/bot/waiting.tsx`, `app/worlds/{page,actions}.ts*`, `tests/github/repo.test.ts`, `tests/bot/room.test.ts`, `.env.example`.
+  - **Checks:**
+    - bot and GitHub suites 91/91;
+    - the reader run on real repo data (via `gh`);
+    - typecheck ok; lint clean; build ok.
+  - **Next:**
+    - update the three branches the founder named (by merging the trunk in, not rebasing);
+    - then builder attribution on World writes;
+    - then a one-step "Build solve" room.

@@ -24,24 +24,7 @@ import { WorldBotAccessPanel } from "./bot-access-panel";
 import { WorldAccessPanel } from "./access-panel";
 import { WorldLiveSync } from "./live-sync";
 import { ResourceMapPanel } from "./resource-map";
-
-function eventTitle(type: string) {
-  switch (type) {
-    case "kernel.scope.claimed": return "World created";
-    case "kernel.entity.created": return "Artifact created";
-    case "kernel.entity.updated": return "Artifact updated";
-    case "kernel.relation.created": return "Connection recorded";
-    case "kernel.evidence.attached": return "Saved with proof";
-    case "kernel.grant.issued": return "Access granted";
-    case "kernel.grant.revoked": return "Access removed";
-    case "kernel.task.created": return "Route step planned";
-    case "kernel.task.ready": return "Route step ready";
-    case "kernel.task.claimed": return "Route step started";
-    case "kernel.task.in_progress": return "Route step in progress";
-    case "kernel.task.completed": return "Task done";
-    default: return type.replace(/^kernel\./, "").replaceAll(".", " ");
-  }
-}
+import { eventTitle } from "../event-title";
 
 function positionFromArtifact(artifact: CreativeArtifact): CreativePosition {
   return artifact.position;
@@ -72,7 +55,7 @@ function PixelArtPreview({ body, title }: { body: string; title: string }) {
   );
 }
 
-function ArtifactCard({ worldId, artifact, saves = [], taken = null, takenBy = "you", sent, outcomes }: { worldId: string; artifact: CreativeArtifact; saves?: SavedProof[]; taken?: TakenRoute | null; takenBy?: string; sent?: Map<number, Sent>; outcomes?: Map<number, LeadOutcome[]> }) {
+function ArtifactCard({ worldId, artifact, saves = [], taken = null, takenBy = "you", sent, outcomes, anchor = false }: { worldId: string; artifact: CreativeArtifact; saves?: SavedProof[]; taken?: TakenRoute | null; takenBy?: string; sent?: Map<number, Sent>; outcomes?: Map<number, LeadOutcome[]>; anchor?: boolean }) {
   const position = positionFromArtifact(artifact);
   const update = updateArtifactAction.bind(null, worldId);
   const isPixelArt = parsePixelArt(artifact.body) !== null;
@@ -80,7 +63,7 @@ function ArtifactCard({ worldId, artifact, saves = [], taken = null, takenBy = "
   const routes = parseRoutes(artifact.body);
   const outreach = routes ? null : parseOutreach(artifact.body);
   return (
-    <article className="flex w-full flex-col gap-3 rounded-md border border-line bg-surface/95 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.25)] backdrop-blur-md">
+    <article id={anchor ? `piece-${artifact.entityId}` : undefined} className="flex w-full scroll-mt-6 flex-col gap-3 rounded-md border border-line bg-surface/95 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.25)] backdrop-blur-md">
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-accent">Document · v{artifact.version}</p>
@@ -241,7 +224,8 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
           <h1 className="truncate text-sm font-medium tracking-wide md:text-base">{world.title}</h1>
         </div>
         <nav aria-label="World navigation" className="flex items-center gap-1 rounded-md border border-line bg-surface/75 p-1">
-          <span aria-current="page" className="rounded bg-accent/15 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">World</span>
+          <Link href={`/world/${worldId}/room`} className="rounded px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted hover:text-foreground">Room</Link>
+          <span aria-current="page" className="rounded bg-accent/15 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">Details</span>
           <a href="#history" className="rounded px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted hover:text-foreground">History</a>
         </nav>
       </header>
@@ -289,7 +273,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
               >
                 {[...artifacts].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x).map((artifact) => (
                   <div key={artifact.entityId} className="min-w-0" style={{ gridColumnStart: canvasColumn(artifact.position) }}>
-                    <ArtifactCard worldId={worldId} artifact={artifact} saves={savesByPiece.get(artifact.entityId)} taken={taken.get(artifact.entityId)} takenBy={takerOf(artifact.entityId)} sent={sent.get(artifact.entityId)} outcomes={outcomes.get(artifact.entityId)} />
+                    <ArtifactCard worldId={worldId} artifact={artifact} saves={savesByPiece.get(artifact.entityId)} taken={taken.get(artifact.entityId)} takenBy={takerOf(artifact.entityId)} sent={sent.get(artifact.entityId)} outcomes={outcomes.get(artifact.entityId)} anchor />
                   </div>
                 ))}
               </div>

@@ -71,7 +71,7 @@ export function CommandView({ data }: { data: CommandData }) {
           <ul className="flex flex-col divide-y divide-line">
             {data.worlds.map((w) => (
               <li key={w.worldId} className="flex items-baseline justify-between gap-4 py-2 text-sm">
-                <Link href={`/world/${w.worldId}`} className="min-w-0 truncate hover:text-accent">{w.title}</Link>
+                <Link href={`/world/${w.worldId}/room`} className="min-w-0 truncate hover:text-accent">{w.title}</Link>
                 <span className="shrink-0 text-xs text-muted tabular-nums">changed {day(w.updatedAt)}</span>
               </li>
             ))}
@@ -88,7 +88,7 @@ export function CommandView({ data }: { data: CommandData }) {
           <ul className="flex flex-col divide-y divide-line">
             {seen.map((n) => (
               <li key={n.pieceId} className="py-2 text-sm leading-6">
-                <Link href={`/world/${n.worldId}`} className="break-words hover:text-accent">{n.text}</Link>
+                <Link href={`/world/${n.worldId}#piece-${n.pieceId}`} className="break-words hover:text-accent">{n.text}</Link>
               </li>
             ))}
           </ul>
@@ -101,7 +101,7 @@ export function CommandView({ data }: { data: CommandData }) {
           <ol className="flex flex-col divide-y divide-line">
             {data.journeys.map((j) => (
               <li key={j.pieceId} className="flex flex-col gap-1 py-3 text-sm">
-                <Link href={`/world/${j.worldId}`} className="break-words hover:text-accent">{j.ask}</Link>
+                <Link href={`/world/${j.worldId}#piece-${j.pieceId}`} className="break-words hover:text-accent">{j.ask}</Link>
                 <span className="break-words text-xs leading-5 text-muted tabular-nums">{journeyState(j)} · in {j.worldTitle}</span>
               </li>
             ))}

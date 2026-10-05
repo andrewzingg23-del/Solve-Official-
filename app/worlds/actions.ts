@@ -33,5 +33,5 @@ export async function createWorldAction(formData: FormData) {
   } catch {
     redirect("/worlds?error=world-create");
   }
-  redirect(`/world/${createdWorldId}`);
+  redirect(`/world/${createdWorldId}/room`);
 }
