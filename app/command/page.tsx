@@ -9,6 +9,7 @@ import { overview } from "@/lib/bot/waiting";
 import { worldsForBot } from "@/lib/bot/worlds";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
+import { myCommunities } from "@/lib/community/community";
 import { getUser } from "@/lib/supabase/server";
 import { listCreativeWorlds } from "@/lib/world/creative";
 import { LiveLine } from "./live-line";
@@ -29,11 +30,12 @@ async function load(userId: string, email: string | null): Promise<CommandData |
     const kernel = await getKernel();
     const [me, bot] = await Promise.all([kernel.whoami(), loadBot(kernel)]);
     const worlds = bot.avatar ? await worldsForBot(kernel, bot.avatar.agent_id) : await listCreativeWorlds(kernel);
-    const [{ journeys: all, gaps, approvals, results }, connections, savesByWorld, wallets] = await Promise.all([
+    const [{ journeys: all, gaps, approvals, results }, connections, savesByWorld, wallets, communities] = await Promise.all([
       overview(kernel, worlds, me.actor_id),
       bot.avatar ? readConnections(kernel, bot.ownerId) : Promise.resolve([]),
       latestSaves(kernel, worlds, 3),
       kernel.myWallets().catch(() => []),
+      myCommunities(kernel).catch(() => []),
     ]);
     const titles = new Map(worlds.map((w) => [w.worldId, w.title]));
     const saves = Object.entries(savesByWorld)
@@ -48,6 +50,7 @@ async function load(userId: string, email: string | null): Promise<CommandData |
       botName,
       worlds: worlds.map((w) => ({ worldId: w.worldId, title: w.title, updatedAt: w.updatedAt })),
       journeys: all,
+      communities,
       gaps,
       approvals,
       results: results.slice(0, RECENT_SAVES),

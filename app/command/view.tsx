@@ -12,6 +12,7 @@ import type { SavedProof } from "@/lib/bot/proof";
 import { groupGaps, type Gap } from "@/lib/bot/gaps";
 import { formatValue, OUTCOME_LABEL } from "@/lib/bot/outreach";
 import { madeIn, noticed, waitingFrom, type Approval, type Journey, type Result } from "@/lib/bot/waiting";
+import type { MyCommunity } from "@/lib/community/community";
 
 export type CommandData = {
   name: string; // the person's label
@@ -27,7 +28,28 @@ export type CommandData = {
   live?: ReactNode; // who is working right now, when presence is available
   wallet?: ReactNode; // the person's linked wallets and the way to link one
   repoRoom?: ReactNode; // a paired repository with no room yet
+  communities?: MyCommunity[]; // the ones they started or are in, with what waits on them
 };
+
+function Communities({ list }: { list: MyCommunity[] }) {
+  const waiting = (c: MyCommunity) => [c.asking ? plural(c.asking, "person asking to join", "people asking to join") : "", c.requests ? plural(c.requests, "request", "requests") : ""].filter(Boolean).join(" · ");
+  return (
+    <Section id="communities" title="Communities" aside={<Link href="/communities" className={quietLink}>{list.length ? "All" : "Start or join one"}</Link>}>
+      {list.length ? (
+        <ul className="flex flex-col divide-y divide-line">
+          {list.map((c) => (
+            <li key={c.communityId} className="flex items-baseline justify-between gap-4 py-2 text-sm">
+              <Link href={`/community/${c.communityId}`} className="min-w-0 truncate hover:text-accent">{c.name}</Link>
+              <span className={`shrink-0 text-xs tabular-nums ${waiting(c) ? "font-medium text-foreground" : "text-muted"}`}>{waiting(c) || (c.standing === "owner" ? "yours" : "you're in")}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm leading-6 text-muted">Build with others: start a community, or ask to join one. Your AI can come with you.</p>
+      )}
+    </Section>
+  );
+}
 
 function Section({ id, title, children, aside }: { id: string; title: string; children: ReactNode; aside?: ReactNode }) {
   return (
@@ -81,8 +103,9 @@ export function CommandView({ data }: { data: CommandData }) {
         ) : (
           <Link href="/worlds" className={quietLink}>Start a World</Link>
         )}
-        <Link href="/communities" className={`${quietLink} pt-2`}>Communities: start one, or ask to join →</Link>
       </Section>
+
+      <Communities list={data.communities ?? []} />
 
       <WaitingOnYou items={waiting} />
 

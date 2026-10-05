@@ -470,7 +470,7 @@ The founder's words are in `DECISIONS.md`. Nothing here needed a migration.
   - **AI:** a member's bot comes in with them under its own identity, for them (Add, 30 days, renewable as on any World). It reaches the community's room through the connector like any World it's let into.
   - **Connect:** members see who's in, with the AIs they brought, and leave each other notes. A note is a kernel message, on the record with who sent it. Notes only go between people in the community, and only theirs are shown.
   - **Packs** (`lib/community/packs.ts`): the build room, the solar desk, the sales dialer (Practice) and the risk tools. The owner can change them.
-  - **Links:** from the Command Center and `/ventures`.
+  - **Links:** `/ventures` links here. The Command Center has a Communities section with what waits on you in each one you started (`myCommunities`).
 - **Solar without an Aurora API key (`lib/solar/desk.ts`, `/solar` step 4, `/solar/mine`):**
   - The homeowner signs in (their numbers come with them) and asks for their design.
     - Their name, address, contact and answers are sealed in their own scope, one scope per request, readable by the desk's owner alone.
@@ -492,7 +492,7 @@ The founder's words are in `DECISIONS.md`. Nothing here needed a migration.
   - erasing really erases.
 - **Checks:** full suite 307/307; lint clean; typecheck ok; build ok. Community views (owner, guest, member on a phone) and the homeowner's page (waiting and designed, desktop and phone) were rendered with sample data in Chromium with no page errors. Fixes from that: a reply box collapsed on phones; the guest view's empty column; "your AI" for your own.
 - **Known limits:**
-  - Asks and solar requests show on the community page only; they don't reach "Waiting on you" in the Command Center yet (the next slice).
+  - Asks and solar requests show on the community page. The Command Center lists the person's communities with what waits on them (people asking, requests still readable), but sends no notification.
   - The directory reads the kernel's public list, which returns at most 2,000 public entities.
   - Open communities, where anyone joins without the owner, would need the owner's agent to admit on their behalf; not built.
 - **Founder steps to open Zest Solar's desk:**

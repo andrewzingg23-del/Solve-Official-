@@ -674,3 +674,9 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
     - the views rendered with sample data in Chromium (desktop and phone, no page errors). Three fixes came from it.
   - **Next:** confirm this push's CI. Then the founder starts "Zest Solar" on the preview and sets `SOLAR_COMMUNITY`.
 
+- 2026-10-05 20:45Z — Claude: the Command Center now lists your communities, with what waits on you in the ones you started (people asking to join, requests you can still read; an erased request drops out).
+  - **Why:** the founder would otherwise have to open each community to see whether anyone asked.
+  - **Paths:** `lib/community/community.ts` (`myCommunities`), `app/command/{page,view}.tsx`, `tests/community/solar-desk.test.ts`, `tests/bot/command.test.ts`.
+  - **Checks:** community and command tests 14/14; typecheck, lint and build ok.
+  - **CI:** run 162 (`9eebd28`) is still queued with no runner, like 161. This push supersedes it.
+

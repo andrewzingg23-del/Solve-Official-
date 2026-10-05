@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { it } from "node:test";
 import { kernelClient } from "../../lib/kernel/client";
 import { localSupabase } from "../../lib/kernel/local";
-import { startCommunity } from "../../lib/community/community";
+import { askToJoin, myCommunities, startCommunity } from "../../lib/community/community";
 import { answerDesign, deskCommunityId, deskRequests, eraseDesign, myDesigns, requestDesign } from "../../lib/solar/desk";
 import { createKernelDb, user } from "../kernel/harness";
 
@@ -82,3 +82,17 @@ it("is only open where the community runs the solar pack", async () => {
   const other = await startCommunity(zest.k, { name: "Builders", nonce: "1b6f3c1e-8a2d-4f5b-9c7e-1d2e3f4a5b6c" });
   await assert.rejects(requestDesign(dana.k, other, HOME, "req-dana-0001"), /solar desk/);
 });
+
+it("tells the owner what waits on them across their communities", async () => {
+  const { zest, dana, eve, desk } = await setting();
+  assert.deepEqual(await myCommunities(zest.k), [{ communityId: desk.communityId, name: "Zest Solar", standing: "owner", asking: 0, requests: 0 }]);
+  await askToJoin(eve.k, desk, { requestId: "ask-eve-00001" });
+  await requestDesign(dana.k, desk, HOME, "req-dana-0001");
+  const [waiting] = await myCommunities(zest.k);
+  assert.deepEqual([waiting.asking, waiting.requests], [1, 1]);
+  const [r] = await myDesigns(dana.k, desk);
+  await eraseDesign(dana.k, desk, r.id);
+  assert.equal((await myCommunities(zest.k))[0].requests, 0, "an erased request no longer waits");
+  assert.deepEqual(await myCommunities(dana.k), [], "asking isn't belonging");
+});
+

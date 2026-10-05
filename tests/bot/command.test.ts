@@ -66,6 +66,12 @@ it("shows only what is on the record, with honest empty states", async () => {
   for (const text of ["Where you are", "No Worlds yet", "Where you&#x27;re going", "Nothing asked yet", "With you", "Make your bot", "What actually happened", "Nothing saved yet", "What&#x27;s next"]) assert.ok(empty.includes(text), text);
   assert.doesNotMatch(empty, /Waiting on you/, "nothing waiting, nothing shown");
   assert.doesNotMatch(empty, /bg-accent/, "no point without a save");
+  assert.match(empty, /Communities.*Start or join one/);
+  const withCommunities = renderToStaticMarkup(CommandView({ data: { name: "Ana", botName: null, worlds: [], journeys: [], connections: [], saves: [], communities: [
+    { communityId: "c1", name: "Zest Solar", standing: "owner", asking: 2, requests: 1 },
+    { communityId: "c2", name: "Builders", standing: "member", asking: 0, requests: 0 },
+  ] } }));
+  assert.match(withCommunities, /Zest Solar.*2 people asking to join · 1 request.*Builders.*you&#x27;re in/);
 
   const html = renderToStaticMarkup(CommandView({ data: {
     name: "Ana",

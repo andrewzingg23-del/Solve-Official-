@@ -381,3 +381,28 @@ export async function notesForMe(kernel: Kernel, community: Community, limit = 5
     inReplyTo: m.in_reply_to,
   }));
 }
+
+export type MyCommunity = { communityId: string; name: string; standing: "owner" | "member"; asking: number; requests: number };
+
+// The person's communities, with what waits on them in the ones they started: people asking to join,
+// and open requests sent to them that they can still read (one the sender erased drops out).
+export async function myCommunities(kernel: Kernel): Promise<MyCommunity[]> {
+  const [me, grants, all] = await Promise.all([kernel.whoami(), kernel.myGrants(), listCommunities(kernel)]);
+  const inside = new Set(grants.filter((g) => g.capability === "kernel.read" || g.capability === "*").map((g) => g.scope));
+  const mine = all.filter((c) => c.ownerId === me.actor_id || inside.has(c.scope));
+  const owned = mine.some((c) => c.ownerId === me.actor_id);
+  const inbox = owned ? await kernel.inbox() : [];
+  const readable = new Set(grants.filter((g) => g.capability === "kernel.read").map((g) => g.scope));
+  return Promise.all(mine.map(async (c): Promise<MyCommunity> => {
+    const base = { communityId: c.communityId, name: c.name };
+    if (c.ownerId !== me.actor_id) return { ...base, standing: "member", asking: 0, requests: 0 };
+    const answered = new Set((await kernel.readActions(c.scope, 500)).filter((a) => a.kind === "message.send" && a.in_reply_to).map((a) => a.in_reply_to));
+    const open = inbox.filter((m) => m.sender_kind === "human" && m.payload.community === c.communityId && !answered.has(m.action_id));
+    return {
+      ...base,
+      standing: "owner",
+      asking: new Set(open.filter((m) => m.payload.purpose === JOIN).map((m) => m.sender_id)).size,
+      requests: open.filter((m) => m.payload.purpose !== JOIN && m.payload.purpose !== NOTE && typeof m.payload.request === "string" && readable.has(m.payload.request)).length,
+    };
+  }));
+}
