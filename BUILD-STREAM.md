@@ -713,3 +713,9 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 - 2026-10-05 22:55Z — Doris, Talk panel cost guard: 30 messages/hour per signed-in person (429 past the window). In-memory v1; kernel-backed limiter follows. Tests 6/6, lint clean.
 
 - 2026-10-05 23:05Z — Doris, rate limit to main (2ee62a8). Production now refuses past 30 Talk messages/hour per person.
+
+- 2026-10-06 00:05Z — Doris, World presence (founder: "go" on real-time collaboration).
+  - Slice: kernel-native "who's here now" on the World page. Viewers heartbeat every 30s (`world.presence.heartbeat` events); readers list actors fresh within 90s. No new auth model — writing a heartbeat needs the same World access as anything else, so presence respects grants automatically. Old heartbeats age out by time; nothing deleted.
+  - Paths: lib/world/presence.ts, app/world/[worldId]/presence.tsx, app/world/[worldId]/presence-actions.ts, app/world/[worldId]/page.tsx (wiring only), tests/world/presence.test.ts.
+  - Founder problem solved: the family ship gate — opening a World shows who's in it with you.
+  - Checks: tests 3/3, typecheck clean, lint clean. Next: commit + push, CI watch.

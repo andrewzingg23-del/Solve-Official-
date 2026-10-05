@@ -23,6 +23,7 @@ import { createArtifactAction, updateArtifactAction } from "./actions";
 import { WorldBotAccessPanel } from "./bot-access-panel";
 import { WorldAccessPanel } from "./access-panel";
 import { WorldLiveSync } from "./live-sync";
+import { WorldPresence } from "./presence";
 import { ResourceMapPanel } from "./resource-map";
 import { eventTitle } from "../event-title";
 
@@ -238,6 +239,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
         </div>
         <div className="flex items-center gap-3 text-xs text-muted">
           <WorldLiveSync worldId={worldId} authUserId={user.id} />
+          <WorldPresence worldId={worldId} />
           <span className="inline-flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-positive" /> Saved to kernel</span>
           <span className="hidden font-mono md:inline">{worldId.slice(0, 8)}</span>
         </div>

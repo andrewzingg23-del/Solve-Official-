@@ -105,7 +105,7 @@ Updated 2026-10-04. Branch `codex/need-to-route-network-state-spec`.
 ## BLOCKED
 
 - **Staging app sign-in is not demonstrated yet.** The branch preview targets the isolated staging project, but Auth redirect configuration, Data API exposure of kernel_api, and a sign-in/callback through the app need verification. Do not use the older preview that had production variables.
-- **Real-time shared authoring is not built.** Text edits now persist through the kernel, but collaborators still need an in-app grant/invitation flow, live change notifications, presence, and understandable concurrent-edit behavior.
+- **Real-time shared authoring is partially built.** Text edits persist through the kernel; World presence ("who's here now", kernel-native heartbeats) shipped 2026-10-05. Still open: an in-app grant/invitation flow (currently raw SOV IDs), live change notifications, and understandable concurrent-edit behavior.
 - **External-agent joining is not built.** The kernel-mediated inquiry loop and HTTP supplier provider exist; a provider-neutral, scoped way for each collaborator's own agent to create and revise creative artifacts is still required.
 - **Production rollout is separately gated.** Do not apply v4 to the production project without a separate founder go-ahead.
 - **Devnet and live settlement** are separate future work, not prerequisites for a useful shared creative canvas.
