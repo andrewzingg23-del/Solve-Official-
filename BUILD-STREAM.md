@@ -473,3 +473,9 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - outreach outcomes, values and Command Center results;
   - anchoring on chain;
   - wallets.
+
+- 2026-10-05 09:00Z — Claude, for the founder's problem 1 ("what manus doing").
+  - **What happened:** Manus's #6 (duplicate panel on `/bot`) and #8 (`/start` without the brand fixes) were merged into the trunk by the founder's account while a review was open. CI was green (run 136).
+  - **Fixed** on the founder's go: `/start` on the white floor (no decorative points or fake state, signed-in people to `/command`); the duplicate panel removed.
+  - **For Manus:** a working agreement and an updated `ACTIVE-WORK.md` row (research first, no self-merges while a review is open).
+  - **Paths:** `app/start/{view,page}.tsx`, `app/bot/page.tsx`, `app/bot/context-ledger.tsx` (removed), `tests/bot/start.test.ts`, `docs/handoff/MANUS.md`, `ACTIVE-WORK.md`.

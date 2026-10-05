@@ -379,3 +379,11 @@ The founder asked for "a ai to business outreach flow ... with meta accounts but
 - **Known gap, for Codex:** the kernel's `link_wallet` doesn't itself require proof, so a direct API call could link an address without it and block its real owner. Proposed fix: a new migration that only accepts links carrying a server-verified proof, or verifies the signature in the kernel.
 - **Tests:** `tests/bot/wallet.test.ts` covers valid proofs; another person's, an edited, an expired or a forged challenge; another wallet's signature; bad input; one owner per address; and the panel slot without a bot. Bot suite 80/80; typecheck ok; lint clean; build ok.
 
+## 2026-10-05: After Manus's merges of #6 and #8
+
+Both were merged into the trunk by the founder's account while a review asked for changes. CI was green (run 136). Fixed:
+- **`/start`** (`app/start/view.tsx`, `page.tsx`) follows brand v3: white floor, no decorative points or glows, no static "Avatar: Not shaped" state, lowercase solve, "Everything here is real". Signed-in people go to `/command`. Manus's content and structure are kept.
+- **`/bot`** shows one panel for what the bot may do. The duplicate context ledger is removed; its World list was already folded in.
+- **Test:** `tests/bot/start.test.ts` keeps the start page on brand.
+- **Process:** a working agreement for Manus is in `docs/handoff/MANUS.md` (never merge with a review open, log every slice, research first), and its `ACTIVE-WORK.md` row is updated.
+
