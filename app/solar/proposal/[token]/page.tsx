@@ -45,7 +45,7 @@ export default async function Proposal({ params }: PageProps<"/solar/proposal/[t
     : base;
 
   return (
-    <div className="min-h-svh w-full bg-[#f2f7fb] text-[#04070d]">
+    <div className="min-h-svh w-full bg-[#f2f7fb] text-[#04070d] [color-scheme:light]">
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 md:px-8 md:py-12">
         <header className={`flex items-center justify-between gap-4 border-b ${line} pb-5`}>
           <Link href="/solar" className={`text-xs font-semibold uppercase tracking-[0.3em] ${accent}`}>Zest Solar</Link>

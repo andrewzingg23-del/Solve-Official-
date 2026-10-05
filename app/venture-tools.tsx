@@ -4,7 +4,7 @@
 // inputs (lib/ventures/tools.ts). Nothing here is stored or sent.
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { breakEven, coverageNeed, missedCalls, positionSize } from "@/lib/ventures/tools";
+import { breakEven, positionSize } from "@/lib/ventures/tools";
 import { accent, field, label, line, muted, panel, primary } from "./venture-style";
 
 const usd = (v: number, digits = 0) => v.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: digits });
@@ -57,26 +57,6 @@ function Tool({ title, inputs, result, note }: { title: string; inputs: React.Re
   );
 }
 
-export function InsuranceNeeds() {
-  const [v, setV] = useState({ debts: 15000, income: 65000, years: 10, mortgage: 240000, education: 80000, existing: 0 });
-  const set = (k: keyof typeof v) => (x: number) => setV({ ...v, [k]: x });
-  const c = useMemo(() => coverageNeed(v), [v]);
-  return (
-    <Tool title="Your family's number"
-      inputs={<div className="grid grid-cols-2 gap-3">
-        <NumberField name="Debts, not the mortgage" value={v.debts} set={set("debts")} prefix="$" step={1000} />
-        <NumberField name="Yearly income" value={v.income} set={set("income")} prefix="$" step={1000} />
-        <NumberField name="Years to replace it" value={v.years} set={set("years")} suffix="yrs" />
-        <NumberField name="Mortgage left" value={v.mortgage} set={set("mortgage")} prefix="$" step={1000} />
-        <NumberField name="Education to fund" value={v.education} set={set("education")} prefix="$" step={1000} />
-        <NumberField name="Coverage you have" value={v.existing} set={set("existing")} prefix="$" step={1000} />
-      </div>}
-      result={<Result big={usd(c.need)} caption="of coverage would take care of them"
-        rows={[["Debts", usd(c.parts.debts)], ["Income", usd(c.parts.income)], ["Mortgage", usd(c.parts.mortgage)], ["Education", usd(c.parts.education)]]} />}
-      note="The DIME method: debts, income, mortgage and education, less what you already have. A starting point for a conversation with an agent, not a quote or advice." />
-  );
-}
-
 export function PositionSizer() {
   const [v, setV] = useState({ account: 25000, riskPct: 1, entry: 50, stop: 48 });
   const set = (k: keyof typeof v) => (x: number) => setV({ ...v, [k]: x });
@@ -92,24 +72,6 @@ export function PositionSizer() {
       result={<Result big={`${p.shares.toLocaleString("en-US")} shares`} caption={`${p.direction} · lose ${usd(p.risk, 2)} if the stop is hit`}
         rows={[["Risk per share", usd(p.perShare, 2)], ["Position value", usd(p.value)], ["Of your account", `${Math.round(p.ofAccount * 100)}%`]]} />}
       note="Practice math, not advice: size every trade by what you can lose, before what you hope to make. Slippage and gaps can lose more than the stop." />
-  );
-}
-
-export function MissedCallsTool() {
-  const [v, setV] = useState({ callsPerWeek: 60, missedPct: 25, bookPct: 40, jobValue: 400 });
-  const set = (k: keyof typeof v) => (x: number) => setV({ ...v, [k]: x });
-  const m = useMemo(() => missedCalls(v), [v]);
-  return (
-    <Tool title="What the phone costs you"
-      inputs={<div className="grid grid-cols-2 gap-3">
-        <NumberField name="Calls a week" value={v.callsPerWeek} set={set("callsPerWeek")} />
-        <NumberField name="Missed" value={v.missedPct} set={set("missedPct")} suffix="%" />
-        <NumberField name="Would have booked" value={v.bookPct} set={set("bookPct")} suffix="%" />
-        <NumberField name="Average job" value={v.jobValue} set={set("jobValue")} prefix="$" step={25} />
-      </div>}
-      result={<Result big={usd(m.revenue)} caption="a month walks away unanswered"
-        rows={[["Calls missed a month", Math.round(m.missed).toLocaleString("en-US")], ["Jobs that would have booked", m.jobs.toFixed(1)], ["A year", usd(m.revenue * 12)]]} />}
-      note="Your numbers, your math: missed calls times the share that would have booked, times a job's value." />
   );
 }
 

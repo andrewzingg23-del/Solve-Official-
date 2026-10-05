@@ -1,16 +1,16 @@
 "use client";
 
-// Walk the development: a concept model of the three phases on one parcel. Homes along the loop road,
-// the commercial block by the boulevard, and the estate on the rise. Turn it, switch phases on and
-// off, or fly through. A concept, not a site plan.
+// Walk the community: a concept model of a residential development in three phases on one parcel.
+// Homes along the loop road, more homes around the clubhouse, pool and park, and estate homes on the
+// rise. Turn it, switch phases on and off, or fly through. A concept, not a site plan.
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 export const PHASES = [
   { id: 1, name: "Phase one · Homes", note: "Sixteen homes on the loop road" },
-  { id: 2, name: "Phase two · Commercial", note: "Offices over retail, with parking" },
-  { id: 3, name: "Phase three · The Estate", note: "The residence on the rise" },
+  { id: 2, name: "Phase two · Homes and the park", note: "Twelve homes around the clubhouse, pool and park" },
+  { id: 3, name: "Phase three · The estates", note: "Three estate homes on the rise" },
 ] as const;
 
 type Build = { group: THREE.Group; phase: number; target: number };
@@ -123,46 +123,48 @@ export function Development3D() {
     }
     add(homes, 1);
 
-    // phase two: offices over retail by the boulevard, with parking
-    const commercial = new THREE.Group();
-    const tower = new THREE.Mesh(new THREE.BoxGeometry(26, 22, 18), mat.walls);
-    tower.position.set(20, 11, 38);
-    tower.castShadow = tower.receiveShadow = true;
-    commercial.add(tower);
-    for (let f = 0; f < 5; f++) {
-      const band = new THREE.Mesh(new THREE.BoxGeometry(26.2, 1.6, 18.2), mat.glass);
-      band.position.set(20, 4.5 + f * 3.6, 38);
-      commercial.add(band);
+    // phase two: twelve homes around the clubhouse, pool and park
+    const park = new THREE.Group();
+    for (const z of [45, 27]) {
+      for (const x of [8, 19, 30, 41, 72, 83]) {
+        const h = house(mat.walls, mat.roof);
+        h.position.set(x, 0, z);
+        h.rotation.y = z === 45 ? Math.PI : 0;
+        park.add(h);
+      }
     }
-    const retail = new THREE.Mesh(new THREE.BoxGeometry(44, 5, 12), mat.walls);
-    retail.position.set(52, 2.5, 40);
-    retail.castShadow = retail.receiveShadow = true;
-    const awning = new THREE.Mesh(new THREE.BoxGeometry(44, 0.4, 2), mat.accent);
-    awning.position.set(52, 4, 46.6);
-    commercial.add(retail, awning);
-    const lot = new THREE.Mesh(new THREE.PlaneGeometry(50, 20), mat.lot);
-    lot.rotation.x = -Math.PI / 2;
-    lot.position.set(42, 0.03, 20);
-    commercial.add(lot);
-    add(commercial, 2);
+    const club = house(mat.walls, mat.accent, 14, 10, 4.5);
+    club.position.set(25, 0, 8);
+    const poolDeck = new THREE.Mesh(new THREE.BoxGeometry(14, 0.2, 9), mat.lot);
+    poolDeck.position.set(8, 0.1, 8);
+    const pool = new THREE.Mesh(new THREE.BoxGeometry(10, 0.3, 5), mat.water);
+    pool.position.set(8, 0.2, 8);
+    park.add(club, poolDeck, pool);
+    for (let i = 0; i < 10; i++) {
+      const t = tree(mat.leaf, mat.trunk, 1);
+      t.position.set(38 + (i % 5) * 4, 0, 4 + Math.floor(i / 5) * 7);
+      park.add(t);
+    }
+    add(park, 2);
 
-    // phase three: the estate on the rise, with a long drive and a pool
+    // phase three: estate homes on the rise, with a private drive
     const estate = new THREE.Group();
     const rise = new THREE.Mesh(new THREE.CylinderGeometry(30, 38, 4, 48), mat.ground);
     rise.position.set(60, 2, -40);
     rise.receiveShadow = true;
     estate.add(rise);
-    const main = house(mat.walls, mat.roof, 26, 14, 6);
-    main.position.set(60, 4, -44);
-    const wing = house(mat.walls, mat.roof, 10, 18, 5);
-    wing.position.set(77, 4, -38);
-    const pool = new THREE.Mesh(new THREE.BoxGeometry(14, 0.3, 6), mat.water);
-    pool.position.set(58, 4.2, -28);
-    estate.add(main, wing, pool);
-    const drive = new THREE.Mesh(new THREE.PlaneGeometry(6, 70), mat.road);
+    for (const [x, z, r] of [[60, -50, 0], [42, -34, 0.6], [78, -34, -0.6]] as const) {
+      const home = house(mat.walls, mat.roof, 16, 11, 5);
+      home.position.set(x, 4, z);
+      home.rotation.y = r;
+      const pool = new THREE.Mesh(new THREE.BoxGeometry(7, 0.3, 3.5), mat.water);
+      pool.position.set(x + Math.sin(r) * 10, 4.2, z + Math.cos(r) * 10);
+      pool.rotation.y = r;
+      estate.add(home, pool);
+    }
+    const drive = new THREE.Mesh(new THREE.PlaneGeometry(6, 66), mat.road);
     drive.rotation.x = -Math.PI / 2;
-    drive.rotation.z = 0.25;
-    drive.position.set(46, 0.04, 10);
+    drive.position.set(60, 0.04, 23);
     estate.add(drive);
     for (let i = 0; i < 20; i++) {
       const a = (i / 20) * Math.PI * 2;
@@ -188,7 +190,7 @@ export function Development3D() {
     ]);
     const look = new THREE.CatmullRomCurve3([
       new THREE.Vector3(-20, 2, 40), new THREE.Vector3(-40, 2, 5), new THREE.Vector3(-60, 2, -10),
-      new THREE.Vector3(-30, 2, -30), new THREE.Vector3(55, 4, -40), new THREE.Vector3(60, 4, -42), new THREE.Vector3(10, 0, 5),
+      new THREE.Vector3(10, 2, 15), new THREE.Vector3(55, 4, -40), new THREE.Vector3(60, 4, -42), new THREE.Vector3(10, 0, 5),
     ]);
     let flight: number | null = null;
 
@@ -261,7 +263,7 @@ export function Development3D() {
   return (
     <div className="flex flex-col gap-4">
       <div className="relative h-[520px] overflow-hidden rounded-xl border border-[#d3dde6] md:h-[620px]">
-        <div ref={host} role="img" aria-label="A concept model of the development: homes, commercial and the estate. Drag to turn it." className="h-full w-full cursor-grab touch-none active:cursor-grabbing" />
+        <div ref={host} role="img" aria-label="A concept model of the community: homes, the park and the estate homes. Drag to turn it." className="h-full w-full cursor-grab touch-none active:cursor-grabbing" />
         <div className="absolute left-3 top-3 flex flex-wrap gap-2">
           {PHASES.map((p) => (
             <button key={p.id} type="button" aria-pressed={on[p.id]} onClick={() => toggle(p.id)}

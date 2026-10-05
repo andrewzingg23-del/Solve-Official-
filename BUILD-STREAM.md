@@ -634,3 +634,18 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Aurora sources:** POST /tenants/{id}/projects, GET …/projects/{id}/designs, GET …/designs/{id}/summary (docs.aurorasolar.com, via search; the docs host is blocked from this environment). The contact fields fall back to name and address if Aurora rejects them.
   - **Checks:** full suite 293/293; lint clean; typecheck ok; build ok. Screenshots in Chromium of `/solar`, `/real-estate`, `/insurance`, `/zuber-pen` and `/ventures`, desktop and phone: no page errors. Fixes from them: the pen was framed too close; big solar figures wrapped on phones.
   - **Founder:** set `AURORA_API_KEY` and `AURORA_TENANT_ID` (Preview) to open design requests; check the copy and the $2.90 per watt price.
+
+- 2026-10-05 21:05Z — Claude, the founder's second round on the doors: leave out Samantha and Vantage; solar all the way to price and qualifying; pen and key finder; residential real estate; insurance as a sales dialer with automations; Members Only higher-ticket.
+  - **Built:**
+    - `lib/solar/qualify.ts` (loan payment, pre-qualification) and the four-step `/solar`;
+    - `lib/insurance/dialer.ts` (automations with calling hours, consent and do-not-call) and the Practice dialer on `/insurance`;
+    - the residential development model; the pen with a key-finder tag;
+    - `app/membership/offer.tsx` (differences, tiers, what members get).
+    - Samantha and Vantage removed (routes, tool and fleet).
+  - **Credentials:** the founder pasted an Aurora login in chat. It was not used or stored anywhere, and the founder was asked to change it. The integration needs an Aurora API token (`AURORA_API_KEY`, `AURORA_TENANT_ID`), set in Vercel by the founder.
+  - **Checks:**
+    - full suite 298/298; lint clean; typecheck ok; build ok;
+    - click-throughs in Chromium: answering the six questions, a dialer call logged as an appointment and another as no answer, the oath. These caught two things:
+      - leads with a scheduled call showed "Ready" (fixed: a lead waits for its next scheduled call);
+      - form controls rendered dark on the white pages (fixed).
+  - **Founder:** confirm the membership prices; set the Aurora token; choose the phone provider for the real dialer.

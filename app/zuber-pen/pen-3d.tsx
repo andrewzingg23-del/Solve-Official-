@@ -1,7 +1,7 @@
 "use client";
 
-// The pen, turning in the light. "Ring it" shows what Find-My does: the cap light pulses. A render of
-// the design, not a photo of a shipping product.
+// The pen and the key finder it pairs with, turning in the light. "Ring it" shows what finding does:
+// both lights pulse. A render of the design, not a photo of a shipping product.
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
@@ -49,8 +49,21 @@ export function Pen3D() {
     clip.position.set(0, 2.55, 0.33);
     pen.add(barrel, grip, tip, cap, band, end, clip);
     pen.rotation.z = -0.5;
-    pen.position.y = 0.5;
+    pen.position.set(-0.6, 0.5, 0);
     scene.add(pen);
+
+    // the key finder it pairs with: a small tag on a ring, lighting with the pen
+    const tag = new THREE.Group();
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.22, 48), body);
+    disc.rotation.x = Math.PI / 2;
+    const face = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.24, 48), glow);
+    face.rotation.x = Math.PI / 2;
+    const keyring = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.05, 12, 48), steel);
+    keyring.position.set(0, 0.85, 0);
+    tag.add(disc, face, keyring);
+    tag.position.set(2.1, -1.6, 0.4);
+    tag.rotation.set(0.3, -0.5, 0.2);
+    scene.add(tag);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableZoom = false;
@@ -102,11 +115,11 @@ export function Pen3D() {
 
   return (
     <div className="relative h-[460px] overflow-hidden rounded-xl border border-[#d3dde6] bg-[radial-gradient(70%_70%_at_50%_45%,#ffffff_0%,#e8eff5_100%)]">
-      <div ref={host} role="img" aria-label="The Zuber pen, turning. Drag to turn it." className="h-full w-full cursor-grab touch-none active:cursor-grabbing" />
+      <div ref={host} role="img" aria-label="The Zuber pen and its key finder, turning. Drag to turn them." className="h-full w-full cursor-grab touch-none active:cursor-grabbing" />
       <button type="button" onClick={() => ring.current()} className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-md bg-[#04070d] px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#f2f7fb] hover:opacity-85">
         Ring it
       </button>
-      <span className="absolute left-4 top-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#4d5b6c]">A render of the design</span>
+      <span className="absolute left-4 top-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#4d5b6c]">A render of the design · pen and key finder</span>
     </div>
   );
 }

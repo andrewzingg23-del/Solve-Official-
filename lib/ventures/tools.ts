@@ -29,13 +29,6 @@ export function positionSize(i: { account: number; riskPct: number; entry: numbe
   return { risk, perShare, shares, value, ofAccount: account > 0 ? value / account : 0, direction: n(i.stop) < n(i.entry) ? "long" : "short" };
 }
 
-// What missed calls cost a month: calls missed, the share that would have booked, times a job's value.
-export function missedCalls(i: { callsPerWeek: number; missedPct: number; bookPct: number; jobValue: number }) {
-  const missed = n(i.callsPerWeek) * (52 / 12) * (n(i.missedPct, 0, 100) / 100);
-  const jobs = missed * (n(i.bookPct, 0, 100) / 100);
-  return { missed, jobs, revenue: jobs * n(i.jobValue) };
-}
-
 // The return on ad spend needed to break even, and to hit a target profit, from the order value and margin.
 export function breakEven(i: { orderValue: number; marginPct: number; targetPct: number }) {
   const margin = n(i.marginPct, 0, 100) / 100;

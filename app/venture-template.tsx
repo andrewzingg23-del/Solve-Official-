@@ -10,7 +10,7 @@ export function VenturePage({ slug, children, after }: { slug: string; children?
   const venture = getVenture(slug);
   const next = nextVenture(slug);
   return (
-    <div className={`min-h-svh w-full bg-[#f2f7fb] ${ink}`}>
+    <div className={`min-h-svh w-full bg-[#f2f7fb] [color-scheme:light] ${ink}`}>
       <main className="mx-auto flex min-h-svh w-full max-w-6xl flex-col px-4 py-6 md:px-8 md:py-10">
         <header className={`flex items-center justify-between gap-4 border-b ${line} pb-5`}>
           <Link href="/ventures" aria-label="All ventures">

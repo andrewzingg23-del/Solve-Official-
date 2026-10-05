@@ -1,7 +1,7 @@
 // The venture doors' math: from the visitor's inputs only.
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { breakEven, coverageNeed, missedCalls, positionSize } from "../../lib/ventures/tools";
+import { breakEven, coverageNeed, positionSize } from "../../lib/ventures/tools";
 
 it("works out a family's coverage need the DIME way, less what they already have", () => {
   const c = coverageNeed({ debts: 20000, income: 60000, years: 10, mortgage: 250000, education: 100000, existing: 250000 });
@@ -18,10 +18,7 @@ it("sizes a position so a stopped-out trade loses only the chosen risk", () => {
   assert.equal(positionSize({ account: 10000, riskPct: 2, entry: 20, stop: 21 }).direction, "short");
 });
 
-it("prices missed calls and break-even ad returns from the visitor's own numbers", () => {
-  const m = missedCalls({ callsPerWeek: 60, missedPct: 25, bookPct: 40, jobValue: 400 });
-  assert.equal(Math.round(m.missed), 65);
-  assert.equal(Math.round(m.revenue), 10400);
+it("prices break-even ad returns from the visitor's own numbers", () => {
   const b = breakEven({ orderValue: 120, marginPct: 40, targetPct: 15 });
   assert.equal(b.roas, 2.5);
   assert.equal(b.maxCpa, 48);

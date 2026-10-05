@@ -434,3 +434,21 @@ Both were merged into the trunk by the founder's account while a review asked fo
   - Zuber pen: a 3D render with "Ring it".
   - Vantage: the fleet of doors, linking to the Command Center.
 - **Tests:** `tests/ventures/{solar,tools}.test.ts`. The pages were screenshotted in Chromium at desktop and phone sizes with no page errors.
+
+## 2026-10-05 — The doors, round two (Claude, founder's direction)
+
+- **Samantha and Vantage are out** of the doors; they are vertical page ideas inside solve. Eight doors remain.
+- **Solar goes all the way to price and qualification**, in four steps on `/solar`:
+  1. the bill and the system in 3D;
+  2. the price, as cash, a loan (APR, term and down payment shown together, monthly payment beside what's left of the bill) or a lease (no number until the design);
+  3. "Do you qualify?": six questions, no credit check, with cash, loan and lease fit and the reasons;
+  4. the real design through Aurora, and a live proposal page.
+- **Insurance is sales-facing: the agent's dialer** (`/insurance`, in Practice with sample leads).
+  - It has a lead queue, power dial, calls only inside 8am–9pm in the lead's time zone, a live script with the family's number, and outcomes that schedule every next step (`lib/insurance/dialer.ts`): retries, consent-only texts, appointment confirmations and reminders, onboarding after a sale, 90-day nurture, and do-not-call stopping everything.
+  - Real calling needs a phone line (for example Twilio) and the agency's leads in solve: the next slice.
+- **Real estate is residential:** phases of homes, a clubhouse, pool and park, and estate homes on the rise. No commercial.
+- **Zuber pen:** finds your phone and your pen, and pairs with a key finder (the 3D shows the tag ringing with the pen).
+- **Members Only goes higher-ticket:** the oath, then what sets it apart, then two tiers. **The prices are a proposal awaiting the founder:**
+  - founding seat $6,000 a year (or $550 a month), locked for the first fifty;
+  - Inner Circle $18,000 a year, ten seats.
+- Pages on the white floor render their form controls light.

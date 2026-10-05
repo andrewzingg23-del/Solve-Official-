@@ -64,3 +64,27 @@ it("sends a design request to Aurora, falls back to name and address if Aurora r
   assert.equal(readProposalToken("other", token), null, "signed");
   assert.equal(readProposalToken("secret", token.replace(/^./, "x")), null, "can't be edited");
 });
+
+it("prices a loan the standard way and shows its terms together", async () => {
+  const { EXAMPLE_LOAN, loanPayment, loanQuote } = await import("../../lib/solar/qualify");
+  assert.equal(Math.round(loanPayment(30000, 7.99, 25)), 231);
+  assert.equal(Math.round(loanPayment(12000, 0, 10)), 100, "a zero-rate loan is the price over the payments");
+  const q = loanQuote(34480, EXAMPLE_LOAN);
+  assert.deepEqual([q.financed, q.payments, Math.round(q.monthly)], [34480, 300, 266]);
+  assert.equal(loanQuote(10000, { aprPct: 8, years: 10, down: 2000 }).financed, 8000);
+});
+
+it("pre-qualifies from six answers, says why, and never decides credit", async () => {
+  const { qualify } = await import("../../lib/solar/qualify");
+  const good = { owner: "yes", home: "single", roof: "under10", shade: "little", credit: "720", utility: "fpl" } as const;
+  assert.deepEqual(qualify({ ...good }, 220), { status: "qualified", cash: "yes", loan: "yes", lease: "yes", notes: [] });
+  assert.equal(qualify({ ...good, owner: null }, 220).status, "incomplete");
+  const renter = qualify({ ...good, owner: "no" }, 220);
+  assert.deepEqual([renter.status, renter.cash, renter.loan], ["not_yet", "no", "no"]);
+  const old = qualify({ ...good, roof: "over20", credit: "640" }, 220);
+  assert.equal(old.status, "almost");
+  assert.equal(old.loan, "maybe");
+  assert.ok(old.notes.some((n) => n.includes("replaced first")));
+  assert.equal(qualify({ ...good, credit: "below" }, 220).loan, "no");
+  assert.equal(qualify({ ...good }, 80).status, "almost", "a small bill is said plainly");
+});
