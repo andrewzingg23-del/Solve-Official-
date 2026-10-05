@@ -13,6 +13,7 @@ import { personaBrief } from "./persona";
 import { encodePixelArt } from "./pixel-art";
 import { encodePart, MATERIALS, PART_LIMITS, PartInputError, parsePart, partUrl, printNotes, sizeText } from "./part";
 import { addProof, PROOF_LIMITS, proofsIn, type SavedProof } from "./proof";
+import { encodeOutreach, OUTREACH_LIMITS, parseOutreach, sentIn } from "./outreach";
 import { encodeRoutes, nextStep, parseRoutes, ROUTE_LIMITS, takenRoutes, type TakenRoute } from "./routes";
 import { saveNumber, vouch } from "./vouch";
 import { companionOf, readPersona } from "./store";
@@ -44,6 +45,7 @@ export const INSTRUCTIONS = [
   "Use remember only for things the person wants their bot to keep, and name the source. Never store passwords, keys or other secrets.",
   "To work on something real, call list_worlds: start_world makes a private World for a goal, and add_to_world adds drafts, plans and findings to Worlds the person let the bot into. If the person asks to map project resources, map_world_resource records exactly what they state as a self-reported offer or need. If the person asks for something the available tools cannot do, propose_capability records a structured draft in an authorized World. Say plainly that these are drafts; nothing there happens in the real world until a person acts on it. When something real does happen (it was printed, shipped, paid, published) and the person gives you proof, add_proof saves that proof on the piece: a save point on the record. Never invent, guess or embellish proof; a plan, an estimate or your own output is not proof. A save on someone's word is not verified, so never call it verified.",
   "When the person asks for a way to do something, research it with your own tools first, preferring authoritative and current sources, then use propose_routes with up to three real routes, each with concrete steps and the link a step needs. Never pick a route for them: they take one in Sovereign, and read_world then shows the step they are on.",
+  "For outreach to businesses, research real ones that fit the person's goal and cite the public page where you found each; never invent a business, a contact or a fact about them. Use propose_outreach to draft a short, specific message for each. You never send anything: the person approves each message in Sovereign, and Sovereign adds who it is from and a way to say no. Don't message anyone who has said no.",
   "When the person wants Sovereign to support their business, learn it in small, focused sections: overview, customers and offer, delivery workflow, team, systems and equipment, economics and constraints, goals and measures, and evidence and risks. Ask targeted questions, distinguish known facts from unknowns, and use learn_business only for details the person has approved to remember. Do not force an industry template. For piping and mechanical work, learn the actual materials, dimensions, specifications, job sequence, inspection evidence and constraints; never guess a code or engineering requirement. For 3D printing, learn printer, slicer, CAD workflow, materials, build limits and quality checks. For real-time visual or pixel work, learn canvas size, palette, frame/latency needs and delivery format. If the connected assistant supports vision, describe what a photo actually shows, label uncertain estimates, and verify measurements or diagnoses before storing them as facts.",
   "The bot can only do what its owner delegated; Sovereign's kernel enforces that, so report refusals plainly.",
 ].join(" ");
@@ -321,6 +323,40 @@ export const TOOLS = [
     annotations: ADD,
   },
   {
+    name: "propose_outreach",
+    title: "Draft outreach to businesses",
+    description: "Drafts outreach for a goal (pilot users, suppliers, partners) in a World the bot may add to: up to 20 real businesses, each with why it fits, the public page where you found it, how it can be reached, and a short personal message. Research first and never invent a business or contact. Nothing is sent: the person approves each message in Sovereign, which adds who it is from and a way to say no. Revise with artifact_id before any is approved.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        world_id: { type: "string", description: "An authorized World from list_worlds." },
+        goal: { type: "string", maxLength: OUTREACH_LIMITS.goal, description: "What the outreach is for, e.g. 'Find five print shops to pilot solve'." },
+        from: { type: "string", maxLength: OUTREACH_LIMITS.from, description: "Who the messages are from, as the person wants to be named, e.g. 'Andrew, founder of solve'." },
+        leads: {
+          type: "array",
+          minItems: 1,
+          maxItems: OUTREACH_LIMITS.leads,
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string", maxLength: OUTREACH_LIMITS.name },
+              why: { type: "string", maxLength: OUTREACH_LIMITS.why, description: "Why this business fits, from what you found." },
+              source: { type: "string", maxLength: OUTREACH_LIMITS.source, description: "The public page (https) where you found it." },
+              contact: { type: "string", maxLength: OUTREACH_LIMITS.contact, description: "How it can be reached, as published (a contact form, a public email, a page)." },
+              message: { type: "string", maxLength: OUTREACH_LIMITS.message, description: "A short, specific first message. Leave out the sign-off and opt-out: Sovereign adds them." },
+            },
+            required: ["name", "source", "message"],
+            additionalProperties: false,
+          },
+        },
+        artifact_id: { type: "string", description: "Revise this outreach instead of drafting a new one." },
+      },
+      required: ["world_id", "goal", "from", "leads"],
+      additionalProperties: false,
+    },
+    annotations: ADD,
+  },
+  {
     name: "propose_capability",
     title: "Propose a capability",
     description: "When the person asks for something the available tools cannot do, records a structured, non-executable capability proposal in a World the bot may add to. This creates a draft only; it does not generate or run code, grant access, or contact providers.",
@@ -528,6 +564,13 @@ export function createConnector(s: Session) {
           return ` [saved ${saveNumber(last.number)}: ${inert(last.what)} (${whose})${list.length > 1 ? `, and ${list.length - 1} earlier` : ""}]`;
         };
         const taken = await takenRoutes(bot, world.scope).catch(() => new Map<string, TakenRoute>());
+        const sent = await sentIn(bot, world.scope).catch(() => new Map<string, Map<number, unknown>>());
+        const outreachNote = (id: string, body: string) => {
+          const o = parseOutreach(body);
+          if (!o) return null;
+          const approved = sent.get(id)?.size ?? 0;
+          return `outreach for: ${o.goal}: ${o.leads.length} drafted messages (${o.leads.map((l) => l.name).join("; ")}), ${approved} approved by the person and recorded in Practice (not sent outside solve)`;
+        };
         const routeNote = (id: string, body: string) => {
           const routes = parseRoutes(body);
           if (!routes) return null;
@@ -573,7 +616,7 @@ export function createConnector(s: Session) {
           const part = parsePart(artifact.body);
           const shown = part
             ? `printable part, ${sizeText(part)} mm in ${part.material}, for: ${part.purpose} (STL: ${partUrl(s.appUrl, world.worldId, artifact.entityId)})`
-            : (routeNote(artifact.entityId, artifact.body) ?? artifact.body);
+            : (routeNote(artifact.entityId, artifact.body) ?? outreachNote(artifact.entityId, artifact.body) ?? artifact.body);
           return "- [" + boundedInert(artifact.entityId, 120) + "] " + boundedInert(artifact.title, 500) +
             ": " + boundedInert(shown, 2_600) +
             (shown.length > 2_600 ? " [body shortened for context]" : "") + saveNote(artifact.entityId);
@@ -663,7 +706,7 @@ export function createConnector(s: Session) {
       }
     }
 
-    if (name === "start_world" || name === "add_to_world" || name === "propose_capability" || name === "create_pixel_art" || name === "design_part" || name === "propose_routes" || name === "map_world_resource") {
+    if (name === "start_world" || name === "add_to_world" || name === "propose_capability" || name === "create_pixel_art" || name === "design_part" || name === "propose_routes" || name === "propose_outreach" || name === "map_world_resource") {
       if (!canRemember) return fail(`This connection (${connection.clientName}) is read only. The person can allow it to add in Sovereign.`);
       if (!s.botAs) return fail("This deployment cannot act as the bot yet. Nothing was written.");
       const bot = s.botAs(avatar.agent_id);
@@ -698,6 +741,28 @@ export function createConnector(s: Session) {
             material: part.material,
             stl_url: stl,
             print: { supports: print.supports, overhang_mm: print.overhangMm, note: print.note },
+          });
+        }
+        if (name === "propose_outreach") {
+          const body = encodeOutreach({ goal: args.goal, from: args.from, leads: args.leads });
+          const artifactId = typeof args.artifact_id === "string" && args.artifact_id ? args.artifact_id : null;
+          if (artifactId) {
+            const { world } = await readWorldAsBot(bot, worldId);
+            if ((await sentIn(bot, world.scope)).get(artifactId)?.size) throw new WorldInputError("some of these messages are already approved, so the outreach stays as it was");
+          }
+          const outreach = parseOutreach(body)!;
+          const requestId = createHash("sha256").update([s.clientId, worldId, "outreach", artifactId ?? "", body].join("|")).digest("hex").slice(0, 40);
+          const saved = await addToWorld(bot, { worldId, title: `Outreach: ${outreach.goal}`.slice(0, WORLD_LIMITS.title), body, artifactId }, requestId);
+          const url = worldUrl(s.appUrl, worldId);
+          const n = outreach.leads.length;
+          return ok(`${saved.revised ? "Revised" : "Drafted"} ${n === 1 ? "one message" : `${n} messages`} for "${inert(outreach.goal)}". Nothing is sent: the person approves each one here: ${url}`, {
+            artifact_id: saved.entityId,
+            world_id: worldId,
+            revised: saved.revised,
+            status: "drafted",
+            sent: 0,
+            leads: outreach.leads.map((l) => l.name),
+            url,
           });
         }
         if (name === "propose_routes") {

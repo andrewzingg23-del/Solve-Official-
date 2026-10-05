@@ -396,3 +396,17 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 - 2026-10-05 05:00Z — Claude, vision check §3.7 (Forge), the first step: "What solve can't do yet" on the Command Center. It lists assistants' capability drafts, grouped by need with how many times each was asked. `overview` reads each World once for routes and gaps.
   - **Paths:** `lib/bot/gaps.ts`, `lib/bot/waiting.ts`, `app/command/{page,view}.tsx`, `tests/bot/gaps.test.ts`.
   - **Checks:** gaps, command and waiting 8/8; typecheck ok; lint ok.
+
+- 2026-10-05 05:30Z — Claude. Two founder asks: how to make solve a business with the most leverage and recruiting at once, for kids and serious operators; and an AI-to-business outreach flow "automated with meta accounts", built as an example in the app.
+  - **The plan:** `docs/plans/2026-10-05-business-leverage-outreach.md`.
+    - One loop is the product, the growth and the recruiting: a finished route gives real value, a receipt and a reusable Pack.
+    - One engine for kids and operators, with profiles (young, standard, operator) enforced by grants. No accounts for children until a guardian-consent flow and counsel.
+    - Meta's rules: cold DMs can't be automated. So automate everything up to the first message to a new person, which the person approves. Use Meta where its rules welcome automation: inbound, Lead Ads, opt-in templates, your own posts.
+  - **Built, first slice:** the Outreach Room with a Practice channel.
+    - `propose_outreach` drafts messages, each with its source.
+    - Only the person approves (`outreach.send`), and the approval is recorded with `sent_outside_solve: false`.
+    - The sender's name and an opt-out line are always added.
+    - Approvals show in "Waiting on you" and the Command Center.
+  - **Paths:** `lib/bot/outreach.ts`, `lib/bot/connector.ts`, `lib/bot/presence.ts`, `lib/bot/waiting.ts`, `app/outreach-card.tsx`, `app/route-actions.ts`, `app/world/[worldId]/page.tsx` (additive), `app/bot/waiting.tsx`, `app/command/*`, `tests/bot/outreach.test.ts`; `lib/bot/worlds.ts` (the old lint warning, fixed).
+  - **Checks:** full suite 251/251; typecheck ok; lint clean; build ok.
+  - **Manus:** now also researches Meta's messaging rules and CAN-SPAM/CASL.

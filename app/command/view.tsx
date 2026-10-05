@@ -10,7 +10,7 @@ import { WaitingOnYou } from "@/app/bot/waiting";
 import type { Connection } from "@/lib/bot/memory";
 import type { SavedProof } from "@/lib/bot/proof";
 import { groupGaps, type Gap } from "@/lib/bot/gaps";
-import { noticed, waitingFrom, type Journey } from "@/lib/bot/waiting";
+import { noticed, waitingFrom, type Approval, type Journey } from "@/lib/bot/waiting";
 
 export type CommandData = {
   name: string; // the person's label
@@ -20,6 +20,7 @@ export type CommandData = {
   now?: Date; // for what is noticed; the page passes the time of the request
   connections: Connection[];
   gaps?: Gap[]; // what assistants recorded that solve can't do yet
+  approvals?: Approval[]; // outreach messages waiting for the person's approval
   saves: (SavedProof & { worldId: string; worldTitle: string })[];
   live?: ReactNode; // who is working right now, when presence is available
 };
@@ -46,7 +47,7 @@ function journeyState(j: Journey) {
 
 export function CommandView({ data }: { data: CommandData }) {
   const underway = data.journeys.filter((j) => j.state === "underway").length;
-  const waiting = waitingFrom(data.journeys);
+  const waiting = waitingFrom(data.journeys, data.approvals);
   const seen = noticed(data.journeys, data.now);
   return (
     <div className="flex flex-col gap-6">

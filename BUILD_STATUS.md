@@ -323,3 +323,14 @@ Everything is read from the record with the person's own sign-in, and empty stat
   It is worked out from the record on each visit (`noticed` in `lib/bot/waiting.ts`). It only points; it never acts, assigns or tells anyone else. Routes now carry when each step last moved, and an ask knows whether proof is saved on it.
 - **What solve can't do yet (the Forge's seed).** The Command Center lists the capability drafts assistants recorded with `propose_capability` when solve couldn't do what was asked. The same need asked again counts once, with how many times and in which Worlds, most repeated first (`lib/bot/gaps.ts`). It is read from the same single scan of each World. Nothing in it runs. Repeated real needs pick the next build, which is the directive's "learn from real friction" in a form the founder can see.
 
+## 2026-10-05: Outreach Room, first slice (Practice channel)
+
+The founder asked for "a ai to business outreach flow ... with meta accounts but build this as an example in app". The plan, with Meta's messaging rules and why cold DMs can't be automated, is in `docs/plans/2026-10-05-business-leverage-outreach.md`.
+- **Drafting:** the person's assistant researches real businesses for a goal and calls `propose_outreach` with up to 20, each with why it fits, the public page where it was found (required, http or https), how it can be reached, and a short message (`lib/bot/outreach.ts`).
+- **Approving:** the World shows each message exactly as it would go out, with the sender's name and an opt-out line always added (`app/outreach-card.tsx`). Only the person approves, one message at a time. Approval is a kernel task they created, needing `outreach.send`, which a bot or a read-only member does not hold.
+- **Practice channel:** approving records the message, its sha256 and `sent_outside_solve: false`. Nothing leaves solve. The card says Practice.
+- **Where approvals show:** "Waiting on you" and the Command Center list messages still to approve. `read_world` tells the bot how many were approved.
+- **Revising:** a bot can revise drafts until one is approved.
+- **Tests:** `tests/bot/outreach.test.ts` (3 tests). Full suite 251/251; lint clean (the old warning in `lib/bot/worlds.ts` is fixed); build ok.
+- **Next:** replies and outcomes on each lead; a real email channel; Meta inbound inside its rules. Those need the founder's accounts, and Manus's research on Meta's current rules.
+

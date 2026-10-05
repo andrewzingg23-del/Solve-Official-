@@ -202,7 +202,7 @@ export async function proposeCapability(
   requestId: string,
 ): Promise<{ entityId: string; revised: false; title: string }> {
   const draft = draftCapabilityProposal(input);
-  const { world, artifacts } = await loadCreativeWorld(bot, input.worldId);
+  const { world } = await loadCreativeWorld(bot, input.worldId);
   const entityId = await createCreativeArtifact(bot, {
     scope: world.scope,
     worldEntityId: world.entityId,

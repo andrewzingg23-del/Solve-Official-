@@ -48,6 +48,14 @@ The founder decided solve is built for them first (`docs/plans/2026-10-05-founde
 
 Read each one's official docs. Write what works, what doesn't, and the exact setup steps in `docs/research/connecting-builders.md`, citing each source. Once staging works for the founder, walk that path with them.
 
+Then, for the Outreach Room (`docs/plans/2026-10-05-business-leverage-outreach.md`): from Meta's current official docs, write `docs/research/meta-messaging-rules.md`. Cover:
+- the Messenger, Instagram and WhatsApp rules for messages a business starts (windows, tags, templates, opt-in);
+- Lead Ads and click-to-message ads;
+- publishing to your own Page and Instagram account;
+- app review.
+
+Also cover CAN-SPAM and CASL for commercial messages. Cite every claim and note the date read; flag anything a lawyer should confirm.
+
 ## Proposed lane: the real browser and the open web
 
 Codex and Claude build. What nobody covers yet is using solve the way a person would, in a real browser, and reading the outside world carefully. That is where Manus is strongest. Work in this order:

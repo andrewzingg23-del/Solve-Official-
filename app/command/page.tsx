@@ -23,7 +23,7 @@ async function load(userId: string): Promise<CommandData | "identity" | "unavail
     const kernel = await getKernel();
     const [me, bot] = await Promise.all([kernel.whoami(), loadBot(kernel)]);
     const worlds = bot.avatar ? await worldsForBot(kernel, bot.avatar.agent_id) : await listCreativeWorlds(kernel);
-    const [{ journeys: all, gaps }, connections, savesByWorld] = await Promise.all([
+    const [{ journeys: all, gaps, approvals }, connections, savesByWorld] = await Promise.all([
       overview(kernel, worlds, me.actor_id),
       bot.avatar ? readConnections(kernel, bot.ownerId) : Promise.resolve([]),
       latestSaves(kernel, worlds, 3),
@@ -40,6 +40,7 @@ async function load(userId: string): Promise<CommandData | "identity" | "unavail
       worlds: worlds.map((w) => ({ worldId: w.worldId, title: w.title, updatedAt: w.updatedAt })),
       journeys: all,
       gaps,
+      approvals,
       connections,
       saves,
       live: botName ? <LiveLine userId={userId} botName={botName} /> : undefined,

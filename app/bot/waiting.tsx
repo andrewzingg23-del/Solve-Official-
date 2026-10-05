@@ -22,8 +22,13 @@ export function WaitingOnYou({ items }: { items: WaitingItem[] }) {
       <ol className="flex flex-col divide-y divide-line">
         {items.map((item) => (
           <li key={`${item.kind}:${item.pieceId}`} className="flex flex-col gap-1 py-3 text-sm">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">{item.kind === "choose" ? "Choose a route" : "Next step"}</span>
-            {item.kind === "choose" ? (
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">{item.kind === "approve" ? "Approve messages" : item.kind === "choose" ? "Choose a route" : "Next step"}</span>
+            {item.kind === "approve" ? (
+              <>
+                <Link href={`/world/${item.worldId}`} className="break-words hover:text-accent">{item.ask}</Link>
+                <span className="text-xs leading-5 text-muted tabular-nums">{item.pending} of {item.total} messages to approve · in {item.worldTitle}</span>
+              </>
+            ) : item.kind === "choose" ? (
               <>
                 <Link href={`/world/${item.worldId}`} className="break-words hover:text-accent">{item.ask}</Link>
                 <span className="break-words text-xs leading-5 text-muted">

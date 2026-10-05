@@ -8,6 +8,7 @@
 import type { Kernel } from "@/lib/kernel/client";
 import { loadCreativeWorld } from "@/lib/world/creative";
 import { parseCapabilityProposal, type Gap } from "./gaps";
+import { parseOutreach, SEND_CAPABILITY, sentIn } from "./outreach";
 import { proofsIn } from "./proof";
 import { nextStep, parseRoutes, STEP_CAPABILITY, takenRoutes } from "./routes";
 
@@ -25,7 +26,11 @@ export type Journey = Where & {
   saved: boolean; // proof is saved on this ask's piece
 };
 
+// Outreach drafts with messages still to approve, where the viewer may approve them.
+export type Approval = Where & { pending: number; total: number };
+
 export type WaitingItem =
+  | (Where & { kind: "approve"; pending: number; total: number })
   | (Where & { kind: "choose"; options: string[] })
   | (Where & { kind: "next"; route: string; step: string; link: string | null; done: number; total: number });
 
@@ -33,9 +38,9 @@ type WorldRef = { worldId: string; title: string; scope: string };
 
 // One read of each World serves the whole overview: where each ask stands, and what assistants
 // recorded that solve can't do yet.
-export async function overview(kernel: Kernel, worlds: WorldRef[], me: string): Promise<{ journeys: Journey[]; gaps: Gap[] }> {
+export async function overview(kernel: Kernel, worlds: WorldRef[], me: string): Promise<{ journeys: Journey[]; gaps: Gap[]; approvals: Approval[] }> {
   const perWorld = await Promise.all(
-    worlds.map(async (w): Promise<{ journeys: Journey[]; gaps: Gap[] }> => {
+    worlds.map(async (w): Promise<{ journeys: Journey[]; gaps: Gap[]; approvals: Approval[] }> => {
       try {
         const [{ artifacts }, taken, canChoose, saves] = await Promise.all([
           loadCreativeWorld(kernel, w.worldId),
@@ -43,12 +48,25 @@ export async function overview(kernel: Kernel, worlds: WorldRef[], me: string): 
           kernel.authorize({ capability: STEP_CAPABILITY, scope: w.scope }).then((d) => d.decision === "ALLOW").catch(() => false),
           proofsIn(kernel, w.scope).catch(() => []),
         ]);
+        const hasOutreach = artifacts.some((a) => parseOutreach(a.body));
+        const [sent, canSend] = hasOutreach
+          ? await Promise.all([
+              sentIn(kernel, w.scope).catch(() => new Map<string, Map<number, unknown>>()),
+              kernel.authorize({ capability: SEND_CAPABILITY, scope: w.scope }).then((d) => d.decision === "ALLOW").catch(() => false),
+            ])
+          : [new Map<string, Map<number, unknown>>(), false];
+        const approvals: Approval[] = [];
         const savedOn = new Set(saves.map((p) => p.pieceId));
         const out: Journey[] = [];
         const gaps: Gap[] = [];
         for (const a of artifacts) {
           const proposal = parseCapabilityProposal(a.body);
           if (proposal) gaps.push({ ...proposal, worldId: w.worldId, worldTitle: w.title, pieceId: a.entityId, at: new Date(a.updatedAt).toISOString() });
+          const outreach = parseOutreach(a.body);
+          if (outreach && canSend) {
+            const pending = outreach.leads.length - (sent.get(a.entityId)?.size ?? 0);
+            if (pending > 0) approvals.push({ worldId: w.worldId, worldTitle: w.title, pieceId: a.entityId, ask: outreach.goal, at: new Date(a.updatedAt).toISOString(), pending, total: outreach.leads.length });
+          }
           const routes = parseRoutes(a.body);
           if (!routes) continue;
           const t = taken.get(a.entityId);
@@ -70,16 +88,17 @@ export async function overview(kernel: Kernel, worlds: WorldRef[], me: string): 
             saved: savedOn.has(a.entityId),
           });
         }
-        return { journeys: out, gaps };
+        return { journeys: out, gaps, approvals };
       } catch {
         // A World that can't be read right now (access changed, kernel busy) waits for the next load.
-        return { journeys: [], gaps: [] };
+        return { journeys: [], gaps: [], approvals: [] };
       }
     }),
   );
   return {
     journeys: perWorld.flatMap((p) => p.journeys).sort((a, b) => b.at.localeCompare(a.at)),
     gaps: perWorld.flatMap((p) => p.gaps),
+    approvals: perWorld.flatMap((p) => p.approvals),
   };
 }
 
@@ -87,19 +106,20 @@ export async function journeys(kernel: Kernel, worlds: WorldRef[], me: string): 
   return (await overview(kernel, worlds, me)).journeys;
 }
 
-export function waitingFrom(all: Journey[]): WaitingItem[] {
-  const items: WaitingItem[] = [];
+export function waitingFrom(all: Journey[], approvals: Approval[] = []): WaitingItem[] {
+  const items: WaitingItem[] = approvals.map((a) => ({ ...a, kind: "approve" as const }));
   for (const j of all) {
     const where = { worldId: j.worldId, worldTitle: j.worldTitle, pieceId: j.pieceId, ask: j.ask, at: j.at };
     if (j.state === "proposed" && j.canChoose) items.push({ ...where, kind: "choose", options: j.options });
     else if (j.state === "underway" && j.mine && j.next) items.push({ ...where, kind: "next", route: j.route ?? "", step: j.next.step, link: j.next.link, done: j.done, total: j.total });
   }
-  const order = { choose: 0, next: 1 } as const;
+  const order = { approve: 0, choose: 1, next: 2 } as const;
   return items.sort((a, b) => order[a.kind] - order[b.kind] || b.at.localeCompare(a.at));
 }
 
 export async function waitingOn(kernel: Kernel, worlds: WorldRef[], me: string): Promise<WaitingItem[]> {
-  return waitingFrom(await journeys(kernel, worlds, me));
+  const { journeys: all, approvals } = await overview(kernel, worlds, me);
+  return waitingFrom(all, approvals);
 }
 
 // What the record shows needs attention, noticed without anyone asking (VISION-CANON: "The world
