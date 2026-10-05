@@ -315,4 +315,10 @@ Everything is read from the record with the person's own sign-in, and empty stat
 - **Paths:** `app/command/`. `lib/bot/waiting.ts` now does one scan (`journeys`), and both "Waiting on you" and the Command Center read from it.
 - **Tests:** `tests/bot/command.test.ts` covers where each ask stands, a read-only member who chooses nothing, empty states, and the point only on saves.
 - **Linked from:** `/bot`. Signed-in `/` still goes to `/worlds` (Codex's `app/page.tsx`); sending it to `/command` is proposed to Codex.
+- **Noticed (vision: "the world itself should react").** The Command Center points at what the record shows needs attention, without anyone asking:
+  - a step of your route with no movement for 3 days or more;
+  - a route done with nothing saved on it;
+  - routes that have waited 3 days or more for your choice.
+
+  It is worked out from the record on each visit (`noticed` in `lib/bot/waiting.ts`). It only points; it never acts, assigns or tells anyone else. Routes now carry when each step last moved, and an ask knows whether proof is saved on it.
 

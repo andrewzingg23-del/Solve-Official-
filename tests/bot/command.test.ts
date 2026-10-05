@@ -8,7 +8,7 @@ import { createConnector, type Session } from "../../lib/bot/connector";
 import { approveConnection } from "../../lib/bot/memory";
 import { markStepDone, takeRoute } from "../../lib/bot/routes";
 import { saveBot } from "../../lib/bot/store";
-import { journeys, type Journey } from "../../lib/bot/waiting";
+import { journeys, noticed, type Journey } from "../../lib/bot/waiting";
 import { setBotAccess } from "../../lib/bot/worlds";
 import { createCreativeWorld } from "../../lib/world/creative";
 import { createKernelDb, service, user } from "../kernel/harness";
@@ -46,13 +46,17 @@ it("knows where each ask stands: proposed, underway or done, and who may choose"
     ["Proposed ask", "Underway ask", "Finished ask"].map((a) => { const j = byAsk.get(a)!; return [j.state, j.canChoose, j.mine, j.done, j.total, j.next?.step ?? null]; }),
     [["proposed", true, false, 0, 0, null], ["underway", true, true, 0, 2, "first"], ["done", true, true, 1, 1, null]],
   );
+  assert.equal(byAsk.get("Finished ask")!.saved, false);
+  const s: Session = { clientId, person: ana, botAs, appUrl: "https://sov.test" };
+  await createConnector(s).handle({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "add_proof", arguments: { world_id: world.worldId, artifact_id: finished, what_happened: "Did the only step", proof: "It is in the World" } } });
+  assert.equal((await journeys(ana, ref, anaId)).find((j) => j.ask === "Finished ask")!.saved, true, "saving proof on the ask's piece counts");
   const bens = await journeys(ben, ref, benId);
   assert.ok(bens.every((j) => !j.canChoose && !j.mine), "a read-only member sees where things stand but chooses nothing");
 });
 
 const journey = (over: Partial<Journey>): Journey => ({
   worldId: "w1", worldTitle: "Build solve", pieceId: "p", ask: "An ask", at: "2026-10-05T03:00:00Z",
-  state: "proposed", options: ["A", "B"], canChoose: true, route: null, mine: false, done: 0, total: 0, next: null, ...over,
+  state: "proposed", options: ["A", "B"], canChoose: true, route: null, mine: false, done: 0, total: 0, next: null, saved: false, ...over,
 });
 
 it("shows only what is on the record, with honest empty states", async () => {
@@ -69,7 +73,7 @@ it("shows only what is on the record, with honest empty states", async () => {
     worlds: [{ worldId: "w1", title: "Build solve", updatedAt: "2026-10-05T03:00:00Z" }],
     journeys: [
       journey({ pieceId: "p1", ask: "Which bridge first?" }),
-      journey({ pieceId: "p2", ask: "Ship the Command Center", state: "underway", route: "Build it on the record", mine: true, done: 1, total: 3, next: { step: "Write the tests", link: null } }),
+      journey({ pieceId: "p2", ask: "Ship the Command Center", state: "underway", route: "Build it on the record", mine: true, done: 1, total: 3, next: { step: "Write the tests", link: null, since: "2026-10-05T03:00:00Z" } }),
       journey({ pieceId: "p3", ask: "Gate money", state: "done", route: "Flags", mine: true, done: 2, total: 2 }),
     ],
     connections: [{ clientId: "c1", clientName: "Claude", mode: "remember", since: "2026-10-04T12:00:00Z" }, { clientId: "c2", clientName: "Codex", mode: "read", since: "2026-10-05T01:00:00Z" }],
@@ -86,3 +90,29 @@ it("shows only what is on the record, with honest empty states", async () => {
   assert.equal(html.match(/bg-accent/g)?.length, 1, "the point lands only on the save");
   assert.match(html, /Start with what&#x27;s waiting on you\./);
 });
+
+it("notices quiet steps, finished routes with nothing saved, and choices left waiting, and nothing else", async () => {
+  const now = new Date("2026-10-10T12:00:00Z");
+  const ago = (days: number) => new Date(now.getTime() - days * 86_400_000).toISOString();
+  const all = [
+    journey({ pieceId: "quiet", state: "underway", mine: true, route: "R", done: 1, total: 3, next: { step: "Call the supplier", link: null, since: ago(5) } }),
+    journey({ pieceId: "fresh", state: "underway", mine: true, route: "R", done: 0, total: 2, next: { step: "Fresh step", link: null, since: ago(1) } }),
+    journey({ pieceId: "theirs", state: "underway", mine: false, route: "R", done: 0, total: 2, next: { step: "Someone else's step", link: null, since: ago(9) } }),
+    journey({ pieceId: "unsaved", state: "done", mine: true, route: "Flags", done: 2, total: 2 }),
+    journey({ pieceId: "saved", state: "done", mine: true, route: "Shipped", done: 1, total: 1, saved: true }),
+    journey({ pieceId: "waiting", ask: "Which bridge first?", at: ago(4) }),
+    journey({ pieceId: "not-mine-to-choose", ask: "Their call", at: ago(8), canChoose: false }),
+  ];
+  assert.deepEqual(noticed(all, now).map((n) => [n.pieceId, n.text]), [
+    ["quiet", 'No movement on "Call the supplier" for 5 days.'],
+    ["unsaved", '"Flags" is done, with nothing saved on it yet. If it became real, save the proof.'],
+    ["waiting", 'Routes for "Which bridge first?" have waited 4 days for your choice.'],
+  ]);
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const { CommandView } = await import("../../app/command/view");
+  const html = renderToStaticMarkup(CommandView({ data: { name: "Ana", botName: "Nova", worlds: [], journeys: all, connections: [], saves: [], now } }));
+  assert.match(html, /Noticed.*No movement on &quot;Call the supplier&quot; for 5 days\..*Read from the record\. Nothing here acts or tells anyone else\./);
+  const calm = renderToStaticMarkup(CommandView({ data: { name: "Ana", botName: "Nova", worlds: [], journeys: [all[1]], connections: [], saves: [], now } }));
+  assert.doesNotMatch(calm, /Noticed/, "nothing to notice, nothing shown");
+});
+

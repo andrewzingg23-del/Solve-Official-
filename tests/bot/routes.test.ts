@@ -122,9 +122,9 @@ it("draws proposed routes with a choice, and a taken route with whose word each 
   const taken = {
     pieceId: "p", route: 0, takenBy: "a", takenAt: "2026-10-05T12:00:00Z",
     steps: [
-      { taskId: "t1", step: 0, do: "Apply for a casual trader permit", link: "https://example.gov/market-permit", status: "completed" as const, doneAt: "2026-10-05T13:00:00Z" },
-      { taskId: "t2", step: 1, do: "Book a Saturday pitch", link: null, status: "ready" as const, doneAt: null },
-      { taskId: "t3", step: 2, do: "Bring 20 framed prints and a card reader", link: null, status: "ready" as const, doneAt: null },
+      { taskId: "t1", step: 0, do: "Apply for a casual trader permit", link: "https://example.gov/market-permit", status: "completed" as const, doneAt: "2026-10-05T13:00:00Z", since: "2026-10-05T13:00:00Z" },
+      { taskId: "t2", step: 1, do: "Book a Saturday pitch", link: null, status: "ready" as const, doneAt: null, since: "2026-10-05T12:00:00Z" },
+      { taskId: "t3", step: 2, do: "Bring 20 framed prints and a card reader", link: null, status: "ready" as const, doneAt: null, since: "2026-10-05T12:00:00Z" },
     ],
   };
   const mine = renderToStaticMarkup(RouteCard({ pieceId: "p", routes, taken, take: act, markDone: act }));

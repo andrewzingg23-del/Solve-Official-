@@ -30,7 +30,7 @@ export type Route = {
 };
 export type Routes = { ask: string; routes: Route[] };
 
-export type TakenStep = { taskId: string; step: number; do: string; link: string | null; status: Task["status"]; doneAt: string | null };
+export type TakenStep = { taskId: string; step: number; do: string; link: string | null; status: Task["status"]; doneAt: string | null; since: string };
 export type TakenRoute = { pieceId: string; route: number; takenBy: string; takenAt: string; steps: TakenStep[] };
 
 const PREFIX = "SOV_ROUTES_V1\n";
@@ -106,7 +106,8 @@ export async function takenRoutes(kernel: Kernel, scope: string): Promise<Map<st
     if (t.status === "cancelled") continue;
     const taken = out.get(i.route_piece) ?? { pieceId: i.route_piece, route: i.route as number, takenBy: t.created_by, takenAt: t.created_at, steps: [] };
     if (taken.route !== i.route) continue;
-    taken.steps.push({ taskId: t.task_id, step: i.step as number, do: t.title, link: typeof i.link === "string" ? i.link : null, status: t.status, doneAt: t.status === "completed" ? t.updated_at : null });
+    const since = new Date(t.updated_at).toISOString(); // when the step last moved
+    taken.steps.push({ taskId: t.task_id, step: i.step as number, do: t.title, link: typeof i.link === "string" ? i.link : null, status: t.status, doneAt: t.status === "completed" ? since : null, since });
     out.set(i.route_piece, taken);
   }
   for (const taken of out.values()) taken.steps.sort((a, b) => a.step - b.step);

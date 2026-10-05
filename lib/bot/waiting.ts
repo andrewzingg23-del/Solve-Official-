@@ -7,6 +7,7 @@
 // A decision is proposed the same way as a route: each option is a route. Nothing is inferred or invented.
 import type { Kernel } from "@/lib/kernel/client";
 import { loadCreativeWorld } from "@/lib/world/creative";
+import { proofsIn } from "./proof";
 import { nextStep, parseRoutes, STEP_CAPABILITY, takenRoutes } from "./routes";
 
 type Where = { worldId: string; worldTitle: string; pieceId: string; ask: string; at: string };
@@ -19,7 +20,8 @@ export type Journey = Where & {
   mine: boolean; // the viewer took it
   done: number;
   total: number;
-  next: { step: string; link: string | null } | null;
+  next: { step: string; link: string | null; since: string } | null;
+  saved: boolean; // proof is saved on this ask's piece
 };
 
 export type WaitingItem =
@@ -32,11 +34,13 @@ export async function journeys(kernel: Kernel, worlds: WorldRef[], me: string): 
   const perWorld = await Promise.all(
     worlds.map(async (w): Promise<Journey[]> => {
       try {
-        const [{ artifacts }, taken, canChoose] = await Promise.all([
+        const [{ artifacts }, taken, canChoose, saves] = await Promise.all([
           loadCreativeWorld(kernel, w.worldId),
           takenRoutes(kernel, w.scope),
           kernel.authorize({ capability: STEP_CAPABILITY, scope: w.scope }).then((d) => d.decision === "ALLOW").catch(() => false),
+          proofsIn(kernel, w.scope).catch(() => []),
         ]);
+        const savedOn = new Set(saves.map((p) => p.pieceId));
         const out: Journey[] = [];
         for (const a of artifacts) {
           const routes = parseRoutes(a.body);
@@ -56,7 +60,8 @@ export async function journeys(kernel: Kernel, worlds: WorldRef[], me: string): 
             mine: t ? t.takenBy === me : false,
             done: t ? t.steps.filter((s) => s.status === "completed").length : 0,
             total: t ? t.steps.length : 0,
-            next: next ? { step: next.do, link: next.link } : null,
+            next: next ? { step: next.do, link: next.link, since: next.since } : null,
+            saved: savedOn.has(a.entityId),
           });
         }
         return out;
@@ -83,3 +88,26 @@ export function waitingFrom(all: Journey[]): WaitingItem[] {
 export async function waitingOn(kernel: Kernel, worlds: WorldRef[], me: string): Promise<WaitingItem[]> {
   return waitingFrom(await journeys(kernel, worlds, me));
 }
+
+// What the record shows needs attention, noticed without anyone asking (VISION-CANON: "The world
+// itself should react"). It only points at things; it never acts, assigns or nudges anyone else.
+export type Noticed = { worldId: string; pieceId: string; text: string };
+const DAY = 86_400_000;
+export const QUIET_DAYS = 3;
+
+export function noticed(all: Journey[], now = new Date()): Noticed[] {
+  const daysSince = (iso: string) => Math.floor((now.getTime() - new Date(iso).getTime()) / DAY);
+  const out: Noticed[] = [];
+  for (const j of all) {
+    const at = { worldId: j.worldId, pieceId: j.pieceId };
+    if (j.state === "underway" && j.mine && j.next && daysSince(j.next.since) >= QUIET_DAYS) {
+      out.push({ ...at, text: `No movement on "${j.next.step}" for ${daysSince(j.next.since)} days.` });
+    } else if (j.state === "done" && j.mine && !j.saved) {
+      out.push({ ...at, text: `"${j.route}" is done, with nothing saved on it yet. If it became real, save the proof.` });
+    } else if (j.state === "proposed" && j.canChoose && daysSince(j.at) >= QUIET_DAYS) {
+      out.push({ ...at, text: `Routes for "${j.ask}" have waited ${daysSince(j.at)} days for your choice.` });
+    }
+  }
+  return out;
+}
+

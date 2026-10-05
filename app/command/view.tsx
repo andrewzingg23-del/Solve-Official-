@@ -9,13 +9,14 @@ import { day, SavePoint } from "@/app/save-point";
 import { WaitingOnYou } from "@/app/bot/waiting";
 import type { Connection } from "@/lib/bot/memory";
 import type { SavedProof } from "@/lib/bot/proof";
-import { waitingFrom, type Journey } from "@/lib/bot/waiting";
+import { noticed, waitingFrom, type Journey } from "@/lib/bot/waiting";
 
 export type CommandData = {
   name: string; // the person's label
   botName: string | null;
   worlds: { worldId: string; title: string; updatedAt: string }[];
   journeys: Journey[];
+  now?: Date; // for what is noticed; the page passes the time of the request
   connections: Connection[];
   saves: (SavedProof & { worldId: string; worldTitle: string })[];
   live?: ReactNode; // who is working right now, when presence is available
@@ -44,6 +45,7 @@ function journeyState(j: Journey) {
 export function CommandView({ data }: { data: CommandData }) {
   const underway = data.journeys.filter((j) => j.state === "underway").length;
   const waiting = waitingFrom(data.journeys);
+  const seen = noticed(data.journeys, data.now);
   return (
     <div className="flex flex-col gap-6">
       <Section id="where-you-are" title="Where you are">
@@ -67,6 +69,19 @@ export function CommandView({ data }: { data: CommandData }) {
       </Section>
 
       <WaitingOnYou items={waiting} />
+
+      {seen.length ? (
+        <Section id="noticed" title="Noticed">
+          <ul className="flex flex-col divide-y divide-line">
+            {seen.map((n) => (
+              <li key={n.pieceId} className="py-2 text-sm leading-6">
+                <Link href={`/world/${n.worldId}`} className="break-words hover:text-accent">{n.text}</Link>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted">Read from the record. Nothing here acts or tells anyone else.</p>
+        </Section>
+      ) : null}
 
       <Section id="where-going" title="Where you're going">
         {data.journeys.length ? (

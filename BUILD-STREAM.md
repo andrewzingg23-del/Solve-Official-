@@ -388,3 +388,7 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Paths:** `app/command/{page,view,live-line}.tsx`, `lib/bot/waiting.ts` (one scan, `journeys`), `app/bot/page.tsx` (link), `tests/bot/command.test.ts`.
   - **Checks:** command and waiting 4/4; typecheck ok; lint ok; build ok.
   - **Proposed to Codex:** send signed-in `/` to `/command`.
+
+- 2026-10-05 04:45Z — Claude, vision check §3.5 ("the world itself should react"), first and safest form: a "Noticed" section on the Command Center, worked out from the record on each visit. It flags quiet steps (3 days or more), routes done with nothing saved, and choices left waiting. It only points, never acts.
+  - **Paths:** `lib/bot/waiting.ts` (`noticed`, `saved`), `lib/bot/routes.ts` (step `since`), `app/command/view.tsx`, tests.
+  - **Checks:** bot suite 64/64; typecheck ok; lint ok.
