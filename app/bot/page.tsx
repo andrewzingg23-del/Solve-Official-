@@ -18,6 +18,8 @@ import { BotCreator } from "./creator";
 import { BotPortraitCreator } from "./portrait-creator";
 import { LiveBot } from "./live-bot";
 import { WorldsPanel } from "./worlds-panel";
+import { FirstSteps } from "./first-steps";
+import { firstSteps } from "@/lib/bot/first-steps";
 
 export const metadata: Metadata = { title: "Your bot — solve" };
 
@@ -75,6 +77,17 @@ export default async function BotPage() {
         <Notice title="Your bot can't be loaded right now" body="The kernel did not answer. Nothing was changed; try again in a moment." />
       ) : (
         <>
+          {state.kind === "ready" ? (
+            <FirstSteps
+              steps={firstSteps({
+                botName: state.persona.name,
+                hasBot: state.exists,
+                connections: state.connections.length,
+                worlds: state.worlds.length,
+                saves: Object.values(state.saves).reduce((n, list) => n + list.length, 0),
+              })}
+            />
+          ) : null}
           <BotCreator
             initial={state.kind === "ready" ? state.persona : DEFAULT_PERSONA}
             signedIn={state.kind === "ready"}

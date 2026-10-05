@@ -257,3 +257,7 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   Paths: `lib/bot/{memory,connector}.ts`, `app/arcadia/page.tsx`, `tests/bot/proof.test.ts`, `ACTIVE-WORK.md`, `docs/plans/2026-10-04-bot-world-bridge.md`.
 
   Checks: bot suite 48/48; typecheck ok; lint ok (one existing warning). CI for `444691f` (parts): running when written.
+
+- 2026-10-05 01:58Z — Claude, first steps on `/bot`. Four steps from sign-in to the first save: make your bot, connect your AI, ask for something real ("Design me a phone stand I can print."), make it and save it. Each step is ticked only by what is on the record (bot, connections, Worlds, saves), and the panel disappears at the first save. `lib/bot/first-steps.ts`, `app/bot/first-steps.tsx`, `app/bot/page.tsx`.
+
+  Checks: bot suite 50/50; typecheck ok; lint ok (one existing warning). One Chromium look at a temporary preview (first steps, a part card with its save, the Practice label) at 1280 px and 390 px: no overflow, no console errors. The preview page was deleted before commit. The full local suite (218/218) ran green on the parts slice. CI run 104 (`444691f`) was cancelled because `e98f55f` superseded it.
