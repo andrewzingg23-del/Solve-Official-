@@ -1,8 +1,9 @@
 // Outreach on a World piece: each business with why it fits, where it was found and the message
 // exactly as it would go out. The person approves each one. On the Practice channel, approving
 // records what would be sent and nothing leaves solve, so the card says Practice plainly.
-import type { Outreach, Sent } from "@/lib/bot/outreach";
-import { finalMessage } from "@/lib/bot/outreach";
+import { randomUUID } from "node:crypto";
+import type { LeadOutcome, Outreach, Sent } from "@/lib/bot/outreach";
+import { finalMessage, OUTCOME_LABEL, OUTCOMES } from "@/lib/bot/outreach";
 import { day, PracticeLabel } from "@/app/save-point";
 
 type FormAction = (formData: FormData) => void | Promise<void>;
@@ -18,12 +19,14 @@ function host(link: string) {
   }
 }
 
-export function OutreachCard({ pieceId, outreach, sent, approve }: { pieceId: string; outreach: Outreach; sent?: Map<number, Sent>; approve?: FormAction }) {
+export function OutreachCard({ pieceId, outreach, sent, approve, outcomes, record }: { pieceId: string; outreach: Outreach; sent?: Map<number, Sent>; approve?: FormAction; outcomes?: Map<number, LeadOutcome[]>; record?: FormAction }) {
   const approved = sent?.size ?? 0;
+  const latest = (i: number) => outcomes?.get(i)?.at(-1) ?? null;
+  const tally = OUTCOMES.map((o) => [o, outreach.leads.filter((_, i) => latest(i)?.outcome === o).length] as const).filter(([, n]) => n > 0);
   return (
     <div className="flex flex-col gap-3 text-sm">
       <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted tabular-nums">
-        Outreach · {approved} of {outreach.leads.length} approved
+        Outreach · {approved} of {outreach.leads.length} approved{tally.map(([o, n]) => ` · ${n} ${OUTCOME_LABEL[o].toLowerCase()}`).join("")}
       </p>
       <p className="leading-6 text-muted">{outreach.goal}</p>
       <PracticeLabel note="approving records what would be sent; nothing leaves solve yet." />
@@ -43,7 +46,28 @@ export function OutreachCard({ pieceId, outreach, sent, approve }: { pieceId: st
               </p>
               <pre className="whitespace-pre-wrap break-words rounded border border-line bg-background/60 p-3 font-sans text-xs leading-5">{finalMessage(outreach, lead)}</pre>
               {done ? (
-                <p className="text-xs text-muted tabular-nums">Approved · recorded in Practice, not sent · {day(done.at)}</p>
+                <>
+                  <p className="text-xs text-muted tabular-nums">Approved · recorded in Practice, not sent · {day(done.at)}</p>
+                  {latest(i) ? (
+                    <p className="text-xs tabular-nums">
+                      {OUTCOME_LABEL[latest(i)!.outcome]} · on {latest(i)!.basis === "self_reported" ? "your word" : "the record"} · {day(latest(i)!.at)}
+                      {latest(i)!.note ? <span className="text-muted"> · {latest(i)!.note}</span> : null}
+                      {latest(i)!.outcome === "said_no" ? <span className="text-muted"> · won&apos;t be contacted again from this World</span> : null}
+                    </p>
+                  ) : null}
+                  {record && latest(i)?.outcome !== "said_no" ? (
+                    <form action={record} className="flex flex-wrap items-center gap-2">
+                      <input type="hidden" name="pieceId" value={pieceId} />
+                      <input type="hidden" name="lead" value={i} />
+                      <input type="hidden" name="requestId" value={randomUUID()} />
+                      <select name="outcome" aria-label={`What happened with ${lead.name}`} className="h-8 rounded border border-line bg-background px-2 text-xs">
+                        {OUTCOMES.map((o) => <option key={o} value={o}>{OUTCOME_LABEL[o]}</option>)}
+                      </select>
+                      <input name="note" maxLength={300} placeholder="What they said (optional)" className="h-8 min-w-0 flex-1 rounded border border-line bg-background px-2 text-xs" />
+                      <button type="submit" className={smallAction}>Record</button>
+                    </form>
+                  ) : null}
+                </>
               ) : approve ? (
                 <form action={approve}>
                   <input type="hidden" name="pieceId" value={pieceId} />

@@ -53,7 +53,8 @@ function cleanLink(value: unknown): string | null {
   return url.toString();
 }
 
-async function* history(kernel: Kernel, scope: string): AsyncGenerator<KernelEvent> {
+// A World's history, oldest first, a page at a time. Shared with outreach outcomes.
+export async function* history(kernel: Kernel, scope: string): AsyncGenerator<KernelEvent> {
   let afterSeq = 0;
   for (let page = 0; page < PAGES; page++) {
     const events = await kernel.readEvents(scope, { afterSeq, limit: PAGE });

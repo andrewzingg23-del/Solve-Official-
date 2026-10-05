@@ -13,7 +13,7 @@ import { personaBrief } from "./persona";
 import { encodePixelArt } from "./pixel-art";
 import { encodePart, MATERIALS, PART_LIMITS, PartInputError, parsePart, partUrl, printNotes, sizeText } from "./part";
 import { addProof, PROOF_LIMITS, proofsIn, type SavedProof } from "./proof";
-import { encodeOutreach, OUTREACH_LIMITS, parseOutreach, sentIn } from "./outreach";
+import { encodeOutreach, OUTCOME_LABEL, OUTCOMES, outcomesIn, OUTREACH_LIMITS, parseOutreach, recordOutcome, saidNo, saidNoIn, sentIn } from "./outreach";
 import { encodeRoutes, nextStep, parseRoutes, ROUTE_LIMITS, takenRoutes, type TakenRoute } from "./routes";
 import { saveNumber, vouch } from "./vouch";
 import { companionOf, readPersona } from "./store";
@@ -45,7 +45,7 @@ export const INSTRUCTIONS = [
   "Use remember only for things the person wants their bot to keep, and name the source. Never store passwords, keys or other secrets.",
   "To work on something real, call list_worlds: start_world makes a private World for a goal, and add_to_world adds drafts, plans and findings to Worlds the person let the bot into. If the person asks to map project resources, map_world_resource records exactly what they state as a self-reported offer or need. If the person asks for something the available tools cannot do, propose_capability records a structured draft in an authorized World. Say plainly that these are drafts; nothing there happens in the real world until a person acts on it. When something real does happen (it was printed, shipped, paid, published) and the person gives you proof, add_proof saves that proof on the piece: a save point on the record. Never invent, guess or embellish proof; a plan, an estimate or your own output is not proof. A save on someone's word is not verified, so never call it verified.",
   "When the person asks for a way to do something, research it with your own tools first, preferring authoritative and current sources, then use propose_routes with up to three real routes, each with concrete steps and the link a step needs. Never pick a route for them: they take one in Sovereign, and read_world then shows the step they are on.",
-  "For outreach to businesses, research real ones that fit the person's goal and cite the public page where you found each; never invent a business, a contact or a fact about them. Use propose_outreach to draft a short, specific message for each. You never send anything: the person approves each message in Sovereign, and Sovereign adds who it is from and a way to say no. Don't message anyone who has said no.",
+  "For outreach to businesses, research real ones that fit the person's goal and cite the public page where you found each; never invent a business, a contact or a fact about them. Use propose_outreach to draft a short, specific message for each. You never send anything: the person approves each message in Sovereign, and Sovereign adds who it is from and a way to say no. When the person tells you or shows you what happened (a reply, a meeting, a win, or a no), record it with record_outcome, exactly as they said it. Anyone who said no is never drafted again.",
   "When the person wants Sovereign to support their business, learn it in small, focused sections: overview, customers and offer, delivery workflow, team, systems and equipment, economics and constraints, goals and measures, and evidence and risks. Ask targeted questions, distinguish known facts from unknowns, and use learn_business only for details the person has approved to remember. Do not force an industry template. For piping and mechanical work, learn the actual materials, dimensions, specifications, job sequence, inspection evidence and constraints; never guess a code or engineering requirement. For 3D printing, learn printer, slicer, CAD workflow, materials, build limits and quality checks. For real-time visual or pixel work, learn canvas size, palette, frame/latency needs and delivery format. If the connected assistant supports vision, describe what a photo actually shows, label uncertain estimates, and verify measurements or diagnoses before storing them as facts.",
   "The bot can only do what its owner delegated; Sovereign's kernel enforces that, so report refusals plainly.",
 ].join(" ");
@@ -357,6 +357,24 @@ export const TOOLS = [
     annotations: ADD,
   },
   {
+    name: "record_outcome",
+    title: "Record what happened with a message",
+    description: "Records what happened after the person approved an outreach message: replied, meeting, won, or said_no. Only from what the person told or showed you; never guess or embellish. It is saved on the record on the person's word and is never called verified. A business that said no is never drafted or approved again in that World.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        world_id: { type: "string" },
+        artifact_id: { type: "string", description: "The outreach piece, from read_world." },
+        lead: { type: "integer", minimum: 0, description: "The business's position in that outreach, starting at 0." },
+        outcome: { type: "string", enum: [...OUTCOMES] },
+        note: { type: "string", maxLength: 300, description: "Optional: what they said, in a line. Leave out personal data." },
+      },
+      required: ["world_id", "artifact_id", "lead", "outcome"],
+      additionalProperties: false,
+    },
+    annotations: ADD,
+  },
+  {
     name: "propose_capability",
     title: "Propose a capability",
     description: "When the person asks for something the available tools cannot do, records a structured, non-executable capability proposal in a World the bot may add to. This creates a draft only; it does not generate or run code, grant access, or contact providers.",
@@ -565,11 +583,13 @@ export function createConnector(s: Session) {
         };
         const taken = await takenRoutes(bot, world.scope).catch(() => new Map<string, TakenRoute>());
         const sent = await sentIn(bot, world.scope).catch(() => new Map<string, Map<number, unknown>>());
+        const outcomes = await outcomesIn(bot, world.scope).catch(() => new Map<string, Map<number, { outcome: string }[]>>());
         const outreachNote = (id: string, body: string) => {
           const o = parseOutreach(body);
           if (!o) return null;
           const approved = sent.get(id)?.size ?? 0;
-          return `outreach for: ${o.goal}: ${o.leads.length} drafted messages (${o.leads.map((l) => l.name).join("; ")}), ${approved} approved by the person and recorded in Practice (not sent outside solve)`;
+          const latest = [...(outcomes.get(id)?.entries() ?? [])].map(([i, list]) => `${o.leads[i]?.name ?? `business ${i}`}: ${list.at(-1)?.outcome}`);
+          return `outreach for: ${o.goal}: ${o.leads.length} drafted messages (${o.leads.map((l, i) => `${i}. ${l.name}`).join("; ")}), ${approved} approved by the person and recorded in Practice (not sent outside solve)${latest.length ? `; outcomes on the person's word: ${latest.join("; ")}` : ""}`;
         };
         const routeNote = (id: string, body: string) => {
           const routes = parseRoutes(body);
@@ -706,7 +726,7 @@ export function createConnector(s: Session) {
       }
     }
 
-    if (name === "start_world" || name === "add_to_world" || name === "propose_capability" || name === "create_pixel_art" || name === "design_part" || name === "propose_routes" || name === "propose_outreach" || name === "map_world_resource") {
+    if (name === "start_world" || name === "add_to_world" || name === "propose_capability" || name === "create_pixel_art" || name === "design_part" || name === "propose_routes" || name === "propose_outreach" || name === "record_outcome" || name === "map_world_resource") {
       if (!canRemember) return fail(`This connection (${connection.clientName}) is read only. The person can allow it to add in Sovereign.`);
       if (!s.botAs) return fail("This deployment cannot act as the bot yet. Nothing was written.");
       const bot = s.botAs(avatar.agent_id);
@@ -743,8 +763,26 @@ export function createConnector(s: Session) {
             print: { supports: print.supports, overhang_mm: print.overhangMm, note: print.note },
           });
         }
+        if (name === "record_outcome") {
+          const requestId = createHash("sha256").update([s.clientId, worldId, "outcome", String(args.artifact_id ?? ""), String(args.lead ?? ""), String(args.outcome ?? ""), String(args.note ?? "")].join("|")).digest("hex").slice(0, 40);
+          const saved = await recordOutcome(bot, { worldId, pieceId: String(args.artifact_id ?? ""), lead: Number(args.lead), outcome: args.outcome, note: args.note, ownerId: owner.actor_id }, requestId);
+          const url = worldUrl(s.appUrl, worldId);
+          return ok(`Recorded: ${OUTCOME_LABEL[saved.outcome]}, on the person's word. ${saved.outcome === "said_no" ? "They won't be contacted again from this World. " : ""}See it: ${url}`, {
+            recorded: true,
+            outcome: saved.outcome,
+            basis: saved.basis,
+            verified: false,
+            world_id: worldId,
+            artifact_id: args.artifact_id,
+            lead: args.lead,
+            url,
+          });
+        }
         if (name === "propose_outreach") {
           const body = encodeOutreach({ goal: args.goal, from: args.from, leads: args.leads });
+          const no = await saidNoIn(bot, worldId);
+          const refused = parseOutreach(body)!.leads.filter((l) => saidNo(l, no)).map((l) => l.name);
+          if (refused.length) throw new WorldInputError(`${refused.join(", ")} said no before, so they can't be drafted again; leave them out`);
           const artifactId = typeof args.artifact_id === "string" && args.artifact_id ? args.artifact_id : null;
           if (artifactId) {
             const { world } = await readWorldAsBot(bot, worldId);

@@ -10,13 +10,13 @@ import { formatWorldActorAttribution } from "@/lib/world/attribution";
 import { parsePixelArt } from "@/lib/bot/pixel-art";
 import { parsePart } from "@/lib/bot/part";
 import { proofsIn, type SavedProof } from "@/lib/bot/proof";
-import { parseOutreach, sentIn, type Sent } from "@/lib/bot/outreach";
+import { outcomesIn, parseOutreach, sentIn, type LeadOutcome, type Sent } from "@/lib/bot/outreach";
 import { parseRoutes, takenRoutes, type TakenRoute } from "@/lib/bot/routes";
 import { PartPreview } from "@/app/part-preview";
 import { SavePoint } from "@/app/save-point";
 import { OutreachCard } from "@/app/outreach-card";
 import { RouteCard } from "@/app/route-card";
-import { approveOutreachAction, stepDoneAction, takeRouteAction } from "@/app/route-actions";
+import { approveOutreachAction, recordOutcomeAction, stepDoneAction, takeRouteAction } from "@/app/route-actions";
 import { createArtifactAction, updateArtifactAction } from "./actions";
 import { WorldBotAccessPanel } from "./bot-access-panel";
 import { WorldAccessPanel } from "./access-panel";
@@ -70,7 +70,7 @@ function PixelArtPreview({ body, title }: { body: string; title: string }) {
   );
 }
 
-function ArtifactCard({ worldId, artifact, saves = [], taken = null, takenBy = "you", sent }: { worldId: string; artifact: CreativeArtifact; saves?: SavedProof[]; taken?: TakenRoute | null; takenBy?: string; sent?: Map<number, Sent> }) {
+function ArtifactCard({ worldId, artifact, saves = [], taken = null, takenBy = "you", sent, outcomes }: { worldId: string; artifact: CreativeArtifact; saves?: SavedProof[]; taken?: TakenRoute | null; takenBy?: string; sent?: Map<number, Sent>; outcomes?: Map<number, LeadOutcome[]> }) {
   const position = positionFromArtifact(artifact);
   const update = updateArtifactAction.bind(null, worldId);
   const isPixelArt = parsePixelArt(artifact.body) !== null;
@@ -86,7 +86,7 @@ function ArtifactCard({ worldId, artifact, saves = [], taken = null, takenBy = "
         </div>
       </header>
       {outreach ? (
-        <OutreachCard pieceId={artifact.entityId} outreach={outreach} sent={sent} approve={approveOutreachAction.bind(null, worldId)} />
+        <OutreachCard pieceId={artifact.entityId} outreach={outreach} sent={sent} approve={approveOutreachAction.bind(null, worldId)} outcomes={outcomes} record={recordOutcomeAction.bind(null, worldId)} />
       ) : routes ? (
         <RouteCard pieceId={artifact.entityId} routes={routes} taken={taken} who={takenBy} take={takeRouteAction.bind(null, worldId)} markDone={stepDoneAction.bind(null, worldId)} />
       ) : isPart ? (
@@ -183,6 +183,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
   let saves: SavedProof[] = [];
   let taken = new Map<string, TakenRoute>();
   let sent = new Map<string, Map<number, Sent>>();
+  let outcomes = new Map<string, Map<number, LeadOutcome[]>>();
   let me = "";
   try {
     const loaded = await loadCreativeWorld(kernel, worldId);
@@ -194,6 +195,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
     saves = await proofsIn(kernel, world.scope).catch(() => []);
     taken = await takenRoutes(kernel, world.scope).catch(() => new Map<string, TakenRoute>());
     sent = await sentIn(kernel, world.scope).catch(() => new Map<string, Map<number, Sent>>());
+    outcomes = await outcomesIn(kernel, world.scope).catch(() => new Map<string, Map<number, LeadOutcome[]>>());
     me = (await kernel.whoami()).actor_id;
     profiles = await kernel.readActors([...new Set([...events.map((event) => event.actor_id), ...[...taken.values()].map((t) => t.takenBy)])]);
     const ownerIds = [...new Set(profiles.map((profile) => profile.accountable_party).filter((id): id is string => Boolean(id)))];
@@ -255,6 +257,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
       {saved === "artifact" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Revision saved to World history.</p>}
       {saved === "route" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Route taken. Its steps are on the record as yours.</p>}
       {saved === "outreach" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Approved. Recorded in Practice; nothing was sent outside solve.</p>}
+      {saved === "outcome" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Recorded on your word.</p>}
       {saved === "step" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Step marked done, on your word.</p>}
       {(error === "route-input" || error === "route-access" || error === "route-save") && (
         <p role="alert" className="rounded border border-negative/30 bg-negative/10 px-3 py-2 text-sm text-negative">
@@ -280,12 +283,12 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
               >
                 {[...artifacts].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x).map((artifact) => (
                   <div key={artifact.entityId} className="min-w-0" style={{ gridColumnStart: canvasColumn(artifact.position) }}>
-                    <ArtifactCard worldId={worldId} artifact={artifact} saves={savesByPiece.get(artifact.entityId)} taken={taken.get(artifact.entityId)} takenBy={takerOf(artifact.entityId)} sent={sent.get(artifact.entityId)} />
+                    <ArtifactCard worldId={worldId} artifact={artifact} saves={savesByPiece.get(artifact.entityId)} taken={taken.get(artifact.entityId)} takenBy={takerOf(artifact.entityId)} sent={sent.get(artifact.entityId)} outcomes={outcomes.get(artifact.entityId)} />
                   </div>
                 ))}
               </div>
               <div className="grid gap-3 md:hidden">
-                {[...artifacts].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x).map((artifact) => <ArtifactCard key={artifact.entityId} worldId={worldId} artifact={artifact} saves={savesByPiece.get(artifact.entityId)} taken={taken.get(artifact.entityId)} takenBy={takerOf(artifact.entityId)} sent={sent.get(artifact.entityId)} />)}
+                {[...artifacts].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x).map((artifact) => <ArtifactCard key={artifact.entityId} worldId={worldId} artifact={artifact} saves={savesByPiece.get(artifact.entityId)} taken={taken.get(artifact.entityId)} takenBy={takerOf(artifact.entityId)} sent={sent.get(artifact.entityId)} outcomes={outcomes.get(artifact.entityId)} />)}
               </div>
             </>
           ) : (

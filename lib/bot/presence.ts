@@ -36,6 +36,7 @@ export function describeActivity(a: Pick<Activity, "tool" | "client">, botName: 
     design_part: `is designing a part with ${botName}`,
     propose_routes: `is finding routes with ${botName}`,
     propose_outreach: `is drafting outreach with ${botName}`,
+    record_outcome: `is recording what happened with ${botName}`,
   };
   return `${a.client} ${doing[a.tool] ?? `is working with ${botName}`}`;
 }

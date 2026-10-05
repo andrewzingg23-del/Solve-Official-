@@ -8,9 +8,10 @@
 // Every message gets the sender's name and an opt-out line added, so a draft can't leave either out.
 // Approving needs `outreach.send`, which the World's owner holds and a bot let in to add does not.
 import { createHash } from "node:crypto";
-import type { Kernel, Task } from "@/lib/kernel/client";
+import type { EvidenceBasis, Kernel, Task } from "@/lib/kernel/client";
 import { loadCreativeWorld } from "@/lib/world/creative";
 import { cleanText } from "./memory";
+import { history } from "./proof";
 import { WORLD_LIMITS, WorldInputError } from "./worlds";
 
 export const OUTREACH_LIMITS = { goal: 300, from: 120, leads: 20, name: 120, why: 300, contact: 200, message: 1200, source: 2000 } as const;
@@ -103,6 +104,7 @@ export async function approveAndSend(person: Kernel, input: { worldId: string; p
   if (!Number.isInteger(input.lead) || !lead) throw new WorldInputError("no such business in this outreach");
   const done = (await sentIn(person, world.scope)).get(piece.entityId)?.get(input.lead);
   if (done) return done;
+  if (saidNo(lead, await saidNoIn(person, input.worldId))) throw new WorldInputError(`${lead.name} said no, so solve won't send to them again`);
 
   const message = finalMessage(outreach, lead);
   const taskId = await person.createTask({
@@ -127,3 +129,109 @@ export async function approveAndSend(person: Kernel, input: { worldId: string; p
   }
   return (await sentIn(person, world.scope)).get(piece.entityId)!.get(input.lead)!;
 }
+
+// What happened after a message was approved: the consequence, on the record. A person (or their
+// assistant, on what the person said or showed) records a reply, a meeting, a win or a no as
+// evidence on the approval. The kernel sets the basis: the person's own word is self_reported, and
+// nothing here is ever verified. "Said no" is enforced: solve won't approve another message to that
+// business in this World.
+export const OUTCOMES = ["replied", "meeting", "won", "said_no"] as const;
+export type OutcomeKind = (typeof OUTCOMES)[number];
+export const OUTCOME_LABEL: Record<OutcomeKind, string> = { replied: "Replied", meeting: "Meeting booked", won: "Won", said_no: "Said no" };
+export type LeadOutcome = { outcome: OutcomeKind; note: string; at: string; basis: EvidenceBasis; by: string; number: number };
+
+const OUTCOME_MEDIA = "application/vnd.sov.outreach-outcome";
+const describeOutcome = (o: OutcomeKind, note: string) => `outcome:${o}${note ? `\n${note}` : ""}`;
+
+// The approval's completion event for each outreach task in a scope.
+async function completions(kernel: Kernel, scope: string): Promise<Map<string, string>> {
+  const out = new Map<string, string>(); // task id -> completion event id
+  for await (const e of history(kernel, scope)) {
+    const p = e.payload as { task_id?: unknown };
+    if (e.type === "kernel.task.completed" && typeof p.task_id === "string") out.set(p.task_id, e.id);
+  }
+  return out;
+}
+
+// Outcomes recorded per outreach piece and lead, oldest first.
+export async function outcomesIn(kernel: Kernel, scope: string): Promise<Map<string, Map<number, LeadOutcome[]>>> {
+  const sent = await sentIn(kernel, scope);
+  const byTask = new Map<string, { piece: string; lead: number }>();
+  for (const [piece, leads] of sent) for (const [lead, s] of leads) byTask.set(s.taskId, { piece, lead });
+  const completionOf = new Map<string, { piece: string; lead: number }>();
+  const out = new Map<string, Map<number, LeadOutcome[]>>();
+  for await (const e of history(kernel, scope)) {
+    const p = e.payload as Record<string, unknown>;
+    if (e.type === "kernel.task.completed" && typeof p.task_id === "string" && byTask.has(p.task_id)) completionOf.set(e.id, byTask.get(p.task_id)!);
+    if (e.type !== "kernel.evidence.attached" || typeof p.event_id !== "string" || !Array.isArray(p.items)) continue;
+    const at = completionOf.get(p.event_id);
+    if (!at) continue;
+    for (const item of p.items as Record<string, unknown>[]) {
+      if (item.media_type !== OUTCOME_MEDIA) continue;
+      const [head, ...rest] = String(item.description ?? "").split("\n");
+      const outcome = head.replace(/^outcome:/, "") as OutcomeKind;
+      if (!OUTCOMES.includes(outcome)) continue;
+      const byLead = out.get(at.piece) ?? new Map<number, LeadOutcome[]>();
+      byLead.set(at.lead, [...(byLead.get(at.lead) ?? []), { outcome, note: rest.join("\n"), at: new Date(e.occurred_at).toISOString(), basis: item.basis as EvidenceBasis, by: e.on_behalf_of ?? e.actor_id, number: e.seq }]);
+      out.set(at.piece, byLead);
+    }
+  }
+  return out;
+}
+
+const hostOf = (link: string) => {
+  try {
+    return new URL(link).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return "";
+  }
+};
+const nameKey = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+// The businesses in a World that said no, by name and by the site they were found on.
+export async function saidNoIn(kernel: Kernel, worldId: string): Promise<{ names: Set<string>; hosts: Set<string> }> {
+  const { world, artifacts } = await loadCreativeWorld(kernel, worldId);
+  const outcomes = await outcomesIn(kernel, world.scope);
+  const names = new Set<string>();
+  const hosts = new Set<string>();
+  for (const a of artifacts) {
+    const o = parseOutreach(a.body);
+    const byLead = outcomes.get(a.entityId);
+    if (!o || !byLead) continue;
+    for (const [i, list] of byLead) {
+      if (!list.some((x) => x.outcome === "said_no") || !o.leads[i]) continue;
+      names.add(nameKey(o.leads[i].name));
+      if (hostOf(o.leads[i].source)) hosts.add(hostOf(o.leads[i].source));
+    }
+  }
+  return { names, hosts };
+}
+
+export const saidNo = (lead: Pick<Lead, "name" | "source">, no: { names: Set<string>; hosts: Set<string> }) =>
+  no.names.has(nameKey(lead.name)) || (hostOf(lead.source) !== "" && no.hosts.has(hostOf(lead.source)));
+
+// Records what happened with one approved message. A retried call with the same request id records once.
+export async function recordOutcome(
+  kernel: Kernel,
+  input: { worldId: string; pieceId: string; lead: number; outcome: unknown; note?: unknown; ownerId: string },
+  requestId: string,
+): Promise<LeadOutcome> {
+  const outcome = input.outcome as OutcomeKind;
+  if (!OUTCOMES.includes(outcome)) throw new WorldInputError(`the outcome must be one of: ${OUTCOMES.join(", ")}`);
+  const note = cleanText(input.note, 300);
+  const { world } = await loadCreativeWorld(kernel, input.worldId);
+  const sent = (await sentIn(kernel, world.scope)).get(input.pieceId)?.get(input.lead);
+  if (!sent) throw new WorldInputError("that message hasn't been approved, so nothing happened with it yet");
+  const eventId = (await completions(kernel, world.scope)).get(sent.taskId);
+  if (!eventId) throw new WorldInputError("that approval has no record to attach to");
+  const basis: EvidenceBasis = "self_reported";
+  const description = describeOutcome(outcome, note);
+  await kernel.attachEvidence(
+    eventId,
+    { basis, content_hash: `sha256:${createHash("sha256").update(description).digest("hex")}`, media_type: OUTCOME_MEDIA, description },
+    `outcome:${requestId}`.slice(0, 200),
+  );
+  const list = (await outcomesIn(kernel, world.scope)).get(input.pieceId)?.get(input.lead) ?? [];
+  return list.at(-1)!;
+}
+

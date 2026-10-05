@@ -342,3 +342,10 @@ The founder asked for "a ai to business outreach flow ... with meta accounts but
 - **#4 changes requested:** the `/start` page needs to follow brand v3 (white floor, no decorative points or glows, no static fake state, lowercase solve). Review comment on the pull request.
 - **Checks:** bot suite 70/70; typecheck ok; lint clean; build ok.
 
+## 2026-10-05: Outreach outcomes, and "said no" enforced
+
+- **Recording what happened:** after a message is approved, the person (on the World page) or their assistant (`record_outcome`, only from what the person said or showed) records replied, meeting booked, won or said no. It is evidence on the approval, `self_reported`, never verified (`recordOutcome` and `outcomesIn` in `lib/bot/outreach.ts`). A retried record is one record. A read-only member records nothing.
+- **"Said no" is enforced, not just asked for:** a business that said no, matched by name or by the site it was found on, can't be drafted again (`propose_outreach` refuses) or approved again (`approveAndSend` refuses) in that World. That holds even under a new name on the same site.
+- **Where outcomes show:** the outreach card shows the latest outcome per business and a tally (replied, meetings, wins, nos), and offers no more recording after a no. `read_world` numbers each business and lists outcomes, so the assistant knows which number to record.
+- **Tests:** `tests/bot/outreach.test.ts` now has 5. Bot suite 72/72; typecheck ok; lint clean; build ok.
+

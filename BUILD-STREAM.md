@@ -427,3 +427,9 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Changes requested:** #4 (`/start` page): brand v3, white floor, no decorative points or fake state.
 
   Review comments are on #4 and #6. Checks: bot suite 70/70; typecheck ok; lint clean; build ok.
+
+- 2026-10-05 06:25Z — Claude, Outreach Room slice 2: what happened, on the record (the outreach north star is replies, meetings and wins, never messages sent).
+  - The person or their assistant (`record_outcome`) records replied, meeting, won or said no as evidence on the approval (`self_reported`).
+  - "Said no" is enforced by name and by site: never drafted or approved again in that World.
+  - **Paths:** `lib/bot/outreach.ts`, `lib/bot/proof.ts` (`history` exported), `lib/bot/connector.ts`, `lib/bot/presence.ts`, `app/outreach-card.tsx`, `app/route-actions.ts`, `app/world/[worldId]/page.tsx` (additive), tests.
+  - **Checks:** bot suite 72/72; typecheck ok; lint clean; build ok.

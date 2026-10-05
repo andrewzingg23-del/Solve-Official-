@@ -8,7 +8,7 @@ import { redirect } from "next/navigation";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
-import { approveAndSend } from "@/lib/bot/outreach";
+import { approveAndSend, recordOutcome } from "@/lib/bot/outreach";
 import { markStepDone, takeRoute } from "@/lib/bot/routes";
 import { WorldInputError } from "@/lib/bot/worlds";
 
@@ -53,4 +53,16 @@ export async function approveOutreachAction(worldId: string, formData: FormData)
   revalidatePath(worldPath(worldId));
   redirect(`${worldPath(worldId)}?saved=outreach`);
 }
-
+// Recording what happened with one approved message, on the person's own word.
+export async function recordOutcomeAction(worldId: string, formData: FormData) {
+  if (!(await getUser())) redirect(`/login?next=${encodeURIComponent(worldPath(worldId))}`);
+  try {
+    const kernel = await getKernel();
+    const me = await kernel.whoami();
+    await recordOutcome(kernel, { worldId, pieceId: text(formData.get("pieceId")), lead: Number(text(formData.get("lead"))), outcome: text(formData.get("outcome")), note: text(formData.get("note")), ownerId: me.actor_id }, text(formData.get("requestId")) || crypto.randomUUID());
+  } catch (error) {
+    failed(worldId, error);
+  }
+  revalidatePath(worldPath(worldId));
+  redirect(`${worldPath(worldId)}?saved=outcome`);
+}
