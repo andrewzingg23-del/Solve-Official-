@@ -2,10 +2,10 @@
 // kernel grant the person issues or revokes, and it shows in that World's history.
 import { randomUUID } from "node:crypto";
 import Link from "next/link";
-import { label } from "@/app/ui";
+import { label, primaryAction } from "@/app/ui";
 import { CopyField } from "./copy-field";
 import { ACCESS_DAYS, type WorldAccess, type WorldWithAccess } from "@/lib/bot/worlds";
-import { setWorldAccessAction } from "./actions";
+import { setWorldAccessAction, startWorldForBotAction } from "./actions";
 import { SavePoint } from "@/app/save-point";
 import { ShareSave } from "./share-save";
 import type { SavedProof } from "@/lib/bot/proof";
@@ -16,7 +16,14 @@ const LEVELS: [WorldAccess, string][] = [
   ["add", "Add"],
 ];
 
-export function WorldsPanel({ botName, botAgentId, worlds, saves = {}, ownerId }: { botName: string; botAgentId: string; worlds: WorldWithAccess[]; saves?: Record<string, SavedProof[]>; ownerId?: string }) {
+const WORLD_ERRORS: Record<string, string> = {
+  invalid: "Give the World a short goal so it has somewhere to start.",
+  identity: "Finish setting up your SOV ID before starting a World.",
+  limit: "You have reached the World limit for this account.",
+  unavailable: "The World could not be started right now. Nothing was changed; try again.",
+};
+
+export function WorldsPanel({ botName, botAgentId, worlds, saves = {}, ownerId, error }: { botName: string; botAgentId: string; worlds: WorldWithAccess[]; saves?: Record<string, SavedProof[]>; ownerId?: string; error?: string | null }) {
   return (
     <section className="flex flex-col gap-4 border-t border-line pt-6">
       <div className="flex flex-col gap-2">
@@ -28,6 +35,14 @@ export function WorldsPanel({ botName, botAgentId, worlds, saves = {}, ownerId }
           <p className="text-xs leading-5 text-muted">Share this ID with a World owner who wants to invite {botName}.</p>
           <CopyField value={botAgentId} name="Bot SOV ID" />
         </div>
+        <form action={startWorldForBotAction} className="flex flex-col gap-3 rounded-md border border-line bg-surface p-4 sm:flex-row sm:items-end">
+          <label className="flex min-w-0 flex-1 flex-col gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+            Start a private World
+            <input name="title" required maxLength={160} placeholder="e.g. Design a solar proposal for my roof" className="h-11 rounded-md border border-line bg-background px-3 text-sm font-normal normal-case tracking-normal text-foreground outline-none focus:border-accent" />
+          </label>
+          <button type="submit" className={primaryAction}>Create World</button>
+        </form>
+        {error && WORLD_ERRORS[error] ? <p role="alert" className="text-sm text-negative">{WORLD_ERRORS[error]}</p> : null}
       </div>
       {worlds.length === 0 ? (
         <p className="text-sm text-muted">
