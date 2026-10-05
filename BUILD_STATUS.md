@@ -291,3 +291,13 @@ Updated 2026-10-04. Branch `codex/need-to-route-network-state-spec`.
 - **Checks on the merged tree:** full suite 240/240; typecheck ok; lint ok (the one existing warning); `next build` ok.
 - **To watch:** the live-collaboration trigger checks every person's read grant on each World event. Fine for a pilot, but it needs an index or a member table before it grows.
 
+## 2026-10-05: Waiting on you (founder-first slice 2)
+
+- `/bot` opens with one list, across the person's Worlds, of what only they can move forward:
+  - routes proposed but not yet taken, shown only where they can take one;
+  - the next step of each route they took, with its link and how many steps are done.
+- Each item links to its World, where they take the route or mark the step done.
+- A decision is proposed the same way as a route: each option is a route, so taking one records the choice on the record.
+- The list reads the record with the person's own sign-in (`lib/bot/waiting.ts`, `app/bot/waiting.tsx`). It shows nothing when nothing waits.
+- **Tests:** `tests/bot/waiting.test.ts` covers choose and next across two Worlds, a read-only member who is not asked to choose, a finished route dropping off, a taken decision becoming its next step, and the rendering.
+

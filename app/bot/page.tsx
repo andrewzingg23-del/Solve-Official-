@@ -20,6 +20,8 @@ import { LiveBot } from "./live-bot";
 import { WorldsPanel } from "./worlds-panel";
 import { FirstSteps } from "./first-steps";
 import { firstSteps } from "@/lib/bot/first-steps";
+import { waitingOn, type WaitingItem } from "@/lib/bot/waiting";
+import { WaitingOnYou } from "./waiting";
 
 export const metadata: Metadata = { title: "Your bot — solve" };
 
@@ -27,7 +29,7 @@ type Loaded =
   | { kind: "signed-out" }
   | { kind: "identity" }
   | { kind: "unavailable" }
-  | { kind: "ready"; userId: string; persona: Persona; version: number; savedAt: string | null; exists: boolean; connections: Connection[]; memories: Memory[]; worlds: WorldWithAccess[]; saves: Record<string, SavedProof[]>; ownerId: string; botAgentId: string | null; pulse: Pulse | null; machine: MachineData };
+  | { kind: "ready"; userId: string; persona: Persona; version: number; savedAt: string | null; exists: boolean; connections: Connection[]; memories: Memory[]; worlds: WorldWithAccess[]; saves: Record<string, SavedProof[]>; waiting: WaitingItem[]; ownerId: string; botAgentId: string | null; pulse: Pulse | null; machine: MachineData };
 
 async function load(): Promise<Loaded> {
   const user = await getUser();
@@ -37,10 +39,10 @@ async function load(): Promise<Loaded> {
     const bot = await loadBot(kernel);
     const [connections, memories] = bot.avatar ? await Promise.all([readConnections(kernel, bot.ownerId), readMemories(kernel, bot.ownerId)]) : [[], []];
     const worlds = bot.avatar ? await worldsForBot(kernel, bot.avatar.agent_id).catch(() => []) : [];
-    const saves = await latestSaves(kernel, worlds);
+    const [saves, waiting] = await Promise.all([latestSaves(kernel, worlds), waitingOn(kernel, worlds, bot.ownerId)]);
     const pulse = bot.avatar ? botPulse({ persona: bot.persona, since: bot.avatar.created_at, memories, connections, history: bot.history, now: new Date() }) : null;
     const machine = machineData({ connections, worlds, memories, versions: bot.history.length, now: new Date() });
-    return { kind: "ready", machine, userId: user.id, persona: bot.persona, version: bot.history.length, savedAt: bot.saved?.at ?? null, exists: Boolean(bot.avatar), connections, memories: memories.slice(0, 50), worlds, saves, ownerId: bot.ownerId, botAgentId: bot.avatar?.agent_id ?? null, pulse };
+    return { kind: "ready", machine, userId: user.id, persona: bot.persona, version: bot.history.length, savedAt: bot.saved?.at ?? null, exists: Boolean(bot.avatar), connections, memories: memories.slice(0, 50), worlds, saves, waiting, ownerId: bot.ownerId, botAgentId: bot.avatar?.agent_id ?? null, pulse };
   } catch (error) {
     if (error instanceof KernelError && error.name === "unauthenticated") return { kind: "identity" };
     return { kind: "unavailable" };
@@ -88,6 +90,7 @@ export default async function BotPage() {
               })}
             />
           ) : null}
+          {state.kind === "ready" ? <WaitingOnYou items={state.waiting} /> : null}
           <BotCreator
             initial={state.kind === "ready" ? state.persona : DEFAULT_PERSONA}
             signedIn={state.kind === "ready"}

@@ -370,3 +370,9 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Staging:** it now needs three SQL files.
   - **Checks:** full suite 240/240; typecheck ok; lint ok (one existing warning); build ok.
   - **Next:** "Waiting on you" (slice 2).
+
+- 2026-10-05 03:55Z — Claude, founder-first slice 2: "Waiting on you" on `/bot`, for the founder's problem 4 (decisions and next steps buried in chat). It lists routes to choose and the next step of each route taken, across the person's Worlds, each linking to its World.
+  - **Paths:** `lib/bot/waiting.ts`, `app/bot/waiting.tsx`, `app/bot/page.tsx`, `tests/bot/waiting.test.ts`.
+  - **Checks:** waiting 2/2; bot suite 61/61; typecheck ok; lint ok.
+  - **Pushing:** after CI for `927e0da` (the merges) finishes, so it isn't cancelled.
+  - **Next:** slice 3, which assistant added each piece.
