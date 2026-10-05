@@ -7,7 +7,7 @@ import { kernelClient, type Kernel } from "../../lib/kernel/client";
 import { localSupabase } from "../../lib/kernel/local";
 import { createConnector, type Session } from "../../lib/bot/connector";
 import { approveConnection } from "../../lib/bot/memory";
-import { encodePart, parsePart, partFile, partStl, partTriangles, signedArea, sizeText, type Point } from "../../lib/bot/part";
+import { encodePart, parsePart, partFile, partStl, partTriangles, printNotes, signedArea, sizeText, type Point } from "../../lib/bot/part";
 import { proofsIn } from "../../lib/bot/proof";
 import { saveBot } from "../../lib/bot/store";
 import { setBotAccess } from "../../lib/bot/worlds";
@@ -86,7 +86,7 @@ it("designs a part through the connector, serves it only to people who may see t
   const designed = await call(ana, "design_part", { world_id: worldId, title: "Phone stand", purpose: "Holds a phone in a case up to 12 mm at about 60°", profile: STAND, width_mm: 70, material: "PETG" });
   assert.equal(designed.isError, undefined, designed.content[0].text);
   const { artifact_id: pieceId, stl_url } = designed.structuredContent as { artifact_id: string; stl_url: string };
-  assert.match(designed.content[0].text, /^Ready to print: Phone stand, 80 × 70 × 63 mm in PETG\. STL: https:\/\/sov\.test\/parts\/.+\.stl\./);
+  assert.match(designed.content[0].text, /^Ready to print: Phone stand, 80 × 70 × 63 mm in PETG\. Prints without supports\. STL: https:\/\/sov\.test\/parts\/.+\.stl\./);
   assert.equal(stl_url, `https://sov.test/parts/${worldId}/${pieceId}.stl`);
 
   const read = await call(ana, "read_world", { world_id: worldId });
@@ -165,4 +165,15 @@ it("makes flat parts and parts with holes as closed solids of the right volume",
   for (const [holes, why] of refused) assert.throws(() => encodePart({ purpose: "x", profile: square, width: 3, material: "PLA", holes }), why);
   const moved = parsePart(encodePart({ purpose: "x", profile: [[100, 100], [130, 100], [130, 130], [100, 130]], width: 3, material: "PLA", holes: [[115, 115, 5]] }))!;
   assert.deepEqual(moved.holes, [[15, 15, 5]], "holes move with the outline onto the bed");
+});
+
+it("says how a part will print: supports for real overhangs, a brim for little bed contact", () => {
+  const notes = (profile: unknown, extra: Record<string, unknown> = {}) => printNotes(parsePart(encodePart({ purpose: "x", profile, width: 20, material: "PLA", ...extra }))!);
+  assert.deepEqual(notes(STAND), { supports: false, overhangMm: 0, note: "Prints without supports." });
+  const shelf = notes([[0, 0], [10, 0], [10, 30], [40, 30], [40, 36], [-30, 36], [-30, 30], [0, 30]]);
+  assert.deepEqual([shelf.supports, shelf.overhangMm], [true, 60], "both 30 mm arms of a T hang in the air");
+  assert.equal(notes([[0, 0], [20, 0], [20, 10], [24, 10], [24, 14], [0, 14]]).supports, false, "a 4 mm ledge bridges");
+  assert.equal(notes([[0, 0], [60, 0], [60, 40], [0, 40]], { lay: "flat" }).note, "Prints flat, no supports.");
+  assert.match(notes([[0, 0], [4, 0], [4, 40], [0, 40]]).note, /add a brim/);
+  assert.match(notes([[0, 0], [40, 0], [40, 40], [0, 40]], { holes: [[20, 20, 12]] }).note, /large sideways hole may sag/);
 });

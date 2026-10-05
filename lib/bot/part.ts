@@ -144,6 +144,31 @@ export const sizeText = (part: Part) => partFacts(part).size.map((n) => `${n}`).
 
 const same = (p: Point, q: Point) => p[0] === q[0] && p[1] === q[1];
 
+// How it will print, from the outline alone. On edge, a face that points down at less than 45°
+// from the bed, off the bed, needs supports unless it is a short bridge (5 mm or less). Laid
+// flat, every wall is vertical. Little contact with the bed calls for a brim, and a large
+// sideways hole may sag at the top.
+export function printNotes(part: Part): { supports: boolean; overhangMm: number; note: string } {
+  const pts = part.profile;
+  const bed = pts.reduce((sum, p, i) => { const q = pts[(i + 1) % pts.length]; return p[1] === 0 && q[1] === 0 ? sum + Math.abs(q[0] - p[0]) : sum; }, 0);
+  const notes: string[] = [];
+  let overhang = 0;
+  if (part.lay !== "flat") {
+    pts.forEach((p, i) => {
+      const q = pts[(i + 1) % pts.length];
+      const dx = q[0] - p[0], dz = q[1] - p[1];
+      const facesDown = -dx < 0; // outward normal (dz, -dx) of a counter-clockwise outline
+      const shallow = Math.abs(dz) < Math.abs(dx);
+      if (facesDown && shallow && Math.min(p[1], q[1]) > 0 && Math.abs(dx) > 5) overhang += Math.abs(dx);
+    });
+  }
+  overhang = Math.round(overhang);
+  notes.push(overhang ? `Needs supports under ${overhang} mm of overhang.` : part.lay === "flat" ? "Prints flat, no supports." : "Prints without supports.");
+  if (part.lay !== "flat" && bed > 0 && bed < 10) notes.push("Little of it touches the bed; add a brim.");
+  if (part.lay !== "flat" && (part.holes ?? []).some((h) => h[2] >= 10)) notes.push("A large sideways hole may sag at the top; print it flat if you can.");
+  return { supports: overhang > 0, overhangMm: overhang, note: notes.join(" ") };
+}
+
 // Joins each hole to the outline with a two-way cut, so the face is one loop to fill. Holes are
 // taken right to left. Each cut runs straight right from the hole's rightmost point to the first
 // edge it meets; a point is added there, so nothing can lie across the cut.

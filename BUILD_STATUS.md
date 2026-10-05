@@ -235,3 +235,10 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
   - **Fuzzing:** 600 random plates and L-shapes. 204 valid parts came out closed with the exact volume; the rest were correctly refused.
   - The preview and the receipt draw the holes.
 - **Receipt link previews (2026-10-05).** A shared receipt now carries its own preview card (`app/saved/[token]/opengraph-image.tsx`, 1200×630) for iMessage, X and DMs. It shows the solve. wordmark, "Saved · No. 1042", what happened, whose word and the date, and the part's outline, on the white floor. It is drawn from the same signed snapshot as the page. A broken link gets a plain brand card.
+- **Print notes (2026-10-05).** Every part says how it will print (`printNotes` in `lib/bot/part.ts`), in the tool's answer and on the World page:
+  - "Prints without supports";
+  - "Needs supports under 60 mm of overhang" (downward faces under 45°, off the bed, longer than a 5 mm bridge);
+  - "add a brim" when under 10 mm touches the bed;
+  - a warning that a large sideways hole may sag.
+
+  Flat parts print without supports. Tested on the stand, a T-shaped shelf, a bridged ledge, a flat plate, a thin pin and a large hole.

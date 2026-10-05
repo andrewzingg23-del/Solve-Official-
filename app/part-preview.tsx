@@ -1,6 +1,6 @@
 // A printable part on a World's canvas: its side outline, size and material, and the STL to take
 // to a slicer. The outline is redrawn from the validated part, never from raw stored text.
-import { parsePart, partOutlinePath, sizeText } from "@/lib/bot/part";
+import { parsePart, partOutlinePath, printNotes, sizeText } from "@/lib/bot/part";
 
 export function PartPreview({ worldId, pieceId, body, title }: { worldId: string; pieceId: string; body: string; title: string }) {
   const part = parsePart(body);
@@ -15,6 +15,7 @@ export function PartPreview({ worldId, pieceId, body, title }: { worldId: string
       <figcaption className="flex flex-col gap-1 text-xs leading-5 text-muted">
         <span className="tabular-nums">{sizeText(part)} mm · {part.material}{part.holes?.length ? ` · ${part.holes.length} ${part.holes.length === 1 ? "hole" : "holes"}` : ""}{part.lay === "flat" ? " · lies flat" : ""}</span>
         <span className="break-words">{part.purpose}</span>
+        <span className="break-words">{printNotes(part).note}</span>
         <a href={`/parts/${worldId}/${pieceId}.stl`} className="mt-1 self-start text-[11px] font-semibold uppercase tracking-[0.2em] text-accent underline decoration-line underline-offset-4 hover:opacity-80">
           Download STL
         </a>

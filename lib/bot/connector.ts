@@ -10,7 +10,7 @@ import type { Kernel } from "@/lib/kernel/client";
 import { KernelError } from "@/lib/kernel/client";
 import { personaBrief } from "./persona";
 import { encodePixelArt } from "./pixel-art";
-import { encodePart, MATERIALS, PART_LIMITS, PartInputError, parsePart, partUrl, sizeText } from "./part";
+import { encodePart, MATERIALS, PART_LIMITS, PartInputError, parsePart, partUrl, printNotes, sizeText } from "./part";
 import { addProof, PROOF_LIMITS, proofsIn, type SavedProof } from "./proof";
 import { saveNumber, vouch } from "./vouch";
 import { companionOf, readPersona } from "./store";
@@ -496,13 +496,15 @@ export function createConnector(s: Session) {
           const saved = await addToWorld(bot, { worldId, title: args.title, body, artifactId }, requestId);
           const part = parsePart(body)!;
           const stl = partUrl(s.appUrl, worldId, saved.entityId);
-          return ok(`${saved.revised ? "Revised" : "Ready to print"}: ${cleanText(args.title, WORLD_LIMITS.title)}, ${sizeText(part)} mm in ${part.material}. STL: ${stl}. It's a design until it's printed; when it is, ask for a photo and use add_proof.`, {
+          const print = printNotes(part);
+          return ok(`${saved.revised ? "Revised" : "Ready to print"}: ${cleanText(args.title, WORLD_LIMITS.title)}, ${sizeText(part)} mm in ${part.material}. ${print.note} STL: ${stl}. It's a design until it's printed; when it is, ask for a photo and use add_proof.`, {
             artifact_id: saved.entityId,
             world_id: worldId,
             revised: saved.revised,
             size_mm: sizeText(part),
             material: part.material,
             stl_url: stl,
+            print: { supports: print.supports, overhang_mm: print.overhangMm, note: print.note },
           });
         }
         if (name === "create_pixel_art") {

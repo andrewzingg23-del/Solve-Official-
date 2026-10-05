@@ -22,7 +22,6 @@ export default async function Image({ params }: { params: Promise<{ token: strin
     (
       <div style={{ width: "100%", height: "100%", display: "flex", background: FLOOR, color: INK, padding: 64, fontSize: 28 }}>
         <div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "space-between", paddingRight: outline ? 48 : 0 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={wordmark} alt="solve." height={48} style={{ height: 48 }} />
           {r ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
