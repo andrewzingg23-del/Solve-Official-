@@ -278,3 +278,5 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - The first version filled a grid of aligned holes wrongly: its loose fallback let a triangle run across a row of holes. Fixed with the cut-and-insert join; the six-hole grid is now a test.
 
   Checks: bot suite 54/54; typecheck ok; lint ok (one existing warning); a local fuzz of 600 random shapes found 0 bad solids. Holding the push until CI run 107 (`f6a045d`) finishes, so it isn't cancelled.
+
+- 2026-10-05 02:12Z — CI run 107 (`f6a045d`: parts, pilot readiness, first steps, receipts) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37253838904. Then the receipt link-preview card: `app/saved/[token]/opengraph-image.tsx`. `receiptFromPath` is shared by the page and the card. Checks: bot suite 55/55 (a PNG renders for a real receipt and for a broken link); typecheck ok; lint ok (one existing warning); the card was looked at once. CI for this push (with `7b811f9`, holes and flat parts): pending when written.

@@ -234,3 +234,4 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
   - **Tests:** a plate with two M4 holes, a washer, a six-hole grid in aligned rows, a bracket with a hole and the stand. Each must be closed, consistently wound, on the bed, and exactly (outline − holes) × width in volume.
   - **Fuzzing:** 600 random plates and L-shapes. 204 valid parts came out closed with the exact volume; the rest were correctly refused.
   - The preview and the receipt draw the holes.
+- **Receipt link previews (2026-10-05).** A shared receipt now carries its own preview card (`app/saved/[token]/opengraph-image.tsx`, 1200×630) for iMessage, X and DMs. It shows the solve. wordmark, "Saved · No. 1042", what happened, whose word and the date, and the part's outline, on the white floor. It is drawn from the same signed snapshot as the page. A broken link gets a plain brand card.

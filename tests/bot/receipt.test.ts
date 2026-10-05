@@ -74,3 +74,17 @@ it("draws the receipt on the white floor, honest about whose word it is", async 
   assert.match(html, /It rests on Ana&#x27;s word, not on an outside check\./);
   assert.match(html, /bg-\[#f2f7fb\]/);
 });
+
+it("renders the link-preview card as a PNG, for a real receipt and for a broken link", async () => {
+  process.env.SUPABASE_SECRET_KEY = SECRET;
+  const { default: Image, size } = await import("../../app/saved/[token]/opengraph-image");
+  const r: Receipt = { v: 1, n: 1042, what: "Printed the stand", basis: "self_reported", at: "2026-10-05T12:00:00Z", issued: "2026-10-05T13:00:00Z", title: "Phone stand", owner: "Ana", part: { outline: STAND as never, holes: [[40, 3, 2]], size: "80 × 70 × 63", material: "PETG" } };
+  for (const token of [signReceipt(r, SECRET), "broken"]) {
+    const res = await Image({ params: Promise.resolve({ token }) });
+    const png = new Uint8Array(await res.arrayBuffer());
+    assert.equal(res.headers.get("content-type"), "image/png");
+    assert.deepEqual([...png.slice(1, 4)].map((c) => String.fromCharCode(c)).join(""), "PNG");
+    assert.ok(png.byteLength > 5000);
+  }
+  assert.deepEqual(size, { width: 1200, height: 630 });
+});

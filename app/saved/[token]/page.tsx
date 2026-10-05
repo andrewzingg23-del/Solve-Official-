@@ -3,7 +3,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { openReceipt, receiptSecret, type Receipt } from "@/lib/bot/receipt";
+import { receiptFromPath } from "@/lib/bot/receipt";
 import { partOutlinePath } from "@/lib/bot/part";
 import { saveNumber, vouch } from "@/lib/bot/vouch";
 
@@ -11,13 +11,8 @@ export const dynamic = "force-dynamic";
 
 const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
-function load(token: string): Receipt | null {
-  const secret = receiptSecret();
-  return secret ? openReceipt(decodeURIComponent(token), secret) : null;
-}
-
 export async function generateMetadata({ params }: PageProps<"/saved/[token]">): Promise<Metadata> {
-  const r = load((await params).token);
+  const r = receiptFromPath((await params).token);
   if (!r) return { title: "solve", robots: { index: false } };
   return {
     title: `Saved ${saveNumber(r.n)}: ${r.what}`,
@@ -27,7 +22,7 @@ export async function generateMetadata({ params }: PageProps<"/saved/[token]">):
 }
 
 export default async function SavedPage({ params }: PageProps<"/saved/[token]">) {
-  const r = load((await params).token);
+  const r = receiptFromPath((await params).token);
   if (!r) notFound();
   const outline = r.part ? partOutlinePath({ profile: r.part.outline, holes: r.part.holes }) : null;
   return (

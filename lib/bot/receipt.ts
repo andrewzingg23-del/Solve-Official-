@@ -87,3 +87,14 @@ export async function buildReceipt(kernel: Kernel, worldId: string, recordId: st
 }
 
 export const receiptUrl = (appUrl: string, token: string) => `${appUrl}/saved/${token}`;
+
+// Opens the token from a /saved/<token> path with this deployment's secret.
+export function receiptFromPath(token: string): Receipt | null {
+  const secret = receiptSecret();
+  if (!secret) return null;
+  try {
+    return openReceipt(decodeURIComponent(token), secret);
+  } catch {
+    return null;
+  }
+}
