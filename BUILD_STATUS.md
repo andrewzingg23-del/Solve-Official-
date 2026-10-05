@@ -415,3 +415,22 @@ Both were merged into the trunk by the founder's account while a review asked fo
   - Every change the bot makes names the assistant it came through ("via Claude").
   - Builders are named by any branch prefix, so Doris shows too.
   - The trunk's latest passed build can be saved as proof. The server reads it from GitHub again first, and saves it as a record linking to the run. It isn't marked "seen by solve", which needs a service actor.
+
+## 2026-10-05 — The ten venture doors, working (Claude, for the founder)
+
+- **On brand:** the ten doors (Doris's #10) are rebuilt on the white floor of brand v3, with ink type and the deep cyan point. Each has one working tool in place of a button to `/start`. `/ventures` lists all ten. A target is shown as "the goal", never as a count.
+- **Solar (`/solar`):** a live proposal tool.
+  - The homeowner moves their bill (and kWh, if they know it) and sees system size, panels, production, year-one savings, payback and 25-year savings, with their home in 3D carrying that many panels.
+  - The numbers use 2026's rules: no 30% federal credit (it ended for homeowner systems installed after 2025), about 16¢ per kWh in Florida, about 1,400 kWh per kW a year, $2.90 per watt.
+  - **Aurora:** "Design my roof" (with consent) creates a project in Zest Solar's Aurora account and opens the homeowner's own signed proposal page (`/solar/proposal/<token>`). That page reads the latest Aurora design each time it opens: real size, production and panel count once designed.
+  - Needs `AURORA_API_KEY` and `AURORA_TENANT_ID`; until then the form says requests aren't connected.
+- **Real estate (`/real-estate`):** a 3D concept model of the development. Three phases (sixteen homes, offices over retail, the estate on the rise) switch on and off, and there's a fly-through.
+- **The others:**
+  - Insurance: coverage need, the DIME way.
+  - Trading: position size from risk (Practice math).
+  - Samantha: what missed calls cost a month.
+  - Meta ads: break-even and target return on ad spend.
+  - Membership: the oath, to hold before applying.
+  - Zuber pen: a 3D render with "Ring it".
+  - Vantage: the fleet of doors, linking to the Command Center.
+- **Tests:** `tests/ventures/{solar,tools}.test.ts`. The pages were screenshotted in Chromium at desktop and phone sizes with no page errors.

@@ -619,3 +619,18 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
     - if the sign-in email link doesn't return to the preview, add `https://*-sovigrn.vercel.app/**` to staging's redirect URLs.
 
 - 2026-10-05 19:15Z — CI run 159 (`b5e074b`) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37357768450. The Vercel preview deployed: https://vercel.com/sovigrn/solve/HPRBimALyWKFYnM14U5FMu6ZJzak. This is the first preview built to run on solve-staging. Not yet visited; staging's logs will show the first sign-in.
+
+- 2026-10-05 20:10Z — Claude, the founder: "make me 10 landing routes… solar live customer facing proposal tool with aurora tied in and a 3d model for home owner to see… real estate 3d development".
+  - **Built** on Doris's ten doors (#10): the white floor of brand v3 and one working tool per door (see BUILD_STATUS).
+  - **Solar:**
+    - estimate from the bill with 2026's rules (no 25D credit, cited Florida rate);
+    - a three.js home with the panel count;
+    - Aurora design requests with consent;
+    - a signed, live proposal page reading the Aurora design.
+  - **Real estate:** a three.js development with phases and a fly-through.
+  - **The rest:** calculators from the visitor's inputs only; a pen render.
+  - **New dependency:** `three` (and `@types/three`), loaded only in the browser on those pages.
+  - **Paths:** `app/ventures.ts`, `app/venture-{template,style,tools}.ts*`, `app/ventures/`, `app/{solar,real-estate,zuber-pen,insurance,trading,samantha,meta-ads,membership,vantage,solve}/`, `lib/solar/`, `lib/ventures/`, `tests/ventures/`, `.env.example`.
+  - **Aurora sources:** POST /tenants/{id}/projects, GET …/projects/{id}/designs, GET …/designs/{id}/summary (docs.aurorasolar.com, via search; the docs host is blocked from this environment). The contact fields fall back to name and address if Aurora rejects them.
+  - **Checks:** full suite 293/293; lint clean; typecheck ok; build ok. Screenshots in Chromium of `/solar`, `/real-estate`, `/insurance`, `/zuber-pen` and `/ventures`, desktop and phone: no page errors. Fixes from them: the pen was framed too close; big solar figures wrapped on phones.
+  - **Founder:** set `AURORA_API_KEY` and `AURORA_TENANT_ID` (Preview) to open design requests; check the copy and the $2.90 per watt price.

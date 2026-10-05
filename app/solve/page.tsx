@@ -4,10 +4,7 @@ import { getVenture } from "../ventures";
 
 const venture = getVenture("solve");
 
-export const metadata: Metadata = {
-  title: venture.metaTitle,
-  description: venture.metaDescription,
-};
+export const metadata: Metadata = { title: venture.metaTitle, description: venture.metaDescription };
 
 export default function Page() {
   return <VenturePage slug="solve" />;
