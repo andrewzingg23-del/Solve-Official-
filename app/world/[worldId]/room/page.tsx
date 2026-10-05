@@ -20,7 +20,7 @@ import { getUser } from "@/lib/supabase/server";
 import { loadCreativeWorld, viaOf, type CreativeArtifact } from "@/lib/world/creative";
 import { eventTitle } from "../../event-title";
 import { WorldLiveSync } from "../live-sync";
-import { addNoteAction, linkRepoAction } from "./actions";
+import { addNoteAction, linkRepoAction, saveBuildAction } from "./actions";
 import type { RoomPiece } from "./pieces-map";
 import { RoomRefresh } from "./refresh";
 import { RoomView, type RoomData, type RoomLens } from "./view";
@@ -32,6 +32,8 @@ const DEFAULT_SUMMARY = "A private World. Start with a blank canvas and shape it
 const NOTICES: Record<string, { tone: "ok" | "error"; text: string }> = {
   "saved:note": { tone: "ok", text: "Added to the room." },
   "saved:repo": { tone: "ok", text: "Repository linked. The room reads it from GitHub and never writes to it." },
+  "saved:build": { tone: "ok", text: "Saved. solve read the build from GitHub first; the save links to the run." },
+  "error:build-unseen": { tone: "error", text: "Not saved: GitHub doesn't report that build as passed right now." },
   "error:note-input": { tone: "error", text: "Write something first." },
   "error:repo-input": { tone: "error", text: "That isn't a GitHub repository link. Use https://github.com/owner/repo, optionally with /tree/<branch>." },
 };
@@ -146,6 +148,7 @@ export default async function RoomPage({ params, searchParams }: PageProps<"/wor
           notice: noticeFor(saved, error),
           addNote: addNoteAction.bind(null, data.worldId),
           linkRepo: linkRepoAction.bind(null, data.worldId),
+          saveBuild: saveBuildAction.bind(null, data.worldId),
           requestId: randomUUID(),
           live: data.botName ? <LiveLine userId={userId} botName={data.botName} /> : undefined,
           sync: <WorldLiveSync worldId={data.worldId} authUserId={userId} />,

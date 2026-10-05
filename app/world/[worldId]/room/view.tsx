@@ -39,6 +39,7 @@ export type RoomData = {
   notice?: { tone: "ok" | "error"; text: string } | null;
   addNote?: (form: FormData) => void | Promise<void>;
   linkRepo?: (form: FormData) => void | Promise<void>;
+  saveBuild?: (form: FormData) => void | Promise<void>;
   requestId?: string;
   live?: ReactNode; // the bot's live line, when there is a bot
   sync?: ReactNode; // the room's live connection state
@@ -216,7 +217,7 @@ export function RoomView({ data }: { data: RoomData }) {
           </div>
           <div className="min-h-0 flex-1 lg:overflow-y-auto lg:pr-1">
             {lens === "build" && read ? (
-              read.ok ? <BuildMap view={read.view} now={data.now} /> : <RepoUnavailable read={read} paired={data.repo?.paired ?? false} worldId={data.worldId} />
+              read.ok ? <BuildMap view={read.view} now={data.now} save={data.saveBuild} savedLinks={new Set(data.saves.map((s) => s.link).filter((l): l is string => !!l))} /> : <RepoUnavailable read={read} paired={data.repo?.paired ?? false} worldId={data.worldId} />
             ) : (
               <div className="flex flex-col gap-4">
                 <PiecesMap worldId={data.worldId} pieces={data.pieces} />

@@ -409,4 +409,8 @@ Both were merged into the trunk by the founder's account while a review asked fo
 - **Founder steps to see the solve build in its room:**
   1. A fine-grained GitHub token, read-only for Actions, Contents, Metadata and Pull requests on Solve-Official-.
   2. In Vercel, `GITHUB_TOKEN`, plus `GITHUB_ROOMS=<your sign-in email>=andrewzingg23-del/Solve-Official-@claude/keen-cerf-tpd7io`.
-  3. Then link `https://github.com/andrewzingg23-del/Solve-Official-/tree/claude/keen-cerf-tpd7io` in the room.
+  3. Sign in on the staging preview and open the Command Center: "Your build has no room yet", then "Open its room". It makes a private "Build solve" World with the repository linked and opens the build. (Or link `https://github.com/andrewzingg23-del/Solve-Official-/tree/claude/keen-cerf-tpd7io` in any room.)
+- **Later the same night:**
+  - Every change the bot makes names the assistant it came through ("via Claude").
+  - Builders are named by any branch prefix, so Doris shows too.
+  - The trunk's latest passed build can be saved as proof. The server reads it from GitHub again first, and saves it as a record linking to the run. It isn't marked "seen by solve", which needs a service actor.

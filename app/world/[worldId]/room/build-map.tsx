@@ -71,7 +71,20 @@ function LaneRow({ lane, now }: { lane: Lane; now: string }) {
   );
 }
 
-export function BuildMap({ view, now }: { view: RepoView; now: string }) {
+// Saving the trunk's latest passed build as proof. The server reads it from GitHub again before saving.
+function SaveBuild({ build, save, saved }: { build: Build; save?: (form: FormData) => void | Promise<void>; saved: boolean }) {
+  if (build.state !== "passed") return null;
+  if (saved) return <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted"><span aria-hidden className="h-1.5 w-1.5 rounded-full bg-accent" />Saved</span>;
+  if (!save) return null;
+  return (
+    <form action={save}>
+      <input type="hidden" name="buildId" value={build.id} />
+      <button type="submit" className="rounded border border-line px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] hover:border-accent hover:text-accent">Save as proof</button>
+    </form>
+  );
+}
+
+export function BuildMap({ view, now, save, savedLinks = new Set() }: { view: RepoView; now: string; save?: (form: FormData) => void | Promise<void>; savedLinks?: Set<string> }) {
   const latest = view.trunkBuilds[0] ?? null;
   const buildBySha = new Map<string, Build>();
   for (const b of [...view.trunkBuilds].reverse()) buildBySha.set(b.sha, b);
@@ -87,7 +100,10 @@ export function BuildMap({ view, now }: { view: RepoView; now: string }) {
       <section aria-label="The trunk" className="relative flex flex-col gap-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted">Trunk · <span className="font-mono normal-case tracking-normal">{view.trunk}</span></span>
-          <BuildMark build={latest} now={now} />
+          <span className="flex items-center gap-3">
+            <BuildMark build={latest} now={now} />
+            {latest ? <SaveBuild build={latest} save={save} saved={savedLinks.has(latest.url)} /> : null}
+          </span>
         </div>
         <div className="relative px-1 py-6">
           <span aria-hidden className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-accent/0 via-accent/70 to-accent shadow-[0_0_18px_rgba(34,211,238,0.6)]" />

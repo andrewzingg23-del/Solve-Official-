@@ -12,7 +12,7 @@ export function vouch(basis: EvidenceBasis, who = "you"): string {
     case "witnessed":
       return `Seen by ${who}`;
     case "artifact":
-      return "With the file attached";
+      return "With the record attached";
     case "system_observed":
       return "Seen by solve";
     case "externally_verified":

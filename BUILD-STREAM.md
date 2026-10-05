@@ -559,3 +559,10 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **`ACTIVE-WORK.md`:** the staging blocker is done; #1, #2, #9 and #10 are merged; a new blocker is seeing the solve build in its room (the founder's GitHub token and pairing).
   - **Paths:** `lib/github/repo.ts`, `app/world/[worldId]/room/build-map.tsx`, `tests/github/repo.test.ts`, `ACTIVE-WORK.md`.
   - **Checks:** GitHub and room tests 11/11; typecheck ok; lint clean.
+
+- 2026-10-05 07:40Z — Claude, a passed build saved as proof (founder-first slice 5; problem 6, "never report green until CI").
+  - In the room, the trunk's latest passed build has "Save as proof". The server reads the repository from GitHub again and saves only a build GitHub reports as passed. The save is an `artifact` (the run's link and a fingerprint of what GitHub said) on the World's repository resource, once per build.
+  - It is deliberately not `system_observed`; that needs a service actor, which is next.
+  - The wording for record saves is now "With the record attached" (it was "file").
+  - **Paths:** `lib/github/build-proof.ts`, `app/world/[worldId]/room/{actions.ts,page.tsx,view.tsx,build-map.tsx}`, `lib/bot/vouch.ts`, `tests/github/build-proof.test.ts`, `tests/bot/room.test.ts`, `BUILD_STATUS.md`.
+  - **Checks:** full suite 279/279; lint clean; build ok.

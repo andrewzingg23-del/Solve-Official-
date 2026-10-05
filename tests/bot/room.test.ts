@@ -76,3 +76,16 @@ it("shows pieces where they were placed, with the point only on a saved one, and
   assert.match(html, /Link repository/);
   assert.doesNotMatch(html, /role="tab"[^>]*>Build</); // no Build lens without a repository
 });
+
+it("offers to save the trunk's passed build as proof, and shows it saved once it is", async () => {
+  const saveBuild = async () => {};
+  const unsaved = await render({ repo: { read: ok, paired: true }, saveBuild });
+  assert.match(unsaved, /name="buildId" value="3"/);
+  assert.match(unsaved, /Save as proof/);
+  const saved = await render({
+    repo: { read: ok, paired: true }, saveBuild,
+    saves: [{ pieceId: "r", what: "Build 137 passed on claude/keen-cerf-tpd7io", proof: "", link: "https://github.com/o/r/actions/runs/3", basis: "artifact", at: NOW, recordId: "e1", number: 41, by: "a" }],
+  });
+  assert.doesNotMatch(saved, /Save as proof/);
+  assert.match(saved, /With the record attached/);
+});
