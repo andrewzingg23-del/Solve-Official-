@@ -91,7 +91,7 @@ export default async function WorldsPage({ searchParams }: PageProps<"/worlds">)
             </div>
             {typeof error === "string" && (
               <p role="alert" className="rounded border border-negative/30 bg-negative/10 p-3 text-sm text-negative">
-                {error === "world-input" || error === "world-title" ? "Use a World name up to 160 characters and a goal up to 7,000 characters. Remove unsupported control characters." : "The World could not be created. Retry in a moment."}
+                {error === "world-repo" ? "That isn\u2019t a GitHub repository link. Use https://github.com/owner/repo, optionally with /tree/<branch>." : error === "world-input" || error === "world-title" ? "Use a World name up to 160 characters and a goal up to 7,000 characters. Remove unsupported control characters." : "The World could not be created. Retry in a moment."}
               </p>
             )}
             <form action={createWorldAction} className="flex flex-col gap-3">
@@ -117,6 +117,16 @@ export default async function WorldsPage({ searchParams }: PageProps<"/worlds">)
                 className="resize-y rounded-md border border-line bg-background p-3 text-sm leading-6 outline-none transition-colors focus:border-accent"
               />
               <p className="text-xs leading-5 text-muted">Your goal is saved as the first piece. Leave it blank for an empty canvas. Nothing is published or shared by creating a World.</p>
+              <label htmlFor="world-repo" className={label}>Building code? <span className="font-normal normal-case tracking-normal text-muted">(optional)</span></label>
+              <input
+                id="world-repo"
+                name="repo"
+                type="url"
+                autoComplete="off"
+                placeholder="https://github.com/owner/repo/tree/main"
+                className="h-12 rounded-md border border-line bg-background px-3 font-mono text-xs outline-none transition-colors focus:border-accent"
+              />
+              <p className="text-xs leading-5 text-muted">Its room shows the build as it happens: branches, pull requests and whether the build passed. solve only reads it.</p>
               <button type="submit" className={primaryAction}>Create private World</button>
             </form>
             <p className="border-t border-line pt-4 text-xs leading-5 text-muted">

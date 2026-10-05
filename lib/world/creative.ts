@@ -18,6 +18,7 @@ export type CreativeArtifact = {
   position: CreativePosition;
   version: number;
   updatedAt: string;
+  via: string | null; // the assistant the latest revision came through, when a bot made it
 };
 
 export type CreateCreativeWorldInput = { worldId: string; title: string; goal?: string };
@@ -87,6 +88,9 @@ export function isCreativeResourceStatus(value: string): value is CreativeResour
   return value === "open" || value === "withdrawn";
 }
 
+// The assistant (Claude, ChatGPT, Codex…) a person's bot was working through when it made a revision.
+export type ArtifactVia = { clientId: string | null; clientName: string | null };
+
 export type CreateCreativeArtifactInput = {
   scope: string;
   worldEntityId: string;
@@ -94,6 +98,7 @@ export type CreateCreativeArtifactInput = {
   title: string;
   body: string;
   position: CreativePosition;
+  via?: ArtifactVia;
 };
 export type UpdateCreativeArtifactInput = {
   scope: string;
@@ -102,7 +107,21 @@ export type UpdateCreativeArtifactInput = {
   title: string;
   body: string;
   position: CreativePosition;
+  via?: ArtifactVia;
 };
+
+function viaAttributes(via?: ArtifactVia) {
+  const clientName = via?.clientName?.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 80) || null;
+  const clientId = via?.clientId?.trim().slice(0, 200) || null;
+  return clientName || clientId ? { via: { client_id: clientId, client_name: clientName } } : {};
+}
+
+export function viaOf(attributes: Record<string, unknown> | null | undefined): string | null {
+  const via = attributes?.via;
+  if (!via || typeof via !== "object") return null;
+  const name = (via as Record<string, unknown>).client_name;
+  return typeof name === "string" && name.trim() ? name.trim().slice(0, 80) : null;
+}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_BODY_LENGTH = 7000;
@@ -214,6 +233,7 @@ function artifactFromEntity(entity: WorldEntity): CreativeArtifact | null {
     position: { x, y },
     version: entity.version,
     updatedAt: entity.updated_at,
+    via: viaOf(entity.attributes),
   };
 }
 
@@ -456,7 +476,7 @@ export async function createCreativeArtifact(kernel: Kernel, input: CreateCreati
     scope,
     title,
     summary: body.trim().slice(0, 240),
-    attributes: { documentType: "text", worldId, content: body, canvas: position },
+    attributes: { documentType: "text", worldId, content: body, canvas: position, ...viaAttributes(input.via) },
     visibility: "members",
     idempotencyKey: requestKey("artifact-create", input.requestId),
   });
@@ -478,7 +498,7 @@ export async function updateCreativeArtifact(kernel: Kernel, input: UpdateCreati
     scope,
     title,
     summary: body.trim().slice(0, 240),
-    attributes: { documentType: "text", worldId, content: body, canvas: position },
+    attributes: { documentType: "text", worldId, content: body, canvas: position, ...viaAttributes(input.via) },
     visibility: "members",
     idempotencyKey: requestKey(`artifact-update:${input.entityId}`, input.requestId),
   });
