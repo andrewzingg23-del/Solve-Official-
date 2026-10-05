@@ -480,6 +480,8 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **For Manus:** a working agreement and an updated `ACTIVE-WORK.md` row (research first, no self-merges while a review is open).
   - **Paths:** `app/start/{view,page}.tsx`, `app/bot/page.tsx`, `app/bot/context-ledger.tsx` (removed), `tests/bot/start.test.ts`, `docs/handoff/MANUS.md`, `ACTIVE-WORK.md`.
 
+- 2026-10-05 05:32Z — Manus finished: researched and documented provider-specific connection paths for Claude Code, Codex, eligible ChatGPT workspaces, and Meta Muse. Paths: `docs/research/connecting-builders.md`. Findings: solve’s `/mcp` Streamable HTTP + OAuth contract is compatible with Claude Code and Codex; ChatGPT custom MCP is workspace/plan dependent; Meta Muse’s official docs do not yet document arbitrary custom MCP connections. No external connection was attempted; staging remains unchanged. Next: verify one real Claude Code or Codex connection on staging after the founder applies the pending migrations and confirms the preview/Auth path.
+
 - 2026-10-05 05:45Z — Claude, research: Scale AI (founder: "look at scale ai").
   - **Findings:**
     - Scale marks up crowd work for AI labs. Since Meta took 49% it lost OpenAI and is turning toward AI applications.
