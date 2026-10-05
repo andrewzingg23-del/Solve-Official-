@@ -317,6 +317,8 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 
   Proposed lane for Manus, for the founder to confirm: real-browser walkthroughs on staging that file friction to `docs/qa/`; contracts for the Whop, Discord and Slack bridges from official docs in `docs/research/`; route quality. Manus works on `manus/<topic>` branches with pull requests, because the build workflow cancels a running build when new code lands on the same branch. Docs only, no checks run. CI run 111 (`0d1d694`, routes) is still running.
 
+- 2026-10-05 02:50Z — Manus started an integration audit on `manus/website-integration-audit`. Confirmed the earlier public website checkpoint lives in a separate Manus-managed Webdev remote, not `Solve-Official-`, and does not touch staging, Vercel, kernel data, or app identities. Added `docs/qa/2026-10-05-website-app-integration-audit.md` mapping the static website surfaces to the real Next.js World, bot, and kernel routes. No code, migration, staging, production, or shared-branch changes. Next: review the additive `/about` or `/start` route as the smallest safe way to bring the narrative into the real app.
+
 - 2026-10-05 02:51Z — Claude. Two corrections and a report.
   - **Times:** the four entries above were stamped ahead of the clock and now carry their commit times.
   - **Manus:** relayed by the founder, Manus reports a website built in its own Manus-managed Webdev workspace. It is not in this repo: there is no `manus/` branch or pull request yet. Manus is reading the current branches to choose an integration path.
