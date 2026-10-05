@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { buildReceipt, receiptSecret, receiptUrl, ReceiptError, signReceipt } from "@/lib/bot/receipt";
 import { forgetMemory, noteMemory, readConnections, readMemories, revokeConnection } from "@/lib/bot/memory";
 import { botPulse, type Pulse } from "@/lib/bot/pulse";
 import { loadBot, saveBot } from "@/lib/bot/store";
@@ -88,5 +90,28 @@ export async function pulseAction(): Promise<Pulse | null> {
     return botPulse({ persona: bot.persona, since: bot.avatar.created_at, memories, connections, history: bot.history, now: new Date() });
   } catch {
     return null;
+  }
+}
+
+export type ShareResult = { url: string } | { error: string } | null;
+
+// Makes a receipt link for one of the person's own saves (lib/bot/receipt.ts): read with their
+// own sign-in, signed by the server, and shown to them to share.
+export async function shareSaveAction(_previous: ShareResult, formData: FormData): Promise<ShareResult> {
+  const worldId = field(formData.get("world_id")).toLowerCase();
+  const recordId = field(formData.get("record_id")).toLowerCase();
+  if (!UUID.test(worldId) || !UUID.test(recordId) || !(await getUser())) return { error: "Sign in to share this save." };
+  const secret = receiptSecret();
+  if (!secret) return { error: "Sharing isn't switched on here yet." };
+  try {
+    const receipt = await buildReceipt(await getKernel(), worldId, recordId);
+    const h = await headers();
+    const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+    const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+    return { url: receiptUrl(`${proto}://${host}`, signReceipt(receipt, secret)) };
+  } catch (error) {
+    if (error instanceof ReceiptError) return { error: `Not shared: ${error.message}.` };
+    if (error instanceof KernelError) return { error: "This save can't be shared right now." };
+    throw error;
   }
 }

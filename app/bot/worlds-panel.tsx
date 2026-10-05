@@ -7,6 +7,7 @@ import { CopyField } from "./copy-field";
 import { ACCESS_DAYS, type WorldAccess, type WorldWithAccess } from "@/lib/bot/worlds";
 import { setWorldAccessAction } from "./actions";
 import { SavePoint } from "@/app/save-point";
+import { ShareSave } from "./share-save";
 import type { SavedProof } from "@/lib/bot/proof";
 
 const LEVELS: [WorldAccess, string][] = [
@@ -15,7 +16,7 @@ const LEVELS: [WorldAccess, string][] = [
   ["add", "Add"],
 ];
 
-export function WorldsPanel({ botName, botAgentId, worlds, saves = {} }: { botName: string; botAgentId: string; worlds: WorldWithAccess[]; saves?: Record<string, SavedProof[]> }) {
+export function WorldsPanel({ botName, botAgentId, worlds, saves = {}, ownerId }: { botName: string; botAgentId: string; worlds: WorldWithAccess[]; saves?: Record<string, SavedProof[]>; ownerId?: string }) {
   return (
     <section className="flex flex-col gap-4 border-t border-line pt-6">
       <div className="flex flex-col gap-2">
@@ -60,7 +61,10 @@ export function WorldsPanel({ botName, botAgentId, worlds, saves = {} }: { botNa
               {saves[w.worldId]?.length ? (
                 <div className="flex w-full flex-col gap-2 border-t border-line pt-3">
                   {saves[w.worldId].map((p) => (
-                    <SavePoint key={p.recordId} what={p.what} basis={p.basis} at={p.at} number={p.number} link={p.link} />
+                    <div key={p.recordId} className="flex flex-col gap-1.5">
+                      <SavePoint what={p.what} basis={p.basis} at={p.at} number={p.number} link={p.link} />
+                      {ownerId && p.by === ownerId ? <ShareSave worldId={w.worldId} recordId={p.recordId} /> : null}
+                    </div>
                   ))}
                 </div>
               ) : null}

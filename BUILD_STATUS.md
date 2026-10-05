@@ -220,3 +220,12 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
   - **What people see:** `read_world` summarises the part instead of showing its encoding. The World page shows the outline, size, material and a Download STL link (`app/part-preview.tsx`), plus each piece's save points.
   - **The loop:** design, print, `add_proof`, "Saved. No. …".
   - **Tests:** bot suite 47/47, including STL faces that are closed and outward with volume equal to area × width, download access, and the full design → print → save loop.
+- **Shareable receipts (2026-10-05).** A person can share one of their own saves from `/bot`. They get a link to a public receipt on the white floor (`/saved/<token>`) showing:
+  - "Saved · No. 1042" and what happened;
+  - whose word it rests on, the date and the piece;
+  - the part outline, if the piece is a part;
+  - "Everything here is real."
+
+  **How it stays private:** the server can't read a private World for anyone, since the service key never acts as a person. So the receipt is a snapshot read with the owner's own sign-in, put into the link and signed with a key derived from the server secret (`lib/bot/receipt.ts`). Changing anything in the link breaks it. Only the person who saved something can share it, and the proof's private detail is left out. A receipt can't be withdrawn once sent, like a photo.
+
+  **Tests:** bot suite 53/53, plus one Chromium look at a signed receipt (desktop and phone): no overflow, no console errors, and a tampered link returns 404.

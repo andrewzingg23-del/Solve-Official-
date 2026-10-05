@@ -261,3 +261,7 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 - 2026-10-05 01:58Z — Claude, first steps on `/bot`. Four steps from sign-in to the first save: make your bot, connect your AI, ask for something real ("Design me a phone stand I can print."), make it and save it. Each step is ticked only by what is on the record (bot, connections, Worlds, saves), and the panel disappears at the first save. `lib/bot/first-steps.ts`, `app/bot/first-steps.tsx`, `app/bot/page.tsx`.
 
   Checks: bot suite 50/50; typecheck ok; lint ok (one existing warning). One Chromium look at a temporary preview (first steps, a part card with its save, the Practice label) at 1280 px and 390 px: no overflow, no console errors. The preview page was deleted before commit. The full local suite (218/218) ran green on the parts slice. CI run 104 (`444691f`) was cancelled because `e98f55f` superseded it.
+
+- 2026-10-05 02:03Z — Claude, shareable receipts. `lib/bot/receipt.ts` (a signed snapshot: build, sign, open), `shareSaveAction`, `app/bot/share-save.tsx` (Share → a copyable link), and `app/saved/[token]/page.tsx` (the public receipt on the white floor, not indexed). `/saved` stays public in `proxy.ts`.
+
+  Checks: bot suite 53/53 (3 new receipt tests: signature and tamper rejection, only your own saves, private proof detail left out, honest rendering); typecheck ok; lint ok (one existing warning). One Chromium look at a signed receipt from a local dev server at 1280 px and 390 px: no overflow, no console errors; the tampered link returned 404.
