@@ -56,3 +56,6 @@ Dated, one paragraph each. Newest first.
 **2026-10-03 — Email sign-in off for now.** Founder request. Enter opens the app directly. `/login` and `/account` remain, unlinked; the live store is untouched by the sandbox.
 
 **2026-10-03 — Payments route without forcing SOLVE.** Routes are ranked only by cost in the denomination; quotes keep spot, TWAP, executable amounts, depth and timestamps; venues co-sign only after verifying their own flows. Test assets only.
+
+
+**2026-10-04 — Idea memory is part of the World Graph.** Idea records are versioned kernel documents in the same scoped World as the work they describe. Typed lineage is represented by kernel relations and written only through the existing authorized World Graph interface. Status changes remain append-only entity versions/events; experiments and implementation references must point to immutable commits and evidence. The graph may expand ideas but never edits founder canon, grants authority, or promotes code.

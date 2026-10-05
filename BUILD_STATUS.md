@@ -126,6 +126,15 @@ Updated 2026-10-04. Branch `codex/need-to-route-network-state-spec`.
 - Vesting/treasury programs: build or adopt audited ones. Anchor cadence. Governance path.
 
 
+## Development memory slice — 2026-10-04
+
+- Started on isolated branch `codex/development-memory-v1` from the live build branch head. Adds an additive migration for typed Idea Graph relations, a kernel-backed idea domain module, and focused tests for idempotent creation, scoped reads, lineage cycle rejection, and reasoned status changes. No UI, staging application, or production database changes are included in this first code slice.
+- Local tests were not run: the attached workspace has no repository checkout and direct clone is blocked. The GitHub Actions workflow is the verification gate; do not treat this slice as verified until its run succeeds. Next: inspect the CI result, then connect the graph to the World UI and real implementation/evidence references.
+
+
+## AI Ideation — 2026-10-04
+
+- Added a signed-in `/api/ideas/expand` route that reads the selected idea and up to eight related ideas from the authorized World through the kernel. The model returns a schema-validated draft only. The person can edit, accept or discard; acceptance records a proposed idea, source-model metadata and a `derived_from` relation. It performs no code execution, branch creation, or promotion. Real model availability depends on server configuration; no live model call has been verified.
 ## 2026-10-04 checkpoint — World bot access and attribution
 
 - The World owner can grant a collaborator's identified bot Read or Add access from the World, review active bot name, owner, role and expiry, and remove the grant. The bot owner can copy the Bot SOV ID from `/bot` to share it with the World owner.

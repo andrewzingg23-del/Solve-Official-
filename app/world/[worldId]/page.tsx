@@ -226,6 +226,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
         <nav aria-label="World navigation" className="flex items-center gap-1 rounded-md border border-line bg-surface/75 p-1">
           <Link href={`/world/${worldId}/room`} className="rounded px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted hover:text-foreground">Room</Link>
           <span aria-current="page" className="rounded bg-accent/15 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">Details</span>
+          <Link href={`/world/${worldId}/ideas`} className="rounded px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted hover:text-foreground">Ideas</Link>
           <a href="#history" className="rounded px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted hover:text-foreground">History</a>
         </nav>
       </header>
@@ -255,6 +256,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
         </p>
       )}
       {error === "world-missing" && <p role="alert" className="rounded border border-negative/30 bg-negative/10 px-3 py-2 text-sm text-negative">This World could not be found in the selected scope.</p>}
+      <WorldAccessPanel worldId={worldId} scope={world.scope} saved={saved === "collaborator"} error={typeof error === "string" ? error : undefined} />
 
       <section aria-label="World canvas" className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(19rem,0.38fr)] xl:items-start">
         <div className="flex min-w-0 flex-col gap-4">

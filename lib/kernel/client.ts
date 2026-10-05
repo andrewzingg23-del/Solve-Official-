@@ -232,7 +232,15 @@ export type RelationKind =
   | "part_of"
   | "challenges"
   | "replaces"
-  | "escalates_to";
+  | "escalates_to"
+  | "idea_derived_from"
+  | "idea_supports"
+  | "idea_contradicts"
+  | "idea_supersedes"
+  | "idea_implemented_by"
+  | "idea_tested_by"
+  | "idea_evidenced_by"
+  | "idea_blocked_by";
 
 export type WorldRelation = {
   relation_id: string;
