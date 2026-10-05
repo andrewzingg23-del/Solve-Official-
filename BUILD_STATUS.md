@@ -357,3 +357,13 @@ The founder asked for "a ai to business outreach flow ... with meta accounts but
 - There is no target bar: the brand never gamifies money. The $10,000 north star is the business's (`DECISIONS.md`).
 - **Tests:** outreach suite 7/7 (values, refusals, the yearly total by currency, rendering).
 
+## 2026-10-05: Crypto stage 1, the record anchored on Solana
+
+- **Anchoring** (`lib/chain/anchor.ts`): a World's history (each event's sequence number and chained hash, never content) becomes a Merkle root. A memo writes `solve:anchor:v1:<root>:<count>` on Solana, so no names, amounts or text are ever published.
+- **On the record** (`lib/bot/anchor.ts`): the World's owner anchors, and the anchor is saved on the World's record as `artifact` evidence with the transaction's explorer link. The caller's authority is checked before anything is written on chain, so a refusal never spends a fee or leaves an orphan root.
+- **Shared receipts** now carry their inclusion proof. `/saved/<token>` checks it against the root and says plainly what it shows: the save was on the record by then and hasn't changed since, never that the thing itself happened (constitution Part XI). A forged proof is shown as not checking out.
+- **On the World page** (`app/anchor-panel.tsx`): the last anchor, and a button when this deployment has an anchor key.
+- **Devnet only:** `ANCHOR_CLUSTER`, `SOLANA_RPC_URL` and `ANCHOR_PAYER_KEY` (a fee-only keypair) are documented in `.env.example`. Mainnet is refused until the founder decides (Part XV). No money moves.
+- **Tests:** `tests/bot/anchor.test.ts` uses LiteSVM with the real Memo program. It covers Merkle proofs for 1 to 9 leaves (forged steps and leaves fail), anchoring, a read-only member refused before any chain write, receipts with proofs surviving the link, a forged proof flagged on the page, saves after an anchor waiting for the next one, and config refusals.
+- **Checks:** bot and chain suites 88/88; typecheck ok; lint clean; build ok.
+

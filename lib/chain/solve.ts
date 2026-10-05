@@ -46,7 +46,7 @@ export const solve = (tokens: bigint | number) => BigInt(tokens) * UNIT;
 export const GENESIS_SUPPLY = solve(1_000_000_000);
 
 // SPL Memo v2, deployed on every cluster. The memo client's newer default address is not.
-const MEMO_PROGRAM = address("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");
+export const MEMO_PROGRAM = address("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");
 
 export const VAULTS = ["earn", "treasury", "team", "liquidity", "community"] as const;
 export type Vault = (typeof VAULTS)[number];

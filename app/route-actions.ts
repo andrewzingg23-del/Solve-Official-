@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
+import { anchorChainFromEnv, anchorWorld } from "@/lib/bot/anchor";
 import { approveAndSend, recordOutcome } from "@/lib/bot/outreach";
 import { markStepDone, takeRoute } from "@/lib/bot/routes";
 import { WorldInputError } from "@/lib/bot/worlds";
@@ -65,4 +66,17 @@ export async function recordOutcomeAction(worldId: string, formData: FormData) {
   }
   revalidatePath(worldPath(worldId));
   redirect(`${worldPath(worldId)}?saved=outcome`);
+}
+// Anchoring a World's record on chain (devnet only), as its owner. Only a fingerprint is written.
+export async function anchorWorldAction(worldId: string) {
+  if (!(await getUser())) redirect(`/login?next=${encodeURIComponent(worldPath(worldId))}`);
+  const chain = await anchorChainFromEnv().catch(() => null);
+  if (!chain) redirect(`${worldPath(worldId)}?error=anchor-off`);
+  try {
+    await anchorWorld(await getKernel(), worldId, chain);
+  } catch (error) {
+    failed(worldId, error);
+  }
+  revalidatePath(worldPath(worldId));
+  redirect(`${worldPath(worldId)}?saved=anchor`);
 }

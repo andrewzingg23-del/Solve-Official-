@@ -14,9 +14,11 @@ import { outcomesIn, parseOutreach, sentIn, type LeadOutcome, type Sent } from "
 import { parseRoutes, takenRoutes, type TakenRoute } from "@/lib/bot/routes";
 import { PartPreview } from "@/app/part-preview";
 import { SavePoint } from "@/app/save-point";
+import { AnchorPanel } from "@/app/anchor-panel";
 import { OutreachCard } from "@/app/outreach-card";
+import { anchorsIn, type Checkpoint } from "@/lib/bot/anchor";
 import { RouteCard } from "@/app/route-card";
-import { approveOutreachAction, recordOutcomeAction, stepDoneAction, takeRouteAction } from "@/app/route-actions";
+import { anchorWorldAction, approveOutreachAction, recordOutcomeAction, stepDoneAction, takeRouteAction } from "@/app/route-actions";
 import { createArtifactAction, updateArtifactAction } from "./actions";
 import { WorldBotAccessPanel } from "./bot-access-panel";
 import { WorldAccessPanel } from "./access-panel";
@@ -184,6 +186,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
   let taken = new Map<string, TakenRoute>();
   let sent = new Map<string, Map<number, Sent>>();
   let outcomes = new Map<string, Map<number, LeadOutcome[]>>();
+  let anchors: Checkpoint[] = [];
   let me = "";
   try {
     const loaded = await loadCreativeWorld(kernel, worldId);
@@ -196,6 +199,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
     taken = await takenRoutes(kernel, world.scope).catch(() => new Map<string, TakenRoute>());
     sent = await sentIn(kernel, world.scope).catch(() => new Map<string, Map<number, Sent>>());
     outcomes = await outcomesIn(kernel, world.scope).catch(() => new Map<string, Map<number, LeadOutcome[]>>());
+    anchors = await anchorsIn(kernel, world.scope).catch(() => []);
     me = (await kernel.whoami()).actor_id;
     profiles = await kernel.readActors([...new Set([...events.map((event) => event.actor_id), ...[...taken.values()].map((t) => t.takenBy)])]);
     const ownerIds = [...new Set(profiles.map((profile) => profile.accountable_party).filter((id): id is string => Boolean(id)))];
@@ -258,6 +262,8 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
       {saved === "route" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Route taken. Its steps are on the record as yours.</p>}
       {saved === "outreach" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Approved. Recorded in Practice; nothing was sent outside solve.</p>}
       {saved === "outcome" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Recorded on your word.</p>}
+      {saved === "anchor" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Anchored. A fingerprint of this World&apos;s history is now on chain.</p>}
+      {error === "anchor-off" && <p role="alert" className="rounded border border-negative/30 bg-negative/10 px-3 py-2 text-sm text-negative">Anchoring isn&apos;t set up on this deployment yet.</p>}
       {saved === "step" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Step marked done, on your word.</p>}
       {(error === "route-input" || error === "route-access" || error === "route-save") && (
         <p role="alert" className="rounded border border-negative/30 bg-negative/10 px-3 py-2 text-sm text-negative">
@@ -312,6 +318,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
             saved={saved === "resource"}
             error={typeof error === "string" && ["resource-input", "resource-save", "access"].includes(error) ? error : undefined}
           />
+          <AnchorPanel anchors={anchors} anchor={process.env.ANCHOR_CLUSTER && process.env.SOLANA_RPC_URL && process.env.ANCHOR_PAYER_KEY ? anchorWorldAction.bind(null, worldId) : undefined} />
           <section id="history" className="scroll-mt-6 flex flex-col gap-3 rounded-md border border-line bg-surface/45 p-5">
             <div className="flex items-baseline justify-between gap-4">
               <h2 className={label}>History</h2>

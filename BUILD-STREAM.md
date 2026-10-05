@@ -443,3 +443,12 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Paths:** `lib/bot/outreach.ts`, `lib/bot/waiting.ts`, `lib/bot/connector.ts`, `app/outreach-card.tsx`, `app/route-actions.ts`, `app/command/view.tsx`, tests.
   - **Checks:** outreach 7/7; typecheck ok.
   - **Next:** stage 1, anchoring the record so receipts can be checked on Solana devnet.
+
+- 2026-10-05 07:40Z — Claude, crypto stage 1 (founder: "integrate crypto heavily"): the record is anchored on Solana.
+  - A World's event hashes form a Merkle root, written in a memo (fingerprint only), and the anchor is saved on the record.
+  - Shared receipts carry inclusion proofs, and the public page checks them.
+  - The owner can anchor from the World page when an anchor key is configured.
+  - Devnet only; no money moves.
+  - **Paths:** `lib/chain/anchor.ts`, `lib/chain/solve.ts` (`MEMO_PROGRAM` exported), `lib/bot/anchor.ts`, `lib/bot/receipt.ts`, `app/saved/[token]/page.tsx`, `app/anchor-panel.tsx`, `app/route-actions.ts`, `app/world/[worldId]/page.tsx` (additive), `.env.example`, `tests/bot/anchor.test.ts`.
+  - **Checks:** bot and chain 88/88; typecheck ok; lint clean; build ok.
+  - **Needs from the founder:** a dedicated devnet fee keypair and an RPC URL in the staging environment. After that: stage 2, wallets the person controls.

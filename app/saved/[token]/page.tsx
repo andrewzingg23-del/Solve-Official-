@@ -3,7 +3,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { receiptFromPath } from "@/lib/bot/receipt";
+import { receiptFromPath, type Receipt } from "@/lib/bot/receipt";
+import { explorerUrl, leafHash, verifyProof } from "@/lib/chain/anchor";
 import { partOutlinePath } from "@/lib/bot/part";
 import { saveNumber, vouch } from "@/lib/bot/vouch";
 
@@ -56,6 +57,7 @@ export default async function SavedPage({ params }: PageProps<"/saved/[token]">)
 
         <footer className="mt-auto flex flex-col gap-3 border-t border-[#d3dde6] pt-6 text-sm">
           <p className="font-medium">Everything here is real.</p>
+          {r.anchor ? <AnchorLine anchor={r.anchor} /> : null}
           <p className="text-xs leading-5 text-[#4d5b6c]">
             {r.owner} shared this from their record on {day(r.issued)}. {r.basis === "externally_verified" ? "It was verified." : `It rests on ${r.basis === "self_reported" ? `${r.owner}'s word` : "what was seen"}, not on an outside check.`}
           </p>
@@ -67,3 +69,23 @@ export default async function SavedPage({ params }: PageProps<"/saved/[token]">)
     </div>
   );
 }
+
+// The anchor, checked here: the save's leaf and proof must lead to the root that was written on
+// chain. It shows the record wasn't changed after the anchor, never that the event happened.
+function AnchorLine({ anchor }: { anchor: NonNullable<Receipt["anchor"]> }) {
+  const holds = verifyProof(leafHash({ seq: anchor.seq, hash: anchor.hash }), anchor.proof, anchor.root);
+  const where = anchor.cluster === "solana-mainnet" ? "Solana" : anchor.cluster === "solana-devnet" ? "Solana devnet" : "a local test chain";
+  const url = explorerUrl(anchor.cluster, anchor.signature);
+  return (
+    <p className="text-xs leading-5 text-[#4d5b6c]">
+      {holds ? `Anchored on ${where} on ${day(anchor.at)}: its proof checks out against the root written there, so this save was on the record by then and hasn't been changed since.` : "Its anchor proof does not check out, so treat this receipt with care."}
+      {url && holds ? (
+        <>
+          {" "}
+          <a href={url} target="_blank" rel="noopener noreferrer nofollow" className="text-[#0891b2] underline decoration-[#d3dde6] underline-offset-4">See the anchor</a>
+        </>
+      ) : null}
+    </p>
+  );
+}
+
