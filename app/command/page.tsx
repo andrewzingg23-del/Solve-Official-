@@ -12,6 +12,7 @@ import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { listCreativeWorlds } from "@/lib/world/creative";
 import { LiveLine } from "./live-line";
+import { WalletPanel } from "./wallet-panel";
 import { CommandView, type CommandData } from "./view";
 
 export const metadata: Metadata = { title: "Command Center · solve" };
@@ -23,10 +24,11 @@ async function load(userId: string): Promise<CommandData | "identity" | "unavail
     const kernel = await getKernel();
     const [me, bot] = await Promise.all([kernel.whoami(), loadBot(kernel)]);
     const worlds = bot.avatar ? await worldsForBot(kernel, bot.avatar.agent_id) : await listCreativeWorlds(kernel);
-    const [{ journeys: all, gaps, approvals, results }, connections, savesByWorld] = await Promise.all([
+    const [{ journeys: all, gaps, approvals, results }, connections, savesByWorld, wallets] = await Promise.all([
       overview(kernel, worlds, me.actor_id),
       bot.avatar ? readConnections(kernel, bot.ownerId) : Promise.resolve([]),
       latestSaves(kernel, worlds, 3),
+      kernel.myWallets().catch(() => []),
     ]);
     const titles = new Map(worlds.map((w) => [w.worldId, w.title]));
     const saves = Object.entries(savesByWorld)
@@ -45,6 +47,7 @@ async function load(userId: string): Promise<CommandData | "identity" | "unavail
       connections,
       saves,
       live: botName ? <LiveLine userId={userId} botName={botName} /> : undefined,
+      wallet: <WalletPanel wallets={[...new Set(wallets.map((w) => w.address))]} />,
     };
   } catch (error) {
     if (error instanceof KernelError && error.name === "unauthenticated") return "identity";

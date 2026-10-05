@@ -25,6 +25,7 @@ export type CommandData = {
   results?: Result[]; // what happened with approved outreach, latest first
   saves: (SavedProof & { worldId: string; worldTitle: string })[];
   live?: ReactNode; // who is working right now, when presence is available
+  wallet?: ReactNode; // the person's linked wallets and the way to link one
 };
 
 function Section({ id, title, children, aside }: { id: string; title: string; children: ReactNode; aside?: ReactNode }) {
@@ -133,6 +134,7 @@ export function CommandView({ data }: { data: CommandData }) {
         ) : (
           <Link href="/bot" className={quietLink}>Make your bot</Link>
         )}
+        {data.wallet}
       </Section>
 
       <Section id="happened" title="What actually happened">

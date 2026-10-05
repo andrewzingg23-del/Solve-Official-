@@ -459,3 +459,11 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Until money settles through solve,** network revenue is $0.
 
   Docs only. Next: crypto stage 2, wallets the person controls (proven by signing), the prerequisite for payments.
+
+- 2026-10-05 08:15Z — Claude, crypto stage 2: wallets the person controls.
+  - Linking needs a signed proof: a server-issued, person-bound, 10-minute challenge, signed by the person's own wallet and checked before the kernel links the address.
+  - solve never holds keys. The wallet shows on the Command Center.
+  - Flagged for Codex: make the kernel's `link_wallet` require a proof.
+  - **Paths:** `lib/chain/wallet-proof.ts`, `app/command/{wallet-actions.ts,wallet-panel.tsx,view.tsx,page.tsx}`, `tests/bot/wallet.test.ts`.
+  - **Checks:** bot suite 80/80; typecheck ok; lint clean; build ok.
+  - **Next:** stage 3 (payments settled on chain, the network's share) waits for the founder's approval and legal review.

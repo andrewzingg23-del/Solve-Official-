@@ -367,3 +367,15 @@ The founder asked for "a ai to business outreach flow ... with meta accounts but
 - **Tests:** `tests/bot/anchor.test.ts` uses LiteSVM with the real Memo program. It covers Merkle proofs for 1 to 9 leaves (forged steps and leaves fail), anchoring, a read-only member refused before any chain write, receipts with proofs surviving the link, a forged proof flagged on the page, saves after an anchor waiting for the next one, and config refusals.
 - **Checks:** bot and chain suites 88/88; typecheck ok; lint clean; build ok.
 
+## 2026-10-05: Crypto stage 2, wallets the person controls
+
+- **Linking from the Command Center:** the person links a Solana wallet by signing a short message in their own wallet (Phantom, Solflare or Backpack in the browser). Signing moves nothing and costs nothing, and solve never sees or holds a key.
+- **What the server checks** before the kernel links the address (`lib/chain/wallet-proof.ts`, `app/command/wallet-actions.ts`):
+  - the challenge is signed by the server (HMAC) and bound to the person, so it can't be reused by someone else or edited;
+  - it is at most 10 minutes old;
+  - the wallet's ed25519 signature matches.
+- **Recorded on devnet** while money runs there. The kernel already refuses an address linked to someone else.
+- **Shown:** "With you" on the Command Center shows the linked wallet (shortened), even before a bot exists.
+- **Known gap, for Codex:** the kernel's `link_wallet` doesn't itself require proof, so a direct API call could link an address without it and block its real owner. Proposed fix: a new migration that only accepts links carrying a server-verified proof, or verifies the signature in the kernel.
+- **Tests:** `tests/bot/wallet.test.ts` covers valid proofs; another person's, an edited, an expired or a forged challenge; another wallet's signature; bad input; one owner per address; and the panel slot without a bot. Bot suite 80/80; typecheck ok; lint clean; build ok.
+
