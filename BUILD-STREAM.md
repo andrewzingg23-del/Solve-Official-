@@ -285,20 +285,20 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 
 - 2026-10-05 02:20Z — CI run 109 (`d157b74`: holes and flat parts, receipt preview card, print notes) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37254637235. Still waiting on the founder: v5 and presence on staging (two files in the SQL editor), then the first real pilot loop.
 
-- 2026-10-05 02:40Z — Claude, the founder's master spec is now in the repo: `docs/specs/SOVEREIGN-MASTER-BUILD-SPEC.pdf` (original) and `.md` (transcription, wording unchanged). The founder asked "make sure this meets vision", so it was checked against `VISION-CANON.md`, `DIRECTIVES.md`, `DECISIONS.md` and the code: `docs/specs/2026-10-05-spec-vision-check.md`.
+- 2026-10-05 02:32Z — Claude, the founder's master spec is now in the repo: `docs/specs/SOVEREIGN-MASTER-BUILD-SPEC.pdf` (original) and `.md` (transcription, wording unchanged). The founder asked "make sure this meets vision", so it was checked against `VISION-CANON.md`, `DIRECTIVES.md`, `DECISIONS.md` and the code: `docs/specs/2026-10-05-spec-vision-check.md`.
   - The foundation meets the vision.
   - Eight drifts are listed with small amendments: community-first instead of person-first; one scaffold instead of three researched routes; the vision's words missing from the ontology, with a mapping table; no personal node; no watchers; a Markdown brief as the default artifact; no Forge; no client-connected runtime kind.
   - Four items are for the founder: the name, which conflicts with the 2026-10-04 decision; brand promise and palette; Whop versus Discord/Slack; the first pilot.
   - Docs only, no checks run. Next: gate money (`ENABLE_MONEY`, `ENABLE_PAYMENTS`, `ENABLE_EXTERNAL_FINANCIAL_ACTIONS`); `/money` is reachable today.
 
-- 2026-10-05 03:05Z — Claude, money is gated off the default path (master spec §2).
+- 2026-10-05 02:34Z — Claude, money is gated off the default path (master spec §2).
   - `lib/flags.ts` defines `moneyEnabled`, `paymentsEnabled` and `externalFinancialActionsEnabled`. Unset means off, and each switch needs the one before it.
   - `/money` and both of its Server Actions answer 404 unless `ENABLE_MONEY=true`. Before this, anyone could start a 60-second in-memory kernel and chain run by direct POST.
   - The flags are documented in `.env.example`, `README.md` and `BUILD_STATUS.md`.
   - Left as is: Arcadia's Horizon still shows the simulated deposit goal. It is Practice, and it is blocked in the browser with no chain connected. Codex's surface; hide it if the founder wants.
   - Checks: `tests/flags.test.ts` 2/2; typecheck ok; lint ok; `next build` ok (`/money` prerenders with status 404).
 
-- 2026-10-05 03:45Z — CI run 110 (`29d6ba9`, the money gate) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37255971748.
+- 2026-10-05 02:42Z — CI run 110 (`29d6ba9`, the money gate) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37255971748.
 
   Then Claude built routes from an ask, the first amendment in the vision check (§3.2): the vision's "I found 3 ways forward" and the spec's Intent → Task path.
   - **What it does:** the person's own assistant researches and proposes up to three routes with `propose_routes`. The person takes one on the World page, and its steps become kernel tasks they created. Steps are marked done on their word, and `read_world` gives the bot the next step.
@@ -310,9 +310,19 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Checks:** bot suite plus flags 61/61; typecheck ok; lint ok; `next build` ok.
   - **Next:** Community on existing kernel primitives (spec Build 1). Still waiting on the founder for v5 and presence on staging, and the four spec decisions.
 
-- 2026-10-05 04:00Z — Claude. The founder said Manus has joined the build. Changes:
+- 2026-10-05 02:44Z — Claude. The founder said Manus has joined the build. Changes:
   - `docs/handoff/MANUS.md`: who owns what, what to read, rules that never bend, and how to work alongside the others.
   - A Manus row in `ACTIVE-WORK.md`.
   - `AGENTS.md` now lists the master spec and the vision check, and the three-builder rules.
 
   Proposed lane for Manus, for the founder to confirm: real-browser walkthroughs on staging that file friction to `docs/qa/`; contracts for the Whop, Discord and Slack bridges from official docs in `docs/research/`; route quality. Manus works on `manus/<topic>` branches with pull requests, because the build workflow cancels a running build when new code lands on the same branch. Docs only, no checks run. CI run 111 (`0d1d694`, routes) is still running.
+
+- 2026-10-05 02:51Z — Claude. Two corrections and a report.
+  - **Times:** the four entries above were stamped ahead of the clock and now carry their commit times.
+  - **Manus:** relayed by the founder, Manus reports a website built in its own Manus-managed Webdev workspace. It is not in this repo: there is no `manus/` branch or pull request yet. Manus is reading the current branches to choose an integration path.
+  - **Open questions before any of it lands here:**
+    - what the site is (pages, stack, any sign-up form or database);
+    - where it is published;
+    - whether it follows `docs/brand/BRAND.md` (solve as the name, "Everything here is real", no claims beyond the record).
+  - **The home page:** `app/page.tsx` (Codex) serves the signed-out home today, so a public site must not replace it without the founder and Codex.
+  - **CI:** run 111 (`0d1d694`, routes) has passed test, typecheck and lint; the build step is still running.
