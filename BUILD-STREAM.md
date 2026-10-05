@@ -410,3 +410,13 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Paths:** `lib/bot/outreach.ts`, `lib/bot/connector.ts`, `lib/bot/presence.ts`, `lib/bot/waiting.ts`, `app/outreach-card.tsx`, `app/route-actions.ts`, `app/world/[worldId]/page.tsx` (additive), `app/bot/waiting.tsx`, `app/command/*`, `tests/bot/outreach.test.ts`; `lib/bot/worlds.ts` (the old lint warning, fixed).
   - **Checks:** full suite 251/251; typecheck ok; lint clean; build ok.
   - **Manus:** now also researches Meta's messaging rules and CAN-SPAM/CASL.
+
+- 2026-10-05 05:40Z — CI green:
+  - run 125 (`72b874e`: Command Center, Noticed, gaps): https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37261491633;
+  - run 126 (`48deded`: Outreach Room): https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37261862171.
+
+  Still waiting on the founder:
+  - the staging SQL paste and redirect URL;
+  - a sending address for real email;
+  - whether to set up a Meta Business account;
+  - the canon section and the Idea Graph.
