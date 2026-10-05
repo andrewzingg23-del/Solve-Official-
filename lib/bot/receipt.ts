@@ -7,7 +7,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { EvidenceBasis, Kernel } from "@/lib/kernel/client";
 import { loadCreativeWorld } from "@/lib/world/creative";
-import { parsePart, sizeText, type Point } from "./part";
+import { parsePart, sizeText, type Hole, type Point } from "./part";
 import { proofsIn } from "./proof";
 
 export type Receipt = {
@@ -19,7 +19,7 @@ export type Receipt = {
   issued: string; // when the receipt was made
   title: string; // the piece it belongs to
   owner: string; // the person who shared it, by their own label
-  part?: { outline: Point[]; size: string; material: string };
+  part?: { outline: Point[]; holes?: Hole[]; size: string; material: string };
 };
 
 export class ReceiptError extends Error {}
@@ -55,8 +55,9 @@ export function openReceipt(token: string, secret: string): Receipt | null {
       const p = r.part as Record<string, unknown>;
       const outline = Array.isArray(p.outline) && p.outline.length >= 3 && p.outline.length <= 120 && p.outline.every((q) => Array.isArray(q) && q.length === 2 && q.every((x) => typeof x === "number" && Number.isFinite(x) && x >= 0 && x <= 256)) ? (p.outline as Point[]) : null;
       const size = str(p.size, 40), material = str(p.material, 10);
-      if (!outline || !size || !material) return null;
-      part = { outline, size, material };
+      const holes = p.holes === undefined ? undefined : Array.isArray(p.holes) && p.holes.length <= 20 && p.holes.every((h) => Array.isArray(h) && h.length === 3 && h.every((x) => typeof x === "number" && Number.isFinite(x) && x >= 0 && x <= 256)) ? (p.holes as Hole[]) : null;
+      if (!outline || !size || !material || holes === null) return null;
+      part = { outline, ...(holes ? { holes } : {}), size, material };
     }
     return { v: 1, n: r.n as number, what, basis: r.basis as EvidenceBasis, at, issued, title, owner, ...(part ? { part } : {}) };
   } catch {
@@ -81,7 +82,7 @@ export async function buildReceipt(kernel: Kernel, worldId: string, recordId: st
     issued: now.toISOString(),
     title: (piece?.title ?? world.title).slice(0, 160),
     owner: (me.label || "Someone").slice(0, 80),
-    ...(part ? { part: { outline: part.profile.map(([x, z]) => [Math.round(x), Math.round(z)] as Point), size: sizeText(part), material: part.material } } : {}),
+    ...(part ? { part: { outline: part.profile.map(([x, z]) => [Math.round(x), Math.round(z)] as Point), ...(part.holes?.length ? { holes: part.holes } : {}), size: sizeText(part), material: part.material } } : {}),
   };
 }
 

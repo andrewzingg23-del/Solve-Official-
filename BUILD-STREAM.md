@@ -265,3 +265,16 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 - 2026-10-05 02:03Z — Claude, shareable receipts. `lib/bot/receipt.ts` (a signed snapshot: build, sign, open), `shareSaveAction`, `app/bot/share-save.tsx` (Share → a copyable link), and `app/saved/[token]/page.tsx` (the public receipt on the white floor, not indexed). `/saved` stays public in `proxy.ts`.
 
   Checks: bot suite 53/53 (3 new receipt tests: signature and tamper rejection, only your own saves, private proof detail left out, honest rendering); typecheck ok; lint ok (one existing warning). One Chromium look at a signed receipt from a local dev server at 1280 px and 390 px: no overflow, no console errors; the tampered link returned 404.
+
+- 2026-10-05 02:10Z — Claude, parts with holes and flat parts.
+  - `lib/bot/part.ts`:
+    - hole checking (inside, a wall all round, no overlaps);
+    - `holeLoop`;
+    - joining holes with straight cuts and added points;
+    - ear clipping that drops zero-area slivers before relaxing;
+    - walls from the face's boundary edges;
+    - the flat lay (axes swapped, faces re-wound).
+  - The connector's `design_part` takes `holes` and `lay`. The preview and the receipt draw holes (even-odd fill).
+  - The first version filled a grid of aligned holes wrongly: its loose fallback let a triangle run across a row of holes. Fixed with the cut-and-insert join; the six-hole grid is now a test.
+
+  Checks: bot suite 54/54; typecheck ok; lint ok (one existing warning); a local fuzz of 600 random shapes found 0 bad solids. Holding the push until CI run 107 (`f6a045d`) finishes, so it isn't cancelled.

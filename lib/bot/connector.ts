@@ -199,7 +199,7 @@ export const TOOLS = [
   {
     name: "design_part",
     title: "Design a printable part",
-    description: "Designs a simple part the person can 3D print: a side outline in millimetres, extruded to a width. Good for stands, brackets, hooks, clips, spacers and shims. Sovereign checks the outline and serves an STL for their slicer (Bambu Studio, PrusaSlicer, Cura). Put the flat side on the bed (z = 0), keep the outline one closed loop that never crosses itself, keep walls at least 2 mm thick, and avoid long unsupported overhangs. Revise with artifact_id. It is a design until it is printed; when the person shares proof, use add_proof.",
+    description: "Designs a simple part the person can 3D print: an outline in millimetres, with optional round holes, extruded to a width. On edge, the outline is the side view (stands, brackets, hooks); laid flat, it is the top view (plates with screw holes, spacers, washers, clips, tags). Sovereign checks it and serves an STL for their slicer (Bambu Studio, PrusaSlicer, Cura). Keep the outline one closed loop that never crosses itself, walls at least 2 mm thick, and no long unsupported overhangs; on edge, the flat side goes on the bed (z = 0). Revise with artifact_id. It is a design until it is printed; when the person shares proof, use add_proof.",
     inputSchema: {
       type: "object",
       properties: {
@@ -213,7 +213,14 @@ export const TOOLS = [
           items: { type: "array", minItems: 2, maxItems: 2, items: { type: "number" } },
           description: "The side outline as [x, z] points in millimetres, in order around the shape. z = 0 is the bed.",
         },
-        width_mm: { type: "number", minimum: PART_LIMITS.minWidth, maximum: PART_LIMITS.size, description: "How far the outline is extruded, in millimetres." },
+        width_mm: { type: "number", minimum: PART_LIMITS.minWidth, maximum: PART_LIMITS.size, description: "How far the outline is extruded, in millimetres: the depth of a part on edge, the thickness of a flat one." },
+        holes: {
+          type: "array",
+          maxItems: PART_LIMITS.holes,
+          items: { type: "array", minItems: 3, maxItems: 3, items: { type: "number" } },
+          description: "Optional round holes through the part: [x, z, diameter] in the outline's coordinates, e.g. [20, 15, 4.5] for an M4 screw. Each needs wall around it.",
+        },
+        lay: { type: "string", enum: ["on_edge", "flat"], description: "on_edge (default): the outline is the side view. flat: the outline is the top view, lying on the bed." },
         material: { type: "string", enum: [...MATERIALS] },
         artifact_id: { type: "string", description: "Revise this part instead of making a new one." },
       },
@@ -480,7 +487,7 @@ export function createConnector(s: Session) {
         if (name === "design_part") {
           let body: string;
           try {
-            body = encodePart({ purpose: args.purpose, profile: args.profile, width: args.width_mm, material: args.material });
+            body = encodePart({ purpose: args.purpose, profile: args.profile, width: args.width_mm, material: args.material, holes: args.holes, lay: args.lay === "flat" ? "flat" : undefined });
           } catch (error) {
             throw new WorldInputError(error instanceof PartInputError ? error.message : "the part is invalid");
           }

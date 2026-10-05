@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: PageProps<"/saved/[token]">):
 export default async function SavedPage({ params }: PageProps<"/saved/[token]">) {
   const r = load((await params).token);
   if (!r) notFound();
-  const outline = r.part ? partOutlinePath({ purpose: "", material: "other", width: 1, profile: r.part.outline }) : null;
+  const outline = r.part ? partOutlinePath({ profile: r.part.outline, holes: r.part.holes }) : null;
   return (
     <div className="min-h-svh w-full bg-[#f2f7fb] text-[#04070d]">
       <main className="mx-auto flex min-h-svh w-full max-w-2xl flex-col gap-10 px-4 py-10 md:px-8 md:py-16">
@@ -52,7 +52,7 @@ export default async function SavedPage({ params }: PageProps<"/saved/[token]">)
         {outline && r.part ? (
           <figure className="flex flex-col gap-3 rounded-xl border border-[#d3dde6] bg-white p-6">
             <svg viewBox={`-4 -4 ${outline.width + 8} ${outline.height + 8}`} role="img" aria-label={`${r.title}: side outline, ${r.part.size} mm`} className="mx-auto h-auto max-h-64 w-full max-w-md">
-              <path d={outline.d} fill="#04070d" fillOpacity={0.06} stroke="#04070d" strokeWidth={1.2} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+              <path d={outline.d} fillRule="evenodd" fill="#04070d" fillOpacity={0.06} stroke="#04070d" strokeWidth={1.2} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
               <line x1={-4} y1={outline.height} x2={outline.width + 4} y2={outline.height} stroke="#04070d" strokeOpacity={0.4} strokeWidth={1} vectorEffect="non-scaling-stroke" />
             </svg>
             <figcaption className="text-xs text-[#4d5b6c] tabular-nums">{r.part.size} mm · {r.part.material} · designed and made in a World on solve</figcaption>

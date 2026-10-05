@@ -7,7 +7,7 @@ import { kernelClient, type Kernel } from "../../lib/kernel/client";
 import { localSupabase } from "../../lib/kernel/local";
 import { createConnector, type Session } from "../../lib/bot/connector";
 import { approveConnection } from "../../lib/bot/memory";
-import { encodePart, parsePart, partFile, partStl, partTriangles, signedArea, type Point } from "../../lib/bot/part";
+import { encodePart, parsePart, partFile, partStl, partTriangles, signedArea, sizeText, type Point } from "../../lib/bot/part";
 import { proofsIn } from "../../lib/bot/proof";
 import { saveBot } from "../../lib/bot/store";
 import { setBotAccess } from "../../lib/bot/worlds";
@@ -115,4 +115,54 @@ it("draws the part from its checked outline, with the STL a click away", async (
   assert.match(html, /href="\/parts\/w\/p\.stl"[^>]*>Download STL/);
   assert.doesNotMatch(html, /SOV_PART_V1/);
   assert.equal(renderToStaticMarkup(createElement(PartPreview, { worldId: "w", pieceId: "p", body: "just text", title: "x" })), "");
+});
+
+// Closed, consistently wound and the right volume: every edge used once each way, positive volume.
+function assertSolid(part: NonNullable<ReturnType<typeof parsePart>>, volume: number) {
+  const tris = partTriangles(part);
+  const edges = new Map<string, number>();
+  const key = (p: number[]) => p.map((v) => v.toFixed(5)).join(",");
+  for (const t of tris) for (let i = 0; i < 3; i++) { const e = `${key(t[i])}>${key(t[(i + 1) % 3])}`; edges.set(e, (edges.get(e) ?? 0) + 1); }
+  for (const [edge, count] of edges) {
+    const [a, b] = edge.split(">");
+    assert.equal(count, 1, `edge ${edge} used once in each direction`);
+    assert.equal(edges.get(`${b}>${a}`), 1, `edge ${edge} has its twin`);
+  }
+  const v = tris.reduce((sum, [a, b, c]) => sum + (a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0]) + a[2] * (b[0] * c[1] - b[1] * c[0])) / 6, 0);
+  assert.ok(Math.abs(v - volume) < 1e-3 * Math.max(1, volume), `volume ${v} ≈ ${volume}`);
+  assert.equal(Math.min(...tris.flat().map((p) => p[2])), 0, "it sits on the bed");
+}
+
+it("makes flat parts and parts with holes as closed solids of the right volume", async () => {
+  const { holeLoop } = await import("../../lib/bot/part");
+  const holeArea = (d: number) => -signedArea(holeLoop([0, 0, d]));
+
+  const plate = parsePart(encodePart({ purpose: "Wall plate for two M4 screws", profile: [[0, 0], [60, 0], [60, 40], [0, 40]], width: 3, material: "PETG", holes: [[12, 20, 4.5], [48, 20, 4.5]], lay: "flat" }))!;
+  assert.deepEqual(plate.holes, [[12, 20, 4.5], [48, 20, 4.5]]);
+  assert.equal(plate.lay, "flat");
+  assert.equal(sizeText(plate), "60 × 40 × 3", "flat: the outline on the bed, the width as height");
+  assertSolid(plate, (2400 - 2 * holeArea(4.5)) * 3);
+
+  const ring: Point[] = Array.from({ length: 24 }, (_, i) => [10 + 10 * Math.cos((2 * Math.PI * i) / 24), 10 + 10 * Math.sin((2 * Math.PI * i) / 24)] as Point);
+  const washer = parsePart(encodePart({ purpose: "Washer", profile: ring, width: 2, material: "PLA", holes: [[10, 10, 8]], lay: "flat" }))!;
+  assertSolid(washer, (signedArea(washer.profile) - holeArea(8)) * 2);
+
+  const grid = parsePart(encodePart({ purpose: "Pegboard", profile: [[0, 0], [80, 0], [80, 50], [0, 50]], width: 4, material: "PLA", holes: [[15, 15, 6], [40, 15, 6], [65, 15, 6], [15, 35, 6], [40, 35, 6], [65, 35, 6]], lay: "flat" }))!;
+  assertSolid(grid, (4000 - 6 * holeArea(6)) * 4);
+
+  const bracket = parsePart(encodePart({ purpose: "L bracket", profile: [[0, 0], [50, 0], [50, 5], [5, 5], [5, 40], [0, 40]], width: 20, material: "PETG", holes: [[2.5, 25, 1.5]] }))!;
+  assertSolid(bracket, (signedArea(bracket.profile) - holeArea(1.5)) * 20);
+  assertSolid(parsePart(encodePart({ purpose: "Phone stand", profile: STAND, width: 70, material: "PETG" }))!, signedArea(STAND) * 70);
+
+  const square = [[0, 0], [30, 0], [30, 30], [0, 30]];
+  const refused: [unknown, RegExp][] = [
+    [[[40, 15, 4]], /wall around it/],
+    [[[1, 15, 4]], /wall around it/],
+    [[[15, 15, 6], [20, 15, 6]], /too close together/],
+    [[[15, 15, 0]], /diameter must be/],
+    [[[15, 15]], /\[x, z, diameter\]/],
+  ];
+  for (const [holes, why] of refused) assert.throws(() => encodePart({ purpose: "x", profile: square, width: 3, material: "PLA", holes }), why);
+  const moved = parsePart(encodePart({ purpose: "x", profile: [[100, 100], [130, 100], [130, 130], [100, 130]], width: 3, material: "PLA", holes: [[115, 115, 5]] }))!;
+  assert.deepEqual(moved.holes, [[15, 15, 5]], "holes move with the outline onto the bed");
 });

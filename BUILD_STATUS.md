@@ -229,3 +229,8 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
   **How it stays private:** the server can't read a private World for anyone, since the service key never acts as a person. So the receipt is a snapshot read with the owner's own sign-in, put into the link and signed with a key derived from the server secret (`lib/bot/receipt.ts`). Changing anything in the link breaks it. Only the person who saved something can share it, and the proof's private detail is left out. A receipt can't be withdrawn once sent, like a photo.
 
   **Tests:** bot suite 53/53, plus one Chromium look at a signed receipt (desktop and phone): no overflow, no console errors, and a tampered link returns 404.
+- **Parts with holes, and flat parts (2026-10-05).** `design_part` takes round holes (`[x, z, diameter]`, with at least 0.8 mm of wall around each and no two touching) and `lay: flat` for top-view parts: plates with screw holes, spacers, washers, clips, tags.
+  - **How holes are joined:** each hole joins the outline with a straight cut to the first edge it meets, with a point added there. Walls are built from the joined face's real boundary edges, so the solid always closes.
+  - **Tests:** a plate with two M4 holes, a washer, a six-hole grid in aligned rows, a bracket with a hole and the stand. Each must be closed, consistently wound, on the bed, and exactly (outline − holes) × width in volume.
+  - **Fuzzing:** 600 random plates and L-shapes. 204 valid parts came out closed with the exact volume; the rest were correctly refused.
+  - The preview and the receipt draw the holes.
