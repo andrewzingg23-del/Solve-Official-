@@ -134,9 +134,12 @@ it("lets the bot into a World only as far as its owner allows, and out again", a
 
   const { artifacts } = await loadCreativeWorld(ana, WORLD);
   assert.deepEqual(artifacts.map((a) => [a.title, a.body, a.version]), [["Budget", longBody, 2]], "the owner sees the bot's revision");
+  assert.equal(artifacts[0].via, "Claude", "a piece the bot writes names the assistant it came through");
   const history = await ana.readEvents(world.scope);
   const byBot = history.filter((e) => e.type.startsWith("kernel.entity") && e.actor_id === anaBot);
   assert.deepEqual(byBot.map((e) => [e.type, e.on_behalf_of]), [["kernel.entity.created", anaId], ["kernel.entity.created", anaId], ["kernel.entity.updated", anaId]], "resource and document changes are the bot's, for Ana; retries added nothing");
+  const { viaOf } = await import("../../lib/world/creative");
+  assert.deepEqual(byBot.slice(1).map((e) => viaOf((e.payload as { request?: { attributes?: Record<string, unknown> } }).request?.attributes)), ["Claude", "Claude"], "each revision's event records the assistant");
   const finalRead = await call(ana, "read_world", { world_id: WORLD });
   assert.match(finalRead.content[0].text, /<pieces note=[^>]+>\n- \[.+\] Budget: Counters first after all\./);
   assert.ok(finalRead.content[0].text.length <= 12_000, "pieces and resources share the context budget");
