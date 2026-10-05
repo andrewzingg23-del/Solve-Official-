@@ -1,6 +1,7 @@
 # Live build stream
 
 Active build branch: `codex/gateway-oidc-fallback`
+Active build branch: `codex/need-to-route-network-state-spec`
 
 This file is the shared, committed progress feed. It is readable from the repository at any time; it does not expose uncommitted edits in a builder's private working tree.
 
@@ -203,6 +204,13 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 - 2026-10-04 13:10Z — CI run 98 (`0b1327a`, brand v2 with the outlined identity SVGs) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37202544411. `0f4a3be` (the first-principles rethink) is docs-only and skips the build workflow. Waiting on the founder: the thesis and the line *Ask. Allow. Prove.*, the door (verification or making things), the "paid when it's real" principle, and trademark counsel.
 
 - 2026-10-04 22:50Z — Codex, added owner-managed human collaboration and private live World invalidation on `codex/world-live-collaboration`. People receive scoped viewer/editor grants by SOV ID; agents cannot be invited through the human panel. A kernel event trigger sends only `{world_id, seq}` to each currently authorized human’s private Realtime topic, and the browser refreshes canonical state on updates and reconnect. Added first failing end-to-end tests before implementation. Staging Auth/two-person live verification remains pending; no staging or production data was changed in this commit.
+- 2026-10-04 — Started: goal-first private World creation. Replace blank-only entry with an optional plain-language goal saved as the first attributed World piece; preserve blank creation, privacy, and retry safety. Plan: `docs/superpowers/plans/2026-10-04-goal-first-world.md`. Tests/checks not yet run. Local clone is blocked; using GitHub branch commits and push-triggered CI/Vercel preview.
+
+- 2026-10-04 — Founder insight added to `VISION-CANON.md` and the need-to-route design: SOV coordinates the finite resources behind a project—time, skill, ideas, capital, labor, tools/materials/information—and uses clear provenance, authority, commitments, and outcome evidence to reduce rechecking and move faster through trust.
+- 2026-10-04 — Started: World Resource Map (`docs/superpowers/plans/2026-10-04-world-resource-map.md`). The first slice will make self-described offers and open needs visible inside a private World, grouped by category and attributed to the person who entered them. No resource will be treated as a promise, verification, or completed delivery. Research candidates are not yet market decisions.
+
+
+- 2026-10-04 — Completed the World Resource Map and connected-bot path on `codex/need-to-route-network-state-spec`: structured self-reported offers/needs, event-derived authorship, bot-for-owner attribution, bounded `read_world`, and explicit `map_world_resource` action. GitHub CI passed all 212 tests plus typecheck, lint, and build on `9c51f71`. Vercel preview for that commit was blocked by the build-rate limit; no production deploy or database change. Next: make person-level collaboration and bot authorization easy to review, then add explicit commitments and delivery evidence.
 - 2026-10-05 00:52Z — Claude, brand v3 (founder: "seems a little generic", then "Go" on the inverted-construct direction).
   - `docs/brand/BRAND.md` v3: *Everything here is real.* The construct, inverted. The game-to-function map, save points, Practice and Real, where the game stops, the film, identity on the white floor, voice, audiences, the field, the name on conditions, commitments and decisions.
   - Build Book §2 brand lock, `DECISIONS.md` (2026-10-05 entry), the construct doc (shot list renumbered, the supplier and save beats) and the first-principles §6 (superseded note).

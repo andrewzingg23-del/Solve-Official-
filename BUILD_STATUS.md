@@ -1,6 +1,22 @@
 # BUILD_STATUS
 
-Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
+Updated 2026-10-04. Branch `codex/need-to-route-network-state-spec`.
+
+## Current checkpoint — 2026-10-04
+
+- The resource-coordination principle is now in `VISION-CANON.md`: SOV organizes project time, skill, ideas, capital, labor, tools, materials, and information with explicit identity, authority, provenance, and outcome evidence.
+- The private World Resource Map is implemented. People can record and revise offers and needs; connected bots can read those structured entries and, when asked, map the person’s exact statement through `map_world_resource`. Entries remain self-reported, nonbinding, and unassigned.
+- Resource authorship and latest edits come from append-only kernel events. Bot-created entries display the bot and the owner it acted for; that owner can correct the entry. Editable entity fields cannot forge the recorded reporter. The bot’s combined World context is capped at 12,000 characters and identifies shortened fields.
+- GitHub Actions run `37202067170` passed on code commit `9c51f71a9b39a16148acb6860fa1a73b53dbe393`: 212/212 tests, typecheck, lint, and build all succeeded.
+- Vercel did not build a preview for the latest commit: its check reports the project build-rate limit with an upgrade-to-Pro prompt. The latest READY staging preview is `https://solve-9v7jxs767-sovigrn.vercel.app` at commit `e855f672c45e8944c69590eddbae45bd0a792ec4`; it contains the resource-map UI and bot read path, but predates `map_world_resource`.
+- The latest code changes are on branch `codex/need-to-route-network-state-spec`. Production deployment and database were not changed.
+- Family caregiving and independent repair shops remain research candidates, not selected markets. The research notes below describe their sources and limitations.
+
+### Next sequence
+
+- Make inviting a specific person and authorizing their bot clear and reversible using SOV IDs.
+- Then design owner-approved resource matches and explicit commitments. Keep delivery evidence separate from self-reported offers.
+- Choose a narrow market only after interviewing the people who would use the first workflow.
 
 ## Current Checkpoint — 2026-10-04
 
