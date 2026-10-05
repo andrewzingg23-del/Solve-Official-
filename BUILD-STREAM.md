@@ -376,3 +376,8 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Checks:** waiting 2/2; bot suite 61/61; typecheck ok; lint ok.
   - **Pushing:** after CI for `927e0da` (the merges) finishes, so it isn't cancelled.
   - **Next:** slice 3, which assistant added each piece.
+
+- 2026-10-05 04:05Z — Claude, for the founder's problem 5 (stalled approvals): staging's three migrations are now one paste, `scripts/staging/2026-10-05-founder-first.sql`. It is built from the three migration files byte for byte, with their sha256 in the header, in one transaction, and ends with a check query (every column should read true on staging).
+  - **The check script:** `scripts/staging/check-founder-first.mts` applies the migrations staging already has (up to v4) to an embedded Postgres, runs the file and prints its check.
+  - **What the check shows:** v5 true and the key store private. The two Realtime checks read false locally only because the embedded Postgres has no Realtime. A second run is refused and nothing changes.
+  - **Checks:** that script; lint ok.

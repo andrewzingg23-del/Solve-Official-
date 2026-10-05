@@ -12,7 +12,7 @@ Updated 2026-10-05 by Claude. The founder overrides anything here.
 
 | Blocker | Who | State |
 |---|---|---|
-| Three migrations on solve-staging, in order: `supabase/migrations/20261004040000_erasable_content.sql` (v5), `20261004040100_bot_presence.sql`, `20261004040200_world_live_collaboration.sql` | Founder pastes them into the SQL editor. Claude's tool prompt timed out a fourth time on 2026-10-05. | Open |
+| Three migrations on solve-staging, in order: `supabase/migrations/20261004040000_erasable_content.sql` (v5), `20261004040100_bot_presence.sql`, `20261004040200_world_live_collaboration.sql` | Founder: paste `scripts/staging/2026-10-05-founder-first.sql` (all three in one transaction, with a check at the end) into the solve-staging SQL editor. Claude's tool prompt timed out a fourth time on 2026-10-05. | Open |
 | Sign-in by email link on the staging preview (Auth redirect URLs) | Founder | Never tried |
 | Connecting the builders to the founder's bot (MCP over HTTP with OAuth) | Manus to research; founder approves | Not started |
 
