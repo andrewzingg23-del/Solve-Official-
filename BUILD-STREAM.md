@@ -467,3 +467,9 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Paths:** `lib/chain/wallet-proof.ts`, `app/command/{wallet-actions.ts,wallet-panel.tsx,view.tsx,page.tsx}`, `tests/bot/wallet.test.ts`.
   - **Checks:** bot suite 80/80; typecheck ok; lint clean; build ok.
   - **Next:** stage 3 (payments settled on chain, the network's share) waits for the founder's approval and legal review.
+
+- 2026-10-05 08:30Z — CI run 132 (`beaa75e`) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37265416621. It covers everything since run 126; runs 127 to 131 were cancelled by newer pushes. Green now:
+  - Manus's merges and the contract fold;
+  - outreach outcomes, values and Command Center results;
+  - anchoring on chain;
+  - wallets.
