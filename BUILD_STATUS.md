@@ -242,3 +242,10 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
   - a warning that a large sideways hole may sag.
 
   Flat parts print without supports. Tested on the stand, a T-shaped shelf, a bridged ledge, a flat plate, a thin pin and a large hole.
+- **Routes from an ask (2026-10-05).** This is the vision's Wayfinder ("I found 3 ways forward") and the spec's Intent → Task path, built on existing kernel tasks.
+  - **Proposing:** the person asks their own assistant for a way to do something. It researches with its own tools, then calls the connector's `propose_routes` with up to three routes. Each route has steps in order and the link each step needs. The routes are saved in a World as a proposal (`lib/bot/routes.ts`).
+  - **Taking:** on the World page the person takes one (`app/route-card.tsx`, `app/route-actions.ts`). Each step becomes a kernel task the person created, with `cause_ref` pointing at the routes piece.
+  - **Done:** "Mark done" moves the next step to completed, on the person's word, and the record says who.
+  - **What the bot sees:** `read_world` shows the route taken, the steps done and the next step with its link.
+  - **Limits:** steps need `route.step`, which the World owner holds and a bot or a read-only member does not. A bot can propose and revise routes until one is taken, but it can't take a route or mark a step done.
+  - **Tests:** `tests/bot/routes.test.ts` covers limits and hand-edited pieces, the bot proposing, the bot and a member refused, idempotent take and done, `read_world`, and the card (the point only on done steps).

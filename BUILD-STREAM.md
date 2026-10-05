@@ -297,3 +297,15 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - The flags are documented in `.env.example`, `README.md` and `BUILD_STATUS.md`.
   - Left as is: Arcadia's Horizon still shows the simulated deposit goal. It is Practice, and it is blocked in the browser with no chain connected. Codex's surface; hide it if the founder wants.
   - Checks: `tests/flags.test.ts` 2/2; typecheck ok; lint ok; `next build` ok (`/money` prerenders with status 404).
+
+- 2026-10-05 03:45Z — CI run 110 (`29d6ba9`, the money gate) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37255971748.
+
+  Then Claude built routes from an ask, the first amendment in the vision check (§3.2): the vision's "I found 3 ways forward" and the spec's Intent → Task path.
+  - **What it does:** the person's own assistant researches and proposes up to three routes with `propose_routes`. The person takes one on the World page, and its steps become kernel tasks they created. Steps are marked done on their word, and `read_world` gives the bot the next step.
+  - **Paths:**
+    - `lib/bot/routes.ts`, `lib/bot/connector.ts`, `lib/bot/presence.ts`;
+    - `app/route-card.tsx`, `app/route-actions.ts`, `app/save-point.tsx` (`day` exported);
+    - additive edits to `app/world/[worldId]/page.tsx`;
+    - `tests/bot/routes.test.ts`, `tests/bot/connector.test.ts` (tool list).
+  - **Checks:** bot suite plus flags 61/61; typecheck ok; lint ok; `next build` ok.
+  - **Next:** Community on existing kernel primitives (spec Build 1). Still waiting on the founder for v5 and presence on staging, and the four spec decisions.

@@ -5,7 +5,7 @@ import type { EvidenceBasis } from "@/lib/kernel/client";
 import { saveNumber, vouch } from "@/lib/bot/vouch";
 
 // "Oct 5", with the year only when it is not this year.
-function day(iso: string, now = new Date()) {
+export function day(iso: string, now = new Date()) {
   const d = new Date(iso);
   const sameYear = d.getUTCFullYear() === now.getUTCFullYear();
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }), timeZone: "UTC" });

@@ -10,8 +10,11 @@ import { formatWorldActorAttribution } from "@/lib/world/attribution";
 import { parsePixelArt } from "@/lib/bot/pixel-art";
 import { parsePart } from "@/lib/bot/part";
 import { proofsIn, type SavedProof } from "@/lib/bot/proof";
+import { parseRoutes, takenRoutes, type TakenRoute } from "@/lib/bot/routes";
 import { PartPreview } from "@/app/part-preview";
 import { SavePoint } from "@/app/save-point";
+import { RouteCard } from "@/app/route-card";
+import { stepDoneAction, takeRouteAction } from "@/app/route-actions";
 import { createArtifactAction, updateArtifactAction } from "./actions";
 import { WorldBotAccessPanel } from "./bot-access-panel";
 
@@ -24,6 +27,11 @@ function eventTitle(type: string) {
     case "kernel.evidence.attached": return "Saved with proof";
     case "kernel.grant.issued": return "Access granted";
     case "kernel.grant.revoked": return "Access removed";
+    case "kernel.task.created": return "Route step planned";
+    case "kernel.task.ready": return "Route step ready";
+    case "kernel.task.claimed": return "Route step started";
+    case "kernel.task.in_progress": return "Route step in progress";
+    case "kernel.task.completed": return "Route step done";
     default: return type.replace(/^kernel\./, "").replaceAll(".", " ");
   }
 }
@@ -57,11 +65,12 @@ function PixelArtPreview({ body, title }: { body: string; title: string }) {
   );
 }
 
-function ArtifactCard({ worldId, artifact, saves = [] }: { worldId: string; artifact: CreativeArtifact; saves?: SavedProof[] }) {
+function ArtifactCard({ worldId, artifact, saves = [], taken = null, takenBy = "you" }: { worldId: string; artifact: CreativeArtifact; saves?: SavedProof[]; taken?: TakenRoute | null; takenBy?: string }) {
   const position = positionFromArtifact(artifact);
   const update = updateArtifactAction.bind(null, worldId);
   const isPixelArt = parsePixelArt(artifact.body) !== null;
   const isPart = parsePart(artifact.body) !== null;
+  const routes = parseRoutes(artifact.body);
   return (
     <article className="flex w-full flex-col gap-3 rounded-md border border-line bg-surface/95 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.25)] backdrop-blur-md">
       <header className="flex items-start justify-between gap-3">
@@ -70,7 +79,9 @@ function ArtifactCard({ worldId, artifact, saves = [] }: { worldId: string; arti
           <h3 className="mt-1 break-words text-base font-medium leading-snug">{artifact.title}</h3>
         </div>
       </header>
-      {isPart ? (
+      {routes ? (
+        <RouteCard pieceId={artifact.entityId} routes={routes} taken={taken} who={takenBy} take={takeRouteAction.bind(null, worldId)} markDone={stepDoneAction.bind(null, worldId)} />
+      ) : isPart ? (
         <PartPreview worldId={worldId} pieceId={artifact.entityId} body={artifact.body} title={artifact.title} />
       ) : isPixelArt ? (
         <PixelArtPreview body={artifact.body} title={artifact.title} />
@@ -160,13 +171,17 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
   let events: Awaited<ReturnType<typeof kernel.readEvents>> = [];
   let profiles: Awaited<ReturnType<typeof kernel.readActors>> = [];
   let saves: SavedProof[] = [];
+  let taken = new Map<string, TakenRoute>();
+  let me = "";
   try {
     const loaded = await loadCreativeWorld(kernel, worldId);
     world = loaded.world;
     artifacts = loaded.artifacts;
     events = await kernel.readEvents(world.scope, { newestFirst: true, limit: 12 });
     saves = await proofsIn(kernel, world.scope).catch(() => []);
-    profiles = await kernel.readActors([...new Set(events.map((event) => event.actor_id))]);
+    taken = await takenRoutes(kernel, world.scope).catch(() => new Map<string, TakenRoute>());
+    me = (await kernel.whoami()).actor_id;
+    profiles = await kernel.readActors([...new Set([...events.map((event) => event.actor_id), ...[...taken.values()].map((t) => t.takenBy)])]);
     const ownerIds = [...new Set(profiles.map((profile) => profile.accountable_party).filter((id): id is string => Boolean(id)))];
     const knownProfileIds = new Set(profiles.map((profile) => profile.actor_id));
     const missingOwnerIds = ownerIds.filter((id) => !knownProfileIds.has(id));
@@ -188,6 +203,10 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
   for (const save of saves) savesByPiece.set(save.pieceId, [...(savesByPiece.get(save.pieceId) ?? []), save]);
   const profilesById = new Map(profiles.map((profile) => [profile.actor_id, profile]));
   const actorLabels = new Map(profiles.map((profile) => [profile.actor_id, profile.label || profile.actor_id.slice(0, 8)]));
+  const takerOf = (id: string) => {
+    const t = taken.get(id);
+    return !t || t.takenBy === me ? "you" : (actorLabels.get(t.takenBy) ?? "its owner");
+  };
   const nextPosition = { x: 24 + (artifacts.length % 3) * 26, y: 26 + (Math.floor(artifacts.length / 3) % 3) * 22 };
 
   return (
@@ -216,6 +235,13 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
       </section>
 
       {saved === "artifact" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Revision saved to World history.</p>}
+      {saved === "route" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Route taken. Its steps are on the record as yours.</p>}
+      {saved === "step" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Step marked done, on your word.</p>}
+      {(error === "route-input" || error === "route-access" || error === "route-save") && (
+        <p role="alert" className="rounded border border-negative/30 bg-negative/10 px-3 py-2 text-sm text-negative">
+          {error === "route-access" ? "Only this World's owner can take a route or mark its steps done." : error === "route-input" ? "That route or step changed. Reload and try again." : "The route could not be saved. Retry in a moment."}
+        </p>
+      )}
       {error === "world-missing" && <p role="alert" className="rounded border border-negative/30 bg-negative/10 px-3 py-2 text-sm text-negative">This World could not be found in the selected scope.</p>}
 
       <section aria-label="World canvas" className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(19rem,0.38fr)] xl:items-start">
@@ -235,12 +261,12 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
               >
                 {[...artifacts].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x).map((artifact) => (
                   <div key={artifact.entityId} className="min-w-0" style={{ gridColumnStart: canvasColumn(artifact.position) }}>
-                    <ArtifactCard worldId={worldId} artifact={artifact} saves={savesByPiece.get(artifact.entityId)} />
+                    <ArtifactCard worldId={worldId} artifact={artifact} saves={savesByPiece.get(artifact.entityId)} taken={taken.get(artifact.entityId)} takenBy={takerOf(artifact.entityId)} />
                   </div>
                 ))}
               </div>
               <div className="grid gap-3 md:hidden">
-                {[...artifacts].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x).map((artifact) => <ArtifactCard key={artifact.entityId} worldId={worldId} artifact={artifact} saves={savesByPiece.get(artifact.entityId)} />)}
+                {[...artifacts].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x).map((artifact) => <ArtifactCard key={artifact.entityId} worldId={worldId} artifact={artifact} saves={savesByPiece.get(artifact.entityId)} taken={taken.get(artifact.entityId)} takenBy={takerOf(artifact.entityId)} />)}
               </div>
             </>
           ) : (
