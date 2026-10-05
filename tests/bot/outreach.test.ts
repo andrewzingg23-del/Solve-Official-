@@ -10,7 +10,7 @@ import { createConnector, type Session } from "../../lib/bot/connector";
 import { approveConnection } from "../../lib/bot/memory";
 import { approveAndSend, encodeOutreach, finalMessage, OPT_OUT, outcomesIn, parseOutreach, recordOutcome, SEND_CAPABILITY, sentIn } from "../../lib/bot/outreach";
 import { saveBot } from "../../lib/bot/store";
-import { waitingOn } from "../../lib/bot/waiting";
+import { overview, waitingOn } from "../../lib/bot/waiting";
 import { setBotAccess, WorldInputError } from "../../lib/bot/worlds";
 import { createCreativeWorld } from "../../lib/world/creative";
 import { createKernelDb, service, user } from "../kernel/harness";
@@ -142,6 +142,9 @@ it("records what happened on the person's word, and never contacts a business th
 
   const read = await call("read_world", { world_id: world.worldId });
   assert.match(read.content[0].text, /outcomes on the person's word: Inkwell Print Co\.: meeting; Northside Fab Lab: said_no/);
+
+  const { results } = await overview(ana, [{ worldId: world.worldId, title: world.title, scope: world.scope }], anaId);
+  assert.deepEqual(results.map((r) => [r.business, r.outcome]).sort(), [["Inkwell Print Co.", "meeting"], ["Northside Fab Lab", "said_no"]], "the latest outcome per business reaches the Command Center");
 });
 
 it("shows outcomes on the card, and offers no more recording after a no", async () => {
@@ -160,5 +163,15 @@ it("shows outcomes on the card, and offers no more recording after a no", async 
   assert.match(html, /Replied · on your word · Oct 5.*Wants a call/);
   assert.match(html, /Said no · on your word · Oct 5.*won&#x27;t be contacted again from this World/);
   assert.equal(html.match(/>Record</g)?.length, 1, "no more recording for a business that said no");
+});
+
+it("puts outreach results under what actually happened on the Command Center", async () => {
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const { CommandView } = await import("../../app/command/view");
+  const html = renderToStaticMarkup(CommandView({ data: { name: "Ana", botName: "Nova", worlds: [], journeys: [], connections: [], saves: [], results: [
+    { worldId: "w1", worldTitle: "Pilot users", pieceId: "p", business: "Inkwell Print Co.", outcome: "meeting", note: "Thursday at 10", at: "2026-10-05T06:00:00Z" },
+  ] } }));
+  assert.match(html, /What actually happened.*Meeting booked · Inkwell Print Co\..*Thursday at 10.*on your word · Oct 5.*in Pilot users/);
+  assert.doesNotMatch(html, /Nothing saved yet/, "a recorded result is something that happened");
 });
 

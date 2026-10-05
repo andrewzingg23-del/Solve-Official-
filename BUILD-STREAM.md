@@ -433,3 +433,5 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - "Said no" is enforced by name and by site: never drafted or approved again in that World.
   - **Paths:** `lib/bot/outreach.ts`, `lib/bot/proof.ts` (`history` exported), `lib/bot/connector.ts`, `lib/bot/presence.ts`, `app/outreach-card.tsx`, `app/route-actions.ts`, `app/world/[worldId]/page.tsx` (additive), tests.
   - **Checks:** bot suite 72/72; typecheck ok; lint clean; build ok.
+
+- 2026-10-05 06:40Z — Claude: outreach results now show on the Command Center under "What actually happened" (latest outcome per business, on the person's word). The founder sees the outreach north star in one place. Paths: `lib/bot/waiting.ts`, `app/command/{page,view}.tsx`, `tests/bot/outreach.test.ts`. Checks: outreach, command, gaps and waiting 14/14; lint ok; build ok.

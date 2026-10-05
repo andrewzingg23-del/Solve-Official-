@@ -8,7 +8,7 @@
 import type { Kernel } from "@/lib/kernel/client";
 import { loadCreativeWorld } from "@/lib/world/creative";
 import { parseCapabilityProposal, type Gap } from "./gaps";
-import { parseOutreach, SEND_CAPABILITY, sentIn } from "./outreach";
+import { outcomesIn, parseOutreach, SEND_CAPABILITY, sentIn, type OutcomeKind } from "./outreach";
 import { proofsIn } from "./proof";
 import { nextStep, parseRoutes, STEP_CAPABILITY, takenRoutes } from "./routes";
 
@@ -29,6 +29,9 @@ export type Journey = Where & {
 // Outreach drafts with messages still to approve, where the viewer may approve them.
 export type Approval = Where & { pending: number; total: number };
 
+// What happened with approved outreach, as recorded (on the person's word).
+export type Result = { worldId: string; worldTitle: string; pieceId: string; business: string; outcome: OutcomeKind; note: string; at: string };
+
 export type WaitingItem =
   | (Where & { kind: "approve"; pending: number; total: number })
   | (Where & { kind: "choose"; options: string[] })
@@ -38,9 +41,9 @@ type WorldRef = { worldId: string; title: string; scope: string };
 
 // One read of each World serves the whole overview: where each ask stands, and what assistants
 // recorded that solve can't do yet.
-export async function overview(kernel: Kernel, worlds: WorldRef[], me: string): Promise<{ journeys: Journey[]; gaps: Gap[]; approvals: Approval[] }> {
+export async function overview(kernel: Kernel, worlds: WorldRef[], me: string): Promise<{ journeys: Journey[]; gaps: Gap[]; approvals: Approval[]; results: Result[] }> {
   const perWorld = await Promise.all(
-    worlds.map(async (w): Promise<{ journeys: Journey[]; gaps: Gap[]; approvals: Approval[] }> => {
+    worlds.map(async (w): Promise<{ journeys: Journey[]; gaps: Gap[]; approvals: Approval[]; results: Result[] }> => {
       try {
         const [{ artifacts }, taken, canChoose, saves] = await Promise.all([
           loadCreativeWorld(kernel, w.worldId),
@@ -49,13 +52,15 @@ export async function overview(kernel: Kernel, worlds: WorldRef[], me: string): 
           proofsIn(kernel, w.scope).catch(() => []),
         ]);
         const hasOutreach = artifacts.some((a) => parseOutreach(a.body));
-        const [sent, canSend] = hasOutreach
+        const [sent, canSend, outcomes] = hasOutreach
           ? await Promise.all([
               sentIn(kernel, w.scope).catch(() => new Map<string, Map<number, unknown>>()),
               kernel.authorize({ capability: SEND_CAPABILITY, scope: w.scope }).then((d) => d.decision === "ALLOW").catch(() => false),
+              outcomesIn(kernel, w.scope).catch(() => new Map()),
             ])
-          : [new Map<string, Map<number, unknown>>(), false];
+          : [new Map<string, Map<number, unknown>>(), false, new Map()];
         const approvals: Approval[] = [];
+        const results: Result[] = [];
         const savedOn = new Set(saves.map((p) => p.pieceId));
         const out: Journey[] = [];
         const gaps: Gap[] = [];
@@ -63,6 +68,10 @@ export async function overview(kernel: Kernel, worlds: WorldRef[], me: string): 
           const proposal = parseCapabilityProposal(a.body);
           if (proposal) gaps.push({ ...proposal, worldId: w.worldId, worldTitle: w.title, pieceId: a.entityId, at: new Date(a.updatedAt).toISOString() });
           const outreach = parseOutreach(a.body);
+          for (const [lead, list] of (outcomes.get(a.entityId) ?? new Map()) as Map<number, { outcome: OutcomeKind; note: string; at: string }[]>) {
+            const last = list.at(-1);
+            if (outreach && last) results.push({ worldId: w.worldId, worldTitle: w.title, pieceId: a.entityId, business: outreach.leads[lead]?.name ?? "a business", outcome: last.outcome, note: last.note, at: last.at });
+          }
           if (outreach && canSend) {
             const pending = outreach.leads.length - (sent.get(a.entityId)?.size ?? 0);
             if (pending > 0) approvals.push({ worldId: w.worldId, worldTitle: w.title, pieceId: a.entityId, ask: outreach.goal, at: new Date(a.updatedAt).toISOString(), pending, total: outreach.leads.length });
@@ -88,10 +97,10 @@ export async function overview(kernel: Kernel, worlds: WorldRef[], me: string): 
             saved: savedOn.has(a.entityId),
           });
         }
-        return { journeys: out, gaps, approvals };
+        return { journeys: out, gaps, approvals, results };
       } catch {
         // A World that can't be read right now (access changed, kernel busy) waits for the next load.
-        return { journeys: [], gaps: [], approvals: [] };
+        return { journeys: [], gaps: [], approvals: [], results: [] };
       }
     }),
   );
@@ -99,6 +108,7 @@ export async function overview(kernel: Kernel, worlds: WorldRef[], me: string): 
     journeys: perWorld.flatMap((p) => p.journeys).sort((a, b) => b.at.localeCompare(a.at)),
     gaps: perWorld.flatMap((p) => p.gaps),
     approvals: perWorld.flatMap((p) => p.approvals),
+    results: perWorld.flatMap((p) => p.results).sort((a, b) => b.at.localeCompare(a.at)),
   };
 }
 

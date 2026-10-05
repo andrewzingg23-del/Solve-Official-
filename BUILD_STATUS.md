@@ -348,4 +348,5 @@ The founder asked for "a ai to business outreach flow ... with meta accounts but
 - **"Said no" is enforced, not just asked for:** a business that said no, matched by name or by the site it was found on, can't be drafted again (`propose_outreach` refuses) or approved again (`approveAndSend` refuses) in that World. That holds even under a new name on the same site.
 - **Where outcomes show:** the outreach card shows the latest outcome per business and a tally (replied, meetings, wins, nos), and offers no more recording after a no. `read_world` numbers each business and lists outcomes, so the assistant knows which number to record.
 - **Tests:** `tests/bot/outreach.test.ts` now has 5. Bot suite 72/72; typecheck ok; lint clean; build ok.
+- **On the Command Center:** the latest outcome per business (replied, meeting, won, said no) now shows under "What actually happened" next to saves, on the person's word, with its World. `overview` returns `results`.
 

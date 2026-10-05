@@ -10,7 +10,8 @@ import { WaitingOnYou } from "@/app/bot/waiting";
 import type { Connection } from "@/lib/bot/memory";
 import type { SavedProof } from "@/lib/bot/proof";
 import { groupGaps, type Gap } from "@/lib/bot/gaps";
-import { noticed, waitingFrom, type Approval, type Journey } from "@/lib/bot/waiting";
+import { OUTCOME_LABEL } from "@/lib/bot/outreach";
+import { noticed, waitingFrom, type Approval, type Journey, type Result } from "@/lib/bot/waiting";
 
 export type CommandData = {
   name: string; // the person's label
@@ -21,6 +22,7 @@ export type CommandData = {
   connections: Connection[];
   gaps?: Gap[]; // what assistants recorded that solve can't do yet
   approvals?: Approval[]; // outreach messages waiting for the person's approval
+  results?: Result[]; // what happened with approved outreach, latest first
   saves: (SavedProof & { worldId: string; worldTitle: string })[];
   live?: ReactNode; // who is working right now, when presence is available
 };
@@ -127,6 +129,21 @@ export function CommandView({ data }: { data: CommandData }) {
       </Section>
 
       <Section id="happened" title="What actually happened">
+        {data.results?.length ? (
+          <ul className="flex flex-col divide-y divide-line">
+            {data.results.map((r) => (
+              <li key={`${r.pieceId}:${r.business}`} className="flex flex-col gap-0.5 py-2 text-sm">
+                <span>
+                  {OUTCOME_LABEL[r.outcome]} · {r.business}
+                  {r.note ? <span className="text-muted"> · {r.note}</span> : null}
+                </span>
+                <span className="text-xs text-muted tabular-nums">
+                  on your word · {day(r.at)} · <Link href={`/world/${r.worldId}`} className="hover:text-accent">in {r.worldTitle}</Link>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
         {data.saves.length ? (
           <div className="flex flex-col gap-3">
             {data.saves.map((s) => (
@@ -136,7 +153,7 @@ export function CommandView({ data }: { data: CommandData }) {
               </div>
             ))}
           </div>
-        ) : (
+        ) : data.results?.length ? null : (
           <p className="text-sm leading-6 text-muted">Nothing saved yet. When something becomes real, save the proof on it and it shows here.</p>
         )}
       </Section>
