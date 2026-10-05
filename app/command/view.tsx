@@ -81,6 +81,7 @@ export function CommandView({ data }: { data: CommandData }) {
         ) : (
           <Link href="/worlds" className={quietLink}>Start a World</Link>
         )}
+        <Link href="/communities" className={`${quietLink} pt-2`}>Communities: start one, or ask to join →</Link>
       </Section>
 
       <WaitingOnYou items={waiting} />

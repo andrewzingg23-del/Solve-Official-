@@ -1,6 +1,6 @@
 // The homeowner's solar numbers, from their bill. A first estimate, before a real design: the
-// installer designs the actual system in Aurora from satellite imagery and the numbers here are
-// replaced by that design's (lib/solar/aurora.ts).
+// installer designs the actual system in Aurora from satellite imagery and sends it back through the
+// solar desk (lib/solar/desk.ts), whose numbers then replace these.
 //
 // The rules are 2026's: the 30% federal credit for homeowner-owned systems (25D) ended for systems
 // installed after 2025-12-31, so no federal credit is assumed. Any incentive is entered explicitly.

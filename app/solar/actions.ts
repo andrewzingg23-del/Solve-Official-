@@ -1,40 +1,62 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { auroraFromEnv, AuroraError, createProject, proposalToken } from "@/lib/solar/aurora";
-import { SOLAR_LIMITS } from "@/lib/solar/estimate";
+import { getKernel } from "@/lib/kernel/server";
+import { getUser } from "@/lib/supabase/server";
+import { readCommunity } from "@/lib/community/community";
+import { deskCommunityId, DeskInputError, eraseDesign, requestDesign } from "@/lib/solar/desk";
 
-const text = (v: FormDataEntryValue | null, max: number) => (typeof v === "string" ? v.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max) : "");
-const linkSecret = () => process.env.SOLAR_LINK_SECRET || process.env.SUPABASE_SECRET_KEY || null;
+const text = (v: FormDataEntryValue | null) => (typeof v === "string" ? v : "");
 
-// The homeowner asks for their real design: a project in the installer's Aurora account, with their
-// consent. They land on their own proposal page, which reads the design back as it's made.
-export async function requestDesignAction(formData: FormData) {
-  const aurora = auroraFromEnv();
-  if (!aurora) redirect("/solar?error=offline#numbers");
-  const r = {
-    firstName: text(formData.get("firstName"), 60),
-    lastName: text(formData.get("lastName"), 60),
-    email: text(formData.get("email"), 120),
-    phone: text(formData.get("phone"), 30),
-    address: text(formData.get("address"), 200),
-  };
-  const bill = Number(formData.get("monthlyBill"));
-  const kwhRaw = Number(formData.get("monthlyKwh"));
-  if (!formData.get("consent")) redirect("/solar?error=consent#numbers");
-  if (!r.firstName || !r.lastName || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(r.email) || r.phone.replace(/\D/g, "").length < 7 || r.address.length < 8) {
-    redirect("/solar?error=input#numbers");
-  }
-  const monthlyBill = Number.isFinite(bill) ? Math.min(SOLAR_LIMITS.bill[1], Math.max(SOLAR_LIMITS.bill[0], Math.round(bill))) : 220;
-  const monthlyKwh = Number.isFinite(kwhRaw) && kwhRaw >= SOLAR_LIMITS.kwh[0] ? Math.min(SOLAR_LIMITS.kwh[1], Math.round(kwhRaw)) : null;
-
-  let projectId: string;
+function answersFrom(v: FormDataEntryValue | null): unknown {
   try {
-    projectId = await createProject(aurora, r);
-  } catch (error) {
-    redirect(`/solar?error=${error instanceof AuroraError && error.reason === "rejected" ? "address" : "aurora"}#numbers`);
+    return JSON.parse(text(v) || "{}");
+  } catch {
+    return {};
   }
-  const secret = linkSecret();
-  if (!secret) redirect("/solar?requested=1#numbers");
-  redirect(`/solar/proposal/${proposalToken(secret, { projectId, monthlyBill, monthlyKwh })}`);
+}
+
+// The homeowner asks Zest Solar for their real design. Their details are sealed for Zest Solar alone
+// (lib/solar/desk.ts); the design comes back to their own page.
+export async function requestDesignAction(formData: FormData) {
+  if (!(await getUser())) redirect("/login?next=%2Fsolar");
+  const deskId = deskCommunityId();
+  if (!deskId) redirect("/solar?error=offline#design");
+  let code: string | null = null;
+  try {
+    const kernel = await getKernel();
+    const desk = await readCommunity(kernel, deskId);
+    if (!desk) code = "offline";
+    else {
+      await requestDesign(kernel, desk, {
+        name: text(formData.get("name")),
+        address: text(formData.get("address")),
+        phone: text(formData.get("phone")),
+        email: text(formData.get("email")),
+        monthlyBill: text(formData.get("monthlyBill")),
+        monthlyKwh: text(formData.get("monthlyKwh")),
+        answers: answersFrom(formData.get("answers")),
+        consent: formData.get("consent") === "on",
+      }, text(formData.get("requestId")));
+    }
+  } catch (error) {
+    code = error instanceof DeskInputError ? (error.message === "your consent" ? "consent" : "input") : "save";
+  }
+  if (code) redirect(`/solar?error=${code}#design`);
+  redirect("/solar/mine?sent=1");
+}
+
+export async function eraseDesignAction(formData: FormData) {
+  if (!(await getUser())) redirect("/login?next=%2Fsolar%2Fmine");
+  const deskId = deskCommunityId();
+  let ok = false;
+  try {
+    const kernel = await getKernel();
+    const desk = deskId ? await readCommunity(kernel, deskId) : null;
+    if (desk) {
+      await eraseDesign(kernel, desk, text(formData.get("askId")));
+      ok = true;
+    }
+  } catch {}
+  redirect(`/solar/mine?${ok ? "erased=1" : "error=erase"}`);
 }

@@ -8,7 +8,7 @@ const DIFFERENT = [
   ["Money doesn't get you in.", "The oath, a member's vouch and an interview. The price keeps the room small; it doesn't buy a seat."],
   ["Your word is on the record.", "Commitments and wins are saved in solve, where your table sees them. Not a group chat that forgets."],
   ["Small on purpose.", "Fifty founding seats. Tables of ten men who meet every week."],
-  ["Built by operators.", "Run by a founder with real businesses in solar, insurance and real estate, who brings the room into the work."],
+  ["Built by operators.", "Run by a founder with real businesses in solar and insurance, who brings the room into the work."],
 ] as const;
 
 const TIERS = [

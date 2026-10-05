@@ -3,7 +3,7 @@
 // The proposal's 3D home, loaded only in the browser.
 import dynamic from "next/dynamic";
 
-const House3D = dynamic(() => import("../../house-3d").then((m) => m.House3D), {
+const House3D = dynamic(() => import("../house-3d").then((m) => m.House3D), {
   ssr: false,
   loading: () => <div className="grid h-full place-items-center text-sm text-[#4d5b6c]">Loading the model…</div>,
 });

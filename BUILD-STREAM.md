@@ -620,7 +620,7 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 
 - 2026-10-05 19:15Z — CI run 159 (`b5e074b`) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37357768450. The Vercel preview deployed: https://vercel.com/sovigrn/solve/HPRBimALyWKFYnM14U5FMu6ZJzak. This is the first preview built to run on solve-staging. Not yet visited; staging's logs will show the first sign-in.
 
-- 2026-10-05 20:10Z — Claude, the founder: "make me 10 landing routes… solar live customer facing proposal tool with aurora tied in and a 3d model for home owner to see… real estate 3d development".
+- 2026-10-05 19:48Z — Claude, the founder: "make me 10 landing routes… solar live customer facing proposal tool with aurora tied in and a 3d model for home owner to see… real estate 3d development".
   - **Built** on Doris's ten doors (#10): the white floor of brand v3 and one working tool per door (see BUILD_STATUS).
   - **Solar:**
     - estimate from the bill with 2026's rules (no 25D credit, cited Florida rate);
@@ -635,7 +635,7 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Checks:** full suite 293/293; lint clean; typecheck ok; build ok. Screenshots in Chromium of `/solar`, `/real-estate`, `/insurance`, `/zuber-pen` and `/ventures`, desktop and phone: no page errors. Fixes from them: the pen was framed too close; big solar figures wrapped on phones.
   - **Founder:** set `AURORA_API_KEY` and `AURORA_TENANT_ID` (Preview) to open design requests; check the copy and the $2.90 per watt price.
 
-- 2026-10-05 21:05Z — Claude, the founder's second round on the doors: leave out Samantha and Vantage; solar all the way to price and qualifying; pen and key finder; residential real estate; insurance as a sales dialer with automations; Members Only higher-ticket.
+- 2026-10-05 20:03Z — Claude, the founder's second round on the doors: leave out Samantha and Vantage; solar all the way to price and qualifying; pen and key finder; residential real estate; insurance as a sales dialer with automations; Members Only higher-ticket.
   - **Built:**
     - `lib/solar/qualify.ts` (loan payment, pre-qualification) and the four-step `/solar`;
     - `lib/insurance/dialer.ts` (automations with calling hours, consent and do-not-call) and the Practice dialer on `/insurance`;
@@ -649,3 +649,28 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
       - leads with a scheduled call showed "Ready" (fixed: a lead waits for its next scheduled call);
       - form controls rendered dark on the white pages (fixed).
   - **Founder:** confirm the membership prices; set the Aurora token; choose the phone provider for the real dialer.
+
+- 2026-10-05 20:20Z — CI for the two door commits did not run.
+  - Run 160 (`11739ef`) was cancelled by the next push.
+  - Run 161 (`e621a68`) failed before any step: "The job was not acquired by Runner of type hosted even after multiple attempts". No runner, so no test ran. It is not a code failure; the next push runs CI again.
+  - Vercel deployed both previews.
+  - (Two entries above had their times corrected to the commits': 19:48Z and 20:03Z.)
+
+- 2026-10-05 20:30Z — Claude, the founder: "As a limited team member don't think Ivan add auroa api / Leave out the real estate plan for now / How do we build this but not take away the vision of solve / Also others need to be able to start a community and build it within solve and have their agentic ai help and be able to connect to others in community".
+  - **Founder-first problem:** the solar door has to reach Zest Solar without an Aurora API token, and the ventures shouldn't become separate apps.
+  - **Built:**
+    - **Communities:** a World with a front door, plus packs.
+      - `lib/community/{community,packs}.ts`, `/communities`, `/community/<id>`.
+      - Start, find, ask to join (bringing your AI), let in or not now, members and their AIs, notes between members.
+    - **Solar desk** (`lib/solar/desk.ts`): the homeowner's request is sealed in their own scope for the desk's owner, answered with the Aurora proposal link, and erasable.
+      - `/solar` step 4 asks for it after sign-in; the homeowner's numbers come with them through the sign-in.
+      - `/solar/mine` is the homeowner's page.
+    - **Removed:** the Aurora API client and signed proposal route; the real estate door.
+    - **Recorded:** the founder's words in `DECISIONS.md`; Community gets its home in `ACTIVE-WORK.md`.
+  - **Paths:** `lib/community/`, `lib/solar/desk.ts`, `app/communities/`, `app/community/`, `app/solar/`, `app/ventures.ts`, `app/ventures/page.tsx`, `app/command/view.tsx` (one link), `app/membership/offer.tsx` (one line), `lib/world/collaboration.ts` and `lib/bot/memory.ts` (additive exports), `solve.communities.json`, `tests/community/`, `tests/ventures/solar.test.ts`, `.env.example`.
+  - **Checks:**
+    - 10 new kernel tests;
+    - full suite 307/307; lint clean; typecheck ok; build ok;
+    - the views rendered with sample data in Chromium (desktop and phone, no page errors). Three fixes came from it.
+  - **Next:** confirm this push's CI. Then the founder starts "Zest Solar" on the preview and sets `SOLAR_COMMUNITY`.
+

@@ -424,7 +424,8 @@ Both were merged into the trunk by the founder's account while a review asked fo
   - The numbers use 2026's rules: no 30% federal credit (it ended for homeowner systems installed after 2025), about 16¢ per kWh in Florida, about 1,400 kWh per kW a year, $2.90 per watt.
   - **Aurora:** "Design my roof" (with consent) creates a project in Zest Solar's Aurora account and opens the homeowner's own signed proposal page (`/solar/proposal/<token>`). That page reads the latest Aurora design each time it opens: real size, production and panel count once designed.
   - Needs `AURORA_API_KEY` and `AURORA_TENANT_ID`; until then the form says requests aren't connected.
-- **Real estate (`/real-estate`):** a 3D concept model of the development. Three phases (sixteen homes, offices over retail, the estate on the rise) switch on and off, and there's a fly-through.
+  - *Superseded the same night: the founder can't get an Aurora API token, so the API path was removed for the solar desk (see "Communities" below).*
+- **Real estate (`/real-estate`, removed later that night at the founder's word):** a 3D concept model of the development. Three phases (sixteen homes, offices over retail, the estate on the rise) switch on and off, and there's a fly-through.
 - **The others:**
   - Insurance: coverage need, the DIME way.
   - Trading: position size from risk (Practice math).
@@ -452,3 +453,50 @@ Both were merged into the trunk by the founder's account while a review asked fo
   - founding seat $6,000 a year (or $550 a month), locked for the first fifty;
   - Inner Circle $18,000 a year, ten seats.
 - Pages on the white floor render their form controls light.
+
+## 2026-10-05 — Communities, and solar without the Aurora API (Claude, founder's direction)
+
+The founder's words are in `DECISIONS.md`. Nothing here needed a migration.
+
+- **Communities (`/communities`, `/community/<id>`; `lib/community/`):**
+  - **Start one:** anyone signed in names it, says what it's for and picks packs. That makes a World (theirs) and a public profile.
+    - The profile lives in the owner's own scope, so only they can write it.
+    - Its id is derived from the owner and a nonce on the profile, so nobody can publish a look-alike for someone else's community.
+  - **Find one:** every community is listed for everyone signed in. The profile is public; everything inside stays with members.
+  - **Join:** a person asks, with a note, and can bring their AI. The owner sees the ask and lets them in (they can build) or says not now, and the person sees the answer.
+    - The ask is a kernel message from the person's own scope to the owner's inbox.
+    - An unanswered ask stands for a week, so asking twice doesn't send two.
+    - A member can later ask to bring their AI in.
+  - **AI:** a member's bot comes in with them under its own identity, for them (Add, 30 days, renewable as on any World). It reaches the community's room through the connector like any World it's let into.
+  - **Connect:** members see who's in, with the AIs they brought, and leave each other notes. A note is a kernel message, on the record with who sent it. Notes only go between people in the community, and only theirs are shown.
+  - **Packs** (`lib/community/packs.ts`): the build room, the solar desk, the sales dialer (Practice) and the risk tools. The owner can change them.
+  - **Links:** from the Command Center and `/ventures`.
+- **Solar without an Aurora API key (`lib/solar/desk.ts`, `/solar` step 4, `/solar/mine`):**
+  - The homeowner signs in (their numbers come with them) and asks for their design.
+    - Their name, address, contact and answers are sealed in their own scope, one scope per request, readable by the desk's owner alone.
+    - The owner sees each request on the community page with the estimate and how they pre-qualify. They design it in Aurora by hand and send back the proposal link, with size, panels, production and price if they like.
+    - The homeowner's page shows the design: the numbers re-run from it, their price as given, a 3D home with the real panel count, and a link to the full proposal.
+    - "Erase my request" destroys its key and revokes the desk's access. The details are gone for good; the record keeps that a request existed.
+  - **Which desk:** set by `SOLAR_COMMUNITY` or `solve.communities.json`. Until it's set, step 4 says the desk opens soon.
+  - **Removed:** `lib/solar/aurora.ts`, the signed proposal link and `/solar/proposal/<token>`. They are in git history (`e621a68`) if an admin ever issues an API token.
+- **Real estate removed** ("Leave out the real estate plan for now"). Seven doors remain.
+- **Shared code, additive:**
+  - `readWorldMembers` in `lib/world/collaboration.ts`: who's in a World, readable by anyone in it;
+  - `requireSealing` exported from `lib/bot/memory.ts`.
+- **Tests:** `tests/community/{community,solar-desk}.test.ts` (10, on the embedded kernel), covering:
+  - forged profiles refused;
+  - only the owner lets people in or answers;
+  - the AI comes in only with its own person;
+  - notes only between members;
+  - homeowner details never in the clear, and unreadable by anyone else;
+  - erasing really erases.
+- **Checks:** full suite 307/307; lint clean; typecheck ok; build ok. Community views (owner, guest, member on a phone) and the homeowner's page (waiting and designed, desktop and phone) were rendered with sample data in Chromium with no page errors. Fixes from that: a reply box collapsed on phones; the guest view's empty column; "your AI" for your own.
+- **Known limits:**
+  - Asks and solar requests show on the community page only; they don't reach "Waiting on you" in the Command Center yet (the next slice).
+  - The directory reads the kernel's public list, which returns at most 2,000 public entities.
+  - Open communities, where anyone joins without the owner, would need the owner's agent to admit on their behalf; not built.
+- **Founder steps to open Zest Solar's desk:**
+  1. Sign in on the preview and start a community, "Zest Solar", with the solar desk pack.
+  2. Copy its id from its page and set `SOLAR_COMMUNITY` in Vercel (or send it to Claude to commit).
+  3. Requests then land on the community page. Design each in Aurora, then paste the proposal link and the numbers.
+

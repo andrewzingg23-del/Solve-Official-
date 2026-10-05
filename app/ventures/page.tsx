@@ -34,6 +34,12 @@ export default function Ventures() {
             </li>
           ))}
         </ol>
+        <section className={`flex flex-col gap-3 border-t ${line} pt-8 md:max-w-3xl`}>
+          <p className={label}>Built on solve</p>
+          <p className="text-2xl font-semibold leading-snug tracking-tight md:text-3xl">Every door runs on solve. Its tool is a pack any community can switch on.</p>
+          <p className={`text-base leading-7 ${muted}`}>Start your own: a room to build in, members you let in, and their AI working beside them.</p>
+          <Link href="/communities" className={`text-xs font-semibold uppercase tracking-[0.2em] ${accent} hover:underline`}>Start a community →</Link>
+        </section>
         <footer className={`mt-auto flex items-center justify-between border-t ${line} pt-5`}>
           <span className="text-sm font-medium">Everything here is real.</span>
           <Link href="/start" className={`text-xs uppercase tracking-[0.2em] ${muted} hover:text-[#0891b2]`}>Start your own →</Link>

@@ -1,12 +1,14 @@
 "use client";
 
 // The homeowner's whole way in, on one page: their bill, their system in 3D, their price (cash or a
-// loan), whether they qualify, and then the real design from their roof, made in Aurora.
+// loan), whether they qualify, and then the real design from their roof: Zest Solar makes it in
+// Aurora by hand and sends it back to the homeowner's own page in solve (lib/solar/desk.ts).
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { estimateSolar, money, SOLAR_LIMITS } from "@/lib/solar/estimate";
 import { EXAMPLE_LOAN, loanQuote, qualify, QUESTIONS, type Answers, type Fit } from "@/lib/solar/qualify";
-import { accent, field, label, line, muted, panel, primary } from "../venture-style";
+import { accent, field, label, line, muted, panel, primary, secondary } from "../venture-style";
 
 const House3D = dynamic(() => import("./house-3d").then((m) => m.House3D), {
   ssr: false,
@@ -36,15 +38,39 @@ function Step({ n, title, children, id }: { n: string; title: string; children: 
 
 const FIT: Record<Fit, string> = { yes: "Yes", maybe: "Likely", no: "Not now" };
 
-export function SolarTool({ connected, request, error }: { connected: boolean; request: (form: FormData) => void | Promise<void>; error?: string | null }) {
-  const [bill, setBill] = useState(220);
-  const [kwh, setKwh] = useState<string>("");
+export type SolarStart = { bill: number; kwh: string; answers: Partial<Answers> };
+
+const NO_ANSWERS: Answers = { owner: null, home: null, roof: null, shade: null, credit: null, utility: null };
+
+function answersFrom(raw: Partial<Answers> | undefined): Answers {
+  const out = { ...NO_ANSWERS };
+  for (const q of QUESTIONS) {
+    const v = raw?.[q.key];
+    if (typeof v === "string" && q.options.some(([value]) => value === v)) (out as Record<string, string | null>)[q.key] = v;
+  }
+  return out;
+}
+
+export function SolarTool({ desk, signedIn, request, requestId, start, error }: {
+  desk: boolean;
+  signedIn: boolean;
+  request: (form: FormData) => void | Promise<void>;
+  requestId: string;
+  start?: SolarStart;
+  error?: string | null;
+}) {
+  const [bill, setBill] = useState(start ? Math.min(SOLAR_LIMITS.bill[1], Math.max(SOLAR_LIMITS.bill[0], Math.round(start.bill))) : 220);
+  const [kwh, setKwh] = useState<string>(start?.kwh ?? "");
   const [offset, setOffset] = useState(100);
   const [pay, setPay] = useState<"cash" | "loan" | "lease">("loan");
   const [apr, setApr] = useState<number>(EXAMPLE_LOAN.aprPct);
   const [years, setYears] = useState<number>(EXAMPLE_LOAN.years);
   const [down, setDown] = useState<number>(EXAMPLE_LOAN.down);
-  const [answers, setAnswers] = useState<Answers>({ owner: null, home: null, roof: null, shade: null, credit: null, utility: null });
+  const [answers, setAnswers] = useState<Answers>(answersFrom(start?.answers));
+  // Back from signing in, or with an error to read: open on the last step.
+  useEffect(() => {
+    if (start || error) document.getElementById("design")?.scrollIntoView({ block: "start" });
+  }, [start, error]);
 
   const e = useMemo(() => estimateSolar({ monthlyBill: bill, monthlyKwh: kwh ? Number(kwh) : null, offset: offset / 100 }), [bill, kwh, offset]);
   const loan = useMemo(() => loanQuote(e.netCost, { aprPct: apr, years, down }), [e.netCost, apr, years, down]);
@@ -176,27 +202,48 @@ export function SolarTool({ connected, request, error }: { connected: boolean; r
       </Step>
 
       <Step n="04" title="Your real design and final price" id="design">
-        <form action={request} className={`${panel} flex flex-col gap-4 p-6 md:p-8`}>
-          <p className={`text-sm leading-6 ${muted}`}>Zest Solar designs your system in Aurora from satellite images of your roof. Your own proposal page opens right away, and fills in with your real layout, production and final price when the design is done.</p>
-          <input type="hidden" name="monthlyBill" value={bill} />
-          <input type="hidden" name="monthlyKwh" value={kwh} />
-          <div className="grid gap-3 md:grid-cols-2">
-            <input name="firstName" required maxLength={60} autoComplete="given-name" placeholder="First name" className={field} disabled={!connected} />
-            <input name="lastName" required maxLength={60} autoComplete="family-name" placeholder="Last name" className={field} disabled={!connected} />
-            <input name="email" type="email" required maxLength={120} autoComplete="email" placeholder="Email" className={field} disabled={!connected} />
-            <input name="phone" type="tel" required maxLength={30} autoComplete="tel" placeholder="Phone" className={field} disabled={!connected} />
-            <input name="address" required maxLength={200} autoComplete="street-address" placeholder="Home address (street, city, state, ZIP)" className={`${field} md:col-span-2`} disabled={!connected} />
-          </div>
-          <label className={`flex items-start gap-3 text-sm leading-6 ${muted}`}>
-            <input type="checkbox" name="consent" required className="mt-1 accent-[#0891b2]" disabled={!connected} />
-            <span>Send my name, contact and address to Zest Solar so they can design my system and contact me about it. Nothing is signed and nothing is owed.</span>
-          </label>
+        <div className={`${panel} flex flex-col gap-4 p-6 md:p-8`}>
+          <p className={`text-sm leading-6 ${muted}`}>
+            A person at Zest Solar designs your system in Aurora from images of your roof, then sends you your layout, production and final price. It comes back to your own page here.
+          </p>
+          {!desk ? (
+            <p className="text-sm font-medium">Zest Solar&apos;s design desk opens here soon. Your numbers above are yours to keep.</p>
+          ) : !signedIn ? (
+            <>
+              <p className="text-sm leading-6">Sign in first, so your design has somewhere to come back to. It&apos;s free, your numbers come with you, and your details stay yours: you can erase them any time.</p>
+              <div className="flex flex-wrap items-center gap-4">
+                <Link
+                  href={`/login?next=${encodeURIComponent(`/solar?bill=${bill}&kwh=${kwh}&a=${JSON.stringify(Object.fromEntries(Object.entries(answers).filter(([, v]) => v)))}`)}`}
+                  className={primary}
+                >
+                  Sign in to ask for my design
+                </Link>
+              </div>
+            </>
+          ) : (
+            <form action={request} className="flex flex-col gap-4">
+              <input type="hidden" name="requestId" value={requestId} />
+              <input type="hidden" name="monthlyBill" value={bill} />
+              <input type="hidden" name="monthlyKwh" value={kwh} />
+              <input type="hidden" name="answers" value={JSON.stringify(answers)} />
+              <div className="grid gap-3 md:grid-cols-2">
+                <input name="name" required maxLength={120} autoComplete="name" placeholder="Your name" className={`${field} md:col-span-2`} />
+                <input name="address" required maxLength={200} autoComplete="street-address" placeholder="Home address (street, city, state, ZIP)" className={`${field} md:col-span-2`} />
+                <input name="phone" type="tel" maxLength={30} autoComplete="tel" placeholder="Phone (optional, if you'd like a call)" className={field} />
+                <input name="email" type="email" maxLength={120} autoComplete="email" placeholder="Email (optional)" className={field} />
+              </div>
+              <label className={`flex items-start gap-3 text-sm leading-6 ${muted}`}>
+                <input type="checkbox" name="consent" required className="mt-1 accent-[#0891b2]" />
+                <span>Send my name, address, contact and answers to Zest Solar so they can design my system and contact me about it. They&apos;re sealed for Zest Solar alone, and I can erase them any time. Nothing is signed and nothing is owed.</span>
+              </label>
+              <div className="flex flex-wrap items-center gap-4">
+                <button type="submit" className={primary} disabled={fit.status === "not_yet"}>Design my roof</button>
+                <Link href="/solar/mine" className={secondary}>My solar</Link>
+              </div>
+            </form>
+          )}
           {error ? <p role="alert" className="text-sm text-[#b42318]">{error}</p> : null}
-          <div className="flex flex-wrap items-center gap-4">
-            <button type="submit" className={primary} disabled={!connected || fit.status === "not_yet"}>Design my roof</button>
-            {!connected ? <span className={`text-sm ${muted}`}>Design requests open when Zest Solar&apos;s Aurora account is connected to this site.</span> : null}
-          </div>
-        </form>
+        </div>
       </Step>
 
       <p className={`text-xs leading-5 ${muted}`}>

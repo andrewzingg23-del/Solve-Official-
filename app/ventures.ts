@@ -35,22 +35,6 @@ export const VENTURES: Venture[] = [
     metaDescription: "See your solar system, your savings and your home in 3D. Then get the real design, made in Aurora.",
   },
   {
-    slug: "real-estate",
-    name: "The Estate",
-    kicker: "The Estate · Homes",
-    headline: "See your home before it's built.",
-    thesis: "A residential community, built phase by phase. Walk the streets, the park and the estate homes in 3D before the first shovel.",
-    tool: "Walk the community",
-    proofs: [
-      "Every home site modeled before it's sold.",
-      "Homes, a clubhouse, a pool and a park. Built for families who stay.",
-      "The estate homes on the rise are the phase-three north star.",
-    ],
-    cta: { label: "Walk the land", href: "/real-estate#model", note: "Turn the model. Step through each phase." },
-    metaTitle: "The Estate · See your home before it's built",
-    metaDescription: "Walk a residential community in 3D, phase by phase: homes, the park and the estate homes.",
-  },
-  {
     slug: "insurance",
     name: "The Agency",
     kicker: "Family First Life · The Agency",
