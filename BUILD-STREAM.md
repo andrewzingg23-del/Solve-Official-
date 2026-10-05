@@ -357,7 +357,7 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Checks:** routes and connector tests 11/11; typecheck ok; lint ok.
   - **Next:** staging for the founder (slice 0), then "Waiting on you" (slice 2).
 
-- 2026-10-05 03:40Z — Claude. CI run 112 (`f18b963`, founder first) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37259245671.
+- 2026-10-05 03:34Z — Claude. CI run 112 (`f18b963`, founder first) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37259245671.
 
   The founder said "merge", so three Codex branches are now merged into the trunk:
   - `codex/gateway-oidc-fallback`;
@@ -371,33 +371,33 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Checks:** full suite 240/240; typecheck ok; lint ok (one existing warning); build ok.
   - **Next:** "Waiting on you" (slice 2).
 
-- 2026-10-05 03:55Z — Claude, founder-first slice 2: "Waiting on you" on `/bot`, for the founder's problem 4 (decisions and next steps buried in chat). It lists routes to choose and the next step of each route taken, across the person's Worlds, each linking to its World.
+- 2026-10-05 03:36Z — Claude, founder-first slice 2: "Waiting on you" on `/bot`, for the founder's problem 4 (decisions and next steps buried in chat). It lists routes to choose and the next step of each route taken, across the person's Worlds, each linking to its World.
   - **Paths:** `lib/bot/waiting.ts`, `app/bot/waiting.tsx`, `app/bot/page.tsx`, `tests/bot/waiting.test.ts`.
   - **Checks:** waiting 2/2; bot suite 61/61; typecheck ok; lint ok.
   - **Pushing:** after CI for `927e0da` (the merges) finishes, so it isn't cancelled.
   - **Next:** slice 3, which assistant added each piece.
 
-- 2026-10-05 04:05Z — Claude, for the founder's problem 5 (stalled approvals): staging's three migrations are now one paste, `scripts/staging/2026-10-05-founder-first.sql`. It is built from the three migration files byte for byte, with their sha256 in the header, in one transaction, and ends with a check query (every column should read true on staging).
+- 2026-10-05 03:38Z — Claude, for the founder's problem 5 (stalled approvals): staging's three migrations are now one paste, `scripts/staging/2026-10-05-founder-first.sql`. It is built from the three migration files byte for byte, with their sha256 in the header, in one transaction, and ends with a check query (every column should read true on staging).
   - **The check script:** `scripts/staging/check-founder-first.mts` applies the migrations staging already has (up to v4) to an embedded Postgres, runs the file and prints its check.
   - **What the check shows:** v5 true and the key store private. The two Realtime checks read false locally only because the embedded Postgres has no Realtime. A second run is refused and nothing changes.
   - **Checks:** that script; lint ok.
 
-- 2026-10-05 04:25Z — Claude. CI run 120 (`9a842a8`: the merged trunk, "Waiting on you", the one-paste staging SQL) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37260229847.
+- 2026-10-05 03:50Z — Claude. CI run 120 (`9a842a8`: the merged trunk, "Waiting on you", the one-paste staging SQL) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37260229847.
 
   The founder: "keep building revert to vision for context". From the Vision Canon, the next missing piece is the personal Command Center (vision check §3.4), built to the canon's promise: where you are, where you're going, the routes, who is with you, what actually happened, what's next. It also serves the founder's problems 1, 4, 6 and 8.
   - **Paths:** `app/command/{page,view,live-line}.tsx`, `lib/bot/waiting.ts` (one scan, `journeys`), `app/bot/page.tsx` (link), `tests/bot/command.test.ts`.
   - **Checks:** command and waiting 4/4; typecheck ok; lint ok; build ok.
   - **Proposed to Codex:** send signed-in `/` to `/command`.
 
-- 2026-10-05 04:45Z — Claude, vision check §3.5 ("the world itself should react"), first and safest form: a "Noticed" section on the Command Center, worked out from the record on each visit. It flags quiet steps (3 days or more), routes done with nothing saved, and choices left waiting. It only points, never acts.
+- 2026-10-05 03:52Z — Claude, vision check §3.5 ("the world itself should react"), first and safest form: a "Noticed" section on the Command Center, worked out from the record on each visit. It flags quiet steps (3 days or more), routes done with nothing saved, and choices left waiting. It only points, never acts.
   - **Paths:** `lib/bot/waiting.ts` (`noticed`, `saved`), `lib/bot/routes.ts` (step `since`), `app/command/view.tsx`, tests.
   - **Checks:** bot suite 64/64; typecheck ok; lint ok.
 
-- 2026-10-05 05:00Z — Claude, vision check §3.7 (Forge), the first step: "What solve can't do yet" on the Command Center. It lists assistants' capability drafts, grouped by need with how many times each was asked. `overview` reads each World once for routes and gaps.
+- 2026-10-05 03:54Z — Claude, vision check §3.7 (Forge), the first step: "What solve can't do yet" on the Command Center. It lists assistants' capability drafts, grouped by need with how many times each was asked. `overview` reads each World once for routes and gaps.
   - **Paths:** `lib/bot/gaps.ts`, `lib/bot/waiting.ts`, `app/command/{page,view}.tsx`, `tests/bot/gaps.test.ts`.
   - **Checks:** gaps, command and waiting 8/8; typecheck ok; lint ok.
 
-- 2026-10-05 05:30Z — Claude. Two founder asks: how to make solve a business with the most leverage and recruiting at once, for kids and serious operators; and an AI-to-business outreach flow "automated with meta accounts", built as an example in the app.
+- 2026-10-05 04:03Z — Claude. Two founder asks: how to make solve a business with the most leverage and recruiting at once, for kids and serious operators; and an AI-to-business outreach flow "automated with meta accounts", built as an example in the app.
   - **The plan:** `docs/plans/2026-10-05-business-leverage-outreach.md`.
     - One loop is the product, the growth and the recruiting: a finished route gives real value, a receipt and a reusable Pack.
     - One engine for kids and operators, with profiles (young, standard, operator) enforced by grants. No accounts for children until a guardian-consent flow and counsel.
@@ -411,7 +411,7 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Checks:** full suite 251/251; typecheck ok; lint clean; build ok.
   - **Manus:** now also researches Meta's messaging rules and CAN-SPAM/CASL.
 
-- 2026-10-05 05:40Z — CI green:
+- 2026-10-05 04:09Z — CI green:
   - run 125 (`72b874e`: Command Center, Noticed, gaps): https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37261282665;
   - run 126 (`48deded`: Outreach Room): https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37261862171.
 
@@ -421,22 +421,22 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - whether to set up a Meta Business account;
   - the canon section and the Idea Graph.
 
-- 2026-10-05 06:00Z — Claude, reviewing what Manus is doing (the founder's problem 1, problem 3 for the trunk). Manus opened four pull requests into the trunk:
+- 2026-10-05 04:32Z — Claude, reviewing what Manus is doing (the founder's problem 1, problem 3 for the trunk). Manus opened four pull requests into the trunk:
   - **Merged:** #5 (bot save fix) and #7 (start a World from `/bot`).
   - **Folded in:** #6 (context ledger), into `app/bot/contract.tsx`.
   - **Changes requested:** #4 (`/start` page): brand v3, white floor, no decorative points or fake state.
 
   Review comments are on #4 and #6. Checks: bot suite 70/70; typecheck ok; lint clean; build ok.
 
-- 2026-10-05 06:25Z — Claude, Outreach Room slice 2: what happened, on the record (the outreach north star is replies, meetings and wins, never messages sent).
+- 2026-10-05 04:36Z — Claude, Outreach Room slice 2: what happened, on the record (the outreach north star is replies, meetings and wins, never messages sent).
   - The person or their assistant (`record_outcome`) records replied, meeting, won or said no as evidence on the approval (`self_reported`).
   - "Said no" is enforced by name and by site: never drafted or approved again in that World.
   - **Paths:** `lib/bot/outreach.ts`, `lib/bot/proof.ts` (`history` exported), `lib/bot/connector.ts`, `lib/bot/presence.ts`, `app/outreach-card.tsx`, `app/route-actions.ts`, `app/world/[worldId]/page.tsx` (additive), tests.
   - **Checks:** bot suite 72/72; typecheck ok; lint clean; build ok.
 
-- 2026-10-05 06:40Z — Claude: outreach results now show on the Command Center under "What actually happened" (latest outcome per business, on the person's word). The founder sees the outreach north star in one place. Paths: `lib/bot/waiting.ts`, `app/command/{page,view}.tsx`, `tests/bot/outreach.test.ts`. Checks: outreach, command, gaps and waiting 14/14; lint ok; build ok.
+- 2026-10-05 04:37Z — Claude: outreach results now show on the Command Center under "What actually happened" (latest outcome per business, on the person's word). The founder sees the outreach north star in one place. Paths: `lib/bot/waiting.ts`, `app/command/{page,view}.tsx`, `tests/bot/outreach.test.ts`. Checks: outreach, command, gaps and waiting 14/14; lint ok; build ok.
 
-- 2026-10-05 07:00Z — Claude. The founder: solve should eventually help each person make $10,000 a year, and needs to integrate crypto heavily.
+- 2026-10-05 04:42Z — Claude. The founder: solve should eventually help each person make $10,000 a year, and needs to integrate crypto heavily.
   - **Recorded:** in `DECISIONS.md`, with the interpretation stated.
   - **Plan §5:** money made through solve per person per year, by basis; crypto in four stages under the monetary constitution's gates.
   - **Built:** win values on the record and "Made through solve in <year>" on the Command Center.
@@ -444,7 +444,7 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Checks:** outreach 7/7; typecheck ok.
   - **Next:** stage 1, anchoring the record so receipts can be checked on Solana devnet.
 
-- 2026-10-05 07:40Z — Claude, crypto stage 1 (founder: "integrate crypto heavily"): the record is anchored on Solana.
+- 2026-10-05 04:48Z — Claude, crypto stage 1 (founder: "integrate crypto heavily"): the record is anchored on Solana.
   - A World's event hashes form a Merkle root, written in a memo (fingerprint only), and the anchor is saved on the record.
   - Shared receipts carry inclusion proofs, and the public page checks them.
   - The owner can anchor from the World page when an anchor key is configured.
@@ -453,14 +453,14 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Checks:** bot and chain 88/88; typecheck ok; lint clean; build ok.
   - **Needs from the founder:** a dedicated devnet fee keypair and an RPC URL in the staging environment. After that: stage 2, wallets the person controls.
 
-- 2026-10-05 07:55Z — Claude. The founder clarified the $10,000: "that's what the network should make per person". `DECISIONS.md` and plan §5 are corrected:
+- 2026-10-05 04:50Z — Claude. The founder clarified the $10,000: "that's what the network should make per person". `DECISIONS.md` and plan §5 are corrected:
   - **The north star:** the network's revenue per person per year, which is a share of value settled through solve.
   - **What it takes:** $50,000 to $200,000 a year flowing through solve per person at a 20% to 5% share. That is operator scale, carried by serious operators.
   - **Until money settles through solve,** network revenue is $0.
 
   Docs only. Next: crypto stage 2, wallets the person controls (proven by signing), the prerequisite for payments.
 
-- 2026-10-05 08:15Z — Claude, crypto stage 2: wallets the person controls.
+- 2026-10-05 04:53Z — Claude, crypto stage 2: wallets the person controls.
   - Linking needs a signed proof: a server-issued, person-bound, 10-minute challenge, signed by the person's own wallet and checked before the kernel links the address.
   - solve never holds keys. The wallet shows on the Command Center.
   - Flagged for Codex: make the kernel's `link_wallet` require a proof.
@@ -468,14 +468,30 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Checks:** bot suite 80/80; typecheck ok; lint clean; build ok.
   - **Next:** stage 3 (payments settled on chain, the network's share) waits for the founder's approval and legal review.
 
-- 2026-10-05 08:30Z — CI run 132 (`beaa75e`) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37265416621. It covers everything since run 126; runs 127 to 131 were cancelled by newer pushes. Green now:
+- 2026-10-05 05:02Z — CI run 132 (`beaa75e`) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37265416621. It covers everything since run 126; runs 127 to 131 were cancelled by newer pushes. Green now:
   - Manus's merges and the contract fold;
   - outreach outcomes, values and Command Center results;
   - anchoring on chain;
   - wallets.
 
-- 2026-10-05 09:00Z — Claude, for the founder's problem 1 ("what manus doing").
+- 2026-10-05 05:27Z — Claude, for the founder's problem 1 ("what manus doing").
   - **What happened:** Manus's #6 (duplicate panel on `/bot`) and #8 (`/start` without the brand fixes) were merged into the trunk by the founder's account while a review was open. CI was green (run 136).
   - **Fixed** on the founder's go: `/start` on the white floor (no decorative points or fake state, signed-in people to `/command`); the duplicate panel removed.
   - **For Manus:** a working agreement and an updated `ACTIVE-WORK.md` row (research first, no self-merges while a review is open).
   - **Paths:** `app/start/{view,page}.tsx`, `app/bot/page.tsx`, `app/bot/context-ledger.tsx` (removed), `tests/bot/start.test.ts`, `docs/handoff/MANUS.md`, `ACTIVE-WORK.md`.
+
+- 2026-10-05 05:45Z — Claude, research: Scale AI (founder: "look at scale ai").
+  - **Findings:**
+    - Scale marks up crowd work for AI labs. Since Meta took 49% it lost OpenAI and is turning toward AI applications.
+    - Its contributors sued over misclassification and unpaid time; a $12.5M settlement followed.
+    - Mercor and Surge grew past $1B on vetted, better-paid experts. Mercor's reported figures work out to roughly $20,000–27,000 of net revenue per weekly active contractor a year, above the network's $10,000.
+  - **For solve:**
+    - trusted, verified work on the record;
+    - pay agreed before the work, with no unpaid time;
+    - neutral across AI labs;
+    - minors out of paid work;
+    - stablecoin payouts only at stage 3.
+  - **Suggested build, not started:** paid work in a World, using Practice money.
+  - **Also:** corrected this stream's timestamps from 03:40Z onward to their commit times; they had run ahead of the clock.
+  - **Paths:** `docs/research/2026-10-05-scale-ai.md`, `docs/plans/2026-10-05-business-leverage-outreach.md`, `BUILD-STREAM.md`.
+  - **Checks:** docs only. CI run 137 (`c9df521`) still running.
