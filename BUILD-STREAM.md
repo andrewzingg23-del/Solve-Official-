@@ -600,3 +600,20 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
     - Command Center, then "Open its room";
     - optionally `GITHUB_TOKEN` for live builds and pull requests;
     - reconnect the Vercel connector to the `sovigrn` team so Claude can check Preview's settings.
+
+- 2026-10-05 19:05Z — Claude, the founder: "connect it all".
+  - **Found:**
+    - The Vercel connector is the founder's own account, but its authorization doesn't include the `sovigrn` team, so env can't be read or set.
+    - Vercel hosts are blocked from this environment.
+    - `Solve-Official-` (the main store) has kernel migrations v1–v3 only, while the app needs the later ones, which only solve-staging has. Staging has never had app traffic, so the preview was almost certainly pointed at the main store, where Worlds, bots and rooms can't work.
+  - **Connected:** Vercel preview deployments now run on solve-staging, in code (`lib/supabase/config.ts`, with `NEXT_PUBLIC_SOLVE_DEPLOY` from `VERCEL_ENV` in `next.config.ts`).
+    - Staging's URL and publishable key are public by design. Production and local runs are unchanged.
+    - The server key is used only for the same project: `SUPABASE_STAGING_SECRET_KEY`, or the preview's own key when its settings already point at staging. Otherwise there's no bot connector on previews, never a mismatched key. `lib/bot/mcp-auth.ts` uses it.
+  - **Checks:**
+    - full suite 286/286; lint clean;
+    - build ok with `VERCEL_ENV=preview`: the staging URL is in the client bundle as expected, and no secret names.
+    - CI run 158 and Vercel succeeded for `5df0e1f`.
+  - **Founder, remaining:**
+    - re-authorize the Vercel connector for `sovigrn`;
+    - add `SUPABASE_STAGING_SECRET_KEY` in Preview (for the bot connector), and `GITHUB_TOKEN`;
+    - if the sign-in email link doesn't return to the preview, add `https://*-sovigrn.vercel.app/**` to staging's redirect URLs.

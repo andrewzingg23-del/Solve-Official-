@@ -7,7 +7,7 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { after } from "next/server";
 import { kernelClient } from "@/lib/kernel/client";
-import { isSupabaseConfigured, supabasePublishableKey, supabaseUrl } from "@/lib/supabase/config";
+import { isSupabaseConfigured, serviceKey, supabasePublishableKey, supabaseUrl } from "@/lib/supabase/config";
 import type { McpAuth } from "./mcp-http";
 import { broadcastActivity } from "./presence";
 
@@ -32,7 +32,7 @@ export async function authenticateConnector(token: string): Promise<McpAuth | nu
   // ordinary app session cannot be replayed here.
   const clientId = clientIdOf(token);
   if (!clientId) return null;
-  const secret = process.env.SUPABASE_SECRET_KEY;
+  const secret = serviceKey();
   const service = secret ? createClient(supabaseUrl, secret, { auth: noSession }) : null;
   return {
     clientId,

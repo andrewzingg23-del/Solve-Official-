@@ -18,6 +18,8 @@ function recentCommits(): string {
 
 const nextConfig: NextConfig = {
   env: {
+    // Which Vercel environment this is (preview runs on solve-staging; lib/supabase/config.ts).
+    NEXT_PUBLIC_SOLVE_DEPLOY: process.env.VERCEL_ENV ?? "",
     SOLVE_DEPLOYED_REPO: process.env.VERCEL_GIT_REPO_OWNER && process.env.VERCEL_GIT_REPO_SLUG ? `${process.env.VERCEL_GIT_REPO_OWNER}/${process.env.VERCEL_GIT_REPO_SLUG}` : "",
     SOLVE_DEPLOYED_REF: process.env.VERCEL_GIT_COMMIT_REF ?? "",
     SOLVE_DEPLOYED_AT: new Date().toISOString(),
