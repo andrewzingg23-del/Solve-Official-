@@ -617,3 +617,5 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
     - re-authorize the Vercel connector for `sovigrn`;
     - add `SUPABASE_STAGING_SECRET_KEY` in Preview (for the bot connector), and `GITHUB_TOKEN`;
     - if the sign-in email link doesn't return to the preview, add `https://*-sovigrn.vercel.app/**` to staging's redirect URLs.
+
+- 2026-10-05 19:15Z — CI run 159 (`b5e074b`) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37357768450. The Vercel preview deployed: https://vercel.com/sovigrn/solve/HPRBimALyWKFYnM14U5FMu6ZJzak. This is the first preview built to run on solve-staging. Not yet visited; staging's logs will show the first sign-in.
