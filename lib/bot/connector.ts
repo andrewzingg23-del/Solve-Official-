@@ -732,12 +732,14 @@ export function createConnector(s: Session) {
       if (!canRemember) return fail(`This connection (${connection.clientName}) is read only. The person can allow it to add in Sovereign.`);
       if (!s.botAs) return fail("This deployment cannot act as the bot yet. Nothing was written.");
       const bot = s.botAs(avatar.agent_id);
+      // Every piece the bot writes here records which assistant it was working through.
+      const via = { clientId: connection.clientId, clientName: connection.clientName };
       try {
         if (name === "start_world") {
           const { world, existing } = await startWorld(s.person, avatar.agent_id, { title: args.title });
           const url = worldUrl(s.appUrl, world.worldId);
           if (!existing && typeof args.goal === "string" && args.goal.trim()) {
-            await addToWorld(bot, { worldId: world.worldId, title: "Goal", body: args.goal }, `goal:${world.worldId}`);
+            await addToWorld(bot, { worldId: world.worldId, title: "Goal", body: args.goal, via }, `goal:${world.worldId}`);
           }
           return ok(`${existing ? "Already started" : "Started"} "${world.title}", a private World. ${persona.name} can add to it. Open it: ${url}`, { world_id: world.worldId, title: world.title, url, existing });
         }
@@ -751,7 +753,7 @@ export function createConnector(s: Session) {
           }
           const artifactId = typeof args.artifact_id === "string" && args.artifact_id ? args.artifact_id : null;
           const requestId = createHash("sha256").update([s.clientId, worldId, "part", artifactId ?? "", String(args.title ?? ""), body].join("|")).digest("hex").slice(0, 40);
-          const saved = await addToWorld(bot, { worldId, title: args.title, body, artifactId }, requestId);
+          const saved = await addToWorld(bot, { worldId, title: args.title, body, artifactId, via }, requestId);
           const part = parsePart(body)!;
           const stl = partUrl(s.appUrl, worldId, saved.entityId);
           const print = printNotes(part);
@@ -793,7 +795,7 @@ export function createConnector(s: Session) {
           }
           const outreach = parseOutreach(body)!;
           const requestId = createHash("sha256").update([s.clientId, worldId, "outreach", artifactId ?? "", body].join("|")).digest("hex").slice(0, 40);
-          const saved = await addToWorld(bot, { worldId, title: `Outreach: ${outreach.goal}`.slice(0, WORLD_LIMITS.title), body, artifactId }, requestId);
+          const saved = await addToWorld(bot, { worldId, title: `Outreach: ${outreach.goal}`.slice(0, WORLD_LIMITS.title), body, artifactId, via }, requestId);
           const url = worldUrl(s.appUrl, worldId);
           const n = outreach.leads.length;
           return ok(`${saved.revised ? "Revised" : "Drafted"} ${n === 1 ? "one message" : `${n} messages`} for "${inert(outreach.goal)}". Nothing is sent: the person approves each one here: ${url}`, {
@@ -815,7 +817,7 @@ export function createConnector(s: Session) {
           }
           const routes = parseRoutes(body)!;
           const requestId = createHash("sha256").update([s.clientId, worldId, "routes", artifactId ?? "", body].join("|")).digest("hex").slice(0, 40);
-          const saved = await addToWorld(bot, { worldId, title: routes.ask.slice(0, WORLD_LIMITS.title), body, artifactId }, requestId);
+          const saved = await addToWorld(bot, { worldId, title: routes.ask.slice(0, WORLD_LIMITS.title), body, artifactId, via }, requestId);
           const url = worldUrl(s.appUrl, worldId);
           const n = routes.routes.length;
           return ok(`${saved.revised ? "Revised" : "Proposed"} ${n === 1 ? "one route" : `${n} routes`} for "${inert(routes.ask)}": ${routes.routes.map((r) => inert(r.title)).join("; ")}. Nothing has started: the person takes one here: ${url}`, {
@@ -880,7 +882,7 @@ export function createConnector(s: Session) {
           }
           const artifactId = typeof args.artifact_id === "string" && args.artifact_id ? args.artifact_id : null;
           const requestId = createHash("sha256").update([s.clientId, worldId, "pixel-art", artifactId ?? "", String(args.title ?? ""), body].join("|")).digest("hex").slice(0, 40);
-          const saved = await addToWorld(bot, { worldId, title: args.title, body, artifactId }, requestId);
+          const saved = await addToWorld(bot, { worldId, title: args.title, body, artifactId, via }, requestId);
           return ok(`${saved.revised ? "Revised" : "Created"} pixel art as ${persona.name}: ${worldUrl(s.appUrl, worldId)}`, {
             artifact_id: saved.entityId,
             world_id: worldId,
@@ -909,7 +911,7 @@ export function createConnector(s: Session) {
         }
         const artifactId = typeof args.artifact_id === "string" && args.artifact_id ? args.artifact_id : null;
         const requestId = createHash("sha256").update(`${s.clientId}|${worldId}|${artifactId ?? ""}|${String(args.title ?? "")}|${String(args.body ?? "")}`).digest("hex").slice(0, 40);
-        const saved = await addToWorld(bot, { worldId, title: args.title, body: args.body, artifactId }, requestId);
+        const saved = await addToWorld(bot, { worldId, title: args.title, body: args.body, artifactId, via }, requestId);
         return ok(`${saved.revised ? "Revised" : "Added"} as ${persona.name}'s draft: ${worldUrl(s.appUrl, worldId)}`, { artifact_id: saved.entityId, world_id: worldId, revised: saved.revised });
       } catch (error) {
         if (error instanceof WorldInputError) return fail(`Nothing was written: ${error.message}.`);

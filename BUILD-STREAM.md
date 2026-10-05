@@ -514,3 +514,25 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
     - update the three branches the founder named (by merging the trunk in, not rebasing);
     - then builder attribution on World writes;
     - then a one-step "Build solve" room.
+
+- 2026-10-05 07:20Z — Claude, for the founder's go: the three branches updated, no merges.
+  - **Done:** `manus/start-route-clean` (pull request #9), `codex/development-memory-plan` and `codex/development-memory-v1` (pull request #2) each have the trunk merged in.
+    - Merged in rather than rebased, so nothing was force-pushed and no builder's checkout breaks.
+    - Build-log conflicts kept both sides, in time order.
+  - **The Idea Graph branch also needed:**
+    - `lib/world/collaboration.ts`, the access panel and the collaboration test take the trunk's later revisions of the same files;
+    - the World page keeps the Room, Details and Ideas tabs;
+    - its unapplied migration is renamed `20261005070000_idea_graph_relations.sql`, so it sorts after the trunk's migrations.
+  - **Checks on the Idea Graph branch:** full suite 276/276; typecheck ok; lint ok (one existing warning). The build runs in CI (runs 139–142).
+  - **The merge clicks are the founder's.**
+
+- 2026-10-05 07:25Z — Claude, the room: who did what, and a repository at World creation (founder-first slice 3, problem 1).
+  - A piece the bot writes now records which assistant it came through ("via Claude"), on the revision's event and on the piece. It shows on the room's pieces and activity, and on the World page cards. No migration: it goes in the entity's attributes.
+  - Creating a World takes an optional GitHub repository. It is linked as the World's first resource, and the room opens on the build.
+  - **Paths:**
+    - `lib/world/creative.ts` (additive: `via`, `viaOf`);
+    - `lib/bot/worlds.ts`, `lib/bot/connector.ts`;
+    - `app/world/[worldId]/room/{page,pieces-map}.tsx`, `app/world/[worldId]/page.tsx`;
+    - `app/worlds/{page,actions}.ts*`;
+    - `tests/bot/worlds.test.ts`.
+  - **Checks:** full suite 272/272; lint clean; build ok.
