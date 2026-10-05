@@ -175,3 +175,44 @@ it("puts outreach results under what actually happened on the Command Center", a
   assert.doesNotMatch(html, /Nothing saved yet/, "a recorded result is something that happened");
 });
 
+it("records what a win was worth on the person's word, and totals it per year and currency", async () => {
+  const db = await createKernelDb();
+  const ana = kernelClient(localSupabase(db, user("auth:value-ana")));
+  const anaId = await ana.register("Ana");
+  const anaBot = (await saveBot(ana, { name: "Nova" }, "persona-value-ana")).avatar!.agent_id;
+  const botAs = (agentId: string) => kernelClient(localSupabase(db, service), { actAs: agentId });
+  const clientId = "00000000-0000-4000-8000-0000000c1a14";
+  await approveConnection(ana, anaId, anaBot, { clientId, clientName: "Claude", mode: "remember" }, "value-connect");
+  const call = async (name: string, args: Record<string, unknown>) => {
+    const s: Session = { clientId, person: ana, botAs, appUrl: "https://sov.test" };
+    return ((await createConnector(s).handle({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } })) as { result: { content: { text: string }[]; structuredContent?: Record<string, unknown> } }).result;
+  };
+  const world = await createCreativeWorld(ana, { worldId: "9c1d2c3b-4a59-4687-9a0b-1c2d3e4f5ad0", title: "Clients" });
+  await setBotAccess(ana, { scope: world.scope, botAgentId: anaBot, access: "add" }, "in");
+  const pieceId = ((await call("propose_outreach", { world_id: world.worldId, goal: "Clients", from: "Ana", leads: LEADS })).structuredContent as { artifact_id: string }).artifact_id;
+  const at = { worldId: world.worldId, pieceId, ownerId: anaId };
+  for (const lead of [0, 1]) await approveAndSend(ana, { worldId: world.worldId, pieceId, lead });
+
+  await assert.rejects(recordOutcome(ana, { ...at, lead: 0, outcome: "replied", amount: 100 }, "v0"), /only a win carries a value/);
+  await assert.rejects(recordOutcome(ana, { ...at, lead: 0, outcome: "won", amount: -5 }, "v1"), /positive amount/);
+  await assert.rejects(recordOutcome(ana, { ...at, lead: 0, outcome: "won", amount: 5, currency: "dollars" }, "v2"), /three-letter code/);
+  const won = await recordOutcome(ana, { ...at, lead: 0, outcome: "won", amount: "2,400", note: "Three-month pilot" }, "v3");
+  assert.deepEqual([won.outcome, won.value, won.note, won.basis], ["won", { minor: 240000, currency: "USD" }, "Three-month pilot", "self_reported"]);
+  const byBot = await call("record_outcome", { world_id: world.worldId, artifact_id: pieceId, lead: 1, outcome: "won", amount: 1250.5, currency: "cad" });
+  assert.match(byBot.content[0].text, /^Recorded: Won, worth CA\$1,250\.50, on the person's word\./);
+  assert.deepEqual((byBot.structuredContent as { value: unknown }).value, { amount: 1250.5, currency: "CAD" });
+
+  const { results } = await overview(ana, [{ worldId: world.worldId, title: world.title, scope: world.scope }], anaId);
+  const { madeIn } = await import("../../lib/bot/waiting");
+  const year = new Date().getUTCFullYear();
+  assert.deepEqual(madeIn(results, year), [{ minor: 240000, currency: "USD" }, { minor: 125050, currency: "CAD" }]);
+  assert.deepEqual(madeIn(results, year - 1), [], "only this year's wins count toward this year");
+
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const { CommandView } = await import("../../app/command/view");
+  const html = renderToStaticMarkup(CommandView({ data: { name: "Ana", botName: "Nova", worlds: [], journeys: [], connections: [], saves: [], results, now: new Date() } }));
+  assert.match(html, new RegExp(`Made through solve in ${year}: \\$2,400 \\+ CA\\$1,250\\.50.*from wins you recorded, on your word`));
+  assert.match(html, /Won · \$2,400 · Inkwell Print Co\./);
+  assert.doesNotMatch(html, /10,000/, "no target bar: the north star is ours, not a game on the person's screen");
+});
+

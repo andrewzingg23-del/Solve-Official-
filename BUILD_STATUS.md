@@ -350,3 +350,10 @@ The founder asked for "a ai to business outreach flow ... with meta accounts but
 - **Tests:** `tests/bot/outreach.test.ts` now has 5. Bot suite 72/72; typecheck ok; lint clean; build ok.
 - **On the Command Center:** the latest outcome per business (replied, meeting, won, said no) now shows under "What actually happened" next to saves, on the person's word, with its World. `overview` returns `results`.
 
+## 2026-10-05: Win values and "made through solve"
+
+- A won outcome can carry its value (amount and three-letter currency, stored in minor units), on the person's word. Only a win carries one.
+- The outreach card and the Command Center show it. The Command Center adds "Made through solve in 2026", the year's total per currency (`madeIn` in `lib/bot/waiting.ts`), marked as from wins the person recorded.
+- There is no target bar: the brand never gamifies money. The $10,000 north star is the business's (`DECISIONS.md`).
+- **Tests:** outreach suite 7/7 (values, refusals, the yearly total by currency, rendering).
+

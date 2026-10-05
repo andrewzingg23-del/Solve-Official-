@@ -10,8 +10,8 @@ import { WaitingOnYou } from "@/app/bot/waiting";
 import type { Connection } from "@/lib/bot/memory";
 import type { SavedProof } from "@/lib/bot/proof";
 import { groupGaps, type Gap } from "@/lib/bot/gaps";
-import { OUTCOME_LABEL } from "@/lib/bot/outreach";
-import { noticed, waitingFrom, type Approval, type Journey, type Result } from "@/lib/bot/waiting";
+import { formatValue, OUTCOME_LABEL } from "@/lib/bot/outreach";
+import { madeIn, noticed, waitingFrom, type Approval, type Journey, type Result } from "@/lib/bot/waiting";
 
 export type CommandData = {
   name: string; // the person's label
@@ -51,6 +51,8 @@ export function CommandView({ data }: { data: CommandData }) {
   const underway = data.journeys.filter((j) => j.state === "underway").length;
   const waiting = waitingFrom(data.journeys, data.approvals);
   const seen = noticed(data.journeys, data.now);
+  const year = (data.now ?? new Date()).getUTCFullYear();
+  const made = madeIn(data.results ?? [], year);
   return (
     <div className="flex flex-col gap-6">
       <Section id="where-you-are" title="Where you are">
@@ -59,6 +61,11 @@ export function CommandView({ data }: { data: CommandData }) {
             ? `${plural(data.worlds.length, "World", "Worlds")} · ${plural(underway, "route", "routes")} underway · ${plural(data.saves.length, "recent save", "recent saves")} on the record`
             : "No Worlds yet. A World starts from something you want to make real."}
         </p>
+        {made.length ? (
+          <p className="text-sm leading-6 tabular-nums">
+            Made through solve in {year}: {made.map(formatValue).join(" + ")} <span className="text-muted">· from wins you recorded, on your word</span>
+          </p>
+        ) : null}
         {data.worlds.length ? (
           <ul className="flex flex-col divide-y divide-line">
             {data.worlds.map((w) => (
@@ -134,7 +141,7 @@ export function CommandView({ data }: { data: CommandData }) {
             {data.results.map((r) => (
               <li key={`${r.pieceId}:${r.business}`} className="flex flex-col gap-0.5 py-2 text-sm">
                 <span>
-                  {OUTCOME_LABEL[r.outcome]} · {r.business}
+                  {OUTCOME_LABEL[r.outcome]}{r.value ? ` · ${formatValue(r.value)}` : ""} · {r.business}
                   {r.note ? <span className="text-muted"> · {r.note}</span> : null}
                 </span>
                 <span className="text-xs text-muted tabular-nums">

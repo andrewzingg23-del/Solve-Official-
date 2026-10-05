@@ -2,6 +2,17 @@
 
 Dated, one paragraph each. Newest first.
 
+**2026-10-05 — $10,000 a person a year, with crypto at the core.** The founder: "this should be a $10,000 per person a year eventuality that this can make. Also needs to integrate crypto heavily."
+- **How it is read (the founder can correct):** solve should eventually help each person make $10,000 a year through it. The north star becomes money made through solve per person per year, counted only from real outcomes and labeled by basis. solve earns a share when that money is real ("paid when it's real"); at a 10% share, that is $1,000 a person a year.
+- **Crypto:** it follows the monetary constitution, which already makes the chain the truth for money and a witness for the record (Parts I, V and XV). It comes in stages:
+  1. anchor the record on Solana, so receipts can be checked by anyone (no money);
+  2. the person links a wallet they control (non-custodial);
+  3. payments between people settle on chain and come back as `externally_verified` income;
+  4. SOLVE, under Part XV's gates.
+- **Gates that still hold:** no mainnet mint, custody or real money without the founder's explicit approval and legal review (constitution Part XV).
+- **The $10,000 is ours:** a goal, not a promise shown to people. Earnings claims are regulated, so it is never advertised without substantiation.
+- Plan: `docs/plans/2026-10-05-business-leverage-outreach.md` §5.
+
 **2026-10-05 — solve is built for the founder first.** The founder: "the app should solve the problems im having here.. and it should be built for me first." The first user is the founder. The first real project is building solve itself with four AI builders (Claude, Codex, Manus, ChatGPT), and the friction of doing that picks the next slice: not knowing what each builder is doing, copying messages between them, work spread over branches and workspaces, decisions buried in chat, approvals that stall, and claims without proof. This answers the open "first pilot" question in `docs/specs/2026-10-05-spec-vision-check.md` §4: the founder's own build comes before trading signals, solar or printable parts. It is the directive "Use Sovereign and grow it from real outcomes" applied to Sovereign itself. The founder's use is labeled as such, never presented as customer traction. Plan: `docs/plans/2026-10-05-founder-first.md`.
 
 **2026-10-05 — The brand is "Everything here is real."** The founder approved ("Go") after rejecting *Ask. Allow. Prove.* as generic. It is the construct, inverted: games gave us worlds that aren't real, AI gave us answers that aren't real, and solve is a world where everything is real. The product's game-like structure (Worlds, your character, your party, Packs, progression) maps to built functions. A real result is a save point on the record. Simulated activity is Practice, always labeled, and the founder's directive to label simulated evidence becomes the brand's own rule. The game stops at money and voice: no confetti, streaks, points or gamified copy (Robinhood was charged over gamified trading). Brand surfaces open on the construct's white floor. The first-principles business model (free to bring your AI; paid when an outcome settles; north star of verified outcomes) still stands, pending the founder. The name stays conditional on trademark counsel. Canonical: `docs/brand/BRAND.md` v3.

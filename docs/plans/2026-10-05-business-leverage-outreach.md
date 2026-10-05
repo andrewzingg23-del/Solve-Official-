@@ -83,3 +83,31 @@ It is not two products. It is one engine with progressive disclosure (spec §15)
 | Save a finished route as a Pack others can start from | Claude | After the founder's first real routes |
 
 The north star stays verified outcomes per person per month. For outreach it is replies, meetings and deals on the record, never messages sent.
+
+## 5. $10,000 a person a year, with crypto at the core
+
+The founder (2026-10-05): *"this should be a $10,000 per person a year eventuality that this can make. Also needs to integrate crypto heavily."*
+
+**The number.** The north star becomes **money made through solve per person per year**, aiming at $10,000. It counts only real outcomes: a won deal, a paid order, a settled payment. Each is labeled by basis:
+- **On your word:** recorded by the person (self-reported).
+- **Seen paid:** a payment settled through solve and observed on chain (`externally_verified`, constitution Part I.3).
+
+solve earns a share only when money is real. At 10%, $10,000 for the person is $1,000 a year for solve; that share is the founder's decision. The person sees plain totals ("Made through solve in 2026: $2,400, on your word"), never a target bar or a game: the brand never gamifies money. Earnings claims are regulated (in the US by the FTC), so "$10,000 a year" is never advertised as a promise without evidence from real users.
+
+**Where the $10,000 comes from, with what exists:**
+- **Outreach:** wins with their value, built today.
+- **Packs:** a working route others start from, paid per result to its maker.
+- **Operator services:** the AI Receptionist, outreach for clients and verified records for buyers, each priced per outcome.
+- **Bounties and needs in Worlds:** Codex's resource map, plus the constitution's need, contract, outcome and entitlement path.
+
+**Crypto, in stages.** The monetary constitution already designs this, with the chain as the truth for money and a witness for the record.
+
+| Stage | What | Money moves? | Gate |
+|---|---|---|---|
+| 1. Anchor the record | A Merkle root of each period's event hashes goes on Solana. Each receipt carries its inclusion proof, so anyone can check it was on the record at that time without seeing anyone else's events (spec §13, constitution Part XI). | No | Devnet now; mainnet anchoring needs a funded fee payer and the founder's cadence choice (Part XV, open decision 5) |
+| 2. Your wallet | Link a Solana wallet you control, proven by signing a message (kernel `linkWallet`). solve never holds keys. | No | None beyond staging |
+| 3. Paid when it's real | A won deal or an order settles on chain: stablecoin or SOLVE, person to person, solve's share at settlement. The chain observation comes back as `externally_verified` income. | Yes | Founder's approval plus legal review (money transmission, tax). `ENABLE_MONEY` and `ENABLE_PAYMENTS` |
+| 4. SOLVE | Earn Vault releases for verified outcomes (Part V); Network State treasuries (Part IX). | Yes | Part XV: mainnet mint, custody and convertibility each need the founder and legal |
+
+Building now: stage 1 on devnet and in tests, and win values on the record (this slice).
+

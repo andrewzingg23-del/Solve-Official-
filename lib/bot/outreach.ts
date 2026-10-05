@@ -138,10 +138,29 @@ export async function approveAndSend(person: Kernel, input: { worldId: string; p
 export const OUTCOMES = ["replied", "meeting", "won", "said_no"] as const;
 export type OutcomeKind = (typeof OUTCOMES)[number];
 export const OUTCOME_LABEL: Record<OutcomeKind, string> = { replied: "Replied", meeting: "Meeting booked", won: "Won", said_no: "Said no" };
-export type LeadOutcome = { outcome: OutcomeKind; note: string; at: string; basis: EvidenceBasis; by: string; number: number };
+// What a win was worth, as the person said (minor units, so no rounding drift). On their word until a
+// payment settles through solve and is observed, which is what can later make it verified income.
+export type Value = { minor: number; currency: string };
+export type LeadOutcome = { outcome: OutcomeKind; note: string; at: string; basis: EvidenceBasis; by: string; number: number; value?: Value };
+export const VALUE_LIMIT = 100_000_000_00; // 100 million in major units
+
+function readValue(amount: unknown, currency: unknown): Value | undefined {
+  if (amount === undefined || amount === null || amount === "") return undefined;
+  const n = typeof amount === "number" ? amount : Number(String(amount).replace(/[,\s]/g, ""));
+  if (!Number.isFinite(n) || n <= 0) throw new WorldInputError("the value must be a positive amount");
+  const minor = Math.round(n * 100);
+  if (minor > VALUE_LIMIT) throw new WorldInputError("that value is too large to record");
+  const code = typeof currency === "string" && currency.trim() ? currency.trim().toUpperCase() : "USD";
+  if (!/^[A-Z]{3}$/.test(code)) throw new WorldInputError("the currency must be a three-letter code, like USD or CAD");
+  return { minor, currency: code };
+}
+
+export const formatValue = (v: Value) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: v.currency, maximumFractionDigits: v.minor % 100 ? 2 : 0 }).format(v.minor / 100);
 
 const OUTCOME_MEDIA = "application/vnd.sov.outreach-outcome";
-const describeOutcome = (o: OutcomeKind, note: string) => `outcome:${o}${note ? `\n${note}` : ""}`;
+const describeOutcome = (o: OutcomeKind, note: string, value?: Value) =>
+  `outcome:${o}${value ? `\nvalue:${value.minor} ${value.currency}` : ""}${note ? `\n${note}` : ""}`;
 
 // The approval's completion event for each outreach task in a scope.
 async function completions(kernel: Kernel, scope: string): Promise<Map<string, string>> {
@@ -168,11 +187,14 @@ export async function outcomesIn(kernel: Kernel, scope: string): Promise<Map<str
     if (!at) continue;
     for (const item of p.items as Record<string, unknown>[]) {
       if (item.media_type !== OUTCOME_MEDIA) continue;
-      const [head, ...rest] = String(item.description ?? "").split("\n");
+      const [head, ...lines] = String(item.description ?? "").split("\n");
+      const valueLine = /^value:(\d+) ([A-Z]{3})$/.exec(lines[0] ?? "");
+      const rest = valueLine ? lines.slice(1) : lines;
+      const value = valueLine ? { minor: Number(valueLine[1]), currency: valueLine[2] } : undefined;
       const outcome = head.replace(/^outcome:/, "") as OutcomeKind;
       if (!OUTCOMES.includes(outcome)) continue;
       const byLead = out.get(at.piece) ?? new Map<number, LeadOutcome[]>();
-      byLead.set(at.lead, [...(byLead.get(at.lead) ?? []), { outcome, note: rest.join("\n"), at: new Date(e.occurred_at).toISOString(), basis: item.basis as EvidenceBasis, by: e.on_behalf_of ?? e.actor_id, number: e.seq }]);
+      byLead.set(at.lead, [...(byLead.get(at.lead) ?? []), { outcome, note: rest.join("\n"), at: new Date(e.occurred_at).toISOString(), basis: item.basis as EvidenceBasis, by: e.on_behalf_of ?? e.actor_id, number: e.seq, ...(value ? { value } : {}) }]);
       out.set(at.piece, byLead);
     }
   }
@@ -213,19 +235,21 @@ export const saidNo = (lead: Pick<Lead, "name" | "source">, no: { names: Set<str
 // Records what happened with one approved message. A retried call with the same request id records once.
 export async function recordOutcome(
   kernel: Kernel,
-  input: { worldId: string; pieceId: string; lead: number; outcome: unknown; note?: unknown; ownerId: string },
+  input: { worldId: string; pieceId: string; lead: number; outcome: unknown; note?: unknown; amount?: unknown; currency?: unknown; ownerId: string },
   requestId: string,
 ): Promise<LeadOutcome> {
   const outcome = input.outcome as OutcomeKind;
   if (!OUTCOMES.includes(outcome)) throw new WorldInputError(`the outcome must be one of: ${OUTCOMES.join(", ")}`);
   const note = cleanText(input.note, 300);
+  const value = readValue(input.amount, input.currency);
+  if (value && outcome !== "won") throw new WorldInputError("only a win carries a value");
   const { world } = await loadCreativeWorld(kernel, input.worldId);
   const sent = (await sentIn(kernel, world.scope)).get(input.pieceId)?.get(input.lead);
   if (!sent) throw new WorldInputError("that message hasn't been approved, so nothing happened with it yet");
   const eventId = (await completions(kernel, world.scope)).get(sent.taskId);
   if (!eventId) throw new WorldInputError("that approval has no record to attach to");
   const basis: EvidenceBasis = "self_reported";
-  const description = describeOutcome(outcome, note);
+  const description = describeOutcome(outcome, note, value);
   await kernel.attachEvidence(
     eventId,
     { basis, content_hash: `sha256:${createHash("sha256").update(description).digest("hex")}`, media_type: OUTCOME_MEDIA, description },

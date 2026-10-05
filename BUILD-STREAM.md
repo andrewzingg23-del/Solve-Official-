@@ -435,3 +435,11 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Checks:** bot suite 72/72; typecheck ok; lint clean; build ok.
 
 - 2026-10-05 06:40Z — Claude: outreach results now show on the Command Center under "What actually happened" (latest outcome per business, on the person's word). The founder sees the outreach north star in one place. Paths: `lib/bot/waiting.ts`, `app/command/{page,view}.tsx`, `tests/bot/outreach.test.ts`. Checks: outreach, command, gaps and waiting 14/14; lint ok; build ok.
+
+- 2026-10-05 07:00Z — Claude. The founder: solve should eventually help each person make $10,000 a year, and needs to integrate crypto heavily.
+  - **Recorded:** in `DECISIONS.md`, with the interpretation stated.
+  - **Plan §5:** money made through solve per person per year, by basis; crypto in four stages under the monetary constitution's gates.
+  - **Built:** win values on the record and "Made through solve in <year>" on the Command Center.
+  - **Paths:** `lib/bot/outreach.ts`, `lib/bot/waiting.ts`, `lib/bot/connector.ts`, `app/outreach-card.tsx`, `app/route-actions.ts`, `app/command/view.tsx`, tests.
+  - **Checks:** outreach 7/7; typecheck ok.
+  - **Next:** stage 1, anchoring the record so receipts can be checked on Solana devnet.

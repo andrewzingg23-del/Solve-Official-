@@ -59,7 +59,7 @@ export async function recordOutcomeAction(worldId: string, formData: FormData) {
   try {
     const kernel = await getKernel();
     const me = await kernel.whoami();
-    await recordOutcome(kernel, { worldId, pieceId: text(formData.get("pieceId")), lead: Number(text(formData.get("lead"))), outcome: text(formData.get("outcome")), note: text(formData.get("note")), ownerId: me.actor_id }, text(formData.get("requestId")) || crypto.randomUUID());
+    await recordOutcome(kernel, { worldId, pieceId: text(formData.get("pieceId")), lead: Number(text(formData.get("lead"))), outcome: text(formData.get("outcome")), note: text(formData.get("note")), amount: text(formData.get("amount")) || undefined, currency: text(formData.get("currency")) || undefined, ownerId: me.actor_id }, text(formData.get("requestId")) || crypto.randomUUID());
   } catch (error) {
     failed(worldId, error);
   }

@@ -13,7 +13,7 @@ import { personaBrief } from "./persona";
 import { encodePixelArt } from "./pixel-art";
 import { encodePart, MATERIALS, PART_LIMITS, PartInputError, parsePart, partUrl, printNotes, sizeText } from "./part";
 import { addProof, PROOF_LIMITS, proofsIn, type SavedProof } from "./proof";
-import { encodeOutreach, OUTCOME_LABEL, OUTCOMES, outcomesIn, OUTREACH_LIMITS, parseOutreach, recordOutcome, saidNo, saidNoIn, sentIn } from "./outreach";
+import { encodeOutreach, formatValue, OUTCOME_LABEL, OUTCOMES, outcomesIn, OUTREACH_LIMITS, parseOutreach, recordOutcome, saidNo, saidNoIn, sentIn } from "./outreach";
 import { encodeRoutes, nextStep, parseRoutes, ROUTE_LIMITS, takenRoutes, type TakenRoute } from "./routes";
 import { saveNumber, vouch } from "./vouch";
 import { companionOf, readPersona } from "./store";
@@ -368,6 +368,8 @@ export const TOOLS = [
         lead: { type: "integer", minimum: 0, description: "The business's position in that outreach, starting at 0." },
         outcome: { type: "string", enum: [...OUTCOMES] },
         note: { type: "string", maxLength: 300, description: "Optional: what they said, in a line. Leave out personal data." },
+        amount: { type: "number", exclusiveMinimum: 0, description: "Only for won: what the deal was worth, as the person said it. Never estimate." },
+        currency: { type: "string", pattern: "^[A-Za-z]{3}$", description: "Three-letter currency code for amount, e.g. USD or CAD. Default USD." },
       },
       required: ["world_id", "artifact_id", "lead", "outcome"],
       additionalProperties: false,
@@ -764,12 +766,13 @@ export function createConnector(s: Session) {
           });
         }
         if (name === "record_outcome") {
-          const requestId = createHash("sha256").update([s.clientId, worldId, "outcome", String(args.artifact_id ?? ""), String(args.lead ?? ""), String(args.outcome ?? ""), String(args.note ?? "")].join("|")).digest("hex").slice(0, 40);
-          const saved = await recordOutcome(bot, { worldId, pieceId: String(args.artifact_id ?? ""), lead: Number(args.lead), outcome: args.outcome, note: args.note, ownerId: owner.actor_id }, requestId);
+          const requestId = createHash("sha256").update([s.clientId, worldId, "outcome", String(args.artifact_id ?? ""), String(args.lead ?? ""), String(args.outcome ?? ""), String(args.note ?? ""), String(args.amount ?? ""), String(args.currency ?? "")].join("|")).digest("hex").slice(0, 40);
+          const saved = await recordOutcome(bot, { worldId, pieceId: String(args.artifact_id ?? ""), lead: Number(args.lead), outcome: args.outcome, note: args.note, amount: args.amount, currency: args.currency, ownerId: owner.actor_id }, requestId);
           const url = worldUrl(s.appUrl, worldId);
-          return ok(`Recorded: ${OUTCOME_LABEL[saved.outcome]}, on the person's word. ${saved.outcome === "said_no" ? "They won't be contacted again from this World. " : ""}See it: ${url}`, {
+          return ok(`Recorded: ${OUTCOME_LABEL[saved.outcome]}${saved.value ? `, worth ${formatValue(saved.value)}` : ""}, on the person's word. ${saved.outcome === "said_no" ? "They won't be contacted again from this World. " : ""}See it: ${url}`, {
             recorded: true,
             outcome: saved.outcome,
+            ...(saved.value ? { value: { amount: saved.value.minor / 100, currency: saved.value.currency } } : {}),
             basis: saved.basis,
             verified: false,
             world_id: worldId,

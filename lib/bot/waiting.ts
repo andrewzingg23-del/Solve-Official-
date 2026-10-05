@@ -8,7 +8,7 @@
 import type { Kernel } from "@/lib/kernel/client";
 import { loadCreativeWorld } from "@/lib/world/creative";
 import { parseCapabilityProposal, type Gap } from "./gaps";
-import { outcomesIn, parseOutreach, SEND_CAPABILITY, sentIn, type OutcomeKind } from "./outreach";
+import { outcomesIn, parseOutreach, SEND_CAPABILITY, sentIn, type OutcomeKind, type Value } from "./outreach";
 import { proofsIn } from "./proof";
 import { nextStep, parseRoutes, STEP_CAPABILITY, takenRoutes } from "./routes";
 
@@ -30,7 +30,7 @@ export type Journey = Where & {
 export type Approval = Where & { pending: number; total: number };
 
 // What happened with approved outreach, as recorded (on the person's word).
-export type Result = { worldId: string; worldTitle: string; pieceId: string; business: string; outcome: OutcomeKind; note: string; at: string };
+export type Result = { worldId: string; worldTitle: string; pieceId: string; business: string; outcome: OutcomeKind; note: string; at: string; value?: Value };
 
 export type WaitingItem =
   | (Where & { kind: "approve"; pending: number; total: number })
@@ -68,9 +68,9 @@ export async function overview(kernel: Kernel, worlds: WorldRef[], me: string): 
           const proposal = parseCapabilityProposal(a.body);
           if (proposal) gaps.push({ ...proposal, worldId: w.worldId, worldTitle: w.title, pieceId: a.entityId, at: new Date(a.updatedAt).toISOString() });
           const outreach = parseOutreach(a.body);
-          for (const [lead, list] of (outcomes.get(a.entityId) ?? new Map()) as Map<number, { outcome: OutcomeKind; note: string; at: string }[]>) {
+          for (const [lead, list] of (outcomes.get(a.entityId) ?? new Map()) as Map<number, { outcome: OutcomeKind; note: string; at: string; value?: Value }[]>) {
             const last = list.at(-1);
-            if (outreach && last) results.push({ worldId: w.worldId, worldTitle: w.title, pieceId: a.entityId, business: outreach.leads[lead]?.name ?? "a business", outcome: last.outcome, note: last.note, at: last.at });
+            if (outreach && last) results.push({ worldId: w.worldId, worldTitle: w.title, pieceId: a.entityId, business: outreach.leads[lead]?.name ?? "a business", outcome: last.outcome, note: last.note, at: last.at, ...(last.value ? { value: last.value } : {}) });
           }
           if (outreach && canSend) {
             const pending = outreach.leads.length - (sent.get(a.entityId)?.size ?? 0);
@@ -152,5 +152,16 @@ export function noticed(all: Journey[], now = new Date()): Noticed[] {
     }
   }
   return out;
+}
+
+// What a person made through solve in a calendar year, per currency, from the wins they recorded.
+// On their word: it counts toward "verified income" only once a payment settles and is observed.
+export function madeIn(results: Result[], year: number): Value[] {
+  const totals = new Map<string, number>();
+  for (const r of results) {
+    if (r.outcome !== "won" || !r.value || new Date(r.at).getUTCFullYear() !== year) continue;
+    totals.set(r.value.currency, (totals.get(r.value.currency) ?? 0) + r.value.minor);
+  }
+  return [...totals].map(([currency, minor]) => ({ minor, currency })).sort((a, b) => b.minor - a.minor);
 }
 

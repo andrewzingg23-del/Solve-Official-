@@ -3,7 +3,7 @@
 // records what would be sent and nothing leaves solve, so the card says Practice plainly.
 import { randomUUID } from "node:crypto";
 import type { LeadOutcome, Outreach, Sent } from "@/lib/bot/outreach";
-import { finalMessage, OUTCOME_LABEL, OUTCOMES } from "@/lib/bot/outreach";
+import { finalMessage, formatValue, OUTCOME_LABEL, OUTCOMES } from "@/lib/bot/outreach";
 import { day, PracticeLabel } from "@/app/save-point";
 
 type FormAction = (formData: FormData) => void | Promise<void>;
@@ -50,7 +50,7 @@ export function OutreachCard({ pieceId, outreach, sent, approve, outcomes, recor
                   <p className="text-xs text-muted tabular-nums">Approved · recorded in Practice, not sent · {day(done.at)}</p>
                   {latest(i) ? (
                     <p className="text-xs tabular-nums">
-                      {OUTCOME_LABEL[latest(i)!.outcome]} · on {latest(i)!.basis === "self_reported" ? "your word" : "the record"} · {day(latest(i)!.at)}
+                      {OUTCOME_LABEL[latest(i)!.outcome]}{latest(i)!.value ? ` · ${formatValue(latest(i)!.value!)}` : ""} · on {latest(i)!.basis === "self_reported" ? "your word" : "the record"} · {day(latest(i)!.at)}
                       {latest(i)!.note ? <span className="text-muted"> · {latest(i)!.note}</span> : null}
                       {latest(i)!.outcome === "said_no" ? <span className="text-muted"> · won&apos;t be contacted again from this World</span> : null}
                     </p>
@@ -64,6 +64,8 @@ export function OutreachCard({ pieceId, outreach, sent, approve, outcomes, recor
                         {OUTCOMES.map((o) => <option key={o} value={o}>{OUTCOME_LABEL[o]}</option>)}
                       </select>
                       <input name="note" maxLength={300} placeholder="What they said (optional)" className="h-8 min-w-0 flex-1 rounded border border-line bg-background px-2 text-xs" />
+                      <input name="amount" inputMode="decimal" placeholder="Worth, if won" aria-label="What the win was worth" className="h-8 w-28 rounded border border-line bg-background px-2 text-xs" />
+                      <input name="currency" maxLength={3} defaultValue="USD" aria-label="Currency" className="h-8 w-14 rounded border border-line bg-background px-2 text-xs uppercase" />
                       <button type="submit" className={smallAction}>Record</button>
                     </form>
                   ) : null}
