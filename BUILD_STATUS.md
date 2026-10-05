@@ -379,3 +379,25 @@ The founder asked for "a ai to business outreach flow ... with meta accounts but
 - **Known gap, for Codex:** the kernel's `link_wallet` doesn't itself require proof, so a direct API call could link an address without it and block its real owner. Proposed fix: a new migration that only accepts links carrying a server-verified proof, or verifies the signature in the kernel.
 - **Tests:** `tests/bot/wallet.test.ts` covers valid proofs; another person's, an edited, an expired or a forged challenge; another wallet's signature; bad input; one owner per address; and the panel slot without a bot. Bot suite 80/80; typecheck ok; lint clean; build ok.
 
+## 2026-10-05: After Manus's merges of #6 and #8
+
+Both were merged into the trunk by the founder's account while a review asked for changes. CI was green (run 136). Fixed:
+- **`/start`** (`app/start/view.tsx`, `page.tsx`) follows brand v3: white floor, no decorative points or glows, no static "Avatar: Not shaped" state, lowercase solve, "Everything here is real". Signed-in people go to `/command`. Manus's content and structure are kept.
+- **`/bot`** shows one panel for what the bot may do. The duplicate context ledger is removed; its World list was already folded in.
+- **Test:** `tests/bot/start.test.ts` keeps the start page on brand.
+- **Process:** a working agreement for Manus is in `docs/handoff/MANUS.md` (never merge with a review open, log every slice, research first), and its `ACTIVE-WORK.md` row is updated.
+
+
+## 2026-10-05 — The room: a World you work inside (Claude)
+
+- **What it is:** `/world/<id>/room`, an immersive full-screen room for a World (master spec §7, "Real-time Build Rooms"; the canon's "Enter a Room"). Creating a World, the Command Center and `/worlds` now open the room. The panels page is still there as "Details".
+  - **Left:** what the World is after, who is here (people and bots, the bot's live line), and its routes with progress.
+  - **Center:** the canvas. A World that links a GitHub repository shows **the build**: each builder's station (Claude, Codex, Manus, named by their branches), the trunk with its commits and build results, and the branches in flight with their pull requests. Otherwise it shows the World's pieces where they were placed, around the goal.
+  - **Right:** what's waiting on you (including pull requests asking to merge into the trunk), proof, what just happened, and what solve can't do yet.
+  - **Bottom:** a command bar that adds a note to the World.
+- **The repo as a source** (`lib/github/repo.ts`): read-only, from GitHub's API, refreshed every minute while the room is open. A private repository needs `GITHUB_TOKEN`, and is read only where `GITHUB_ROOMS` pairs it with a World or a sign-in email, so nobody can read it by linking it into a World of their own. Linking a repository adds it to the World's resources (one concept, one home).
+- **Tests:** `tests/github/repo.test.ts`, `tests/bot/room.test.ts`.
+- **Founder steps to see the solve build in its room:**
+  1. A fine-grained GitHub token, read-only for Actions, Contents, Metadata and Pull requests on Solve-Official-.
+  2. In Vercel, `GITHUB_TOKEN`, plus `GITHUB_ROOMS=<your sign-in email>=andrewzingg23-del/Solve-Official-@claude/keen-cerf-tpd7io`.
+  3. Then link `https://github.com/andrewzingg23-del/Solve-Official-/tree/claude/keen-cerf-tpd7io` in the room.

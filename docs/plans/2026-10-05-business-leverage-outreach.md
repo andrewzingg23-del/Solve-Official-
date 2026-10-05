@@ -118,6 +118,7 @@ People never see the $10,000 as a target, and it is never advertised. The brand 
 - **Packs:** a working route others start from, paid per result to its maker.
 - **Operator services:** the AI Receptionist, outreach for clients and verified records for buyers, each priced per outcome.
 - **Bounties and needs in Worlds:** Codex's resource map, plus the constitution's need, contract, outcome and entitlement path.
+  The market for paid, verified work is real: Mercor reports roughly $20,000–27,000 of net revenue per weekly active contractor a year. See `docs/research/2026-10-05-scale-ai.md` for what Scale AI's contributor lawsuits say to avoid.
 
 **Crypto, in stages.** The monetary constitution already designs this, with the chain as the truth for money and a witness for the record.
 

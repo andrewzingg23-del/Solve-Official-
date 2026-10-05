@@ -64,7 +64,7 @@ export default async function WorldsPage({ searchParams }: PageProps<"/worlds">)
             <ul aria-label="Your Worlds" className="flex flex-col divide-y divide-line border-y border-line">
               {worlds.map((world) => (
                 <li key={world.worldId}>
-                  <Link href={`/world/${world.worldId}`} className="group flex items-center justify-between gap-6 py-5 transition-colors hover:text-accent">
+                  <Link href={`/world/${world.worldId}/room`} className="group flex items-center justify-between gap-6 py-5 transition-colors hover:text-accent">
                     <div className="flex min-w-0 flex-col gap-1.5">
                       <span className="truncate text-lg font-medium tracking-tight">{world.title}</span>
                       <span className="text-xs text-muted">World · changed {new Date(world.updatedAt).toLocaleDateString("en-US", { dateStyle: "medium" })}</span>

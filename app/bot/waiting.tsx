@@ -25,19 +25,19 @@ export function WaitingOnYou({ items }: { items: WaitingItem[] }) {
             <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">{item.kind === "approve" ? "Approve messages" : item.kind === "choose" ? "Choose a route" : "Next step"}</span>
             {item.kind === "approve" ? (
               <>
-                <Link href={`/world/${item.worldId}`} className="break-words hover:text-accent">{item.ask}</Link>
+                <Link href={`/world/${item.worldId}#piece-${item.pieceId}`} className="break-words hover:text-accent">{item.ask}</Link>
                 <span className="text-xs leading-5 text-muted tabular-nums">{item.pending} of {item.total} messages to approve · in {item.worldTitle}</span>
               </>
             ) : item.kind === "choose" ? (
               <>
-                <Link href={`/world/${item.worldId}`} className="break-words hover:text-accent">{item.ask}</Link>
+                <Link href={`/world/${item.worldId}#piece-${item.pieceId}`} className="break-words hover:text-accent">{item.ask}</Link>
                 <span className="break-words text-xs leading-5 text-muted">
                   {item.options.length === 1 ? "One option" : `${item.options.length} options`}: {item.options.join(" · ")} · in {item.worldTitle}
                 </span>
               </>
             ) : (
               <>
-                <Link href={`/world/${item.worldId}`} className="break-words hover:text-accent">{item.step}</Link>
+                <Link href={`/world/${item.worldId}#piece-${item.pieceId}`} className="break-words hover:text-accent">{item.step}</Link>
                 <span className="break-words text-xs leading-5 text-muted tabular-nums">
                   {item.route} · {item.done} of {item.total} done · in {item.worldTitle}
                   {item.link && host(item.link) ? (

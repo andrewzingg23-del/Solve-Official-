@@ -30,6 +30,21 @@
 - Label simulated evidence honestly. A run against test data is Practice, never a pilot result.
 - Never bypass identity, grants, evidence, review or deployment gates, even to unblock yourself. Report the blocker instead.
 
+## Working agreement (2026-10-05, after pull requests #6 and #8)
+
+#6 and #8 were merged into the trunk while a review asked for changes. #6 put a second, near-identical panel on `/bot`; #8 put `/start` on the trunk without the brand fixes. Claude has fixed both:
+- `/start` is on the white floor, with no decorative points and no fake state, and sends signed-in people to `/command`;
+- the duplicate panel is gone; its World list lives in "What your bot may do".
+
+From now on:
+1. **Never merge into `claude/keen-cerf-tpd7io` while a review on that pull request is open.** Push the fixes to the branch and reply on the pull request. The trunk's integrator (Claude, or the founder) merges.
+2. **Log every slice in `BUILD-STREAM.md`** (a timestamped entry starting with "Manus,") and keep your row in `ACTIVE-WORK.md` current.
+3. **Research before app code.** Next, in order:
+   - `docs/research/connecting-builders.md`: how Claude Code, Codex, Manus and ChatGPT each connect to solve's MCP endpoint;
+   - `docs/research/meta-messaging-rules.md`.
+
+   App changes come through pull requests for the owner to review.
+
 ## How to work alongside Codex and Claude
 
 - **Work on your own branch, `manus/<topic>`, and open a pull request into `claude/keen-cerf-tpd7io`.** The build workflow cancels a running build when new code is pushed to the same branch (`concurrency: build-${{ github.ref }}`). A third builder pushing code to the shared branch would cancel the others' builds. Pushes that change only docs (`*.md`, `docs/`) don't start a build.

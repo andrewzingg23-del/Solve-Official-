@@ -78,6 +78,6 @@ it("shows nothing when nothing waits, and links each item to its World", async (
     { kind: "next", worldId: "w2", worldTitle: "Market", pieceId: "p2", ask: "Sell prints", at: "2026-10-05T02:00:00Z", route: "Rent a stall", step: "Apply for a permit", link: "https://www.example.gov/permit", done: 0, total: 2 },
   ] })!);
   assert.match(html, /Waiting on you/);
-  assert.match(html, /Choose a route.*href="\/world\/w1".*Which outside service connects first\?.*2 options: Whop · Discord · in Build solve/);
-  assert.match(html, /Next step.*href="\/world\/w2".*Apply for a permit.*Rent a stall · 0 of 2 done · in Market.*example\.gov/);
+  assert.match(html, /Choose a route.*href="\/world\/w1#piece-p1".*Which outside service connects first\?.*2 options: Whop · Discord · in Build solve/);
+  assert.match(html, /Next step.*href="\/world\/w2#piece-p2".*Apply for a permit.*Rent a stall · 0 of 2 done · in Market.*example\.gov/);
 });
