@@ -15,7 +15,7 @@ import { createHash } from "node:crypto";
 import { KernelError, type InboxMessage, type Kernel, type WorldEntity } from "@/lib/kernel/client";
 import { cleanText } from "@/lib/bot/memory";
 import { companionOf } from "@/lib/bot/store";
-import { setBotAccess } from "@/lib/bot/worlds";
+import { botGrantsIn, setBotAccess } from "@/lib/bot/worlds";
 import { grantWorldAccess, readWorldMembers } from "@/lib/world/collaboration";
 import { createCreativeWorld } from "@/lib/world/creative";
 import { packsFrom, type PackId } from "./packs";
@@ -342,22 +342,46 @@ export async function communityMembers(kernel: Kernel, community: Community): Pr
   return { people, guests };
 }
 
-export type Note = { id: string; fromId: string; from: string; text: string; at: string; inReplyTo: string | null };
+export type Note = {
+  id: string;
+  // The person it is from (for a note their AI sent, the person it was sent for).
+  fromId: string;
+  from: string;
+  // The AI that sent it for them, if one did.
+  via: string | null;
+  text: string;
+  at: string;
+  inReplyTo: string | null;
+};
 
-// A note from one member to another. Both must be in the community; the note is a kernel message,
-// so it is on the record with who sent it.
+// How long a person's AI may send notes for them in a community before they renew it.
+export const AI_NOTES_DAYS = 30;
+
+// The person a sender acts for: a person for themselves, an AI for the person accountable for it.
+async function principalOf(kernel: Kernel, actorId: string): Promise<string | null> {
+  const [actor] = await kernel.readActors([actorId]);
+  if (!actor) return null;
+  return actor.kind === "human" ? actor.actor_id : actor.accountable_party;
+}
+
+// A note to someone in this community. A person sends it themselves; their AI can send it for them
+// once they have let it (letAiSendNotes). Either way it goes from the person's own side of the
+// community, so it is on the record whose note it is and who sent it.
 export async function sendNote(kernel: Kernel, community: Community, input: { to: string; text: unknown; requestId: string; inReplyTo?: string }) {
   const requestId = requireRequestId(input.requestId);
-  const me = (await kernel.whoami()).actor_id;
+  const sender = (await kernel.whoami()).actor_id;
+  const me = await principalOf(kernel, sender);
   const roster = await readWorldMembers(kernel, community.scope);
-  const inIt = (id: string) => id === roster.ownerActorId || roster.members.some((m) => m.actorId === id);
+  const inIt = (id: string | null) => !!id && (id === roster.ownerActorId || roster.members.some((m) => m.actorId === id));
   const to = input.to.trim().toLowerCase();
   if (!UUID.test(to) || !inIt(to) || !inIt(me)) throw new KernelError("forbidden", "Notes go between people in this community", "");
   if (to === me) throw new CommunityInputError("that's you");
+  const [recipient] = await kernel.readActors([to]);
+  if (recipient?.kind !== "human") throw new KernelError("forbidden", "Notes go between people in this community", "");
   const text = cleanText(input.text, COMMUNITY_LIMITS.note);
   if (!text) throw new CommunityInputError("a note needs words");
   return send(kernel, {
-    scope: sideScope(me, community.communityId),
+    scope: sideScope(me!, community.communityId),
     to,
     inReplyTo: input.inReplyTo,
     payload: { type: "INFORMATION_REQUEST", purpose: NOTE, community: community.communityId, text },
@@ -365,21 +389,66 @@ export async function sendNote(kernel: Kernel, community: Community, input: { to
   });
 }
 
-// Notes to the signed-in person from people in this community, newest first.
+// Notes to the signed-in person from people in this community (or their AIs, for them), newest
+// first. A note counts only if it came from its person's own side of this community.
 export async function notesForMe(kernel: Kernel, community: Community, limit = 50): Promise<Note[]> {
   const [inbox, roster] = await Promise.all([kernel.inbox(), readWorldMembers(kernel, community.scope)]);
   const inIt = new Set([roster.ownerActorId, ...roster.members.map((m) => m.actorId)]);
-  const notes = inbox.filter((m) => about(m, NOTE, community.communityId) && inIt.has(m.sender_id)).slice(-limit).reverse();
-  const ids = [...new Set(notes.map((m) => m.sender_id))];
+  const forWhom = (m: InboxMessage) => (m.sender_kind === "human" ? m.sender_id : m.on_behalf_of);
+  const notes = inbox
+    .filter((m) => {
+      const person = forWhom(m);
+      return about(m, NOTE, community.communityId) && !!person && inIt.has(person) && m.scope === sideScope(person, community.communityId);
+    })
+    .slice(-limit)
+    .reverse();
+  const ids = [...new Set(notes.flatMap((m) => [m.sender_id, forWhom(m)!]))];
   const names = new Map((ids.length ? await kernel.readActors(ids) : []).map((a) => [a.actor_id, a.label || a.actor_id.slice(0, 8)]));
-  return notes.map((m) => ({
-    id: m.action_id,
-    fromId: m.sender_id,
-    from: names.get(m.sender_id) ?? m.sender_id.slice(0, 8),
-    text: typeof m.payload.text === "string" ? m.payload.text : "",
-    at: m.delivered_at,
-    inReplyTo: m.in_reply_to,
-  }));
+  return notes.map((m) => {
+    const person = forWhom(m)!;
+    return {
+      id: m.action_id,
+      fromId: person,
+      from: names.get(person) ?? person.slice(0, 8),
+      via: m.sender_id === person ? null : names.get(m.sender_id) ?? "their AI",
+      text: typeof m.payload.text === "string" ? m.payload.text : "",
+      at: m.delivered_at,
+      inReplyTo: m.in_reply_to,
+    };
+  });
+}
+
+// Whether the person's AI may send notes for them in this community, and until when.
+export async function aiSendsNotes(kernel: Kernel, community: Community, now = new Date()): Promise<{ until: string | null } | null> {
+  const me = (await kernel.whoami()).actor_id;
+  const bot = companionOf(await kernel.myAvatars());
+  if (!bot) return null;
+  const grants = (await botGrantsIn(kernel, sideScope(me, community.communityId), bot.agent_id, now)).filter((g) => g.capability === "message.send");
+  return grants.length ? { until: grants.map((g) => g.expiresAt).filter((x): x is string => !!x).sort().at(-1) ?? null } : null;
+}
+
+// The person lets their AI send notes for them in this community, or stops it. Only the person can:
+// the grant is on their own side of the community and comes from their own authority.
+export async function letAiSendNotes(kernel: Kernel, community: Community, input: { on: boolean; requestId: string }, now = new Date()) {
+  const requestId = requireRequestId(input.requestId);
+  const { me, standing } = await standingIn(kernel, community);
+  if (standing === "guest") throw new KernelError("forbidden", "Only people in this community can let their AI send notes here", "");
+  const bot = companionOf(await kernel.myAvatars());
+  if (!bot) throw new CommunityInputError("set up your bot first");
+  const scope = sideScope(me, community.communityId);
+  const held = (await botGrantsIn(kernel, scope, bot.agent_id, now)).filter((g) => g.capability === "message.send");
+  if (!input.on) {
+    for (const g of held) await kernel.revokeGrant(g.id, "the person stopped their AI sending notes here", `community:ai-notes-off:${g.id}`);
+    return;
+  }
+  if (held.length) return;
+  await kernel.issueGrant({
+    grantee: bot.agent_id,
+    capability: "message.send",
+    scope,
+    expiresAt: new Date(now.getTime() + AI_NOTES_DAYS * 86_400_000),
+    idempotencyKey: `community:ai-notes-on:${requestId}`,
+  });
 }
 
 export type MyCommunity = { communityId: string; name: string; standing: "owner" | "member"; asking: number; requests: number };

@@ -500,3 +500,20 @@ The founder's words are in `DECISIONS.md`. Nothing here needed a migration.
   2. Copy its id from its page and set `SOLAR_COMMUNITY` in Vercel (or send it to Claude to commit).
   3. Requests then land on the community page. Design each in Aurora, then paste the proposal link and the numbers.
 
+## 2026-10-05 — Your AI inside communities (Claude)
+
+- **Connector tools** (`lib/bot/connector.ts`):
+  - `list_communities`: the person's communities, with what waits on them, and others they could ask to join.
+  - `read_community`: who's in and the AIs they brought, notes for the person, packs, and for an owner who's asking and how many solar requests wait. A homeowner's name, address and contact never go to the AI; they stay on the community page.
+  - `send_note`: a note from the bot, for the person.
+- **Notes from your AI only with your yes:**
+  - The person switches it on under "Your AI" on the community page. That is a 30-day `message.send` grant on their own side of that community only, and they can stop it any time.
+  - A note the AI sends shows "from Ben, via Rex, their AI". Replies go to the person.
+  - Notes count only when they come from their person's own side of the community.
+- **Owners** can let their own AI into the community's room from the same panel.
+- **Tests:**
+  - `tests/community/connector.test.ts`: refusals, no homeowner details, one note per retried call;
+  - a new delegation test in `tests/community/community.test.ts`;
+  - the connector's tool list.
+- **Checks:** full suite 311/311 before merging the trunk. After the merge: affected tests 34/34, typecheck, lint and build ok. The panel was rendered in Chromium with no page errors.
+

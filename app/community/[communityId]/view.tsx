@@ -6,7 +6,7 @@ import { label, primaryAction, secondaryAction } from "@/app/ui";
 import { COMMUNITY_LIMITS, type Community, type JoinRequest, type Member, type MyAsk, type Note, type Standing } from "@/lib/community/community";
 import { PACK_IDS, PACKS } from "@/lib/community/packs";
 import type { DesignRequest } from "@/lib/solar/desk";
-import { answerAskAction, answerDesignAction, askToJoinAction, sendNoteAction, updatePacksAction } from "./actions";
+import { aiNotesAction, answerAskAction, answerDesignAction, askToJoinAction, letMyAiInAction, sendNoteAction, updatePacksAction } from "./actions";
 import { DeskRequest } from "./desk";
 
 export type Loaded = {
@@ -23,6 +23,8 @@ export type Loaded = {
   desk: DesignRequest[] | null;
   // Whether the /solar door sends its requests to this community.
   routed: boolean;
+  // Whether the person's AI may send notes for them here, and until when.
+  aiNotes: { until: string | null } | null;
 };
 
 const input = "rounded-md border border-line bg-background px-3 text-sm outline-none transition-colors focus:border-accent";
@@ -76,24 +78,7 @@ export function CommunityView({ data, status }: { data: Loaded; status: { bad: b
         </div>
 
         <aside className="flex flex-col gap-6">
-          {standing === "member" && data.bot && !myBotIn ? (
-            <div className={panel}>
-              <p className={label}>Your AI</p>
-              {waiting ? <p className="text-sm leading-6">You asked to bring {data.bot.name} in. Waiting on {data.ownerName}.</p> : (
-                <>
-                  <p className="text-sm leading-6 text-muted">Ask {data.ownerName} to let {data.bot.name} in to help. It adds to the room as itself, for you, and only while you&apos;re in.</p>
-                  <AskForm id={id} bot={data.bot} label={`Bring ${data.bot.name} in`} fixedBot />
-                </>
-              )}
-            </div>
-          ) : null}
-          {standing === "member" && !data.bot ? (
-            <div className={panel}>
-              <p className={label}>Your AI</p>
-              <p className="text-sm leading-6 text-muted">Set up your bot and connect your own assistant, then bring it in here to help.</p>
-              <Link href="/bot" className={secondaryAction}>Set up your bot</Link>
-            </div>
-          ) : null}
+          {inside ? <YourAi id={id} data={data} botIn={myBotIn} waiting={Boolean(waiting)} /> : null}
           <Packs id={id} community={c} owner={standing === "owner"} />
           {standing === "owner" ? (
             <p className="text-xs leading-5 text-muted">
@@ -103,6 +88,49 @@ export function CommunityView({ data, status }: { data: Loaded; status: { bad: b
         </aside>
       </div>
     </>
+  );
+}
+
+function YourAi({ id, data, botIn, waiting }: { id: string; data: Loaded; botIn: boolean; waiting: boolean }) {
+  const bot = data.bot;
+  return (
+    <div className={panel}>
+      <p className={label}>Your AI</p>
+      {!bot ? (
+        <>
+          <p className="text-sm leading-6 text-muted">Set up your bot and connect your own assistant, then bring it in here to help.</p>
+          <Link href="/bot" className={secondaryAction}>Set up your bot</Link>
+        </>
+      ) : !botIn ? (
+        data.standing === "owner" ? (
+          <>
+            <p className="text-sm leading-6 text-muted">Let {bot.name} into the room to help. It adds as itself, for you.</p>
+            <form action={letMyAiInAction.bind(null, id)}><button type="submit" className={secondaryAction}>Let {bot.name} in</button></form>
+          </>
+        ) : waiting ? (
+          <p className="text-sm leading-6">You asked to bring {bot.name} in. Waiting on {data.ownerName}.</p>
+        ) : (
+          <>
+            <p className="text-sm leading-6 text-muted">Ask {data.ownerName} to let {bot.name} in to help. It adds to the room as itself, for you, and only while you&apos;re in.</p>
+            <AskForm id={id} bot={bot} label={`Bring ${bot.name} in`} fixedBot />
+          </>
+        )
+      ) : (
+        <>
+          <p className="text-sm leading-6">{bot.name} is in. Through your connected assistant it reads the room and adds to it, for you.</p>
+          <form action={aiNotesAction.bind(null, id)} className="flex flex-col gap-2">
+            <input type="hidden" name="requestId" value={randomUUID()} />
+            <input type="hidden" name="on" value={data.aiNotes ? "off" : "on"} />
+            <p className="text-xs leading-5 text-muted">
+              {data.aiNotes
+                ? `${bot.name} can send notes for you here${data.aiNotes.until ? ` until ${when(data.aiNotes.until)}` : ""}. Each shows it came from ${bot.name}, for you.`
+                : `Let ${bot.name} reach people here for you. Each note shows it came from ${bot.name}, for you, and you can stop it any time.`}
+            </p>
+            <button type="submit" className={secondaryAction}>{data.aiNotes ? `Stop ${bot.name}'s notes` : `Let ${bot.name} send notes for me`}</button>
+          </form>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -233,7 +261,7 @@ function Notes({ id, notes }: { id: string; notes: Note[] }) {
         <ul className="flex flex-col divide-y divide-line border-y border-line">
           {notes.map((n) => (
             <li key={n.id} className="flex flex-col gap-1 py-4">
-              <span className="text-xs text-muted">{n.from} · {when(n.at)}{n.inReplyTo ? " · a reply" : ""}</span>
+              <span className="text-xs text-muted">{n.from}{n.via ? `, via ${n.via}, their AI` : ""} · {when(n.at)}{n.inReplyTo ? " · a reply" : ""}</span>
               <span className="whitespace-pre-line text-sm leading-6">{n.text}</span>
               <NoteForm id={id} to={n.fromId} inReplyTo={n.id} />
             </li>

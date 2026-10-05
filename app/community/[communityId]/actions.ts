@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
-import { answerAsk, askToJoin, CommunityInputError, readCommunity, sendNote, updateCommunity } from "@/lib/community/community";
+import { setBotAccess } from "@/lib/bot/worlds";
+import { companionOf } from "@/lib/bot/store";
+import { answerAsk, askToJoin, CommunityInputError, letAiSendNotes, readCommunity, requireOwner, sendNote, updateCommunity } from "@/lib/community/community";
 import { answerDesign, DeskInputError } from "@/lib/solar/desk";
 
 const text = (value: FormDataEntryValue | null) => (typeof value === "string" ? value : "");
@@ -68,3 +70,20 @@ export async function answerDesignAction(communityId: string, formData: FormData
       note: text(formData.get("note")),
     }, text(formData.get("requestId"))));
 }
+
+export async function aiNotesAction(communityId: string, formData: FormData) {
+  const on = text(formData.get("on")) === "on";
+  await act(communityId, on ? "ai-notes-on" : "ai-notes-off", (kernel, community) =>
+    letAiSendNotes(kernel, community, { on, requestId: text(formData.get("requestId")) }));
+}
+
+// The owner lets their own AI into the community's room, as they would into any World of theirs.
+export async function letMyAiInAction(communityId: string) {
+  await act(communityId, "ai-in", async (kernel, community) => {
+    await requireOwner(kernel, community);
+    const bot = companionOf(await kernel.myAvatars());
+    if (!bot) throw new CommunityInputError("set up your bot first");
+    await setBotAccess(kernel, { scope: community.scope, botAgentId: bot.agent_id, access: "add" }, `owner-ai-${community.communityId}`);
+  });
+}
+

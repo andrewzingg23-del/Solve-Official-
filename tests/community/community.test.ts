@@ -9,7 +9,9 @@ import { localSupabase } from "../../lib/kernel/local";
 import { saveBot } from "../../lib/bot/store";
 import { addToWorld, botGrantsIn } from "../../lib/bot/worlds";
 import {
+  aiSendsNotes,
   answerAsk,
+  letAiSendNotes,
   askToJoin,
   communityFromEntity,
   communityIdFor,
@@ -158,3 +160,30 @@ it("is refused to agents, which act inside granted scopes", async () => {
   const bot: Kernel = botAs(benBot);
   await assert.rejects(startCommunity(bot, { name: "Bot club", nonce: NONCE }), (e: unknown) => e instanceof KernelError);
 });
+
+it("lets a person's AI send notes for them only after they say so, and shows it was their AI", async () => {
+  const { ana, ben, botAs } = await setting();
+  const c = await startCommunity(ana.k, { name: "Builders", nonce: NONCE });
+  const benBot = (await saveBot(ben.k, { name: "Rex" }, "persona-community-ben")).avatar!.agent_id;
+  const asked = await askToJoin(ben.k, c, { bringBot: true, requestId: "ask-ben-0001" });
+  await answerAsk(ana.k, c, { askId: asked.id, answer: "in" });
+  const rex = botAs(benBot);
+
+  await rejects(sendNote(rex, c, { to: ana.id, text: "Ben's bracket is ready.", requestId: "note-rex-0001" }), /grant|not authorized|denied|refused|message\.send/i);
+  assert.equal(await aiSendsNotes(ben.k, c), null);
+  await rejects(letAiSendNotes(ana.k, { ...c }, { on: true, requestId: "ai-ana-00001" }), /set up your bot/);
+
+  await letAiSendNotes(ben.k, c, { on: true, requestId: "ai-ben-00001" });
+  assert.ok((await aiSendsNotes(ben.k, c))?.until, "allowed, with an end date");
+  await sendNote(rex, c, { to: ana.id, text: "Ben's bracket is ready.", requestId: "note-rex-0002" });
+  const [note] = await notesForMe(ana.k, c);
+  assert.deepEqual([note.from, note.fromId, note.via, note.text], ["Ben", ben.id, "Rex", "Ben's bracket is ready."]);
+
+  // The AI can't reach someone outside, or pass itself off as anyone else's.
+  await rejects(sendNote(rex, c, { to: benBot, text: "hi", requestId: "note-rex-0003" }), /between people/);
+
+  await letAiSendNotes(ben.k, c, { on: false, requestId: "ai-ben-00002" });
+  assert.equal(await aiSendsNotes(ben.k, c), null);
+  await rejects(sendNote(rex, c, { to: ana.id, text: "again", requestId: "note-rex-0004" }));
+});
+
