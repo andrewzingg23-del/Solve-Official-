@@ -711,3 +711,5 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 - 2026-10-05 22:35Z — Doris, MAIN MERGE on the founder's "run the main merge". Trunk (claude/keen-cerf-tpd7io) into main: 33f2a75..1018942. The birth of the product: the Room talks (PR #11), 10 venture landings (PR #10), Manus start route (PR #9), Codex memory + Idea Graph (PRs #1, #2), Worlds, auth, /api/reason live. Verdict conditions satisfied (lane contracts now in DECISIONS.md). Trunk CI green at merge time.
 
 - 2026-10-05 22:55Z — Doris, Talk panel cost guard: 30 messages/hour per signed-in person (429 past the window). In-memory v1; kernel-backed limiter follows. Tests 6/6, lint clean.
+
+- 2026-10-05 23:05Z — Doris, rate limit to main (2ee62a8). Production now refuses past 30 Talk messages/hour per person.
