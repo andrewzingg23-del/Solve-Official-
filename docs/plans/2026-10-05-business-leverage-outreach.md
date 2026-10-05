@@ -88,13 +88,32 @@ The north star stays verified outcomes per person per month. For outreach it is 
 
 The founder (2026-10-05): *"this should be a $10,000 per person a year eventuality that this can make. Also needs to integrate crypto heavily."*
 
-**The number.** The north star becomes **money made through solve per person per year**, aiming at $10,000. It counts only real outcomes: a won deal, a paid order, a settled payment. Each is labeled by basis:
-- **On your word:** recorded by the person (self-reported).
-- **Seen paid:** a payment settled through solve and observed on chain (`externally_verified`, constitution Part I.3).
+**The number** (the founder clarified: *"that's what the network should make per person"*). The north star is **the network's revenue per person per year: $10,000**. The network earns only a share of value that really moves through it, so the number is set by two things:
 
-solve earns a share only when money is real. At 10%, $10,000 for the person is $1,000 a year for solve; that share is the founder's decision. The person sees plain totals ("Made through solve in 2026: $2,400, on your word"), never a target bar or a game: the brand never gamifies money. Earnings claims are regulated (in the US by the FTC), so "$10,000 a year" is never advertised as a promise without evidence from real users.
+| Network share of value settled | Value that must flow through solve per person per year |
+|---|---|
+| 20% (like marketplaces and app stores) | $50,000 |
+| 10% | $100,000 |
+| 5% | $200,000 |
+| 2–3% (like payments) | $330,000 to $500,000 |
 
-**Where the $10,000 comes from, with what exists:**
+That is operator scale. An agency, contractor or seller whose business runs through solve can reach it; a casual user or a kid won't. So the $10,000 is carried by serious operators, and it is measured both per active operator and across everyone. Per person, the drivers are:
+- **What they make through solve:** "Made through solve" on the Command Center, built.
+- **How much of it settles through solve:** stage 3 below. Until money settles through solve, the network makes $0, which is honest.
+- **The network's share:** the founder's decision, and it can differ by line.
+
+**An illustration, not a forecast** (to be replaced with real numbers), for one operator reaching $10,000 a year for the network:
+
+| Line | Assumption | Network revenue |
+|---|---|---|
+| Meetings booked through the Outreach Room | 15 a month × $40 | $7,200 |
+| Client payments settled on chain | $100,000 a year × 2% | $2,000 |
+| Share of Packs others start from their routes | | $800 |
+| **Total** | | **$10,000** |
+
+People never see the $10,000 as a target, and it is never advertised. The brand never gamifies money, and earnings claims are regulated (in the US by the FTC).
+
+**Where the network's revenue comes from, with what exists:**
 - **Outreach:** wins with their value, built today.
 - **Packs:** a working route others start from, paid per result to its maker.
 - **Operator services:** the AI Receptionist, outreach for clients and verified records for buyers, each priced per outcome.

@@ -452,3 +452,10 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Paths:** `lib/chain/anchor.ts`, `lib/chain/solve.ts` (`MEMO_PROGRAM` exported), `lib/bot/anchor.ts`, `lib/bot/receipt.ts`, `app/saved/[token]/page.tsx`, `app/anchor-panel.tsx`, `app/route-actions.ts`, `app/world/[worldId]/page.tsx` (additive), `.env.example`, `tests/bot/anchor.test.ts`.
   - **Checks:** bot and chain 88/88; typecheck ok; lint clean; build ok.
   - **Needs from the founder:** a dedicated devnet fee keypair and an RPC URL in the staging environment. After that: stage 2, wallets the person controls.
+
+- 2026-10-05 07:55Z — Claude. The founder clarified the $10,000: "that's what the network should make per person". `DECISIONS.md` and plan §5 are corrected:
+  - **The north star:** the network's revenue per person per year, which is a share of value settled through solve.
+  - **What it takes:** $50,000 to $200,000 a year flowing through solve per person at a 20% to 5% share. That is operator scale, carried by serious operators.
+  - **Until money settles through solve,** network revenue is $0.
+
+  Docs only. Next: crypto stage 2, wallets the person controls (proven by signing), the prerequisite for payments.
