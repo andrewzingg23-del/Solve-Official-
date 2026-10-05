@@ -284,3 +284,9 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 - 2026-10-05 02:14Z — Claude, print notes for parts (supports, brim, sagging holes) in `design_part`'s answer and `PartPreview`. Removed a stray lint directive from the preview card. Checks: bot suite 56/56; typecheck ok; lint ok (one existing warning). Committed locally; pushing after CI for `9e39ece` finishes.
 
 - 2026-10-05 02:20Z — CI run 109 (`d157b74`: holes and flat parts, receipt preview card, print notes) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37254637235. Still waiting on the founder: v5 and presence on staging (two files in the SQL editor), then the first real pilot loop.
+
+- 2026-10-05 02:40Z — Claude, the founder's master spec is now in the repo: `docs/specs/SOVEREIGN-MASTER-BUILD-SPEC.pdf` (original) and `.md` (transcription, wording unchanged). The founder asked "make sure this meets vision", so it was checked against `VISION-CANON.md`, `DIRECTIVES.md`, `DECISIONS.md` and the code: `docs/specs/2026-10-05-spec-vision-check.md`.
+  - The foundation meets the vision.
+  - Eight drifts are listed with small amendments: community-first instead of person-first; one scaffold instead of three researched routes; the vision's words missing from the ontology, with a mapping table; no personal node; no watchers; a Markdown brief as the default artifact; no Forge; no client-connected runtime kind.
+  - Four items are for the founder: the name, which conflicts with the 2026-10-04 decision; brand promise and palette; Whop versus Discord/Slack; the first pilot.
+  - Docs only, no checks run. Next: gate money (`ENABLE_MONEY`, `ENABLE_PAYMENTS`, `ENABLE_EXTERNAL_FINANCIAL_ACTIONS`); `/money` is reachable today.
