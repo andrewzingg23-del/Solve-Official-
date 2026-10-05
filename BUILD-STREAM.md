@@ -473,3 +473,5 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - outreach outcomes, values and Command Center results;
   - anchoring on chain;
   - wallets.
+
+- 2026-10-05 05:32Z — Manus finished: researched and documented provider-specific connection paths for Claude Code, Codex, eligible ChatGPT workspaces, and Meta Muse. Paths: `docs/research/connecting-builders.md`. Findings: solve’s `/mcp` Streamable HTTP + OAuth contract is compatible with Claude Code and Codex; ChatGPT custom MCP is workspace/plan dependent; Meta Muse’s official docs do not yet document arbitrary custom MCP connections. No external connection was attempted; staging remains unchanged. Next: verify one real Claude Code or Codex connection on staging after the founder applies the pending migrations and confirms the preview/Auth path.
