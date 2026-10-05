@@ -495,3 +495,5 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Also:** corrected this stream's timestamps from 03:40Z onward to their commit times; they had run ahead of the clock.
   - **Paths:** `docs/research/2026-10-05-scale-ai.md`, `docs/plans/2026-10-05-business-leverage-outreach.md`, `BUILD-STREAM.md`.
   - **Checks:** docs only. CI run 137 (`c9df521`) still running.
+
+- 2026-10-05 05:50Z — CI run 137 (`c9df521`) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37267853818. Green now: `/start` on the brand, the duplicate bot panel removed, and the Manus working agreement. The Scale AI note after it is docs only.
