@@ -33,8 +33,13 @@ export function VenturePage({ slug }: { slug: string }) {
       />
       <main className="relative mx-auto flex min-h-svh w-full max-w-6xl flex-col px-4 py-6 md:px-8 md:py-10">
         <header className="flex items-center justify-between border-b border-white/10 pb-5">
-          <Link href="/" aria-label="solve" className={quiet}>
-            solve.
+          <Link href="/" aria-label="solve">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/solve-wordmark-on-dark.svg"
+              alt="solve."
+              className="h-7 w-auto"
+            />
           </Link>
           <nav className="flex items-center gap-6" aria-label="Venture">
             <span className="text-xs uppercase tracking-[0.24em] text-[#f2f7fb]/40">
@@ -44,7 +49,22 @@ export function VenturePage({ slug }: { slug: string }) {
         </header>
 
         {/* Hero */}
-        <section className="flex flex-col gap-7 py-16 md:py-24">
+        <section className="relative flex flex-col gap-7 overflow-hidden py-16 md:py-24">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-10 top-0 hidden opacity-[0.16] md:block"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/solve-mark.svg"
+              alt=""
+              className="h-72 w-auto"
+              style={{
+                filter:
+                  "drop-shadow(0 0 42px rgba(34,211,238,0.55))",
+              }}
+            />
+          </div>
           <p className={kicker}>{venture.kicker}</p>
           <h1 className={headline}>{venture.headline}</h1>
           <p className={thesis}>{venture.thesis}</p>
@@ -89,8 +109,13 @@ export function VenturePage({ slug }: { slug: string }) {
         </section>
 
         <footer className="mt-auto flex items-center justify-between border-t border-white/10 pt-6">
-          <Link href="/" className={quiet}>
-            solve.
+          <Link href="/" aria-label="solve">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/solve-wordmark-on-dark.svg"
+              alt="solve."
+              className="h-5 w-auto opacity-80"
+            />
           </Link>
           <Link
             href={`/${next.slug}`}
