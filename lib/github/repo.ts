@@ -8,6 +8,8 @@
 // Otherwise anyone could link the private repo into a World of their own and read it through solve.
 // A public repository a World's resource map links to is read without the token.
 
+import { createHash } from "node:crypto";
+
 export type RepoRef = { owner: string; repo: string; trunk: string | null };
 
 export type Builder = string; // a builder's name, from its branches: Claude, Codex, Manus, Doris…
@@ -29,6 +31,7 @@ export type RepoView = {
   commits: Commit[]; // on the trunk, latest first
   lanes: Lane[]; // branches with something happening, latest first
   builders: BuilderSummary[]; // who has been working, latest first
+  source?: "github" | "deployment"; // read live from GitHub, or from the deployed code's own history
 };
 
 export type RepoReadFailure = "not_connected" | "not_found" | "rate_limited" | "unavailable";
@@ -71,6 +74,36 @@ export function roomRepos(value: string | undefined): Map<string, RepoRef> {
   return rooms;
 }
 
+// A person named in a pairing by a fingerprint of their sign-in email, so the pairing can live in the
+// repository without spelling the email out.
+export const viewerKey = (email: string) => `sha256:${createHash("sha256").update(email.trim().toLowerCase()).digest("hex")}`;
+
+// solve.rooms.json, committed in the repository the app is built from: who may see which repository's
+// build in their rooms. Whoever can commit to the repository decides; the token is still used only
+// for the pairs it names. { "rooms": [{ "repo": "owner/repo", "trunk": "main", "readers": ["sha256:…" | World id] }] }
+export function roomsFromFile(json: unknown): Map<string, RepoRef> {
+  const rooms = new Map<string, RepoRef>();
+  const list = (json as { rooms?: unknown })?.rooms;
+  if (!Array.isArray(list)) return rooms;
+  for (const room of list as Record<string, unknown>[]) {
+    const [owner, repo, extra] = typeof room.repo === "string" ? room.repo.split("/") : [];
+    const trunk = typeof room.trunk === "string" && BRANCH.test(room.trunk) ? room.trunk : null;
+    if (!owner || !repo || extra !== undefined || !NAME.test(owner) || !NAME.test(repo) || !Array.isArray(room.readers)) continue;
+    for (const reader of room.readers) {
+      if (typeof reader !== "string") continue;
+      const key = reader.trim().toLowerCase();
+      if (/^sha256:[0-9a-f]{64}$/.test(key) || /^[0-9a-f-]{36}$/.test(key)) rooms.set(key, { owner, repo, trunk });
+    }
+  }
+  return rooms;
+}
+
+// The repository paired with a signed-in person, by email or by its fingerprint.
+export function repoForViewer(email: string | null | undefined, rooms: Map<string, RepoRef>): RepoRef | undefined {
+  if (!email) return undefined;
+  return rooms.get(email.trim().toLowerCase()) ?? rooms.get(viewerKey(email));
+}
+
 export const repoUrl = (ref: RepoRef) => `https://github.com/${ref.owner}/${ref.repo}`;
 export const sameRepo = (a: RepoRef, b: RepoRef) => a.owner.toLowerCase() === b.owner.toLowerCase() && a.repo.toLowerCase() === b.repo.toLowerCase();
 
@@ -82,7 +115,7 @@ export function repoForWorld(input: { worldId: string; viewerEmail?: string | nu
   if (forWorld) return { ref: forWorld, paired: true };
   const ref = input.links.map(parseRepoUrl).find((r): r is RepoRef => r !== null);
   if (!ref) return null;
-  const forViewer = input.viewerEmail ? input.rooms.get(input.viewerEmail.trim().toLowerCase()) : undefined;
+  const forViewer = repoForViewer(input.viewerEmail, input.rooms);
   if (forViewer && sameRepo(ref, forViewer)) return { ref: { ...ref, trunk: ref.trunk ?? forViewer.trunk }, paired: true };
   return { ref, paired: false };
 }

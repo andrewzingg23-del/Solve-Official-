@@ -89,3 +89,12 @@ it("offers to save the trunk's passed build as proof, and shows it saved once it
   assert.doesNotMatch(saved, /Save as proof/);
   assert.match(saved, /With the record attached/);
 });
+
+it("shows the deployed trunk when GitHub can't be read, and asks only for the token when paired", async () => {
+  const deployed = { ...ok.view, source: "deployment" as const, trunkBuilds: [], lanes: [] };
+  const html = await render({ repo: { read: { ok: true, view: deployed }, paired: true, unread: "not_connected" } });
+  assert.match(html, /The trunk as this app was deployed/);
+  assert.match(html, /GITHUB_TOKEN=/);
+  assert.doesNotMatch(html, /GITHUB_ROOMS=/, "paired already, so only the token");
+  assert.match(html, /From the code deployed/);
+});

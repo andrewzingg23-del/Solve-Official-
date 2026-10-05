@@ -6,7 +6,8 @@ import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { BuildProofError, saveBuild } from "@/lib/github/build-proof";
-import { parseRepoUrl, readRepo, repoForWorld, repoUrl, roomRepos, sameRepo } from "@/lib/github/repo";
+import { parseRepoUrl, readRepo, repoForWorld, repoUrl, sameRepo } from "@/lib/github/repo";
+import { deploymentRooms } from "@/lib/github/rooms";
 import { createCreativeArtifact, createCreativeResourceEntry, loadCreativeWorld } from "@/lib/world/creative";
 import { nextSpot } from "./place";
 
@@ -87,7 +88,7 @@ export async function saveBuildAction(worldId: string, formData: FormData) {
     const kernel = await getKernel();
     const { world, resources } = await loadCreativeWorld(kernel, worldId);
     const linked = resources.filter((r) => r.status === "open" && r.sourceUrl);
-    const repo = repoForWorld({ worldId: world.worldId, viewerEmail: user.email, links: linked.map((r) => r.sourceUrl), rooms: roomRepos(process.env.GITHUB_ROOMS) });
+    const repo = repoForWorld({ worldId: world.worldId, viewerEmail: user.email, links: linked.map((r) => r.sourceUrl), rooms: deploymentRooms() });
     if (!repo) throw new BuildProofError("no repository");
     const read = await readRepo(repo.ref, { token: repo.paired ? process.env.GITHUB_TOKEN || null : null });
     if (!read.ok) throw new BuildProofError("GitHub didn't answer");

@@ -13,7 +13,9 @@ import { proofsIn } from "@/lib/bot/proof";
 import { parseRoutes } from "@/lib/bot/routes";
 import { loadBot } from "@/lib/bot/store";
 import { overview, waitingFrom, type Journey } from "@/lib/bot/waiting";
-import { readRepo, repoForWorld, roomRepos } from "@/lib/github/repo";
+import { readRepo, repoForWorld, type RepoRead } from "@/lib/github/repo";
+import { deploymentRooms } from "@/lib/github/rooms";
+import { deployedView } from "@/lib/github/deployed";
 import { KernelError, type ActorProfile } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
@@ -65,6 +67,13 @@ function pieceOf(a: CreativeArtifact, journeys: Map<string, Journey>, saved: Set
   return { ...base, kind: "text", detail: body ? (body.length > 90 ? `${body.slice(0, 88).trimEnd()}…` : body) : null };
 }
 
+// When GitHub can't be read, the deployed branch's own history still shows who did what on the trunk.
+function withDeployed(read: RepoRead, paired: boolean): NonNullable<RoomData["repo"]> {
+  if (read.ok) return { read, paired };
+  const view = deployedView(read.ref);
+  return view ? { read: { ok: true, view }, paired, unread: read.reason } : { read, paired };
+}
+
 type Loaded = Omit<RoomData, "lens" | "notice" | "addNote" | "linkRepo" | "requestId" | "live" | "sync"> & { userId: string };
 
 async function load(worldId: string, viewer: { id: string; email?: string | null }): Promise<Loaded | "identity" | "missing" | "unavailable"> {
@@ -73,7 +82,7 @@ async function load(worldId: string, viewer: { id: string; email?: string | null
     const me = await kernel.whoami();
     const { world, artifacts, resources } = await loadCreativeWorld(kernel, worldId);
     const links = resources.filter((r) => r.status === "open" && r.sourceUrl).map((r) => r.sourceUrl);
-    const repo = repoForWorld({ worldId: world.worldId, viewerEmail: viewer.email, links, rooms: roomRepos(process.env.GITHUB_ROOMS) });
+    const repo = repoForWorld({ worldId: world.worldId, viewerEmail: viewer.email, links, rooms: deploymentRooms() });
     const [ov, saves, events, bot, read] = await Promise.all([
       overview(kernel, [{ worldId: world.worldId, title: world.title, scope: world.scope }], me.actor_id),
       proofsIn(kernel, world.scope).catch(() => []),
@@ -111,7 +120,7 @@ async function load(worldId: string, viewer: { id: string; email?: string | null
         const via = viaOf((e.payload as { request?: { attributes?: Record<string, unknown> } } | null)?.request?.attributes);
         return { id: e.id, what: eventTitle(e.type), who: via ? `${name(e.actor_id)} via ${via}` : name(e.actor_id), at: new Date(e.occurred_at).toISOString() };
       }),
-      repo: repo && read ? { read, paired: repo.paired } : null,
+      repo: repo && read ? withDeployed(read, repo.paired) : null,
     };
   } catch (error) {
     if (error instanceof KernelError && error.name === "unauthenticated") return "identity";

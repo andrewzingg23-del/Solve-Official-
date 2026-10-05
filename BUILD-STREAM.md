@@ -579,3 +579,24 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **Checks:** full suite 280/280; lint clean (0 warnings); build ok.
 
 - 2026-10-05 08:10Z — CI run 157 (`14b1eda`) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37349132652. Green now: the room and its polish, the repository reader, builders by branch, saving a passed build as proof, the one-step repository room, and the bot's "via" attribution.
+
+- 2026-10-05 18:40Z — Claude, the founder: "figure it out" (do the setup steps).
+  - **What blocked doing them directly:**
+    - The Vercel connector can list the `solve` project but gets 403 on its team `sovigrn`, so it can't read or set env.
+    - A GitHub token can only be made by the founder.
+    - Staging has no system authority to create a GitHub observer service actor.
+    - Staging's logs show the deployed app has never called it (only manual `curl` this morning), so whether Preview points at staging is unverified.
+  - **What changed so the founder needs less:**
+    - The pairing lives in the repository: `solve.rooms.json` names who may see the repo's build in solve, by email fingerprint (sha256), and `lib/github/rooms.ts` merges it with `GITHUB_ROOMS`. `GITHUB_ROOMS` is no longer needed.
+    - Without a token, a room on the deployed repository shows the deployed trunk's history: who did what, and merges by branch.
+      - `next.config.ts` records the last 30 commits at build, only on Vercel; it is inlined into server code only (checked: no client bundle has it). `lib/github/deployed.ts` reads it.
+      - The room says plainly that builds and open pull requests need GitHub, and asks only for `GITHUB_TOKEN` when the viewer is already paired.
+  - **Paths:** `solve.rooms.json`, `lib/github/{repo,rooms,deployed}.ts`, `next.config.ts`, `app/world/[worldId]/room/{page,view,build-map,actions}.tsx|ts`, `app/command/{page.tsx,repo-actions.ts}`, `tests/github/pairing.test.ts`, `tests/bot/room.test.ts`, `.env.example`, `BUILD_STATUS.md`.
+  - **Checks:**
+    - full suite 284/284; lint clean;
+    - build ok, both plain and with Vercel's git variables set (the trunk history is inlined in the room's server chunk only).
+  - **Founder, remaining:**
+    - sign in on the preview;
+    - Command Center, then "Open its room";
+    - optionally `GITHUB_TOKEN` for live builds and pull requests;
+    - reconnect the Vercel connector to the `sovigrn` team so Claude can check Preview's settings.

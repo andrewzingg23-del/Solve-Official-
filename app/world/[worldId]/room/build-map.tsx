@@ -149,7 +149,7 @@ export function BuildMap({ view, now, save, savedLinks = new Set() }: { view: Re
       ) : null}
 
       <p className="text-[11px] leading-5 text-muted">
-        Read from GitHub {ago(view.readAt, now)} · <a href={view.url} target="_blank" rel="noopener noreferrer" className="hover:text-accent">{view.ref.owner}/{view.ref.repo}</a>. Builders are named by their branches. Nothing here is anyone&apos;s word.
+        {view.source === "deployment" ? `From the code deployed ${ago(view.readAt, now)}` : `Read from GitHub ${ago(view.readAt, now)}`} · <a href={view.url} target="_blank" rel="noopener noreferrer" className="hover:text-accent">{view.ref.owner}/{view.ref.repo}</a>. Builders are named by their branches. Nothing here is anyone&apos;s word.
       </p>
     </div>
   );

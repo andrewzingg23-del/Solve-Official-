@@ -406,7 +406,8 @@ Both were merged into the trunk by the founder's account while a review asked fo
   - **Bottom:** a command bar that adds a note to the World.
 - **The repo as a source** (`lib/github/repo.ts`): read-only, from GitHub's API, refreshed every minute while the room is open. A private repository needs `GITHUB_TOKEN`, and is read only where `GITHUB_ROOMS` pairs it with a World or a sign-in email, so nobody can read it by linking it into a World of their own. Linking a repository adds it to the World's resources (one concept, one home).
 - **Tests:** `tests/github/repo.test.ts`, `tests/bot/room.test.ts`.
-- **Founder steps to see the solve build in its room:**
+- **Update, same night ("figure it out"):** the pairing now lives in the repository (`solve.rooms.json`, with the founder's two sign-in emails stored only as fingerprints), so `GITHUB_ROOMS` isn't needed. Without any token, the room shows the deployed trunk's history (who did what, merges) from the deployed code itself. The only remaining step for live builds and pull requests is `GITHUB_TOKEN` in Vercel.
+- **Founder steps to see the solve build in its room (original; steps 2's GITHUB_ROOMS no longer needed):**
   1. A fine-grained GitHub token, read-only for Actions, Contents, Metadata and Pull requests on Solve-Official-.
   2. In Vercel, `GITHUB_TOKEN`, plus `GITHUB_ROOMS=<your sign-in email>=andrewzingg23-del/Solve-Official-@claude/keen-cerf-tpd7io`.
   3. Sign in on the staging preview and open the Command Center: "Your build has no room yet", then "Open its room". It makes a private "Build solve" World with the repository linked and opens the build. (Or link `https://github.com/andrewzingg23-del/Solve-Official-/tree/claude/keen-cerf-tpd7io` in any room.)

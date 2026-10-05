@@ -13,7 +13,8 @@ import { getUser } from "@/lib/supabase/server";
 import { listCreativeWorlds } from "@/lib/world/creative";
 import { LiveLine } from "./live-line";
 import { WalletPanel } from "./wallet-panel";
-import { roomRepos } from "@/lib/github/repo";
+import { repoForViewer } from "@/lib/github/repo";
+import { deploymentRooms } from "@/lib/github/rooms";
 import { repoRoomId, repoRoomTitle } from "@/lib/github/room-id";
 import { openRepoRoomAction } from "./repo-actions";
 import { RepoRoomCard } from "./repo-room";
@@ -40,7 +41,7 @@ async function load(userId: string, email: string | null): Promise<CommandData |
       .sort((a, b) => b.at.localeCompare(a.at))
       .slice(0, RECENT_SAVES);
     const botName = bot.avatar ? bot.persona.name : null;
-    const paired = email ? roomRepos(process.env.GITHUB_ROOMS).get(email.trim().toLowerCase()) : undefined;
+    const paired = repoForViewer(email, deploymentRooms());
     const roomless = paired && !worlds.some((w) => w.worldId === repoRoomId(me.actor_id, paired)) ? paired : null;
     return {
       name: me.label || "you",

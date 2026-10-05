@@ -3,7 +3,8 @@
 import { redirect } from "next/navigation";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
-import { repoUrl, roomRepos } from "@/lib/github/repo";
+import { repoForViewer, repoUrl } from "@/lib/github/repo";
+import { deploymentRooms } from "@/lib/github/rooms";
 import { repoRoomId } from "@/lib/github/room-id";
 import { createCreativeResourceEntry, createCreativeWorld } from "@/lib/world/creative";
 
@@ -14,7 +15,7 @@ const text = (value: FormDataEntryValue | null) => (typeof value === "string" ? 
 export async function openRepoRoomAction(formData: FormData) {
   const user = await getUser();
   if (!user) redirect("/login?next=%2Fcommand");
-  const ref = user.email ? roomRepos(process.env.GITHUB_ROOMS).get(user.email.trim().toLowerCase()) : undefined;
+  const ref = repoForViewer(user.email, deploymentRooms());
   if (!ref) redirect("/command");
   let worldId: string;
   try {
