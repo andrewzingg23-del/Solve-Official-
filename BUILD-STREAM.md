@@ -543,3 +543,11 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
     - `app/worlds/{page,actions}.ts*`;
     - `tests/bot/worlds.test.ts`.
   - **Checks:** full suite 272/272; lint clean; build ok.
+
+- 2026-10-05 07:05Z — The founder merged pull requests #9 (Manus: how builders connect), #2 (Codex: the Idea Graph) and #1 (Codex: the development-memory plan) into the trunk at 06:35Z. The trunk's CI after #2 succeeded (run 152, `6923050`). The Idea Graph migration (`20261005070000_idea_graph_relations.sql`) still needs applying on solve-staging before `/world/<id>/ideas` can save links.
+
+- 2026-10-05 07:10Z — Claude, a one-step room for the founder's repository (founder-first slice 1, the "Build solve" World).
+  - When `GITHUB_ROOMS` pairs a repository with the signed-in person's email and they have no room for it, the Command Center offers "Open its room". It creates a private World (named "Build solve" for solve) with the repository linked, and opens the build.
+  - The World id is derived from the person and the repository, so opening it twice opens the same World.
+  - **Paths:** `lib/github/room-id.ts`, `app/command/{repo-actions.ts,repo-room.tsx,page.tsx,view.tsx}`, `tests/github/repo.test.ts`.
+  - **Checks:** full suite 277/277 on the merged trunk; typecheck ok; lint clean; build ok.

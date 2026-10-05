@@ -26,6 +26,7 @@ export type CommandData = {
   saves: (SavedProof & { worldId: string; worldTitle: string })[];
   live?: ReactNode; // who is working right now, when presence is available
   wallet?: ReactNode; // the person's linked wallets and the way to link one
+  repoRoom?: ReactNode; // a paired repository with no room yet
 };
 
 function Section({ id, title, children, aside }: { id: string; title: string; children: ReactNode; aside?: ReactNode }) {
@@ -56,6 +57,7 @@ export function CommandView({ data }: { data: CommandData }) {
   const made = madeIn(data.results ?? [], year);
   return (
     <div className="flex flex-col gap-6">
+      {data.repoRoom}
       <Section id="where-you-are" title="Where you are">
         <p className="text-sm leading-6">
           {data.worlds.length

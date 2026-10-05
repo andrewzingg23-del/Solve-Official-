@@ -128,3 +128,14 @@ it("credits each builder with its part: open pull requests, merges, trunk commit
     ["Codex", [2], 0, 0],
   ]);
 });
+
+it("gives one person's room on one repository the same World id every time, a valid one", async () => {
+  const { repoRoomId, repoRoomTitle } = await import("../../lib/github/room-id");
+  const ref = { owner: "andrewzingg23-del", repo: "Solve-Official-", trunk: TRUNK };
+  const id = repoRoomId("actor-1", ref);
+  assert.match(id, /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  assert.equal(repoRoomId("actor-1", { ...ref, owner: "AndrewZingg23-del", trunk: null }), id, "case and trunk don't change the room");
+  assert.notEqual(repoRoomId("actor-2", ref), id, "each person has their own room");
+  assert.equal(repoRoomTitle(ref), "Build solve");
+  assert.equal(repoRoomTitle({ owner: "o", repo: "bakery", trunk: null }), "Build bakery");
+});

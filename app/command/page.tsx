@@ -13,13 +13,17 @@ import { getUser } from "@/lib/supabase/server";
 import { listCreativeWorlds } from "@/lib/world/creative";
 import { LiveLine } from "./live-line";
 import { WalletPanel } from "./wallet-panel";
+import { roomRepos } from "@/lib/github/repo";
+import { repoRoomId, repoRoomTitle } from "@/lib/github/room-id";
+import { openRepoRoomAction } from "./repo-actions";
+import { RepoRoomCard } from "./repo-room";
 import { CommandView, type CommandData } from "./view";
 
 export const metadata: Metadata = { title: "Command Center · solve" };
 
 const RECENT_SAVES = 6;
 
-async function load(userId: string): Promise<CommandData | "identity" | "unavailable"> {
+async function load(userId: string, email: string | null): Promise<CommandData | "identity" | "unavailable"> {
   try {
     const kernel = await getKernel();
     const [me, bot] = await Promise.all([kernel.whoami(), loadBot(kernel)]);
@@ -36,6 +40,8 @@ async function load(userId: string): Promise<CommandData | "identity" | "unavail
       .sort((a, b) => b.at.localeCompare(a.at))
       .slice(0, RECENT_SAVES);
     const botName = bot.avatar ? bot.persona.name : null;
+    const paired = email ? roomRepos(process.env.GITHUB_ROOMS).get(email.trim().toLowerCase()) : undefined;
+    const roomless = paired && !worlds.some((w) => w.worldId === repoRoomId(me.actor_id, paired)) ? paired : null;
     return {
       name: me.label || "you",
       botName,
@@ -48,6 +54,7 @@ async function load(userId: string): Promise<CommandData | "identity" | "unavail
       saves,
       live: botName ? <LiveLine userId={userId} botName={botName} /> : undefined,
       wallet: <WalletPanel wallets={[...new Set(wallets.map((w) => w.address))]} />,
+      repoRoom: roomless ? <RepoRoomCard repo={roomless} title={repoRoomTitle(roomless)} open={openRepoRoomAction} /> : undefined,
     };
   } catch (error) {
     if (error instanceof KernelError && error.name === "unauthenticated") return "identity";
@@ -55,10 +62,11 @@ async function load(userId: string): Promise<CommandData | "identity" | "unavail
   }
 }
 
-export default async function CommandPage() {
+export default async function CommandPage({ searchParams }: PageProps<"/command">) {
   const user = await getUser();
   if (!user) redirect("/login?next=/command");
-  const data = await load(user.id);
+  const { error } = await searchParams;
+  const data = await load(user.id, user.email ?? null);
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6 md:px-8 md:py-10">
       <header className="flex flex-wrap items-center justify-between gap-5 border-b border-line pb-5">
@@ -73,6 +81,9 @@ export default async function CommandPage() {
           <Link href="/account" className={quietLink}>You</Link>
         </nav>
       </header>
+      {error === "repo-room" ? (
+        <p role="alert" className="rounded border border-negative/30 bg-negative/10 px-3 py-2 text-sm text-negative">The room couldn&apos;t be opened. Nothing was changed; try again in a moment.</p>
+      ) : null}
       {data === "identity" ? (
         <p className="text-sm leading-6 text-muted">
           You are signed in, but no SOV ID is attached yet. <Link href="/account" className="text-accent">Finish setting it up</Link>.
