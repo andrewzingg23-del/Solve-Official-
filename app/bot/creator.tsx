@@ -1,8 +1,8 @@
 "use client";
 
-// The character creator for a person's master bot. Everything previews live; saving writes one
-// versioned kernel record. Moods here are previews only: on the live bot, states come from real
-// activity.
+// The agent screen's creator: a HUD stage and seven tabs of customization for a person's master
+// bot. Everything previews live; saving writes one versioned kernel record. States here are
+// previews only: on the live bot, states come from real activity.
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { label, primaryAction, secondaryAction } from "@/app/ui";
@@ -10,10 +10,15 @@ import {
   ACCESSORIES,
   AURAS,
   BODIES,
+  BROWS,
   DEFAULT_PERSONA,
   EYES,
+  IDLES,
   LIMITS,
+  MARKS,
+  MATERIALS,
   MOUTHS,
+  PALETTES,
   RELATIONSHIPS,
   SWATCHES,
   TOPS,
@@ -23,17 +28,37 @@ import {
   type Persona,
   type Trait,
 } from "@/lib/bot/persona";
+import { EMPTY_MACHINE, type MachineData } from "@/lib/bot/machine";
 import { saveBotAction } from "./actions";
-import { BotCharacter, type BotState } from "./character";
+import { BotCharacter, STATE_LABELS, type BotState } from "./character";
+import { AgentStage } from "./stage";
 
-const MOODS: { state: BotState; name: string }[] = [
-  { state: "idle", name: "Idle" },
-  { state: "listening", name: "Listening" },
-  { state: "thinking", name: "Thinking" },
-  { state: "working", name: "Working" },
-  { state: "happy", name: "Happy" },
-  { state: "sleeping", name: "Resting" },
-];
+const MOODS: BotState[] = ["idle", "listening", "thinking", "waiting", "working", "needs_input", "completed", "happy", "sleeping", "unavailable"];
+
+const TABS = [
+  ["form", "Form"],
+  ["face", "Face"],
+  ["finish", "Finish"],
+  ["color", "Color"],
+  ["gear", "Gear"],
+  ["motion", "Motion"],
+  ["personality", "Personality"],
+] as const;
+type Tab = (typeof TABS)[number][0];
+
+const FINISH: Record<string, string> = {
+  matte: "Solid color, soft light.",
+  glass: "See-through, with a rim of light.",
+  hologram: "Projected light and scanlines.",
+  chrome: "Polished metal.",
+};
+
+const IDLE_HINT: Record<string, string> = {
+  bob: "A gentle bounce.",
+  float: "Rises and settles slowly.",
+  drift: "Wanders a little side to side.",
+  still: "Holds still; only blinks.",
+};
 
 const NAMES: Record<string, string> = {
   bot: "Bot", humanoid: "Humanoid", creature: "Creature", orb: "Orb", pixel: "Pixel",
@@ -42,6 +67,10 @@ const NAMES: Record<string, string> = {
   antenna: "Antenna", halo: "Halo", ears: "Ears", crest: "Crest",
   scarf: "Scarf", headset: "Headset", cape: "Cape", badge: "Badge",
   orbit: "Orbit", pulse: "Pulse", sparkle: "Sparkle",
+  matte: "Matte", glass: "Glass", hologram: "Hologram", chrome: "Chrome",
+  soft: "Soft", sharp: "Sharp", raised: "Raised",
+  blush: "Blush", stripes: "Stripes", circuit: "Circuit",
+  bob: "Bob", float: "Float", drift: "Drift", still: "Still",
 };
 
 const RELATION: Record<string, { name: string; hint: string }> = {
@@ -62,127 +91,200 @@ const ERRORS: Record<string, string> = {
   "signed-out": "Sign in to keep your bot.",
   identity: "Finish setting up your SOV ID first (open You).",
   forbidden: "The kernel refused this save.",
+  conflict: "This save was already used for a different draft. Reload the bot before trying again.",
   unavailable: "Couldn't save just now. Nothing was changed; try again.",
 };
 
-export function BotCreator({ initial, signedIn, version, savedAt }: { initial: Persona; signedIn: boolean; version: number; savedAt: string | null }) {
+export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPTY_MACHINE }: { initial: Persona; signedIn: boolean; version: number; savedAt: string | null; machine?: MachineData }) {
   const [persona, setPersona] = useState(initial);
   const [saved, setSaved] = useState(initial);
   const [saveInfo, setSaveInfo] = useState({ version, savedAt });
   const [mood, setMood] = useState<BotState>("idle");
-  const [tab, setTab] = useState<"look" | "personality">("look");
+  const [tab, setTab] = useState<Tab>("form");
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [valuesText, setValuesText] = useState(initial.values.join(", "));
   const [pending, startTransition] = useTransition();
   const dirty = useMemo(() => JSON.stringify(persona) !== JSON.stringify(saved), [persona, saved]);
 
   const update = (patch: Partial<Persona>) => setPersona((p) => validatePersona({ ...p, ...patch }, p));
-  const setTrait = (t: Trait, v: number) => setPersona((p) => ({ ...p, traits: { ...p.traits, [t]: v } }));
+  const setTrait = (t: Trait, v: number) => setPersona((p) => validatePersona({ ...p, traits: { ...p.traits, [t]: v } }, p));
   const setColor = (key: keyof Persona["palette"], v: string) => setPersona((p) => ({ ...p, palette: { ...p.palette, [key]: v } }));
 
   function roll() {
     const look = randomPersona(persona.name);
     // The dice change the look; who the bot is stays.
-    setPersona((p) => ({ ...p, body: look.body, palette: look.palette, eyes: look.eyes, mouth: look.mouth, top: look.top, accessory: look.accessory, aura: look.aura }));
+    setPersona((p) => ({
+      ...p,
+      body: look.body, palette: look.palette, eyes: look.eyes, mouth: look.mouth, top: look.top, accessory: look.accessory, aura: look.aura,
+      material: look.material, brows: look.brows, marks: look.marks, motion: look.motion,
+    }));
     setMood("happy");
   }
 
   function save() {
+    // Values is edited as a comma-separated draft. Normalize it here too, because a user can
+    // click Save before the field's blur handler runs. The server validates again and returns the
+    // canonical persona so the preview never claims to have saved text that was truncated/cleaned.
+    const draft = validatePersona({ ...persona, values: valuesText.split(",") }, saved);
+    setPersona(draft);
+    setValuesText(draft.values.join(", "));
     setMessage(null);
     const requestId = crypto.randomUUID();
     startTransition(async () => {
-      const result = await saveBotAction(requestId, persona);
+      const result = await saveBotAction(requestId, draft);
       if (result.ok) {
-        setSaved(persona);
+        setPersona(result.persona);
+        setSaved(result.persona);
+        setValuesText(result.persona.values.join(", "));
         setSaveInfo({ version: result.version, savedAt: result.savedAt });
-        setMessage({ tone: "ok", text: `${persona.name} saved.` });
+        setMessage({ tone: "ok", text: `${result.persona.name} saved.` });
         setMood("happy");
       } else {
-        setMessage({ tone: "error", text: ERRORS[result.error] });
+        setMessage({ tone: "error", text: ERRORS[result.error] ?? ERRORS.unavailable });
       }
     });
   }
 
   return (
-    <section className="grid flex-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.9fr)] lg:items-start">
+    <section className="grid flex-1 grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.9fr)] lg:items-start">
       {/* Stage */}
-      <div className="flex flex-col gap-5 lg:sticky lg:top-6">
+      <div className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-6">
         <div className="flex flex-col gap-2">
-          <p className={label}>Your master bot</p>
+          <p className={label}>Your bot</p>
           <h1 className="text-3xl font-medium leading-tight tracking-tight md:text-4xl">Make it yours.</h1>
           <p className="max-w-lg text-sm leading-6 text-muted">
-            One character, whichever AI you use. Claude, ChatGPT or Meta AI can speak through it, so it looks, sounds and remembers the same everywhere.
+            One character, whichever AI you use. Claude, ChatGPT or Meta AI speak through it, so it looks, sounds and remembers the same everywhere.
           </p>
         </div>
-        <div className="relative flex flex-col items-center gap-4 overflow-hidden rounded-md border border-line bg-surface px-4 pb-5 pt-8">
-          <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(60% 55% at 50% 45%, ${persona.palette.glow}26, transparent 70%)` }} />
-          <BotCharacter persona={persona} state={mood} size={260} className="relative" />
-          <div className="relative flex flex-col items-center gap-1 text-center">
-            <p className="text-xl font-medium">{persona.name}</p>
-            <p className="text-xs text-muted">{RELATION[persona.relationship].name} · {temperament(persona)}</p>
-            {persona.voice ? <p className="mt-2 max-w-sm text-sm italic leading-6 text-foreground/85">&ldquo;{persona.voice}&rdquo;</p> : null}
-          </div>
-          <div className="relative flex flex-wrap justify-center gap-2" role="group" aria-label="Preview a mood">
-            {MOODS.map((m) => (
-              <button
-                key={m.state}
-                type="button"
-                onClick={() => setMood(m.state)}
-                aria-pressed={mood === m.state}
-                className={`rounded-full border px-3 py-1 text-xs transition-colors duration-300 ease-calm ${mood === m.state ? "border-accent text-accent" : "border-line text-muted hover:text-foreground"}`}
-              >
-                {m.name}
-              </button>
-            ))}
-          </div>
-          <p className="relative text-[11px] text-muted">Mood preview. On your live bot, moods follow what it is really doing.</p>
+        <AgentStage persona={persona} state={mood} size={240} machine={machine} note="State preview. On your live bot, states follow what it is really doing." />
+        <div className="flex flex-col items-center gap-1 text-center">
+          <p className="text-xl font-medium">{persona.name}</p>
+          <p className="text-xs text-muted">{RELATION[persona.relationship].name} · {temperament(persona)}</p>
+          {persona.voice ? <p className="mt-2 max-w-sm text-sm italic leading-6 text-foreground/85">&ldquo;{persona.voice}&rdquo;</p> : null}
+        </div>
+        <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Preview a state">
+          {MOODS.map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMood(m)}
+              aria-pressed={mood === m}
+              className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.14em] transition-colors duration-300 ease-calm ${mood === m ? "border-accent text-accent" : "border-line text-muted hover:text-foreground"}`}
+            >
+              {STATE_LABELS[m]}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Controls */}
-      <div className="flex flex-col gap-6">
-        <div className="flex gap-2 border-b border-line" role="tablist">
-          {(["look", "personality"] as const).map((t) => (
+      <div className="flex min-w-0 flex-col gap-6">
+        <div className="flex flex-wrap gap-2 border-b border-line pb-4" role="tablist" aria-label="Customize">
+          {TABS.map(([t, name]) => (
             <button
               key={t}
               role="tab"
               type="button"
               aria-selected={tab === t}
               onClick={() => setTab(t)}
-              className={`-mb-px border-b-2 px-3 pb-3 text-xs font-semibold uppercase tracking-[0.2em] transition-colors duration-300 ease-calm ${tab === t ? "border-accent text-accent" : "border-transparent text-muted hover:text-foreground"}`}
+              className={`rounded-full border px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors duration-300 ease-calm ${tab === t ? "border-accent bg-accent/10 text-accent" : "border-line text-muted hover:text-foreground"}`}
             >
-              {t === "look" ? "Look" : "Personality"}
+              {name}
             </button>
           ))}
         </div>
 
-        {tab === "look" ? (
+        {tab === "form" ? (
           <div className="flex flex-col gap-6">
             <Field name="Body">
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
                 {BODIES.map((b) => (
+                  <Tile key={b} active={persona.body === b} onClick={() => update({ body: b })} label={NAMES[b]}>
+                    <BotCharacter persona={{ ...persona, body: b, aura: "none" }} size={56} />
+                  </Tile>
+                ))}
+              </div>
+            </Field>
+            {persona.body === "pixel" ? <p className="text-xs leading-5 text-muted">Pixel bodies keep their own sprite: finish, eyes, brows, marks, top and accessory apply to the other bodies.</p> : null}
+          </div>
+        ) : tab === "face" ? (
+          <div className="flex flex-col gap-6">
+            <Choice name="Eyes" options={EYES} value={persona.eyes} onPick={(eyes) => update({ eyes })} disabled={persona.body === "pixel"} />
+            <Choice name="Brows" options={BROWS} value={persona.brows} onPick={(brows) => update({ brows })} disabled={persona.body === "pixel"} />
+            <Choice name="Mouth" options={MOUTHS} value={persona.mouth} onPick={(mouth) => update({ mouth })} />
+            <Choice name="Marks" options={MARKS} value={persona.marks} onPick={(marks) => update({ marks })} disabled={persona.body === "pixel"} />
+          </div>
+        ) : tab === "finish" ? (
+          <Field name="Finish" hint={persona.body === "pixel" ? "Applies to non-pixel bodies" : FINISH[persona.material]}>
+            <div className={`grid grid-cols-2 gap-2 ${persona.body === "pixel" ? "opacity-40" : ""}`}>
+              {MATERIALS.map((m) => (
+                <Tile key={m} active={persona.material === m} disabled={persona.body === "pixel"} onClick={() => update({ material: m })} label={NAMES[m]} hint={FINISH[m]}>
+                  <BotCharacter persona={{ ...persona, material: m, aura: "none" }} size={72} />
+                </Tile>
+              ))}
+            </div>
+          </Field>
+        ) : tab === "color" ? (
+          <div className="flex flex-col gap-6">
+            <Field name="Color sets">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {PALETTES.map((set) => {
+                  const active = persona.palette.primary === set.primary && persona.palette.secondary === set.secondary && persona.palette.glow === set.glow;
+                  return (
+                    <button
+                      key={set.name}
+                      type="button"
+                      onClick={() => update({ palette: { primary: set.primary, secondary: set.secondary, glow: set.glow } })}
+                      aria-pressed={active}
+                      className={`flex items-center gap-2 rounded-md border px-3 py-2 text-left text-xs transition-colors duration-300 ease-calm ${active ? "border-accent bg-accent/10 text-accent" : "border-line hover:border-foreground/40"}`}
+                    >
+                      <span aria-hidden className="flex -space-x-1">
+                        {[set.primary, set.secondary, set.glow].map((c, i) => (
+                          <span key={i} className="h-4 w-4 rounded-full border border-background" style={{ background: c }} />
+                        ))}
+                      </span>
+                      {set.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </Field>
+            <Swatches name="Main color" value={persona.palette.primary} onPick={(v) => setColor("primary", v)} />
+            <Swatches name="Second color" value={persona.palette.secondary} onPick={(v) => setColor("secondary", v)} />
+            <Swatches name="Glow" value={persona.palette.glow} onPick={(v) => setColor("glow", v)} />
+          </div>
+        ) : tab === "gear" ? (
+          <div className="flex flex-col gap-6">
+            <Choice name="Top" options={TOPS} value={persona.top} onPick={(top) => update({ top })} disabled={persona.body === "pixel"} />
+            <Choice name="Accessory" options={ACCESSORIES} value={persona.accessory} onPick={(accessory) => update({ accessory })} disabled={persona.body === "pixel"} />
+            <Choice name="Aura" options={AURAS} value={persona.aura} onPick={(aura) => update({ aura })} />
+          </div>
+        ) : tab === "motion" ? (
+          <div className="flex flex-col gap-6">
+            <Field name="When nothing is happening">
+              <div className="grid grid-cols-2 gap-2">
+                {IDLES.map((i) => (
                   <button
-                    key={b}
+                    key={i}
                     type="button"
-                    onClick={() => update({ body: b })}
-                    aria-pressed={persona.body === b}
-                    className={`flex flex-col items-center gap-1 rounded-md border p-1.5 transition-colors duration-300 ease-calm ${persona.body === b ? "border-accent bg-accent/10" : "border-line hover:border-foreground/40"}`}
+                    onClick={() => update({ motion: { ...persona.motion, idle: i } })}
+                    aria-pressed={persona.motion.idle === i}
+                    className={`flex flex-col items-start gap-0.5 rounded-md border p-3 text-left transition-colors duration-300 ease-calm ${persona.motion.idle === i ? "border-accent bg-accent/10" : "border-line hover:border-foreground/40"}`}
                   >
-                    <BotCharacter persona={{ ...persona, body: b, aura: "none" }} size={52} />
-                    <span className="text-[11px]">{NAMES[b]}</span>
+                    <span className="text-sm">{NAMES[i]}</span>
+                    <span className="text-[11px] leading-4 text-muted">{IDLE_HINT[i]}</span>
                   </button>
                 ))}
               </div>
             </Field>
-            {persona.body === "pixel" ? <p className="text-xs leading-5 text-muted">Pixel bodies keep their own sprite face: eyes, top and accessory apply to the other bodies.</p> : null}
-            <Choice name="Eyes" options={EYES} value={persona.eyes} onPick={(eyes) => update({ eyes })} disabled={persona.body === "pixel"} />
-            <Choice name="Mouth" options={MOUTHS} value={persona.mouth} onPick={(mouth) => update({ mouth })} />
-            <Choice name="Top" options={TOPS} value={persona.top} onPick={(top) => update({ top })} disabled={persona.body === "pixel"} />
-            <Choice name="Accessory" options={ACCESSORIES} value={persona.accessory} onPick={(accessory) => update({ accessory })} disabled={persona.body === "pixel"} />
-            <Choice name="Aura" options={AURAS} value={persona.aura} onPick={(aura) => update({ aura })} />
-            <Swatches name="Main color" value={persona.palette.primary} onPick={(v) => setColor("primary", v)} />
-            <Swatches name="Second color" value={persona.palette.secondary} onPick={(v) => setColor("secondary", v)} />
-            <Swatches name="Glow" value={persona.palette.glow} onPick={(v) => setColor("glow", v)} />
+            <Field name="Energy" hint={`${persona.motion.energy}`}>
+              <label className="grid grid-cols-[4.5rem_1fr_4.5rem] items-center gap-3 text-xs text-muted">
+                <span>Calm</span>
+                <input type="range" min={0} max={100} value={persona.motion.energy} onChange={(e) => update({ motion: { ...persona.motion, energy: Number(e.target.value) } })} className="accent-[var(--accent)]" aria-label="Calm to brisk" />
+                <span className="text-right">Brisk</span>
+              </label>
+            </Field>
+            <p className="text-xs leading-5 text-muted">Motion stops for anyone whose device asks for reduced motion.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-6">
@@ -273,6 +375,22 @@ export function BotCreator({ initial, signedIn, version, savedAt }: { initial: P
         {!signedIn ? <p className="text-xs leading-5 text-muted">You are trying the creator. Nothing is saved until you sign in.</p> : null}
       </div>
     </section>
+  );
+}
+
+function Tile({ active, onClick, label: name, hint, disabled = false, children }: { active: boolean; onClick: () => void; label: string; hint?: string; disabled?: boolean; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={active}
+      className={`flex flex-col items-center gap-1 rounded-md border p-2 text-center transition-colors duration-300 ease-calm ${active ? "border-accent bg-accent/10" : "border-line hover:border-foreground/40"}`}
+    >
+      {children}
+      <span className="text-[11px] uppercase tracking-[0.14em]">{name}</span>
+      {hint ? <span className="text-[11px] leading-4 text-muted">{hint}</span> : null}
+    </button>
   );
 }
 

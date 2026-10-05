@@ -2,31 +2,29 @@ import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { label, primaryAction, quietLink, secondaryAction } from "@/app/ui";
-import { KernelError, type ActorProfile } from "@/lib/kernel/client";
+import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { loadCreativeWorld, type CreativeArtifact, type CreativePosition } from "@/lib/world/creative";
+import { formatWorldActorAttribution } from "@/lib/world/attribution";
+import { parsePixelArt } from "@/lib/bot/pixel-art";
+import { parsePart } from "@/lib/bot/part";
+import { proofsIn, type SavedProof } from "@/lib/bot/proof";
+import { outcomesIn, parseOutreach, sentIn, type LeadOutcome, type Sent } from "@/lib/bot/outreach";
+import { parseRoutes, takenRoutes, type TakenRoute } from "@/lib/bot/routes";
+import { PartPreview } from "@/app/part-preview";
+import { SavePoint } from "@/app/save-point";
+import { AnchorPanel } from "@/app/anchor-panel";
+import { OutreachCard } from "@/app/outreach-card";
+import { anchorsIn, type Checkpoint } from "@/lib/bot/anchor";
+import { RouteCard } from "@/app/route-card";
+import { anchorWorldAction, approveOutreachAction, recordOutcomeAction, stepDoneAction, takeRouteAction } from "@/app/route-actions";
 import { createArtifactAction, updateArtifactAction } from "./actions";
-
-function eventTitle(type: string) {
-  switch (type) {
-    case "kernel.scope.claimed": return "World created";
-    case "kernel.entity.created": return "Artifact created";
-    case "kernel.entity.updated": return "Artifact updated";
-    case "kernel.relation.created": return "Connection recorded";
-    case "kernel.grant.issued": return "Access granted";
-    case "kernel.grant.revoked": return "Access removed";
-    default: return type.replace(/^kernel\./, "").replaceAll(".", " ");
-  }
-}
-
-function actorAttribution(actorId: string, profiles: Map<string, ActorProfile>, labels: Map<string, string>) {
-  const actor = profiles.get(actorId);
-  const name = labels.get(actorId) ?? actorId.slice(0, 8);
-  if (actor?.kind !== "agent" || !actor.accountable_party) return name;
-  const owner = labels.get(actor.accountable_party) ?? actor.accountable_party.slice(0, 8);
-  return `${name} · agent for ${owner}`;
-}
+import { WorldBotAccessPanel } from "./bot-access-panel";
+import { WorldAccessPanel } from "./access-panel";
+import { WorldLiveSync } from "./live-sync";
+import { ResourceMapPanel } from "./resource-map";
+import { eventTitle } from "../event-title";
 
 function positionFromArtifact(artifact: CreativeArtifact): CreativePosition {
   return artifact.position;
@@ -36,23 +34,62 @@ function canvasColumn(position: CreativePosition) {
   return position.x < 34 ? 1 : position.x < 67 ? 2 : 3;
 }
 
-function ArtifactCard({ worldId, artifact }: { worldId: string; artifact: CreativeArtifact }) {
+function PixelArtPreview({ body, title }: { body: string; title: string }) {
+  const art = parsePixelArt(body);
+  if (!art) return null;
+  const width = art.rows[0].length;
+  return (
+    <figure className="flex flex-col gap-2 rounded border border-line bg-background/70 p-3">
+      <div
+        role="img"
+        aria-label={`${title}: ${art.prompt}`}
+        className="mx-auto w-full max-w-64"
+        style={{ display: "grid", gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`, aspectRatio: `${width} / ${art.rows.length}`, imageRendering: "pixelated" }}
+      >
+        {art.rows.flatMap((row, y) => [...row].map((cell, x) => (
+          <span key={`${y}-${x}`} style={{ backgroundColor: cell === "." ? "transparent" : art.palette[Number(cell)] }} />
+        )))}
+      </div>
+      <figcaption className="text-xs leading-5 text-muted">{art.prompt} · {width}×{art.rows.length} pixels</figcaption>
+    </figure>
+  );
+}
+
+function ArtifactCard({ worldId, artifact, saves = [], taken = null, takenBy = "you", sent, outcomes, anchor = false }: { worldId: string; artifact: CreativeArtifact; saves?: SavedProof[]; taken?: TakenRoute | null; takenBy?: string; sent?: Map<number, Sent>; outcomes?: Map<number, LeadOutcome[]>; anchor?: boolean }) {
   const position = positionFromArtifact(artifact);
   const update = updateArtifactAction.bind(null, worldId);
+  const isPixelArt = parsePixelArt(artifact.body) !== null;
+  const isPart = parsePart(artifact.body) !== null;
+  const routes = parseRoutes(artifact.body);
+  const outreach = routes ? null : parseOutreach(artifact.body);
   return (
-    <article className="flex w-full flex-col gap-3 rounded-md border border-line bg-surface/95 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.25)] backdrop-blur-md">
+    <article id={anchor ? `piece-${artifact.entityId}` : undefined} className="flex w-full scroll-mt-6 flex-col gap-3 rounded-md border border-line bg-surface/95 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.25)] backdrop-blur-md">
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-accent">Document · v{artifact.version}</p>
           <h3 className="mt-1 break-words text-base font-medium leading-snug">{artifact.title}</h3>
         </div>
-        <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full bg-accent shadow-[0_0_14px_var(--accent)]" />
       </header>
-      {artifact.body ? (
+      {outreach ? (
+        <OutreachCard pieceId={artifact.entityId} outreach={outreach} sent={sent} approve={approveOutreachAction.bind(null, worldId)} outcomes={outcomes} record={recordOutcomeAction.bind(null, worldId)} />
+      ) : routes ? (
+        <RouteCard pieceId={artifact.entityId} routes={routes} taken={taken} who={takenBy} take={takeRouteAction.bind(null, worldId)} markDone={stepDoneAction.bind(null, worldId)} />
+      ) : isPart ? (
+        <PartPreview worldId={worldId} pieceId={artifact.entityId} body={artifact.body} title={artifact.title} />
+      ) : isPixelArt ? (
+        <PixelArtPreview body={artifact.body} title={artifact.title} />
+      ) : artifact.body ? (
         <p className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-sm leading-6 text-muted">{artifact.body}</p>
       ) : (
         <p className="text-sm italic text-muted">No text yet.</p>
       )}
+      {saves.length ? (
+        <div className="flex flex-col gap-2 border-t border-line pt-3">
+          {saves.slice(-2).reverse().map((p) => (
+            <SavePoint key={p.recordId} what={p.what} basis={p.basis} at={p.at} number={p.number} link={p.link} />
+          ))}
+        </div>
+      ) : null}
       <details className="border-t border-line pt-2">
         <summary className="cursor-pointer list-none text-[10px] font-semibold uppercase tracking-[0.18em] text-muted hover:text-accent">Edit · move</summary>
         <form action={update} className="mt-3 flex flex-col gap-3">
@@ -124,18 +161,37 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
   const kernel = await getKernel();
   let world: Awaited<ReturnType<typeof loadCreativeWorld>>["world"];
   let artifacts: CreativeArtifact[];
+  let resources: Awaited<ReturnType<typeof loadCreativeWorld>>["resources"];
+  let currentActorId = "";
   let events: Awaited<ReturnType<typeof kernel.readEvents>> = [];
   let profiles: Awaited<ReturnType<typeof kernel.readActors>> = [];
+  let saves: SavedProof[] = [];
+  let taken = new Map<string, TakenRoute>();
+  let sent = new Map<string, Map<number, Sent>>();
+  let outcomes = new Map<string, Map<number, LeadOutcome[]>>();
+  let anchors: Checkpoint[] = [];
+  let me = "";
   try {
     const loaded = await loadCreativeWorld(kernel, worldId);
     world = loaded.world;
     artifacts = loaded.artifacts;
+    resources = loaded.resources;
+    currentActorId = (await kernel.whoami()).actor_id;
     events = await kernel.readEvents(world.scope, { newestFirst: true, limit: 12 });
-    profiles = await kernel.readActors([...new Set(events.map((event) => event.actor_id))]);
+    saves = await proofsIn(kernel, world.scope).catch(() => []);
+    taken = await takenRoutes(kernel, world.scope).catch(() => new Map<string, TakenRoute>());
+    sent = await sentIn(kernel, world.scope).catch(() => new Map<string, Map<number, Sent>>());
+    outcomes = await outcomesIn(kernel, world.scope).catch(() => new Map<string, Map<number, LeadOutcome[]>>());
+    anchors = await anchorsIn(kernel, world.scope).catch(() => []);
+    me = (await kernel.whoami()).actor_id;
+    profiles = await kernel.readActors([...new Set([...events.map((event) => event.actor_id), ...[...taken.values()].map((t) => t.takenBy)])]);
     const ownerIds = [...new Set(profiles.map((profile) => profile.accountable_party).filter((id): id is string => Boolean(id)))];
     const knownProfileIds = new Set(profiles.map((profile) => profile.actor_id));
-    const missingOwnerIds = ownerIds.filter((id) => !knownProfileIds.has(id));
-    if (missingOwnerIds.length) profiles = [...profiles, ...(await kernel.readActors(missingOwnerIds))];
+    const resourceActorIds = [...new Set(resources
+      .flatMap((entry) => [entry.reportedBy, entry.reportedOnBehalfOf, entry.updatedBy, entry.updatedOnBehalfOf])
+      .filter((id): id is string => typeof id === "string"))];
+    const missingActorIds = [...new Set([...ownerIds, ...resourceActorIds])].filter((id) => !knownProfileIds.has(id));
+    if (missingActorIds.length) profiles = [...profiles, ...(await kernel.readActors(missingActorIds))];
   } catch (error) {
     if (error instanceof KernelError && error.name === "unauthenticated") redirect("/account");
     if (error instanceof KernelError && (error.name === "forbidden" || error.name === "not_found" || error.name === "invalid")) notFound();
@@ -149,8 +205,14 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
     );
   }
 
+  const savesByPiece = new Map<string, SavedProof[]>();
+  for (const save of saves) savesByPiece.set(save.pieceId, [...(savesByPiece.get(save.pieceId) ?? []), save]);
   const profilesById = new Map(profiles.map((profile) => [profile.actor_id, profile]));
   const actorLabels = new Map(profiles.map((profile) => [profile.actor_id, profile.label || profile.actor_id.slice(0, 8)]));
+  const takerOf = (id: string) => {
+    const t = taken.get(id);
+    return !t || t.takenBy === me ? "you" : (actorLabels.get(t.takenBy) ?? "its owner");
+  };
   const nextPosition = { x: 24 + (artifacts.length % 3) * 26, y: 26 + (Math.floor(artifacts.length / 3) % 3) * 22 };
 
   return (
@@ -162,7 +224,8 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
           <h1 className="truncate text-sm font-medium tracking-wide md:text-base">{world.title}</h1>
         </div>
         <nav aria-label="World navigation" className="flex items-center gap-1 rounded-md border border-line bg-surface/75 p-1">
-          <span aria-current="page" className="rounded bg-accent/15 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">World</span>
+          <Link href={`/world/${worldId}/room`} className="rounded px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted hover:text-foreground">Room</Link>
+          <span aria-current="page" className="rounded bg-accent/15 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">Details</span>
           <a href="#history" className="rounded px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted hover:text-foreground">History</a>
         </nav>
       </header>
@@ -173,12 +236,24 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
           <h2 className="text-2xl font-medium tracking-tight md:text-4xl">{world.title}</h2>
         </div>
         <div className="flex items-center gap-3 text-xs text-muted">
+          <WorldLiveSync worldId={worldId} authUserId={user.id} />
           <span className="inline-flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-positive" /> Saved to kernel</span>
           <span className="hidden font-mono md:inline">{worldId.slice(0, 8)}</span>
         </div>
       </section>
 
       {saved === "artifact" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Revision saved to World history.</p>}
+      {saved === "route" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Route taken. Its steps are on the record as yours.</p>}
+      {saved === "outreach" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Approved. Recorded in Practice; nothing was sent outside solve.</p>}
+      {saved === "outcome" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Recorded on your word.</p>}
+      {saved === "anchor" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Anchored. A fingerprint of this World&apos;s history is now on chain.</p>}
+      {error === "anchor-off" && <p role="alert" className="rounded border border-negative/30 bg-negative/10 px-3 py-2 text-sm text-negative">Anchoring isn&apos;t set up on this deployment yet.</p>}
+      {saved === "step" && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">Step marked done, on your word.</p>}
+      {(error === "route-input" || error === "route-access" || error === "route-save") && (
+        <p role="alert" className="rounded border border-negative/30 bg-negative/10 px-3 py-2 text-sm text-negative">
+          {error === "route-access" ? "Only this World's owner can take a route, mark its steps done or approve a message." : error === "route-input" ? "That route or step changed. Reload and try again." : "The route could not be saved. Retry in a moment."}
+        </p>
+      )}
       {error === "world-missing" && <p role="alert" className="rounded border border-negative/30 bg-negative/10 px-3 py-2 text-sm text-negative">This World could not be found in the selected scope.</p>}
 
       <section aria-label="World canvas" className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(19rem,0.38fr)] xl:items-start">
@@ -198,12 +273,12 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
               >
                 {[...artifacts].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x).map((artifact) => (
                   <div key={artifact.entityId} className="min-w-0" style={{ gridColumnStart: canvasColumn(artifact.position) }}>
-                    <ArtifactCard worldId={worldId} artifact={artifact} />
+                    <ArtifactCard worldId={worldId} artifact={artifact} saves={savesByPiece.get(artifact.entityId)} taken={taken.get(artifact.entityId)} takenBy={takerOf(artifact.entityId)} sent={sent.get(artifact.entityId)} outcomes={outcomes.get(artifact.entityId)} anchor />
                   </div>
                 ))}
               </div>
               <div className="grid gap-3 md:hidden">
-                {[...artifacts].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x).map((artifact) => <ArtifactCard key={artifact.entityId} worldId={worldId} artifact={artifact} />)}
+                {[...artifacts].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x).map((artifact) => <ArtifactCard key={artifact.entityId} worldId={worldId} artifact={artifact} saves={savesByPiece.get(artifact.entityId)} taken={taken.get(artifact.entityId)} takenBy={takerOf(artifact.entityId)} sent={sent.get(artifact.entityId)} outcomes={outcomes.get(artifact.entityId)} />)}
               </div>
             </>
           ) : (
@@ -217,6 +292,17 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
 
         <aside className="flex flex-col gap-6">
           <CreateArtifactForm worldId={worldId} position={nextPosition} error={error === "artifact-input" || error === "artifact-save" || error === "access" ? error : undefined} />
+          <WorldAccessPanel worldId={worldId} scope={world.scope} saved={saved === "collaborator"} error={typeof error === "string" ? error : undefined} />
+          <WorldBotAccessPanel worldId={worldId} saved={saved === "bot-access"} error={typeof error === "string" ? error : undefined} />
+          <ResourceMapPanel
+            worldId={worldId}
+            entries={resources}
+            actorLabels={actorLabels}
+            currentActorId={currentActorId}
+            saved={saved === "resource"}
+            error={typeof error === "string" && ["resource-input", "resource-save", "access"].includes(error) ? error : undefined}
+          />
+          <AnchorPanel anchors={anchors} anchor={process.env.ANCHOR_CLUSTER && process.env.SOLANA_RPC_URL && process.env.ANCHOR_PAYER_KEY ? anchorWorldAction.bind(null, worldId) : undefined} />
           <section id="history" className="scroll-mt-6 flex flex-col gap-3 rounded-md border border-line bg-surface/45 p-5">
             <div className="flex items-baseline justify-between gap-4">
               <h2 className={label}>History</h2>
@@ -227,7 +313,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
                 <li key={event.id} className="flex items-start justify-between gap-4 py-3 text-sm">
                   <div className="flex min-w-0 flex-col gap-1">
                     <span>{eventTitle(event.type)}</span>
-                    <span className="truncate text-xs text-muted">{actorAttribution(event.actor_id, profilesById, actorLabels)}</span>
+                    <span className="truncate text-xs text-muted">{formatWorldActorAttribution(event.actor_id, profilesById, actorLabels)}</span>
                   </div>
                   <time className="shrink-0 text-right text-[10px] leading-4 text-muted" dateTime={event.occurred_at}>
                     {new Date(event.occurred_at).toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" })}

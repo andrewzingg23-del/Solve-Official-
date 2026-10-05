@@ -46,7 +46,7 @@ export default async function WorldsPage({ searchParams }: PageProps<"/worlds">)
               A World for what you&apos;re making.
             </h1>
             <p className="max-w-xl text-sm leading-6 text-muted md:text-base">
-              Start with a blank canvas. Your work is saved to the kernel with its history and access recorded.
+              Start with what you want to make happen. A goal becomes the first piece in a private World you can shape as you work.
             </p>
           </div>
 
@@ -64,7 +64,7 @@ export default async function WorldsPage({ searchParams }: PageProps<"/worlds">)
             <ul aria-label="Your Worlds" className="flex flex-col divide-y divide-line border-y border-line">
               {worlds.map((world) => (
                 <li key={world.worldId}>
-                  <Link href={`/world/${world.worldId}`} className="group flex items-center justify-between gap-6 py-5 transition-colors hover:text-accent">
+                  <Link href={`/world/${world.worldId}/room`} className="group flex items-center justify-between gap-6 py-5 transition-colors hover:text-accent">
                     <div className="flex min-w-0 flex-col gap-1.5">
                       <span className="truncate text-lg font-medium tracking-tight">{world.title}</span>
                       <span className="text-xs text-muted">World · changed {new Date(world.updatedAt).toLocaleDateString("en-US", { dateStyle: "medium" })}</span>
@@ -77,7 +77,7 @@ export default async function WorldsPage({ searchParams }: PageProps<"/worlds">)
           ) : (
             <div className="rounded-md border border-line bg-surface/70 p-5 md:p-7">
               <p className={label}>Nothing here yet</p>
-              <p className="mt-3 max-w-lg text-sm leading-6 text-muted">Give the work a name. The World opens private and empty; you choose what belongs in it.</p>
+              <p className="mt-3 max-w-lg text-sm leading-6 text-muted">Give your project a name and start with a goal or a blank canvas. Only you can see this World unless you grant access.</p>
             </div>
           )}
         </div>
@@ -87,11 +87,11 @@ export default async function WorldsPage({ searchParams }: PageProps<"/worlds">)
             <div className="flex flex-col gap-2">
               <p className={label}>Create</p>
               <h2 className="text-xl font-medium tracking-tight">Begin a new World</h2>
-              <p className="text-sm leading-6 text-muted">A World starts with your authority. Access is controlled with explicit grants.</p>
+              <p className="text-sm leading-6 text-muted">Start with the need; SOV keeps it with the work. Your World stays private until you choose who can enter.</p>
             </div>
             {typeof error === "string" && (
               <p role="alert" className="rounded border border-negative/30 bg-negative/10 p-3 text-sm text-negative">
-                {error === "world-title" ? "Add a title up to 160 characters." : "The World could not be created. Retry in a moment."}
+                {error === "world-input" || error === "world-title" ? "Use a World name up to 160 characters and a goal up to 7,000 characters. Remove unsupported control characters." : "The World could not be created. Retry in a moment."}
               </p>
             )}
             <form action={createWorldAction} className="flex flex-col gap-3">
@@ -106,10 +106,21 @@ export default async function WorldsPage({ searchParams }: PageProps<"/worlds">)
                 placeholder="A thing I want to make"
                 className="h-12 rounded-md border border-line bg-background px-3 text-sm outline-none transition-colors focus:border-accent"
               />
-              <button type="submit" className={primaryAction}>Create blank World</button>
+              <label htmlFor="world-goal" className={label}>What are you trying to get done? <span className="font-normal normal-case tracking-normal text-muted">(optional)</span></label>
+              <textarea
+                id="world-goal"
+                name="goal"
+                maxLength={7000}
+                rows={5}
+                autoComplete="off"
+                placeholder="I want to plan Mom’s 60th, launch my business, fix a workflow…"
+                className="resize-y rounded-md border border-line bg-background p-3 text-sm leading-6 outline-none transition-colors focus:border-accent"
+              />
+              <p className="text-xs leading-5 text-muted">Your goal is saved as the first piece. Leave it blank for an empty canvas. Nothing is published or shared by creating a World.</p>
+              <button type="submit" className={primaryAction}>Create private World</button>
             </form>
             <p className="border-t border-line pt-4 text-xs leading-5 text-muted">
-              Each edit is attributed to the person or agent that made it. Nothing is published by creating a World.
+              Every piece is attributed to its author. Connected agents enter only after you grant them access.
             </p>
           </aside>
         )}

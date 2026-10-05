@@ -1,13 +1,28 @@
 "use client";
 
 // The master bot, drawn and animated from its persona. Every part is procedural (no image assets),
-// so any combination of body, eyes, mouth, top, accessory, aura and palette is a valid character.
+// so any combination of body, finish, face, gear, aura, palette and motion is a valid character.
 // States animate what is really happening; callers choose the state from real activity only.
 // Motion stops for people who ask for reduced motion.
 import { useId } from "react";
 import type { Persona } from "@/lib/bot/persona";
 
-export type BotState = "idle" | "listening" | "thinking" | "working" | "happy" | "sleeping";
+// The Build Book's avatar states (listening, reasoning, waiting for approval, working, needs input,
+// completed, unavailable), plus idle, happy and resting.
+export type BotState = "idle" | "listening" | "thinking" | "working" | "happy" | "sleeping" | "waiting" | "needs_input" | "completed" | "unavailable";
+
+export const STATE_LABELS: Record<BotState, string> = {
+  idle: "Idle",
+  listening: "Listening",
+  thinking: "Reasoning",
+  waiting: "Waiting for approval",
+  working: "Working",
+  needs_input: "Needs input",
+  completed: "Completed",
+  happy: "Happy",
+  sleeping: "Resting",
+  unavailable: "Unavailable",
+};
 
 function shade(hex: string, amount: number) {
   const n = parseInt(hex.slice(1), 16);
@@ -29,7 +44,7 @@ const CROWN: Record<Persona["body"], number> = { bot: 40, humanoid: 44, creature
 
 function Eyes({ p, state, light }: { p: Persona; state: BotState; light: string }) {
   const { cx, cy, s, screen } = FACE[p.body];
-  const closed = state === "sleeping";
+  const closed = state === "sleeping" || state === "unavailable";
   const ink = screen ? light : "#04070d";
   const white = screen ? "transparent" : "#f2f7fb";
   const dx = 18 * s;
@@ -70,12 +85,13 @@ function Eyes({ p, state, light }: { p: Persona; state: BotState; light: string 
   }
   // round
   const look = state === "listening" ? 2.5 * s : state === "thinking" ? -2 * s : 0;
+  const up = state === "thinking" || state === "needs_input" ? 2.5 * s : 0;
   return (
     <g className="sovbot-blink">
       {[cx - dx, cx + dx].map((x) => (
         <g key={x}>
           <circle cx={x} cy={cy} r={8.5 * s} fill={white} />
-          <circle cx={x + look} cy={cy - (state === "thinking" ? 2.5 * s : 0)} r={screen ? 7 * s : 4.4 * s} fill={ink} />
+          <circle cx={x + look} cy={cy - up} r={screen ? 7 * s : 4.4 * s} fill={ink} />
           {!screen && <circle cx={x + look + 1.6 * s} cy={cy - 1.8 * s} r={1.4 * s} fill="#f2f7fb" />}
         </g>
       ))}
@@ -87,12 +103,74 @@ function Mouth({ p, state, light }: { p: Persona; state: BotState; light: string
   const { cx, cy, s, screen } = FACE[p.body];
   const y = cy + 20 * s;
   const ink = screen ? light : "#04070d";
-  if (p.mouth === "none" || state === "sleeping") return null;
+  if (p.mouth === "none" || state === "sleeping" || state === "unavailable") return null;
+  if (state === "completed") return <path d={`M${cx - 10 * s} ${y - 2 * s} q${10 * s} ${10 * s} ${20 * s} 0`} stroke={ink} strokeWidth={3 * s} strokeLinecap="round" fill="none" />;
   if (p.mouth === "open" || state === "happy") {
     return <ellipse className={state === "working" || state === "listening" ? undefined : "sovbot-talk"} cx={cx} cy={y + 1} rx={7 * s} ry={5 * s} fill={ink} />;
   }
   if (p.mouth === "line") return <path d={`M${cx - 8 * s} ${y} h${16 * s}`} stroke={ink} strokeWidth={3 * s} strokeLinecap="round" />;
   return <path d={`M${cx - 10 * s} ${y - 2 * s} q${10 * s} ${10 * s} ${20 * s} 0`} stroke={ink} strokeWidth={3 * s} strokeLinecap="round" fill="none" />;
+}
+
+function Brows({ p, state, light }: { p: Persona; state: BotState; light: string }) {
+  if (p.brows === "none") return null;
+  const { cx, cy, s, screen } = FACE[p.body];
+  const ink = screen ? light : "#04070d";
+  const dx = 18 * s;
+  const lift = (p.brows === "raised" ? 5 : 0) * s + (state === "needs_input" || state === "thinking" ? 2 * s : 0);
+  const y = cy - 15 * s - lift;
+  const d = (x: number, side: -1 | 1) =>
+    p.brows === "sharp"
+      ? `M${x - 8 * s} ${y - side * 2.5 * s} L${x + 8 * s} ${y + side * 2.5 * s}`
+      : `M${x - 8 * s} ${y + 1.5 * s} q${8 * s} ${(p.brows === "raised" ? -7 : -4) * s} ${16 * s} 0`;
+  return (
+    <g stroke={ink} strokeWidth={2.6 * s} strokeLinecap="round" fill="none">
+      <path d={d(cx - dx, 1)} />
+      <path d={d(cx + dx, -1)} />
+    </g>
+  );
+}
+
+// Where body markings sit, below the face.
+const CHEST: Record<Persona["body"], number> = { bot: 148, humanoid: 166, creature: 140, orb: 128, pixel: 0 };
+
+function Marks({ p, glow }: { p: Persona; glow: string }) {
+  const { cx, cy, s, screen } = FACE[p.body];
+  const dx = 22 * s;
+  switch (p.marks) {
+    case "blush":
+      return (
+        <g fill={screen ? glow : "#ff7a8a"} opacity={screen ? 0.4 : 0.45}>
+          <ellipse cx={cx - dx - 4 * s} cy={cy + 11 * s} rx={6 * s} ry={3.2 * s} />
+          <ellipse cx={cx + dx + 4 * s} cy={cy + 11 * s} rx={6 * s} ry={3.2 * s} />
+        </g>
+      );
+    case "stripes":
+      return (
+        <g stroke={glow} strokeWidth={2.2 * s} strokeLinecap="round" opacity={0.85}>
+          {[-1, 1].map((side) => (
+            <g key={side}>
+              <path d={`M${cx + side * (dx + 2 * s)} ${cy + 5 * s} l${side * 8 * s} ${3 * s}`} />
+              <path d={`M${cx + side * (dx + 2 * s)} ${cy + 10 * s} l${side * 8 * s} ${3 * s}`} />
+            </g>
+          ))}
+        </g>
+      );
+    case "circuit": {
+      const y = CHEST[p.body];
+      return (
+        <g className="sovbot-trace" stroke={glow} strokeWidth={1.6} fill="none" strokeLinecap="round" opacity={0.8}>
+          <path d={`M82 ${y} h10 l6 6 h10`} />
+          <path d={`M118 ${y - 4} h-8 l-4 4`} />
+          <circle cx={80} cy={y} r={2} fill={glow} stroke="none" />
+          <circle cx={110} cy={y + 6} r={2} fill={glow} stroke="none" />
+          <circle cx={120} cy={y - 4} r={2} fill={glow} stroke="none" />
+        </g>
+      );
+    }
+    default:
+      return null;
+  }
 }
 
 function Top({ p, glow, filter }: { p: Persona; glow: string; filter: string }) {
@@ -159,48 +237,111 @@ function Cape({ p, glow }: { p: Persona; glow: string }) {
   return <path className="sovbot-sway" d={`M72 ${top} C60 ${top + h / 2} 58 ${top + h * 0.82} 54 ${top + h} L146 ${top + h} C142 ${top + h * 0.82} 140 ${top + h / 2} 128 ${top} Z`} fill={shade(glow, -0.35)} style={{ transformOrigin: `100px ${top}px` }} />;
 }
 
-function Body({ p, ids }: { p: Persona; ids: { body: string } }) {
+// How the body is painted for each finish: its fill, edge and limb color.
+type Paint = { fill: string; stroke: string; strokeWidth: number; limb: string };
+
+// The body's shapes. `silhouette` draws only the outer shapes, for a finish's overlay (sheen,
+// scanlines), so overlays never spill outside the character.
+function Body({ p, paint, silhouette = false }: { p: Persona; paint: Paint; silhouette?: boolean }) {
   const c = p.palette.primary;
   const dark = shade(c, -0.35);
+  const line = silhouette ? { stroke: "none" } : { stroke: paint.stroke, strokeWidth: paint.strokeWidth };
   switch (p.body) {
     case "bot":
       return (
         <g>
-          <rect x={70} y={122} width={60} height={52} rx={18} fill={`url(#${ids.body})`} stroke={dark} strokeWidth={2} />
-          <rect className="sovbot-arm-l" x={52} y={130} width={16} height={34} rx={8} fill={c} stroke={dark} strokeWidth={2} style={{ transformOrigin: "60px 132px" }} />
-          <rect className="sovbot-arm-r" x={132} y={130} width={16} height={34} rx={8} fill={c} stroke={dark} strokeWidth={2} style={{ transformOrigin: "140px 132px" }} />
-          <rect x={48} y={40} width={104} height={84} rx={28} fill={`url(#${ids.body})`} stroke={dark} strokeWidth={2} />
-          <rect x={60} y={54} width={80} height={58} rx={18} fill={shade(p.palette.secondary, -0.2)} />
+          <rect x={70} y={122} width={60} height={52} rx={18} fill={paint.fill} {...line} />
+          <rect className="sovbot-arm-l" x={52} y={130} width={16} height={34} rx={8} fill={silhouette ? paint.fill : paint.limb} {...line} style={{ transformOrigin: "60px 132px" }} />
+          <rect className="sovbot-arm-r" x={132} y={130} width={16} height={34} rx={8} fill={silhouette ? paint.fill : paint.limb} {...line} style={{ transformOrigin: "140px 132px" }} />
+          <rect x={48} y={40} width={104} height={84} rx={28} fill={paint.fill} {...line} />
+          {!silhouette && <rect x={60} y={54} width={80} height={58} rx={18} fill={shade(p.palette.secondary, -0.2)} />}
         </g>
       );
     case "humanoid":
       return (
         <g>
-          <path d="M54 192 C56 150 76 134 100 134 C124 134 144 150 146 192 Z" fill={p.palette.secondary} stroke={shade(p.palette.secondary, 0.2)} strokeWidth={2} />
-          <path d="M88 124 h24 v14 h-24 Z" fill={dark} />
-          <circle cx={100} cy={84} r={40} fill={`url(#${ids.body})`} stroke={dark} strokeWidth={2} />
+          <path d="M54 192 C56 150 76 134 100 134 C124 134 144 150 146 192 Z" fill={silhouette ? paint.fill : p.palette.secondary} {...(silhouette ? line : { stroke: shade(p.palette.secondary, 0.2), strokeWidth: 2 })} />
+          {!silhouette && <path d="M88 124 h24 v14 h-24 Z" fill={dark} />}
+          <circle cx={100} cy={84} r={40} fill={paint.fill} {...line} />
         </g>
       );
     case "creature":
       return (
         <g>
-          <path className="sovbot-tail" d="M140 160 C168 160 172 130 160 120" stroke={c} strokeWidth={9} strokeLinecap="round" fill="none" style={{ transformOrigin: "140px 160px" }} />
-          <path d="M100 52 C142 52 156 96 156 132 C156 168 132 182 100 182 C68 182 44 168 44 132 C44 96 58 52 100 52 Z" fill={`url(#${ids.body})`} stroke={dark} strokeWidth={2} />
-          <ellipse cx={100} cy={146} rx={34} ry={26} fill={shade(c, 0.45)} opacity={0.8} />
-          <ellipse cx={78} cy={184} rx={12} ry={6} fill={dark} />
-          <ellipse cx={122} cy={184} rx={12} ry={6} fill={dark} />
+          {!silhouette && <path className="sovbot-tail" d="M140 160 C168 160 172 130 160 120" stroke={paint.limb} strokeWidth={9} strokeLinecap="round" fill="none" style={{ transformOrigin: "140px 160px" }} />}
+          <path d="M100 52 C142 52 156 96 156 132 C156 168 132 182 100 182 C68 182 44 168 44 132 C44 96 58 52 100 52 Z" fill={paint.fill} {...line} />
+          {!silhouette && (
+            <>
+              <ellipse cx={100} cy={146} rx={34} ry={26} fill={shade(c, 0.45)} opacity={0.55} />
+              <ellipse cx={78} cy={184} rx={12} ry={6} fill={dark} />
+              <ellipse cx={122} cy={184} rx={12} ry={6} fill={dark} />
+            </>
+          )}
         </g>
       );
     case "orb":
-      return (
-        <g>
-          <circle cx={100} cy={100} r={58} fill={`url(#${ids.body})`} stroke={dark} strokeWidth={2} />
-          <ellipse cx={80} cy={72} rx={18} ry={11} fill="#ffffff" opacity={0.25} transform="rotate(-25 80 72)" />
-        </g>
-      );
+      return <circle cx={100} cy={100} r={58} fill={paint.fill} {...line} />;
     case "pixel":
       return null;
   }
+}
+
+// The finish's paint and its overlay, both from the persona's colors.
+function finish(p: Persona, ids: Record<"body" | "sheen" | "scan" | "chrome", string>) {
+  const c = p.palette.primary;
+  const dark = shade(c, -0.35);
+  switch (p.material) {
+    case "glass":
+      return { paint: { fill: `url(#${ids.body})`, stroke: shade(c, 0.55), strokeWidth: 1.6, limb: `url(#${ids.body})` }, overlay: `url(#${ids.sheen})`, overlayClass: "" };
+    case "hologram":
+      return { paint: { fill: `url(#${ids.body})`, stroke: p.palette.glow, strokeWidth: 1.4, limb: `url(#${ids.body})` }, overlay: `url(#${ids.scan})`, overlayClass: "sovbot-holo" };
+    case "chrome":
+      return { paint: { fill: `url(#${ids.chrome})`, stroke: shade(c, -0.55), strokeWidth: 1.6, limb: `url(#${ids.chrome})` }, overlay: `url(#${ids.sheen})`, overlayClass: "" };
+    default:
+      return { paint: { fill: `url(#${ids.body})`, stroke: dark, strokeWidth: 2, limb: c }, overlay: null, overlayClass: "" };
+  }
+}
+
+function FinishDefs({ p, ids }: { p: Persona; ids: Record<"body" | "sheen" | "scan" | "chrome", string> }) {
+  const c = p.palette.primary;
+  const g = p.palette.glow;
+  if (p.material === "hologram") {
+    return (
+      <>
+        <linearGradient id={ids.body} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={shade(g, 0.3)} stopOpacity={0.55} />
+          <stop offset="55%" stopColor={c} stopOpacity={0.35} />
+          <stop offset="100%" stopColor={g} stopOpacity={0.18} />
+        </linearGradient>
+        <pattern id={ids.scan} width="4" height="4" patternUnits="userSpaceOnUse">
+          <rect width="4" height="1.2" fill={shade(g, 0.4)} opacity={0.55} />
+        </pattern>
+      </>
+    );
+  }
+  return (
+    <>
+      <radialGradient id={ids.body} cx="35%" cy="30%" r="80%">
+        <stop offset="0%" stopColor={shade(c, p.material === "matte" ? 0.18 : 0.4)} stopOpacity={p.material === "glass" ? 0.75 : 1} />
+        <stop offset="60%" stopColor={c} stopOpacity={p.material === "glass" ? 0.55 : 1} />
+        <stop offset="100%" stopColor={shade(c, -0.4)} stopOpacity={p.material === "glass" ? 0.7 : 1} />
+      </radialGradient>
+      <linearGradient id={ids.chrome} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor={shade(c, 0.75)} />
+        <stop offset="35%" stopColor={shade(c, 0.15)} />
+        <stop offset="52%" stopColor={shade(c, -0.5)} />
+        <stop offset="70%" stopColor={shade(c, 0.35)} />
+        <stop offset="100%" stopColor={shade(c, -0.25)} />
+      </linearGradient>
+      <linearGradient id={ids.sheen} x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#ffffff" stopOpacity={p.material === "chrome" ? 0.5 : 0.38} />
+        <stop offset="38%" stopColor="#ffffff" stopOpacity={0} />
+        <stop offset="62%" stopColor="#ffffff" stopOpacity={0} />
+        <stop offset="78%" stopColor="#ffffff" stopOpacity={p.material === "chrome" ? 0.22 : 0.1} />
+        <stop offset="100%" stopColor="#ffffff" stopOpacity={0} />
+      </linearGradient>
+    </>
+  );
 }
 
 // A 16×16 sprite in the persona's colors, for the pixel body.
@@ -312,6 +453,34 @@ function StateMarks({ state, glow }: { state: BotState; glow: string }) {
         <path className="sovbot-wave sovbot-wave-2" d="M18 86 q-12 18 0 36" />
       </g>
     );
+  if (state === "waiting")
+    return (
+      <g className="sovbot-await" style={{ transformOrigin: "164px 34px" }}>
+        <circle cx={164} cy={34} r={15} fill="#04070d" stroke={glow} strokeWidth={2} />
+        <path d="M157 25 h14 l-5 9 l5 9 h-14 l5 -9 z" fill="none" stroke={glow} strokeWidth={2} strokeLinejoin="round" />
+      </g>
+    );
+  if (state === "needs_input")
+    return (
+      <g className="sovbot-float">
+        <path d="M150 18 h30 a8 8 0 0 1 8 8 v16 a8 8 0 0 1 -8 8 h-18 l-8 8 v-8 h-4 a8 8 0 0 1 -8 -8 v-16 a8 8 0 0 1 8 -8 z" fill="#04070d" stroke={glow} strokeWidth={2} />
+        <text x={165} y={41} textAnchor="middle" fill={glow} fontSize={18} fontWeight={700} fontFamily="var(--font-archivo), sans-serif">?</text>
+      </g>
+    );
+  if (state === "completed")
+    return (
+      <g className="sovbot-done" style={{ transformOrigin: "164px 36px" }}>
+        <circle cx={164} cy={36} r={15} fill={glow} />
+        <path d="M157 36 l5 5 l9 -10" fill="none" stroke="#04070d" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+      </g>
+    );
+  if (state === "unavailable")
+    return (
+      <g stroke={glow} strokeWidth={2} fill="none" opacity={0.7}>
+        <circle cx={164} cy={36} r={12} />
+        <path d="M156 44 l16 -16" strokeLinecap="round" />
+      </g>
+    );
   if (state === "sleeping")
     return (
       <g fill={glow} fontFamily="var(--font-geist-mono), monospace" fontWeight={700}>
@@ -323,35 +492,50 @@ function StateMarks({ state, glow }: { state: BotState; glow: string }) {
 }
 
 const STYLE = `
-.sovbot-body{animation:sovbot-bob 3.2s ease-in-out infinite;transform-origin:100px 200px}
-.sovbot--happy .sovbot-body{animation:sovbot-hop .7s ease-in-out infinite}
-.sovbot--sleeping .sovbot-body{animation:sovbot-bob 6s ease-in-out infinite}
-.sovbot--listening .sovbot-body{animation:sovbot-lean 2.4s ease-in-out infinite}
-.sovbot-shadow{animation:sovbot-shadow 3.2s ease-in-out infinite;transform-origin:100px 206px}
-.sovbot-blink{animation:sovbot-blink 5s infinite;transform-box:fill-box;transform-origin:center}
-.sovbot-scan{animation:sovbot-scan 2.6s ease-in-out infinite}
-.sovbot-talk{animation:sovbot-talk .45s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
-.sovbot-wiggle{animation:sovbot-wiggle 2.8s ease-in-out infinite}
+.sovbot-body{animation:sovbot-bob calc(3.2s*var(--k,1)) ease-in-out infinite;transform-origin:100px 200px}
+.sovbot-shadow{animation:sovbot-shadow calc(3.2s*var(--k,1)) ease-in-out infinite;transform-origin:100px 206px}
+.sovbot-blink{animation:sovbot-blink calc(5s*var(--k,1)) infinite;transform-box:fill-box;transform-origin:center}
+.sovbot-scan{animation:sovbot-scan calc(2.6s*var(--k,1)) ease-in-out infinite}
+.sovbot-talk{animation:sovbot-talk calc(.45s*var(--k,1)) ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.sovbot-wiggle{animation:sovbot-wiggle calc(2.8s*var(--k,1)) ease-in-out infinite}
 .sovbot--listening .sovbot-wiggle{animation-duration:.9s}
-.sovbot-float{animation:sovbot-float 3s ease-in-out infinite}
-.sovbot-ear-l{animation:sovbot-ear 4s ease-in-out infinite}
-.sovbot-ear-r{animation:sovbot-ear 4s ease-in-out infinite reverse}
-.sovbot-flutter{animation:sovbot-wiggle 1.6s ease-in-out infinite}
-.sovbot-sway{animation:sovbot-sway 3.6s ease-in-out infinite}
-.sovbot-tail{animation:sovbot-wiggle 1.8s ease-in-out infinite}
-.sovbot--working .sovbot-arm-r{animation:sovbot-wave-arm .6s ease-in-out infinite}
-.sovbot--happy .sovbot-arm-l,.sovbot--happy .sovbot-arm-r{animation:sovbot-wave-arm .5s ease-in-out infinite}
-.sovbot-spin{animation:sovbot-spin 18s linear infinite}
-.sovbot-spin-fast{animation:sovbot-spin 2.4s linear infinite}
-.sovbot-pulse{animation:sovbot-pulse 2.8s ease-out infinite}
+.sovbot-float{animation:sovbot-float calc(3s*var(--k,1)) ease-in-out infinite}
+.sovbot-ear-l{animation:sovbot-ear calc(4s*var(--k,1)) ease-in-out infinite}
+.sovbot-ear-r{animation:sovbot-ear calc(4s*var(--k,1)) ease-in-out infinite reverse}
+.sovbot-flutter{animation:sovbot-wiggle calc(1.6s*var(--k,1)) ease-in-out infinite}
+.sovbot-sway{animation:sovbot-sway calc(3.6s*var(--k,1)) ease-in-out infinite}
+.sovbot-tail{animation:sovbot-wiggle calc(1.8s*var(--k,1)) ease-in-out infinite}
+.sovbot--working .sovbot-arm-r{animation:sovbot-wave-arm calc(.6s*var(--k,1)) ease-in-out infinite}
+.sovbot--happy .sovbot-arm-l,.sovbot--happy .sovbot-arm-r{animation:sovbot-wave-arm calc(.5s*var(--k,1)) ease-in-out infinite}
+.sovbot-spin{animation:sovbot-spin calc(18s*var(--k,1)) linear infinite}
+.sovbot-spin-fast{animation:sovbot-spin calc(2.4s*var(--k,1)) linear infinite}
+.sovbot-pulse{animation:sovbot-pulse calc(2.8s*var(--k,1)) ease-out infinite}
 .sovbot-pulse-2{animation-delay:1.4s}
-.sovbot-twinkle{animation:sovbot-twinkle 2.6s ease-in-out infinite}
-.sovbot-dot{animation:sovbot-dot 1.2s ease-in-out infinite}
-.sovbot-wave{animation:sovbot-fade 1.4s ease-in-out infinite}
+.sovbot-twinkle{animation:sovbot-twinkle calc(2.6s*var(--k,1)) ease-in-out infinite}
+.sovbot-dot{animation:sovbot-dot calc(1.2s*var(--k,1)) ease-in-out infinite}
+.sovbot-wave{animation:sovbot-fade calc(1.4s*var(--k,1)) ease-in-out infinite}
 .sovbot-wave-2{animation-delay:.35s}
-.sovbot-z{animation:sovbot-z 2.4s ease-in-out infinite}
+.sovbot-z{animation:sovbot-z calc(2.4s*var(--k,1)) ease-in-out infinite}
 .sovbot-z-2{animation-delay:1.2s}
-.sovbot--working .sovbot-glow{animation:sovbot-fade 1s ease-in-out infinite}
+.sovbot--working .sovbot-glow{animation:sovbot-fade calc(1s*var(--k,1)) ease-in-out infinite}
+.sovbot-idle-float .sovbot-body{animation:sovbot-floaty calc(5s*var(--k,1)) ease-in-out infinite}
+.sovbot-idle-drift .sovbot-body{animation:sovbot-drift calc(6s*var(--k,1)) ease-in-out infinite}
+.sovbot-idle-still .sovbot-body{animation:none}
+.sovbot--happy .sovbot-body{animation:sovbot-hop calc(.7s*var(--k,1)) ease-in-out infinite}
+.sovbot--sleeping .sovbot-body,.sovbot--waiting .sovbot-body{animation:sovbot-bob calc(6s*var(--k,1)) ease-in-out infinite}
+.sovbot--listening .sovbot-body{animation:sovbot-lean calc(2.4s*var(--k,1)) ease-in-out infinite}
+.sovbot--unavailable .sovbot-body{animation:none}
+.sovbot--unavailable .sovbot-figure{filter:grayscale(1) brightness(.55)}
+.sovbot--completed .sovbot-arm-l,.sovbot--completed .sovbot-arm-r{animation:sovbot-wave-arm calc(.9s*var(--k,1)) ease-in-out 2}
+.sovbot-holo{animation:sovbot-holo calc(2.2s*var(--k,1)) steps(6) infinite}
+.sovbot-trace{animation:sovbot-fade calc(2.6s*var(--k,1)) ease-in-out infinite}
+.sovbot-await{animation:sovbot-await calc(1.6s*var(--k,1)) ease-in-out infinite}
+.sovbot-done{animation:sovbot-done calc(1.8s*var(--k,1)) ease-in-out infinite}
+@keyframes sovbot-floaty{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-10px) rotate(1deg)}}
+@keyframes sovbot-drift{0%,100%{transform:translate(-5px,0)}50%{transform:translate(5px,-4px)}}
+@keyframes sovbot-holo{0%,100%{opacity:.85}50%{opacity:.55}}
+@keyframes sovbot-await{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes sovbot-done{0%,100%{transform:scale(.94)}50%{transform:scale(1.06)}}
 @keyframes sovbot-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes sovbot-hop{0%,100%{transform:translateY(0)}40%{transform:translateY(-16px)}}
 @keyframes sovbot-lean{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(1deg)}}
@@ -373,37 +557,28 @@ const STYLE = `
 @media (prefers-reduced-motion: reduce){.sovbot *{animation:none!important}}
 `;
 
-const LABEL: Record<BotState, string> = {
-  idle: "idle",
-  listening: "listening",
-  thinking: "thinking",
-  working: "working",
-  happy: "happy",
-  sleeping: "resting",
-};
-
 export function BotCharacter({ persona, state = "idle", size = 220, className = "" }: { persona: Persona; state?: BotState; size?: number; className?: string }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
-  const ids = { body: `sovbot-body-${uid}`, glow: `sovbot-glow-${uid}` };
+  const ids = { body: `sovbot-body-${uid}`, glow: `sovbot-glow-${uid}`, sheen: `sovbot-sheen-${uid}`, scan: `sovbot-scan-${uid}`, chrome: `sovbot-chrome-${uid}` };
   const glow = persona.palette.glow;
   const light = shade(persona.palette.primary, 0.55);
   const filter = `url(#${ids.glow})`;
+  const { paint, overlay, overlayClass } = finish(persona, ids);
+  // Energy 0 slows every motion to 1.6x its base time; 100 speeds it to 0.6x.
+  const k = (1.6 - persona.motion.energy / 100).toFixed(2);
   return (
     <svg
       viewBox="0 0 200 220"
       width={size}
       height={(size * 220) / 200}
       role="img"
-      aria-label={`${persona.name}, ${LABEL[state]}`}
-      className={`sovbot sovbot--${state} ${className}`}
+      aria-label={`${persona.name}, ${STATE_LABELS[state].toLowerCase()}`}
+      className={`sovbot sovbot--${state} sovbot-idle-${persona.motion.idle} ${className}`}
+      style={{ ["--k" as string]: k }}
     >
       <style>{STYLE}</style>
       <defs>
-        <radialGradient id={ids.body} cx="35%" cy="30%" r="80%">
-          <stop offset="0%" stopColor={shade(persona.palette.primary, 0.35)} />
-          <stop offset="60%" stopColor={persona.palette.primary} />
-          <stop offset="100%" stopColor={shade(persona.palette.primary, -0.4)} />
-        </radialGradient>
+        <FinishDefs p={persona} ids={ids} />
         <filter id={ids.glow} x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="3" result="blur" />
           <feMerge>
@@ -412,8 +587,8 @@ export function BotCharacter({ persona, state = "idle", size = 220, className = 
           </feMerge>
         </filter>
       </defs>
-      <g>
-        <Aura p={persona} glow={glow} />
+      <g className="sovbot-figure">
+        {state !== "unavailable" && <Aura p={persona} glow={glow} />}
         <ellipse className="sovbot-shadow" cx={100} cy={206} rx={46} ry={7} fill="#000" opacity={0.5} />
         <g className="sovbot-body">
           <Cape p={persona} glow={glow} />
@@ -421,9 +596,16 @@ export function BotCharacter({ persona, state = "idle", size = 220, className = 
             <PixelSprite p={persona} state={state} />
           ) : (
             <>
-              <Body p={persona} ids={ids} />
+              <Body p={persona} paint={paint} />
+              {overlay && (
+                <g className={overlayClass} style={{ pointerEvents: "none" }}>
+                  <Body p={persona} paint={{ ...paint, fill: overlay }} silhouette />
+                </g>
+              )}
+              <Marks p={persona} glow={glow} />
               <Top p={persona} glow={glow} filter={filter} />
               <Eyes p={persona} state={state} light={light} />
+              <Brows p={persona} state={state} light={light} />
               <Mouth p={persona} state={state} light={light} />
             </>
           )}

@@ -23,7 +23,7 @@ Read first: [DIRECTIVES.md](DIRECTIVES.md) (founder orders), [VISION-CANON.md](V
 | `lib/world/` | The World: graph model, Horizon interpreter, deixis, presentation commands, response planner |
 | `lib/sandbox/` | Arcadia sandbox: the kernel in the browser (PGlite), snapshot boot and reset |
 | `app/world/` | World shell: Cesium Earth, Horizon, lenses, context drawer, avatar onboarding |
-| `app/` | Next.js 16 app: `/` is the World; `/money` runs the money system live; email sign-in is off for now |
+| `app/` | Next.js 16 app: `/` is the World; `/money` runs the money system live when `ENABLE_MONEY=true` (off by default, `lib/flags.ts`); email sign-in is off for now |
 | `proxy.ts` | Refreshes the auth session; sends signed-out visitors away from `/account` |
 
 Stack: Next.js 16 (App Router), Tailwind CSS 4, Supabase (Auth + Postgres).

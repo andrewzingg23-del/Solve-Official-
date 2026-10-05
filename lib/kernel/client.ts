@@ -546,6 +546,16 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
         ...as,
       }),
 
+    // Kernel v5, erasable content: the key for an event this actor recorded, the keys of events
+    // the caller may read (destroyed and never-sealed keys are absent), and destroying one for good.
+    sealKey: (eventId: string, key: string) => call<null>("seal_key", { p_event_id: eventId, p_key: key, ...as }),
+
+    unsealKeys: (eventIds: string[]) =>
+      call<{ event_id: string; key: string }[]>("unseal_keys", { p_event_ids: eventIds, ...as }),
+
+    destroyKey: (eventId: string, reason = "") =>
+      call<string>("destroy_key", { p_event_id: eventId, p_reason: reason, ...as }),
+
     readEvidence: (eventId: string) =>
       call<(Required<Evidence> & { id: string; attached_by: string; attached_at: string })[]>("read_evidence", {
         p_event_id: eventId,

@@ -16,11 +16,14 @@ End state: a programmable interface for reality.
 
 ## 2. Brand lock
 
-- Tony Stark HUD. Abyssal blue-black `#04070d`–`#0a1220`. Ice white `#f2f7fb`. Hologram cyan `#22d3ee` — the single accent. **No gold, ever.**
-- Emerald `#00e5a0` = win/positive. Red `#ff4d5e` = loss/destructive.
-- Archivo. Engraved uppercase labels, generous tracking. Tabular, stable numbers. Tesla-calm easing. Restrained transform/opacity motion. Vignette/grain.
-- Signature intro: jagged rising market line climbs through tower forms, frontier pulse at the peak, wordmark lands, hold sigil to enter. Preserve this composition. No crown, shield, or coin mark.
-- Copy: terse, confident, old-money. No gamified voice, no hashtags, no hype.
+Founder decisions, 2026-10-04 and 2026-10-05: **the construct, inverted.** The canonical brand is `docs/brand/BRAND.md` (v3); it replaces the earlier "Tony Stark HUD" direction.
+- **The idea:** *Everything here is real.* Games gave us worlds that aren't real; AI gave us answers that aren't real; solve is a world where everything is real. A real result is a save point on the record. Simulated is Practice, always labeled. Lines: *Everything here is real.* / *Ask for a way.* / *Saved. On the record.*
+- **Names:** solve is the master brand. Sovereign is the engine and philosophy underneath. SOV is identity and the future economy.
+- **Palette:** abyssal blue-black `#04070d`–`#0a1220` for the product. Ice white `#f2f7fb` is the construct's white floor and leads on brand surfaces. Cyan `#22d3ee` (deep cyan `#0891b2` on light) is the single accent: the point, the save. **No gold, ever.** Emerald `#00e5a0` = win/positive. Red `#ff4d5e` = loss/destructive.
+- **Type and motion:** Archivo. Engraved uppercase labels, generous tracking. Tabular, stable numbers. Calm easing. Motion is assembly (things settle into place); no glitch, particle swarms or spinning HUD.
+- **Imagery:** real people, a locked frame, real places. No generated imagery in the paid film; generated stills for storyboards only. Every story ends on a save point.
+- **Signature intro:** an empty room and one seat; the world assembles around it piece by piece; the wordmark lands on the floor line; hold to enter. No crown, shield, coin, chair or copied Matrix imagery. (Retired: the rising-market-line intro.)
+- **Copy:** terse, confident, old-money. The game is in the structure (worlds, your character, Practice and Real, save points), never in the voice or the money: no XP, points, badges, confetti or streaks, no hashtags, no hype. Never "agents", "superintelligence" or "AI-powered" as a headline.
 
 ## 3. The memory kernel (directive 1 — build first)
 

@@ -23,6 +23,9 @@ it("cleans what it is asked to remember", () => {
   const n = normalizeMemoryInput({ text: `  hello\u0007 ${"x".repeat(3000)}`, source: { kind: "sorcery", title: "T", url: "ftp://example.com/a" } });
   assert.equal(n.text.length, MEMORY_LIMITS.text);
   assert.ok(n.text.startsWith("hello "), "control characters are removed");
+  const hidden = normalizeMemoryInput({ text: "pay\u200bme \u202eevil\u{e0049}\u{e0067}\ufeff 👩\u200d💻", source: { title: "a\u2066b" } });
+  assert.equal(hidden.text, "payme evil 👩\u200d💻", "invisible and direction characters are removed; emoji joiners stay");
+  assert.equal(hidden.source.title, "ab");
   assert.deepEqual(n.source, { kind: "assistant", title: "T", url: null });
   assert.equal(normalizeMemoryInput({ text: "a", source: { kind: "web", url: "https://example.com/x?y=1" } }).source.url, "https://example.com/x?y=1");
 });
@@ -34,9 +37,9 @@ it("hides forgotten memories, searches by words, and honors the latest connectio
   const bot = await saveBot(ana, { name: "Juno" }, "persona-request-9");
   const none = { client_id: null, client_name: null };
 
-  const lisbon = await noteMemory(ana, anaId, { text: "Planning a trip to Lisbon in May.", source: { kind: "note", title: "Trips" } }, none, "m-1");
-  await noteMemory(ana, anaId, { text: "Allergic to peanuts." }, none, "m-2");
-  await noteMemory(ana, anaId, { text: "Lisbon hotel shortlist: Alfama, Baixa." }, none, "m-3");
+  const lisbon = await noteMemory(ana, anaId, { text: "Planning a trip to Lisbon in May.", source: { kind: "note", title: "Trips" } }, none);
+  await noteMemory(ana, anaId, { text: "Allergic to peanuts." }, none);
+  await noteMemory(ana, anaId, { text: "Lisbon hotel shortlist: Alfama, Baixa." }, none);
   assert.deepEqual(searchMemories(await readMemories(ana, anaId), "lisbon trip").map((m) => m.text), ["Planning a trip to Lisbon in May.", "Lisbon hotel shortlist: Alfama, Baixa."]);
 
   await forgetMemory(ana, anaId, lisbon.id);

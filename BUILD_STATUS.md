@@ -1,6 +1,22 @@
 # BUILD_STATUS
 
-Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
+Updated 2026-10-04. Branch `codex/need-to-route-network-state-spec`.
+
+## Current checkpoint — 2026-10-04
+
+- The resource-coordination principle is now in `VISION-CANON.md`: SOV organizes project time, skill, ideas, capital, labor, tools, materials, and information with explicit identity, authority, provenance, and outcome evidence.
+- The private World Resource Map is implemented. People can record and revise offers and needs; connected bots can read those structured entries and, when asked, map the person’s exact statement through `map_world_resource`. Entries remain self-reported, nonbinding, and unassigned.
+- Resource authorship and latest edits come from append-only kernel events. Bot-created entries display the bot and the owner it acted for; that owner can correct the entry. Editable entity fields cannot forge the recorded reporter. The bot’s combined World context is capped at 12,000 characters and identifies shortened fields.
+- GitHub Actions run `37202067170` passed on code commit `9c51f71a9b39a16148acb6860fa1a73b53dbe393`: 212/212 tests, typecheck, lint, and build all succeeded.
+- Vercel did not build a preview for the latest commit: its check reports the project build-rate limit with an upgrade-to-Pro prompt. The latest READY staging preview is `https://solve-9v7jxs767-sovigrn.vercel.app` at commit `e855f672c45e8944c69590eddbae45bd0a792ec4`; it contains the resource-map UI and bot read path, but predates `map_world_resource`.
+- The latest code changes are on branch `codex/need-to-route-network-state-spec`. Production deployment and database were not changed.
+- Family caregiving and independent repair shops remain research candidates, not selected markets. The research notes below describe their sources and limitations.
+
+### Next sequence
+
+- Make inviting a specific person and authorizing their bot clear and reversible using SOV IDs.
+- Then design owner-approved resource matches and explicit commitments. Keep delivery evidence separate from self-reported offers.
+- Choose a narrow market only after interviewing the people who would use the first workflow.
 
 ## Current Checkpoint — 2026-10-04
 
@@ -17,9 +33,32 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
 - Checks for this UI slice: `npm run lint`, `npm run typecheck`, and `npm run build` passed locally. The sandbox initially blocked the build's `tsx` IPC socket; a permitted retry passed.
 - Creative World slice checks: `node --import tsx --test --test-force-exit --test-reporter=tap tests/e2e/creative-world.test.ts` passed (1/1); `npm run lint`, `npm run typecheck`, and `npm run build` passed. The first build attempt hit the sandbox's `tsx` IPC socket restriction; the same build passed with execution permission. Full suite and browser lanes were not rerun locally; push CI is the broad regression gate.
 - Plan and page outline: docs/plans/2026-10-04-open-creative-world.md.
-- Reasoning model through Vercel AI Gateway (Claude, at the founder's request, 2026-10-04): `/api/reason` now uses `AI_GATEWAY_API_KEY` when `ANTHROPIC_API_KEY` is absent. It sends the same schema-constrained request to the gateway's Anthropic-compatible endpoint as `anthropic/claude-opus-5.5` (`AI_GATEWAY_MODEL` overrides it), without Anthropic's beta-only refusal fallback. Signed-in people only; rules otherwise. The key is not set in Vercel yet: the Vercel connector is not authorized for the `sovigrn` scope, so the founder adds it as a Preview variable for this branch. A real gateway call is unverified, because this container cannot reach `ai-gateway.vercel.sh`.
+- Reasoning model through Vercel AI Gateway: `/api/reason` prefers `ANTHROPIC_API_KEY`, then `AI_GATEWAY_API_KEY`, then Vercel's request-scoped OIDC token (`x-vercel-oidc-token` at runtime; `VERCEL_OIDC_TOKEN` for build/local). The Vercel project uses the team issuer; no shared API key was added. The READY preview at https://solve-owq94a6ee-sovigrn.vercel.app returned the expected sign-in gate from an anonymous availability check. No paid model call was made. CI run 70 passed 214 tests, typecheck, lint and build.
 - Master bot, slice A (Claude, founder direction, 2026-10-04; plan `docs/plans/2026-10-04-master-bot.md`): the creator at `/bot`. A person designs their bot like a game character: 5 bodies and mix-and-match eyes, mouth, top, accessory, aura and colors, plus personality (name, relationship, four temperament sliders, a voice line, who it is, values). It previews live as an animated character in six moods; motion stops for reduced-motion settings. Saving creates the person's AI-companion avatar (its agent can only observe the owner's scope) and records a versioned `bot.persona.set` event in `actor:<owner>/bot:persona`. No migration. The bot's agent can read the persona and cannot change it; others are refused. Signed out, the creator is a labeled try-out that saves nothing. Not yet exercised through staging sign-in.
 - Master bot, slice B (Claude): the connector. `/mcp` is a remote MCP server (Streamable HTTP, JSON-RPC) that Claude, ChatGPT (Developer Mode) and Meta Muse (custom connector) add by URL. It returns 401 with RFC 9728 metadata at `/.well-known/oauth-protected-resource[/mcp]`, and passes Supabase's authorization-server metadata through for older clients. Tokens come from Supabase Auth's OAuth 2.1 server. `/oauth/consent` shows the person's bot and lets them approve read-only or read-and-remember, recorded as `bot.connection.approved` in `actor:<owner>/bot:links`. Tools: `whoami`, `get_context`, `search`, `fetch` (ChatGPT's shapes) and `remember`. Reads run as the person; `remember` runs as the bot (service key acting as its agent, needing `bot.memory.*` that the person delegates when allowing it). Each memory records the client that added it, set from the token, never by the model. Read-only cannot write; there's a per-assistant rate limit; disconnecting stops it at once and revokes the Supabase grant. `/bot` shows the connector URL, setup steps, connected assistants and memories (add, forget). Not yet exercised against real assistants: staging needs the OAuth server enabled and `SUPABASE_SECRET_KEY` in the preview.
+- Master bot, slice C (Claude): alive. On `/bot`, "<name> right now" shows the bot in a mood that follows real records, refreshed every 15 s while the page is visible:
+  - working when an assistant just added a memory;
+  - happy after your own change;
+  - listening while a connected assistant was recently active;
+  - resting after a quiet three days;
+  - otherwise idle.
+
+  It says one line in its own voice from templates over those facts (no model call). Its relationship numbers (days together, memories kept, assistants connected, looks) are kernel record counts, not game stats.
+- Master bot, hardening (Claude, 2026-10-04): the founder's forecast problems, fixed in code.
+  - **Erasable memory (kernel v5, `supabase/migrations/20261004040000_erasable_content.sql`).** Each memory's words, title and link are sealed with AES-256-GCM under a random key of their own (`lib/bot/seal.ts`, WebCrypto). The ciphertext goes into the append-only history; the key goes into `kernel_keys`, a separate mutable store no API role can reach. `kernel_api.seal_key` (only the recording actor, once), `unseal_keys` (same gate as reading the event) and `destroy_key` (needs `kernel.key.destroy`, which an owner holds through `*` and a bot does not; recorded as `kernel.key.destroyed`; never re-sealable). "Erase" on `/bot` destroys the key, so the words are gone for good while history keeps that a memory existed. Memories from before sealing can only be hidden, and the UI says so. Retries are deduplicated in the app (same words, same assistant, within an hour), because a sealed write cannot be byte-identical.
+  - **Live presence (`lib/bot/presence.ts`, guarded policy `20261004040100_bot_presence.sql`).** Each connector tool call sends a private Realtime broadcast on `bot-live:<auth user id>` saying which assistant used which tool, never content. `/bot` shows "Claude is reading Nova's context…" with the thinking or working animation for 8 s. The Realtime policy lets only that signed-in person receive it; the migration skips itself where Realtime doesn't exist.
+  - **Search over everything.** `search` and `fetch` page through the whole memory history (500 events a page, capped at 10,000 events, and they say when the cap is hit) instead of the newest 200.
+  - **Injection guards.** Stored text loses invisible and direction characters (zero-width, bidi controls, word joiners, BOM, Unicode tag characters). `get_context` wraps memories in a marked block with `<`, `>` and `&` escaped, and caps the context at 12,000 characters.
+  - Tests: `tests/bot/` 20 (new `erasure.test.ts`: sealing, readers, owner-only erasure, no direct key-store access, paging; `presence.test.ts`; an injection test). Kernel and bot suites pass on Postgres 17 (94/94).
+  - Not yet on staging: the Supabase connector timed out twice applying v5 (it waits for a confirmation this session cannot give), and nothing changed. Not on live: v4 first, then v5 and the presence policy, each with the founder's go-ahead (`docs/plans/2026-10-03-kernel-v4-rollout.md`).
+- Master bot, plugged into Worlds (Claude, 2026-10-04, founder direction: no freeze; keep building Worlds that solve real-world things and that people plug into). A connected assistant now has four more tools:
+  - `list_worlds`: the person's Worlds and Worlds others let the bot into, each with the bot's access.
+  - `read_world`: as the bot, inert and capped.
+  - `start_world`: a private World for a goal, created with the person's own sign-in, since an agent can never claim a scope. Their bot is let in to add, and the goal becomes the first piece. A retry returns the same World, and there are at most 50 Worlds per person.
+  - `add_to_world`: adds or revises a text piece as the bot. A retry is one change.
+
+  On `/bot`, "Where <name> works" lists the person's Worlds with Out, Read and Add. Each choice issues or revokes kernel grants to the bot's agent on that World (`kernel.read`, `world.entity.write`, 30 days), visible in the World's history (`lib/bot/worlds.ts`). The connection mode "read and remember" is now labeled "read and add", with the same stored value. A World's owner can let someone else's bot in (the brother case); a member with read and add cannot pass that on, because the kernel refuses. Tests: `tests/bot/worlds.test.ts` (3), bot suite 23/23, and Postgres 17 28/28 together with Codex's creative-World and client tests. Codex's side is still open: choosing another person's bot from inside the World, and bot attribution in History.
+- Strategy and the bot–World contract (Claude, proposals): `docs/plans/2026-10-04-critical-mass.md` covers competition, the build-real-things loop, fun without fake stats, architecture limits (the global chain lock holds to roughly 50k–100k daily actives, *estimate*), costs (bring-your-own AI keeps model cost at $0; infrastructure ≈ $45 a month for the pilot and ≈ $150–400 at 10k daily actives, *estimates*), and critical-mass phases with gates. `docs/plans/2026-10-04-bot-world-bridge.md` is the proposed contract with Codex for bots working in Worlds (grants only, no migration).
 
 ## DONE
 
@@ -56,7 +95,7 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
 - **Task-scoped supplier contact (pilot authority).** The person's explicit consent creates a supplier-contact task and leases the companion `message.send` for that task only (7 days at most): no commitment or payment authority, and it ends when the task closes. Route steps and the provider's delivery message carry the task ref. `tests/e2e/pilot.test.ts` rehearses the pilot through the World engine (refused before consent, granted, asked, answered by the supplier's service, evidenced quote persists across a reload, task completed, authority gone), on PGlite and Postgres 17.
 - **Reasoning model behind the provider boundary.** `lib/world/claude.ts` (Claude `claude-opus-5-5`, structured outputs, server-side refusal fallback, cacheable static system prompt), `app/api/reason/route.ts` (signed-in people only, input limits), `lib/world/remote-provider.ts` (browser: model when available, rules otherwise, and says which). It interprets typed goals into the World's intents and suggests among the Horizon's computed routes; it never acts. A model's reading of a consequential intent is a proposal to confirm; buttons act directly. `tests/e2e/reasoning.test.ts` (no network). Needs `ANTHROPIC_API_KEY` in the deployment and sign-in to be live.
 - **Tests:** 169 pass (`npm test`; 170 on Postgres 17 with the staging rehearsal); 74 kernel tests pass in Chromium (`npm run test:browser`); 27 World checks pass against the built app (`npm run test:world`); CI (`.github/workflows/build.yml`) runs tests, typecheck, lint and build on every push (runs 3 to 9 green).
-- **App shell and staging preview.** Branch preview `https://solve-r7zx4k89o-sovigrn.vercel.app` is READY at pre-creative commit 812153d and uses branch-scoped staging Supabase variables; Auth URL configuration still needs verification. The older `solve-git-claude-keen-cerf-tpd7io-sovigrn.vercel.app` must not be used for sign-in because it had production-scoped Preview variables. Email sign-in remains switched off per founder direction (2026-10-03). Signed-out `/` and `/arcadia` run the browser sandbox; signed-in `/` leads to `/worlds`; `/money` uses fresh in-memory test assets.
+- **App shell and staging preview.** Branch preview `https://solve-r7zx4k89o-sovigrn.vercel.app` is READY at pre-creative commit 812153d and uses branch-scoped staging Supabase variables; Auth URL configuration still needs verification. The older `solve-git-claude-keen-cerf-tpd7io-sovigrn.vercel.app` must not be used for sign-in because it had production-scoped Preview variables. Email sign-in remains switched off per founder direction (2026-10-03). Signed-out `/` and `/arcadia` run the browser sandbox; signed-in `/` leads to `/worlds`; `/money` uses fresh in-memory test assets and answers 404 unless `ENABLE_MONEY=true` (2026-10-05, `lib/flags.ts`, master spec §2).
 - **Specs.** `docs/MONETARY-CONSTITUTION.md` draft 3 (source spec for money; Part XIV lists what is enforced). `docs/plans/2026-10-03-monetary-proof-of-life.md`, `docs/plans/2026-10-03-payment-router.md`. World: `docs/specs/2026-10-03-world-interface.md`, `docs/specs/2026-10-03-avatar-world-integration.md`. Contracts: `DOMAIN-CONTRACTS.md`, `DECISIONS.md`, `SECURITY-INVARIANTS.md`, `ACTIVE-WORK.md`.
 
 ## DOING
@@ -85,3 +124,280 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
 - Naming: SOLVE (reserve) vs SOV (identity, card); the legacy game's virtual SOV collides.
 - First real reward policy and evidence thresholds; Earn release capacity and who holds the Earn cold key.
 - Vesting/treasury programs: build or adopt audited ones. Anchor cadence. Governance path.
+
+
+## 2026-10-04 checkpoint — World bot access and attribution
+
+- The World owner can grant a collaborator's identified bot Read or Add access from the World, review active bot name, owner, role and expiry, and remove the grant. The bot owner can copy the Bot SOV ID from `/bot` to share it with the World owner.
+- World History labels AI companions as “bot for [owner]” using the kernel actor profile and accountable party. Other agents retain the “agent for [owner]” label.
+- Verification: CI run 37 passed tests, typecheck, lint and build. Run 35 was the expected red before implementation; run 36 passed tests and exposed one query-parameter narrowing issue fixed in run 37.
+- Uses existing scoped grants and kernel actor profiles. No migration, staging database change, or production change.
+- Staging remains unverified for real assistant use. The Preview secret key was added by Claude after the user supplied it; Auth Site URL/redirect, `kernel_api` Data API exposure, OAuth Server, and staging application of kernel v5 plus the bot-presence policy remain open.
+\n\n## 2026-10-04 checkpoint — Business learning and pixel-art tools\n\n- MCP `learn_business` stores owner-approved sections in the bot's sealed memory with connection provenance; it supports business workflows, team, systems/equipment, economics, goals, and evidence/risks.\n- `propose_capability` writes a structured draft in a World the bot may add to. It is explicitly non-executable.\n- `create_pixel_art` validates a bounded grid and six-digit palette, then writes/revises a versioned World artifact attributed to the bot. The World canvas renders it as a pixel image. The connected assistant produces the grid; no image-provider API key or external provider call is involved.\n- Collaborator bot access remains scoped through the owner's Add grant, so the bot acts with its own attributable identity.\n- Verification: the current feature preview is READY at https://solve-mchx5ujf2-sovigrn.vercel.app. GitHub Actions run 60 passed all 200 tests, typecheck, lint, and build for commit 378719b. Earlier runs caught a missing assistant approval in a test and doubled regular-expression escapes in credential filtering; both were fixed, with regression coverage for credential rejection and invalid section names.\n- No database migration or production change was needed. General sandboxed capability building, model-backed/streaming image generation, and realtime multi-person sync remain open.\n
+
+## Optional Higgsfield portrait slice — 2026-10-04
+
+- Added an optional portrait concept generator to the signed-in bot page, using Higgsfield Soul 2 image generation. It derives an initial visual direction from the saved bot persona; the user can revise it before submitting.
+- The API key is entered per session, held temporarily in the page, sent only to an authenticated same-origin server route and forwarded to Higgsfield with its documented `Authorization: Key` scheme. It is not saved in SOV. No automatic generation retry is made after a network error.
+- Generated output is a downloadable preview only. It does not replace the persistent vector character, write a persona event, change authority, or enter History.
+- Added validation for key/prompt/request ID, safe HTTPS-only image results, normalized provider status and sanitized provider errors.
+- Local full-repository checks could not be run because this workspace does not contain the repository checkout. The focused Higgsfield helper tests passed 5/5 under Node 24 type stripping. GitHub Actions run 61 passed the repository tests, typecheck, lint and build. Live Higgsfield account behavior remains unverified. Live Higgsfield account behavior remains unverified.
+
+## 2026-10-04 checkpoint — Agent screen and a richer avatar (Claude)
+
+- **The founder picked** the code-drawn avatar over 3D or Rive: every look stays on brand, costs nothing and runs fast on phones.
+- **`/bot` is now the agent screen.**
+  - A HUD stage with corner brackets, tick rings, a sweep while active, vignette and grain. It reads out the bot's state, finish, motion and energy.
+  - Seven customization tabs: Form, Face, Finish, Color, Gear, Motion and Personality.
+  - Previews for all ten states: the Build Book's listening, reasoning, waiting for approval, working, needs input, completed and unavailable, plus idle, happy and resting.
+- **The persona gained:**
+  - a finish (matte, glass, hologram with scanlines, polished chrome);
+  - brows and face marks (blush, stripes, circuit traces);
+  - motion: an energy that scales every animation and an idle style (bob, float, drift, still);
+  - eight named color sets, none of them gold.
+
+  Older saved bots load with defaults; no migration.
+- **"What <name> may do".** The agent contract (Build Book §5) lists the assistants it speaks through and their modes, memory, and World grants with their 30-day expiry. All of it is read from real records. It also states the fixed limits: the connector gives assistants no tool to spend, sign, publish or change access, and real-world actions are proposals only.
+- **Layout.** Codex's Higgsfield portrait creator moved below the Worlds panel. The page title is now "Your agent".
+- **Checks:**
+  - `tests/bot/agent-screen.test.ts` covers old personas, every body × finish × state rendering, the stage readout and the contract's wording.
+  - The bot suite passes 38/38; typecheck, lint (one existing warning) and build are clean.
+  - Chromium screenshots at desktop and 390-px phone width found a real bug: a non-wrapping chip row stretched the page to about 990 px on phones. It was fixed and re-checked: the page is 390 px wide, with no console errors.
+- **Not yet:** onboarding at sign-on, which should build on the World entrance's "Who should represent you" step (Codex), and "let your AI design it".
+- **Human | Machine (Claude, founder's inspiration references).** The agent stage has a basement.studio-style Human | Machine toggle. Machine draws the bot as a living particle cloud in its own colors, wired to You, its assistants, its Worlds and its sealed memory. Links it can write through flow; read-only links stay dim and dashed. Below it sit readouts in the spirit of the "bot swarm" dashboard reference:
+  - access ledger;
+  - blast radius (memory, Worlds add/read, money none, access none);
+  - 14-day activity from real memory timestamps;
+  - an audit count of the bot's kernel records.
+
+  Every node and number comes from `lib/bot/machine.ts` over real records. Signed out, it shows only You and an empty memory. Tests: machine data, node caps and readouts in `tests/bot/agent-screen.test.ts`; bot suite 39/39. Chromium screenshots at desktop and phone width: no overflow, no console errors (a temporary preview page, deleted before commit).
+
+## 2026-10-04 checkpoint — Brand direction and a calmer bot screen (Claude)
+
+- **Brand direction (proposed):** `docs/brand/2026-10-04-the-construct.md`, from the founder's conversation.
+  - **The idea:** stay in your seat; the world builds around you, and every result is real.
+  - **Grounding:** vision quotes, 2025–2026 consumer research with sources, lessons from earlier technology revolutions, the ontology as the felt reason worlds assemble, brand rules, the ad's shot list, the production pipeline and Higgsfield prompts per world.
+  - **Status:** the Build Book's "Tony Stark HUD" lock stays until the founder changes it.
+- **Founder feedback acted on:** the HUD look read as "vibe coded", so `/bot` was stripped back.
+  - The stage is a quiet room with a lit floor and horizon (the construct a World assembles on); spinning tick rings, sweep, corner brackets and grain are gone.
+  - A plain Character | Reach switch replaces Human | Machine. Reach shows the bot itself at the center with plain lines and labels, no particle cloud, and readouts in plain words: assistants, what it can touch, last 14 days, on the record.
+  - The page says "Your bot" again, since the brand rules drop "agents".
+- **Checks:** bot suite 39/39 (the stage test now asserts no rings or grain); typecheck, lint (one existing warning) and build ok. Chromium screenshots at desktop and phone: no overflow, no console errors (a temporary preview page, deleted before commit).
+- **Brand adopted (founder, 2026-10-04).** `docs/brand/BRAND.md` is the canonical brand: the construct.
+  - **Idea:** stay in your seat; the world builds around you; every result real, on the record.
+  - **Lines:** *The world builds around you* / *Ask for a way* / *On the record*.
+  - **Names:** solve is the master brand, Sovereign the engine and philosophy, SOV identity and the economy.
+  - **Also in it:** a manifesto, the ascent (seat → room → network → economy → interface for reality; market only what is real), the identity system (palette unchanged, motion as assembly, a working mark at `public/brand/solve-mark.svg`), voice and the "never" list.
+
+  The Build Book §2 brand lock now points to it (the HUD direction and the market-line intro are retired). Recorded in `DECISIONS.md`; `ACTIVE-WORK.md` tells Codex's surfaces to follow it.
+- **Brand v2, research-backed (Claude, pending founder confirmation).** Four sourced research tracks in `docs/brand/research/` (naming, competition, people, precedents). `docs/brand/BRAND.md` v2 lists what changes and why:
+  - **Line:** *You decide. The world builds.* replaces "stay in your seat", which three tracks found passive.
+  - **Lead:** proof and authority first.
+  - **Identity:** the point. The wordmark is `solve.`, the symbol `s.`, plus the record seal and a simulated label. Working SVGs are outlined from Archivo in `public/brand/`.
+  - **Imagery:** real places only in paid ads.
+  - **Name:** solve holds on conditions. MIT holds an incontestable SOLVE registration, SolveAI raised $50M and Solve Intelligence applied for the bare word. So: a composite mark, a modified domain, and no paid media before counsel clears it.
+  - **Token:** choose a ticker other than SOV, which Sovryn already uses.
+
+  Domains checked on Vercel's registrar; nothing bought. The v1 lines in the Build Book hold until the founder confirms.
+- **First-principles rethink (Claude, pending the founder).** `docs/brand/2026-10-04-first-principles.md` rebuilds the business from what the app actually does: proof, permission, neutral hands for any AI, execution, verification, settlement, ownership and collaboration.
+  - **Thesis:** *everyone wants you to trust their AI; solve removes the need to.* This is the Build Book's own line.
+  - **The opposite of the market:** no own AI, consent over autonomy, a portable record, receipts over claims, results over attention, people brought in.
+  - **The brand line becomes the product's loop:** **Ask. Allow. Prove.**
+  - **Proposed business:** free to bring your AI; paid when an outcome settles; platforms pay to verify; settlement later, gated. Moat: the record graph, neutrality, the authority engine and the human network. North star: verified outcomes per person per month and time to first proof.
+  - `BRAND.md` and the construct doc are updated to match.
+  - Visual brand book (private artifact): https://claude.ai/artifact/NAtCcEYspQzpPBLoKMdeY3
+- **Brand v3: "Everything here is real" (founder approved, 2026-10-05).** The founder found *Ask. Allow. Prove.* generic. `docs/brand/BRAND.md` v3 is the construct, inverted: games gave us worlds that aren't real, AI gave us answers that aren't real, and solve is a world where everything is real.
+  - **The game, made real:** the product's game-like structure (World, your character, party, quests, rules, Packs, progression) maps to built functions.
+  - **Save points and Practice:** a real result is a save point on the record; simulated activity is Practice, always labeled.
+  - **Guardrails:** the game stops at money and voice (no confetti, streaks, points or gamified copy).
+  - **Identity:** brand surfaces open on the white floor; the practice label is `public/brand/solve-practice-seal.svg`, replacing `solve-simulated-seal.svg`.
+  - **Other docs updated:** Build Book §2, `DECISIONS.md` and the construct film (real places only, the save beat). The first-principles business model still stands, pending the founder.
+  - **Brand book page v2:** https://claude.ai/artifact/NAtCcEYspQzpPBLoKMdeY3
+
+## 2026-10-05 checkpoint — Proof becomes a save point (Claude)
+
+- **`add_proof` in the connector.** When something real happens, the person gives their assistant the proof: a link, a tracking or order number, or what a photo shows. The bot saves it on that piece in a World, and it becomes a save point on the record (`lib/bot/proof.ts`).
+  - **How it is stored:** kernel evidence on the piece's latest version.
+  - **Basis comes from the kernel's own rules:** `self_reported` on the person's own pieces, `witnessed` on someone else's. It never counts as verified.
+  - A retry saves once. Only http(s) links are kept.
+  - `read_world` shows each piece's saves. The presence line reads "Claude is saving proof with Nova."
+- **Access.** Add access now also grants `kernel.evidence.attach`. Bots let in earlier are refused with a clear message until set to Add again.
+- **On screen.** `/bot` shows each World's latest saves with the shared `SavePoint` (`app/save-point.tsx`). That file also exports `PracticeLabel` for simulated surfaces (Codex: Arcadia).
+- **Checks:**
+  - bot suite 43/43, with 4 new proof tests: self-reported and once, witnessed on someone else's piece, every refusal, and the render rules;
+  - typecheck ok;
+  - lint ok, with one existing warning.
+
+  No browser check: the panel addition is one list rendered by a tested component.
+- **Staging is still blocked on v5.** A third `apply_migration` attempt timed out waiting for a confirmation and applied nothing (verified by a read). Without v5, memory writes fail on staging. The founder applies both files from the SQL editor (rollout plan, step 3b).
+- **Printable parts (2026-10-05).** The connector's `design_part` lets a person's AI design a simple part: a side outline in millimetres, extruded to a width. That covers stands, brackets, hooks, clips, spacers and shims.
+  - **Checking and storage:** `lib/bot/part.ts` cleans the outline onto the bed and refuses crossing, too-small or oversized shapes (a 256 mm build volume). The part is stored as a World piece, like pixel art.
+  - **The STL:** `/parts/<world>/<piece>.stl` serves a binary STL to anyone the kernel lets read that World, for Bambu Studio, PrusaSlicer or Cura.
+  - **What people see:** `read_world` summarises the part instead of showing its encoding. The World page shows the outline, size, material and a Download STL link (`app/part-preview.tsx`), plus each piece's save points.
+  - **The loop:** design, print, `add_proof`, "Saved. No. …".
+  - **Tests:** bot suite 47/47, including STL faces that are closed and outward with volume equal to area × width, download access, and the full design → print → save loop.
+- **Shareable receipts (2026-10-05).** A person can share one of their own saves from `/bot`. They get a link to a public receipt on the white floor (`/saved/<token>`) showing:
+  - "Saved · No. 1042" and what happened;
+  - whose word it rests on, the date and the piece;
+  - the part outline, if the piece is a part;
+  - "Everything here is real."
+
+  **How it stays private:** the server can't read a private World for anyone, since the service key never acts as a person. So the receipt is a snapshot read with the owner's own sign-in, put into the link and signed with a key derived from the server secret (`lib/bot/receipt.ts`). Changing anything in the link breaks it. Only the person who saved something can share it, and the proof's private detail is left out. A receipt can't be withdrawn once sent, like a photo.
+
+  **Tests:** bot suite 53/53, plus one Chromium look at a signed receipt (desktop and phone): no overflow, no console errors, and a tampered link returns 404.
+- **Parts with holes, and flat parts (2026-10-05).** `design_part` takes round holes (`[x, z, diameter]`, with at least 0.8 mm of wall around each and no two touching) and `lay: flat` for top-view parts: plates with screw holes, spacers, washers, clips, tags.
+  - **How holes are joined:** each hole joins the outline with a straight cut to the first edge it meets, with a point added there. Walls are built from the joined face's real boundary edges, so the solid always closes.
+  - **Tests:** a plate with two M4 holes, a washer, a six-hole grid in aligned rows, a bracket with a hole and the stand. Each must be closed, consistently wound, on the bed, and exactly (outline − holes) × width in volume.
+  - **Fuzzing:** 600 random plates and L-shapes. 204 valid parts came out closed with the exact volume; the rest were correctly refused.
+  - The preview and the receipt draw the holes.
+- **Receipt link previews (2026-10-05).** A shared receipt now carries its own preview card (`app/saved/[token]/opengraph-image.tsx`, 1200×630) for iMessage, X and DMs. It shows the solve. wordmark, "Saved · No. 1042", what happened, whose word and the date, and the part's outline, on the white floor. It is drawn from the same signed snapshot as the page. A broken link gets a plain brand card.
+- **Print notes (2026-10-05).** Every part says how it will print (`printNotes` in `lib/bot/part.ts`), in the tool's answer and on the World page:
+  - "Prints without supports";
+  - "Needs supports under 60 mm of overhang" (downward faces under 45°, off the bed, longer than a 5 mm bridge);
+  - "add a brim" when under 10 mm touches the bed;
+  - a warning that a large sideways hole may sag.
+
+  Flat parts print without supports. Tested on the stand, a T-shaped shelf, a bridged ledge, a flat plate, a thin pin and a large hole.
+- **Routes from an ask (2026-10-05).** This is the vision's Wayfinder ("I found 3 ways forward") and the spec's Intent → Task path, built on existing kernel tasks.
+  - **Proposing:** the person asks their own assistant for a way to do something. It researches with its own tools, then calls the connector's `propose_routes` with up to three routes. Each route has steps in order and the link each step needs. The routes are saved in a World as a proposal (`lib/bot/routes.ts`).
+  - **Taking:** on the World page the person takes one (`app/route-card.tsx`, `app/route-actions.ts`). Each step becomes a kernel task the person created, with `cause_ref` pointing at the routes piece.
+  - **Done:** "Mark done" moves the next step to completed, on the person's word, and the record says who.
+  - **What the bot sees:** `read_world` shows the route taken, the steps done and the next step with its link.
+  - **Limits:** steps need `route.step`, which the World owner holds and a bot or a read-only member does not. A bot can propose and revise routes until one is taken, but it can't take a route or mark a step done.
+  - **Route-card fields:** routes carry the fields of Codex's founder-directed route cards: why it fits, what it takes, what is not yet known, and done when. The World card shows them, and "done when" stays on a taken route as the proof to save. This keeps one route object for both designs.
+  - **Tests:** `tests/bot/routes.test.ts` covers limits and hand-edited pieces, the bot proposing, the bot and a member refused, idempotent take and done, `read_world`, and the card (the point only on done steps).
+
+## 2026-10-04 checkpoint — Runtime AI Gateway OIDC (Codex)
+
+- `/api/reason` can authenticate to AI Gateway with Vercel's request-scoped OIDC token, so no shared provider key is required on Vercel. A configured Anthropic key or explicit Gateway key still takes precedence.
+- Vercel Secure Backend Access is enabled with the team issuer. Reasoning remains available to signed-in people only; the token is never returned to the browser.
+- Regression coverage checks runtime request-header and build/local environment token paths, provider precedence, and the no-credential case.
+- CI run 70 passed 214 tests, typecheck, lint and build. The preview is READY and its anonymous availability check confirms the sign-in gate; a signed-in model request remains unverified and would use AI Gateway credits. No Supabase schema or production application deployment changes were made.
+
+## Shared World collaboration slice — 2026-10-04
+
+- Added owner-managed human viewer/editor access by SOV ID, with explicit removal of both scoped capabilities and rejection of agent IDs.
+- Added private per-person Realtime invalidation. A kernel event trigger checks each recipient’s active `kernel.read` grant and publishes only World ID and event sequence; the browser refreshes the persisted kernel view after updates and reconnect.
+- New end-to-end tests cover editor and viewer authority, provenance through the existing kernel path, revocation, delegation refusal, and human-only invitations.
+- Validation: test-only CI run #99 failed before implementation as expected; implementation CI and staging Auth/two-person live validation are pending.
+- Production was untouched.
+
+## 2026-10-05: Codex's branches merged into the trunk (founder: "merge")
+
+- **What's in:** the AI Gateway OIDC fallback, live collaboration in Worlds (owner-managed collaborators, private content-free Realtime notices, migration `20261004040200_world_live_collaboration.sql`), and goal-first Worlds with the resource map.
+- **How they fit with the bot:** `read_world` keeps Codex's length-bounded context and resource list, and also carries the save, part and route notes. The connector's writing tools now include `map_world_resource`.
+- **Left out:** the branch's "Project resource coordination" section for `VISION-CANON.md`, until the founder says yes. Also `codex/development-memory-v1` (Idea Graph, draft pull request #2) and its plan (#1), which wait on the founder.
+- **Staging needs three SQL files, in order:** v5 (`20261004040000`), presence (`20261004040100`), live collaboration (`20261004040200`).
+- **Checks on the merged tree:** full suite 240/240; typecheck ok; lint ok (the one existing warning); `next build` ok.
+- **To watch:** the live-collaboration trigger checks every person's read grant on each World event. Fine for a pilot, but it needs an index or a member table before it grows.
+
+## 2026-10-05: Waiting on you (founder-first slice 2)
+
+- `/bot` opens with one list, across the person's Worlds, of what only they can move forward:
+  - routes proposed but not yet taken, shown only where they can take one;
+  - the next step of each route they took, with its link and how many steps are done.
+- Each item links to its World, where they take the route or mark the step done.
+- A decision is proposed the same way as a route: each option is a route, so taking one records the choice on the record.
+- The list reads the record with the person's own sign-in (`lib/bot/waiting.ts`, `app/bot/waiting.tsx`). It shows nothing when nothing waits.
+- **Tests:** `tests/bot/waiting.test.ts` covers choose and next across two Worlds, a read-only member who is not asked to choose, a finished route dropping off, a taken decision becoming its next step, and the rendering.
+
+## 2026-10-05: Command Center (`/command`)
+
+The vision's personal Command Center ("zoom toward their node, then into their personal Command Center"), and the founder's one page. Its sections follow the canon's promise, in order:
+- **Where you are:** Worlds, routes underway, recent saves.
+- **Waiting on you.**
+- **Where you're going:** every ask, proposed, underway (step N of M) or done.
+- **With you:** the bot, each connected assistant with its access and since when, and a live line of who is working right now from the private presence signal.
+- **What actually happened:** the latest saves across Worlds, with their save points.
+- **What's next.**
+
+Everything is read from the record with the person's own sign-in, and empty states say so plainly.
+- **Paths:** `app/command/`. `lib/bot/waiting.ts` now does one scan (`journeys`), and both "Waiting on you" and the Command Center read from it.
+- **Tests:** `tests/bot/command.test.ts` covers where each ask stands, a read-only member who chooses nothing, empty states, and the point only on saves.
+- **Linked from:** `/bot`. Signed-in `/` still goes to `/worlds` (Codex's `app/page.tsx`); sending it to `/command` is proposed to Codex.
+- **Noticed (vision: "the world itself should react").** The Command Center points at what the record shows needs attention, without anyone asking:
+  - a step of your route with no movement for 3 days or more;
+  - a route done with nothing saved on it;
+  - routes that have waited 3 days or more for your choice.
+
+  It is worked out from the record on each visit (`noticed` in `lib/bot/waiting.ts`). It only points; it never acts, assigns or tells anyone else. Routes now carry when each step last moved, and an ask knows whether proof is saved on it.
+- **What solve can't do yet (the Forge's seed).** The Command Center lists the capability drafts assistants recorded with `propose_capability` when solve couldn't do what was asked. The same need asked again counts once, with how many times and in which Worlds, most repeated first (`lib/bot/gaps.ts`). It is read from the same single scan of each World. Nothing in it runs. Repeated real needs pick the next build, which is the directive's "learn from real friction" in a form the founder can see.
+
+## 2026-10-05: Outreach Room, first slice (Practice channel)
+
+The founder asked for "a ai to business outreach flow ... with meta accounts but build this as an example in app". The plan, with Meta's messaging rules and why cold DMs can't be automated, is in `docs/plans/2026-10-05-business-leverage-outreach.md`.
+- **Drafting:** the person's assistant researches real businesses for a goal and calls `propose_outreach` with up to 20, each with why it fits, the public page where it was found (required, http or https), how it can be reached, and a short message (`lib/bot/outreach.ts`).
+- **Approving:** the World shows each message exactly as it would go out, with the sender's name and an opt-out line always added (`app/outreach-card.tsx`). Only the person approves, one message at a time. Approval is a kernel task they created, needing `outreach.send`, which a bot or a read-only member does not hold.
+- **Practice channel:** approving records the message, its sha256 and `sent_outside_solve: false`. Nothing leaves solve. The card says Practice.
+- **Where approvals show:** "Waiting on you" and the Command Center list messages still to approve. `read_world` tells the bot how many were approved.
+- **Revising:** a bot can revise drafts until one is approved.
+- **Tests:** `tests/bot/outreach.test.ts` (3 tests). Full suite 251/251; lint clean (the old warning in `lib/bot/worlds.ts` is fixed); build ok.
+- **Next:** replies and outcomes on each lead; a real email channel; Meta inbound inside its rules. Those need the founder's accounts, and Manus's research on Meta's current rules.
+
+## 2026-10-05: Manus's pull requests, reviewed on the trunk
+
+- **#5 merged:** saving the bot no longer drops the values field when Save is clicked before the field loses focus. The creator shows the persona the server saved, and a reused save key with a different persona reports a conflict (tested).
+- **#7 merged:** start a private World from `/bot`, through the same `startWorld` path, landing in the new World.
+- **#6 folded in, not merged:** its context ledger repeated "What your bot may do", and its memory count was capped at 50. The useful part (each World the bot was let into, with an Open link, and "Outside services: none connected") is now in `app/bot/contract.tsx`, with a test. Review comment on the pull request.
+- **#4 changes requested:** the `/start` page needs to follow brand v3 (white floor, no decorative points or glows, no static fake state, lowercase solve). Review comment on the pull request.
+- **Checks:** bot suite 70/70; typecheck ok; lint clean; build ok.
+
+## 2026-10-05: Outreach outcomes, and "said no" enforced
+
+- **Recording what happened:** after a message is approved, the person (on the World page) or their assistant (`record_outcome`, only from what the person said or showed) records replied, meeting booked, won or said no. It is evidence on the approval, `self_reported`, never verified (`recordOutcome` and `outcomesIn` in `lib/bot/outreach.ts`). A retried record is one record. A read-only member records nothing.
+- **"Said no" is enforced, not just asked for:** a business that said no, matched by name or by the site it was found on, can't be drafted again (`propose_outreach` refuses) or approved again (`approveAndSend` refuses) in that World. That holds even under a new name on the same site.
+- **Where outcomes show:** the outreach card shows the latest outcome per business and a tally (replied, meetings, wins, nos), and offers no more recording after a no. `read_world` numbers each business and lists outcomes, so the assistant knows which number to record.
+- **Tests:** `tests/bot/outreach.test.ts` now has 5. Bot suite 72/72; typecheck ok; lint clean; build ok.
+- **On the Command Center:** the latest outcome per business (replied, meeting, won, said no) now shows under "What actually happened" next to saves, on the person's word, with its World. `overview` returns `results`.
+
+## 2026-10-05: Win values and "made through solve"
+
+- A won outcome can carry its value (amount and three-letter currency, stored in minor units), on the person's word. Only a win carries one.
+- The outreach card and the Command Center show it. The Command Center adds "Made through solve in 2026", the year's total per currency (`madeIn` in `lib/bot/waiting.ts`), marked as from wins the person recorded.
+- There is no target bar: the brand never gamifies money. The $10,000 north star is the business's (`DECISIONS.md`).
+- **Tests:** outreach suite 7/7 (values, refusals, the yearly total by currency, rendering).
+
+## 2026-10-05: Crypto stage 1, the record anchored on Solana
+
+- **Anchoring** (`lib/chain/anchor.ts`): a World's history (each event's sequence number and chained hash, never content) becomes a Merkle root. A memo writes `solve:anchor:v1:<root>:<count>` on Solana, so no names, amounts or text are ever published.
+- **On the record** (`lib/bot/anchor.ts`): the World's owner anchors, and the anchor is saved on the World's record as `artifact` evidence with the transaction's explorer link. The caller's authority is checked before anything is written on chain, so a refusal never spends a fee or leaves an orphan root.
+- **Shared receipts** now carry their inclusion proof. `/saved/<token>` checks it against the root and says plainly what it shows: the save was on the record by then and hasn't changed since, never that the thing itself happened (constitution Part XI). A forged proof is shown as not checking out.
+- **On the World page** (`app/anchor-panel.tsx`): the last anchor, and a button when this deployment has an anchor key.
+- **Devnet only:** `ANCHOR_CLUSTER`, `SOLANA_RPC_URL` and `ANCHOR_PAYER_KEY` (a fee-only keypair) are documented in `.env.example`. Mainnet is refused until the founder decides (Part XV). No money moves.
+- **Tests:** `tests/bot/anchor.test.ts` uses LiteSVM with the real Memo program. It covers Merkle proofs for 1 to 9 leaves (forged steps and leaves fail), anchoring, a read-only member refused before any chain write, receipts with proofs surviving the link, a forged proof flagged on the page, saves after an anchor waiting for the next one, and config refusals.
+- **Checks:** bot and chain suites 88/88; typecheck ok; lint clean; build ok.
+
+## 2026-10-05: Crypto stage 2, wallets the person controls
+
+- **Linking from the Command Center:** the person links a Solana wallet by signing a short message in their own wallet (Phantom, Solflare or Backpack in the browser). Signing moves nothing and costs nothing, and solve never sees or holds a key.
+- **What the server checks** before the kernel links the address (`lib/chain/wallet-proof.ts`, `app/command/wallet-actions.ts`):
+  - the challenge is signed by the server (HMAC) and bound to the person, so it can't be reused by someone else or edited;
+  - it is at most 10 minutes old;
+  - the wallet's ed25519 signature matches.
+- **Recorded on devnet** while money runs there. The kernel already refuses an address linked to someone else.
+- **Shown:** "With you" on the Command Center shows the linked wallet (shortened), even before a bot exists.
+- **Known gap, for Codex:** the kernel's `link_wallet` doesn't itself require proof, so a direct API call could link an address without it and block its real owner. Proposed fix: a new migration that only accepts links carrying a server-verified proof, or verifies the signature in the kernel.
+- **Tests:** `tests/bot/wallet.test.ts` covers valid proofs; another person's, an edited, an expired or a forged challenge; another wallet's signature; bad input; one owner per address; and the panel slot without a bot. Bot suite 80/80; typecheck ok; lint clean; build ok.
+
+## 2026-10-05: After Manus's merges of #6 and #8
+
+Both were merged into the trunk by the founder's account while a review asked for changes. CI was green (run 136). Fixed:
+- **`/start`** (`app/start/view.tsx`, `page.tsx`) follows brand v3: white floor, no decorative points or glows, no static "Avatar: Not shaped" state, lowercase solve, "Everything here is real". Signed-in people go to `/command`. Manus's content and structure are kept.
+- **`/bot`** shows one panel for what the bot may do. The duplicate context ledger is removed; its World list was already folded in.
+- **Test:** `tests/bot/start.test.ts` keeps the start page on brand.
+- **Process:** a working agreement for Manus is in `docs/handoff/MANUS.md` (never merge with a review open, log every slice, research first), and its `ACTIVE-WORK.md` row is updated.
+
+
+## 2026-10-05 — The room: a World you work inside (Claude)
+
+- **What it is:** `/world/<id>/room`, an immersive full-screen room for a World (master spec §7, "Real-time Build Rooms"; the canon's "Enter a Room"). Creating a World, the Command Center and `/worlds` now open the room. The panels page is still there as "Details".
+  - **Left:** what the World is after, who is here (people and bots, the bot's live line), and its routes with progress.
+  - **Center:** the canvas. A World that links a GitHub repository shows **the build**: each builder's station (Claude, Codex, Manus, named by their branches), the trunk with its commits and build results, and the branches in flight with their pull requests. Otherwise it shows the World's pieces where they were placed, around the goal.
+  - **Right:** what's waiting on you (including pull requests asking to merge into the trunk), proof, what just happened, and what solve can't do yet.
+  - **Bottom:** a command bar that adds a note to the World.
+- **The repo as a source** (`lib/github/repo.ts`): read-only, from GitHub's API, refreshed every minute while the room is open. A private repository needs `GITHUB_TOKEN`, and is read only where `GITHUB_ROOMS` pairs it with a World or a sign-in email, so nobody can read it by linking it into a World of their own. Linking a repository adds it to the World's resources (one concept, one home).
+- **Tests:** `tests/github/repo.test.ts`, `tests/bot/room.test.ts`.
+- **Founder steps to see the solve build in its room:**
+  1. A fine-grained GitHub token, read-only for Actions, Contents, Metadata and Pull requests on Solve-Official-.
+  2. In Vercel, `GITHUB_TOKEN`, plus `GITHUB_ROOMS=<your sign-in email>=andrewzingg23-del/Solve-Official-@claude/keen-cerf-tpd7io`.
+  3. Then link `https://github.com/andrewzingg23-del/Solve-Official-/tree/claude/keen-cerf-tpd7io` in the room.
