@@ -4,7 +4,7 @@
 // clients discover Sovereign's OAuth server.
 import { createConnector, type Session } from "./connector";
 
-export type McpAuth = Pick<Session, "clientId" | "person" | "botAs">;
+export type McpAuth = Pick<Session, "clientId" | "person" | "botAs" | "onActivity">;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",

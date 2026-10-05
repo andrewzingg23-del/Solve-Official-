@@ -14,6 +14,7 @@ const memory = (minutesAgo: number, client: string | null, text = "something"): 
   text,
   source: { kind: client ? "assistant" : "person", title: null, url: null },
   via: { client_id: client ? `id-${client}` : null, client_name: client },
+  sealed: true,
   by: "actor",
   at: at(minutesAgo),
 });

@@ -16,6 +16,12 @@ it("grants a scoped editor access, records the role, and revokes both read and w
   await owner.register("Owner");
   const brotherId = await brother.register("Brother");
   const world = await createCreativeWorld(owner, { worldId: editorWorldId, title: "Shared project" });
+  const botId = await owner.createAgent("Owned bot", "share-owner-bot");
+  await assert.rejects(
+    grantWorldAccess(owner, { scope: world.scope, granteeActorId: botId, role: "editor", requestId: "grant-bot-1" }),
+    (error: unknown) => error instanceof KernelError && error.name === "invalid",
+    "human collaboration grants cannot target an agent ID",
+  );
 
   await assert.rejects(
     brother.readWorld(world.scope),

@@ -123,6 +123,11 @@ export async function grantWorldAccess(kernel: Kernel, input: {
   const ownerActorId = await requireWorldOwner(kernel, scope);
   if (granteeActorId === ownerActorId) throw new KernelError("invalid", "The World owner already has full access", "");
 
+  const [grantee] = await kernel.readActors([granteeActorId]);
+  if (!grantee || grantee.kind !== "human") {
+    throw new KernelError("invalid", "SOV ID must identify a registered person", "");
+  }
+
   const existing = (await activeCollaborators(kernel, scope, ownerActorId)).find((entry) => entry.actorId === granteeActorId);
   if (existing) {
     if (existing.role !== input.role) {

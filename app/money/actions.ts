@@ -3,6 +3,8 @@
 // Each call runs a fresh, private simulation: the real kernel migrations in an in-memory Postgres
 // (PGlite) and the real Solana token programs in an in-process runtime (LiteSVM). Test assets
 // only; nothing is saved and nothing touches a public network.
+import { notFound } from "next/navigation";
+import { moneyEnabled } from "@/lib/flags";
 import { runProofOfLife } from "@/tests/support/proof-of-life";
 import { runSendBob, type SendBobRun } from "@/tests/support/send-bob";
 
@@ -20,7 +22,9 @@ async function timed<T>(run: () => Promise<T>): Promise<Outcome<T>> {
   }
 }
 
+// A Server Action is reachable by direct POST, so each one checks the switch itself, not only the page.
 export async function proofOfLife(): Promise<Outcome<ProofRun>> {
+  if (!moneyEnabled()) notFound();
   return timed(async () => {
     const steps: ProofRun["steps"] = [];
     const run = await runProofOfLife((step) => steps.push(step));
@@ -33,5 +37,6 @@ export async function proofOfLife(): Promise<Outcome<ProofRun>> {
 }
 
 export async function sendBob(): Promise<Outcome<SendBobRun>> {
+  if (!moneyEnabled()) notFound();
   return timed(runSendBob);
 }

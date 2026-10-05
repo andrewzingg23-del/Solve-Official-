@@ -40,7 +40,7 @@ export async function WorldAccessPanel({ worldId, scope, saved, error }: {
       {saved && <p role="status" className="rounded border border-positive/25 bg-positive/5 px-3 py-2 text-sm text-positive">World access updated.</p>}
       {accessError && (
         <p role="alert" className="rounded border border-negative/30 bg-negative/10 px-3 py-2 text-sm text-negative">
-          {accessError === "access-input" ? "Enter a valid SOV ID and choose a role." :
+          {accessError === "access-input" ? "Enter another registered person’s SOV ID and choose a role." :
             accessError === "access-missing" ? "That SOV ID or active access could not be found. Ask them to sign in and register first." :
               accessError === "access-conflict" ? "That person already has a different role. Remove their current access before granting another role." :
                 accessError === "access" ? "Only the World owner can manage access." :
@@ -84,7 +84,7 @@ export async function WorldAccessPanel({ worldId, scope, saved, error }: {
         <p className="rounded border border-dashed border-line p-4 text-sm text-muted">Only you have access right now.</p>
       )}
 
-      <p className="text-[11px] leading-5 text-muted">Editors can create and revise items inside this World. They will see new changes after refreshing; live sync and presence are not in this slice.</p>
+      <p className="text-[11px] leading-5 text-muted">Editors can create and revise items inside this World. Other authorized people see saved changes automatically; revisions and authorship stay in World history.</p>
     </section>
   );
 }

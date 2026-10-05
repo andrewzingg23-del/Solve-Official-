@@ -1,6 +1,7 @@
 # Live build stream
 
-Active build branch: `claude/keen-cerf-tpd7io`
+Active build branch: `codex/gateway-oidc-fallback`
+Active build branch: `codex/need-to-route-network-state-spec`
 
 This file is the shared, committed progress feed. It is readable from the repository at any time; it does not expose uncommitted edits in a builder's private working tree.
 
@@ -73,3 +74,446 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 - 2026-10-04 — Added the first usable World Ideas surface at `/world/[worldId]/ideas`: capture ideas with assumptions/open questions, view graph links and versions, connect ideas, and move status with required reasons for rejection/blocking. Added World navigation entry. No AI expansion, branch provisioning, or production action is exposed in this slice. Local tests remain unavailable; waiting for branch CI before treating this as verified.
 
 - 2026-10-04 — Added AI expansion proposals: the signed-in endpoint loads only authorized World graph context, returns a bounded schema-validated draft, and persists nothing until the person edits and accepts. Accepted drafts become proposed ideas linked to their source; no code execution, branches, or promotion. Checks pending in CI.
+- 2026-10-04 04:41Z — Claude, finished (founder: "fix all of these" for the ten forecast problems, plus strategy). Built:
+  - **Erasable memory, kernel v5.** `supabase/migrations/20261004040000_erasable_content.sql` adds the `kernel_keys` store and `seal_key`, `unseal_keys` and `destroy_key` in `kernel_api`. `lib/bot/seal.ts` does AES-256-GCM with one key per memory. "Erase" destroys the key; history stays append-only.
+  - **Live presence.** `lib/bot/presence.ts` plus the guarded Realtime policy `20261004040100_bot_presence.sql`. A private per-person broadcast, never content; `/bot` shows "Claude is reading Nova's context".
+  - **Full-history search.** Paged, capped at 10,000 events, and says when it is incomplete.
+  - **Injection guards.** Invisible and bidi characters are stripped; memories go in a marked block with `<`, `>` and `&` escaped; context is capped at 12,000 characters.
+  - **Docs.** `docs/plans/2026-10-04-critical-mass.md` (competition, fun, architecture, costs, critical-mass gates, suggested pilot-freeze directive text for the founder) and `docs/plans/2026-10-04-bot-world-bridge.md` (proposal for Codex).
+
+  Shared contract, additive: `sealKey`, `unsealKeys` and `destroyKey` in `lib/kernel/client.ts`, plus three lines in Codex's `tests/kernel/client.test.ts`, whose contract test requires every function to be exercised.
+
+  Paths: `lib/bot/{seal,presence,memory,connector,mcp-auth,mcp-http}.ts`, `app/bot/{live-bot,connections,page,actions}`, `tests/bot/{erasure,presence,connector,memory,pulse}.test.ts`, the two migrations, `ACTIVE-WORK.md`, `BUILD_STATUS.md`, the master-bot plan, and the v4 runbook (new step 3b).
+
+  Checks run:
+  - bot tests 20/20 (PGlite);
+  - bot and kernel suites 94/94 on Postgres 17;
+  - full `npm test` 190/191: the one failure was the client contract test lacking the new functions, fixed, and the re-run passes 4/4;
+  - typecheck, lint and build ok.
+
+  Not done: v5 is not on staging. The Supabase connector timed out twice on `apply_migration` (it waits for a confirmation this session can't give), and nothing changed. CI for this push: pending when written. Next: the founder applies v5 and presence on staging, or confirms in a session that can; then the bot–World bridge with Codex.
+
+- 2026-10-04 04:48Z — CI run 32 (`2bfd26f`, erasable memory, live presence, connector hardening) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37177744046. Still waiting on the founder: v5 and presence on staging, staging OAuth and secret key, the v4 go-ahead.
+
+- 2026-10-04 05:09Z — Claude, finished (founder: no freeze; keep building Worlds that solve real-world things and that people plug into). The bot now works in Worlds.
+  - **Connector tools:** `list_worlds`, `read_world`, `start_world` (the World is the person's: created with their sign-in, the bot let in to add) and `add_to_world` (as the bot, for its owner; retries are one change).
+  - **On `/bot`:** "Where <name> works" sets Out, Read or Add per World, as kernel grants that expire after 30 days and show in the World's history.
+  - **The brother case works at the kernel level:** a World's owner can let another person's bot in, and a mere member cannot pass access on.
+  - **Wording:** the connection mode is now labeled "read and add".
+
+  Codex's files were not touched. This uses `lib/world/creative.ts` as published.
+
+  Paths: `lib/bot/{worlds,connector,presence,memory}.ts`, `app/bot/{worlds-panel.tsx,actions.ts,page.tsx,connections.tsx}`, `app/oauth/consent/page.tsx`, `tests/bot/{worlds,connector}.test.ts`, and the docs (bridge status, master-bot tools, no freeze in the strategy doc).
+
+  Found while testing: a retried `add_to_world` was refused by the kernel, because the piece's canvas spot depended on how many pieces existed. The spot is now derived from the request, so a retry writes exactly the same piece.
+
+  Checks run: bot tests 23/23 (PGlite); Postgres 17 28/28 (bot, creative-World, client contract); typecheck, lint and build ok. CI for this push: pending when written.
+
+  Next: Codex picks up bot invites inside the World and attribution in History. Still blocked on the founder's staging setup before a real person or assistant can use any of it.
+
+- 2026-10-04 05:15Z — CI run 34 (`44664e1`, the bot works in Worlds) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37179050206.
+
+- 2026-10-04 05:20Z — Codex started the World bot access surface: invite a collaborator's bot by its SOV ID from inside the World, show active bot access and revoke it, and make bot/owner attribution explicit in History. No staging or production settings changed. Tests are being added first; local checkout is unavailable, so CI will verify the expected red/green cycle.
+
+- 2026-10-04 05:34Z — Finished the World-side bot invite and History attribution slice. The World owner can grant an identified bot Read/Add access, review active bot name/owner/access and remove it; bot owners can copy their Bot SOV ID from `/bot`. History explicitly says “bot for” for AI companions and keeps “agent for” for other agents. RED confirmed: CI run 35 failed because the new access module did not exist yet. Implementation is pushed; full CI is pending. No database migration or staging/production setting changed.
+
+- 2026-10-04 05:45Z — CI run 36 tests passed, then typecheck found the World page passing a `string | string[] | undefined` query value to the bot-access panel. Narrowing the panel prop to a single string; rerunning the full workflow. No other failure reported.
+
+- 2026-10-04 05:49Z — Claude: the founder supplied the staging secret key. `SUPABASE_SECRET_KEY` is now set in Vercel project `solve` as a sensitive variable, Preview only, for branch `claude/keen-cerf-tpd7io` (beside the existing staging URL and publishable-key overrides); production is unchanged and the value is not in the repo. It takes effect from the next preview build (this push). It could not be checked against Supabase from this container (no route to `*.supabase.co`); it shows as working once a connected assistant can `remember` or `add_to_world` on the preview. Still needed from the founder for a real assistant: in solve-staging, the Auth Site URL and redirect for the preview host, `kernel_api` in the Data API exposed schemas, and the OAuth Server on (path `/oauth/consent`, dynamic registration); then v5 and the presence policy on staging.
+
+- 2026-10-04 05:52Z — CI run 37 (`bd1d3e1`, World bot access and explicit History attribution) succeeded: tests, typecheck, lint and build. https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37180813203.
+
+- 2026-10-04 07:21Z — Finished: optional Higgsfield portrait concept flow. Added a user-key-per-session image generation route and UI on `/bot`; keeps generated art separate from the kernel-backed persona, so generation does not change SOV identity or permissions. Paths: `app/api/bot/avatar/route.ts`, `app/bot/portrait-creator.tsx`, `lib/bot/higgsfield.ts`, `tests/bot/higgsfield.test.ts`, `app/bot/page.tsx`, `BUILD_STATUS.md`. Focused helper tests passed 5/5 under Node 24 type stripping. GitHub Actions run 61 succeeded (tests, typecheck, lint and build): https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37185932347. Live provider verification remains next.
+
+- 2026-10-04 08:19Z — Claude, started (founder: "your pick" for avatar graphics, which is the code-drawn option): the agent screen and a richer avatar.
+  - **Persona:** material, brows, marks, motion energy and idle style. Old saved bots keep working.
+  - **Character:** matte, glass, hologram and chrome finishes. The Build Book's states: waiting for approval, needs input, completed, unavailable.
+  - **`/bot`:** becomes a command center with a HUD stage and seven customization tabs, plus an agent-contract card built from real grants and connections.
+
+  Ownership claimed in `ACTIVE-WORK.md`; Codex's portrait creator and connector tools are untouched. Next after this: onboarding at sign-on, agreed with Codex.
+
+- 2026-10-04 08:32Z — Claude, finished the agent screen and a richer code-drawn avatar.
+  - **`/bot`:** a HUD stage (tick rings, sweep, vignette, grain, state readout) and seven tabs: Form, Face, Finish, Color, Gear, Motion, Personality.
+  - **States:** ten previews, including the Build Book's waiting for approval, needs input, completed and unavailable.
+  - **Persona:** four finishes (matte, glass, hologram, chrome), brows, face marks, motion energy, idle style and eight color sets. Old saved bots get defaults; no migration.
+  - **Contract:** an agent-contract card built from real connections and grants.
+
+  Paths: `app/bot/{character,creator,stage,contract,page}.tsx`, `lib/bot/persona.ts`, `tests/bot/agent-screen.test.ts`, docs.
+
+  Found by Chromium screenshots: the state-chip row stretched the phone layout to about 990 px. Fixed with wrapping chips, pill tabs and a clamped column, and re-checked at 390 px with no console errors. A temporary visual-check page was used and deleted before commit.
+
+  Checks run: bot tests 38/38 (Codex's included); typecheck (with typegen) ok; lint ok with one existing warning in `lib/bot/worlds.ts`; build ok. CI for this push: pending when written.
+
+  Next: onboarding at sign-on, agreed with Codex, building on the World entrance's "Who should represent you" step.
+
+- 2026-10-04 08:38Z — Claude, finished: a Human | Machine toggle on the agent stage, from the founder's inspiration references (the basement.studio toggle and the bot-swarm dashboard).
+  - **Machine view:** a canvas particle cloud in the bot's colors, wired by SVG to You, its assistants, its Worlds and its memory. Write links flow; read links stay dim.
+  - **Readouts:** access ledger, blast radius, 14-day activity and audit count, all from real records (`lib/bot/machine.ts`).
+  - **Motion:** reduced motion draws it once without animating.
+
+  Paths: `lib/bot/machine.ts`, `app/bot/{machine-view,stage,creator,page}.tsx`, `tests/bot/agent-screen.test.ts`.
+
+  Checks run: bot tests 39/39; typecheck ok; lint ok with one existing warning; build ok. Screenshots at desktop and 390-px phone width: labels fit after widening the drawing's margins, toggle text uppercase (browsers reset button text styling), no overflow, no console errors. The temporary preview page was deleted.
+
+  CI for `659f5cc` was still running; this push supersedes it. CI for this push: pending when written.
+
+- 2026-10-04 08:46Z — CI run 62 (`659f5cc`, agent screen) and run 63 (`4f8575f`, Human | Machine toggle) both succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37189605812. Founder feedback since: the HUD and particle look reads as "vibe coded"; brand direction under discussion (the construct concept: the chair stays, the world changes). Strip-back waits on the founder's yes.
+
+- 2026-10-04 09:10Z — Codex, starting: make the existing reasoning route use Vercel's deployment OIDC token for AI Gateway when no explicit gateway key is configured. Paths: `app/api/reason/route.ts`, `lib/world/reasoning-config.ts`, `tests/e2e/reasoning-oidc.test.ts`, build/status docs. Vercel's current docs confirm OIDC support for Anthropic Messages. The latest preview reports no model configured. Start with a route-level failing test, then add the server-side fallback and verify CI. Staging Supabase OAuth remains a separate blocker.
+- 2026-10-04 — Finished the runtime OIDC fix after the preview reported no reasoning model. `app/api/reason/route.ts` now uses Vercel's runtime OIDC request header for AI Gateway; `lib/world/reasoning-config.ts` keeps credentials server-side and preserves direct Anthropic or explicit Gateway-key precedence; tests cover runtime/build tokens, precedence and no-provider behavior. GitHub Actions run 70 passed all 214 tests, typecheck, lint and build. Preview READY at https://solve-owq94a6ee-sovigrn.vercel.app; anonymous `/api/reason` returns the sign-in gate. No signed-in inference request or paid model call was made. Next: verify one signed-in request in the app.
+
+- 2026-10-04 09:10Z — Claude, finished (founder: "go back to building").
+  - **Brand direction (proposed):** `docs/brand/2026-10-04-the-construct.md`: positioning, consumer research with sources, lessons from earlier revolutions, brand rules, the ad's shot list, the production pipeline and Higgsfield prompts.
+  - **Bot screen stripped back** after the founder said the HUD look read as "vibe coded": a calm lit floor and horizon, plain Character | Reach, Reach as the bot plus plain lines and plain-word readouts, no rings, grain, brackets or particle cloud. Copy says "Your bot" again.
+
+  Paths: `app/bot/{stage,machine-view,creator,page}.tsx`, `tests/bot/agent-screen.test.ts`, `docs/brand/`, `ACTIVE-WORK.md`, `BUILD_STATUS.md`.
+
+  Checks run: bot tests 39/39; typecheck ok; lint ok with one existing warning; build ok; Chromium screenshots at desktop and phone, with no overflow and no console errors. CI for this push: pending when written.
+
+  Next: the first "make a real thing" loop, agreed with Codex (3D viewer in the World, a design tool in the connector, a proof photo on the record). Waiting on the founder: brand lock decision, wedge choice, staging sign-in steps, filming the plate.
+
+- 2026-10-04 09:16Z — CI run 64 (`2cd4242`, stripped-back bot screen and brand direction) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37191286230. Founder asked SOLVE vs Sovereign; Claude recommended SOLVE as the public brand, with Sovereign as the engine and philosophy and SOV for the ID and token. The decision is the founder's, after a trademark search.
+
+- 2026-10-04 09:26Z — Claude: the founder adopted the brand ("make sure this is the branding, with the weight of ambition").
+  - Added `docs/brand/BRAND.md` as the canonical brand: purpose, promise and proof; lines; manifesto; architecture (solve, Sovereign underneath, SOV); the ascent toward the vision's end state; identity, voice, iconic assets and "never".
+  - Added a working mark (`public/brand/solve-mark.svg`, a point above a horizon) until a designer makes the final one.
+  - Build Book §2 brand lock updated (the HUD look and the market-line intro retired, palette unchanged).
+  - `DECISIONS.md` entry; `ACTIVE-WORK.md` note for Codex's entrance and intro; the construct doc marked adopted.
+
+  Checks: docs and one static SVG; the mark was rendered in Chromium to check it. CI for this push: pending when written. Still the founder's: trademark and domain search, the wedge choice, staging sign-in steps, filming the plate.
+
+- 2026-10-04 12:36Z — Claude, brand v2 checkpoint (founder: "this is the best you got, do deep research").
+  - Four research agents (naming, competition, people, precedents). Their sourced findings are in `docs/brand/research/`. Web fetches were blocked, so the claims come from search extracts and are marked for spot-checks.
+  - `docs/brand/BRAND.md` v2: what changes and why, the enemy (pretending), the messaging house, audiences, the competitive position, the name on conditions, the point identity, voice, commitments and open decisions. The construct doc is updated: the yes beat, every world filmed for real, Higgsfield for storyboards only.
+  - Identity outlined from Archivo glyphs: `public/brand/solve-{wordmark,wordmark-on-dark,wordmark-on-light,mark,app-icon,favicon,record-seal,simulated-seal}.svg`. `solve-mark.svg` is now `s.`.
+  - Domain availability and prices checked on Vercel's registrar; nothing bought.
+
+  Paths: `docs/brand/`, `public/brand/`, `BUILD_STATUS.md`.
+
+  Checks: SVGs parse (xmllint) and were rendered in Chromium on review boards; docs only otherwise. CI for this push: pending when written.
+
+  Next: the founder's new ask, a first-principles rethink of the business around what the app actually does ("what's the opposite of what everyone else is doing").
+
+- 2026-10-04 12:58Z — Claude, first-principles rethink (founder: "think of the functionalities of the app and make it around that… what's the opposite of what everyone else is doing").
+  - `docs/brand/2026-10-04-first-principles.md`: built functions, market truths, the consensus and its opposite, the product as Ask → Allow → Prove, the business rebuilt (who first, revenue, moat, growth, north star), what we stop, and the next steps.
+  - `BRAND.md` now carries the thesis and the line *Ask. Allow. Prove.* (superseding v2's "You decide. The world builds."); the point marks only the yes and real results. The construct doc's super is updated.
+  - `ACTIVE-WORK.md`: a proposed note for Codex (the receipt-with-seal slice, if the founder confirms).
+  - Brand book page published as a private artifact: https://claude.ai/artifact/NAtCcEYspQzpPBLoKMdeY3
+
+  Paths: `docs/brand/`, `ACTIVE-WORK.md`, `BUILD_STATUS.md`.
+
+  Checks: docs only (this push skips the build workflow). The brand book was rendered once in Chromium at 1280 px dark and 390 px light: no horizontal overflow, no console errors besides the sandbox blocking Google Fonts. Comparison tables stack at phone width. CI for the brand v2 push (`0b1327a`): pending when written.
+
+  Next: founder decisions (the line and thesis, the door, "paid when it's real"); then the receipt-with-seal slice on one real loop.
+
+- 2026-10-04 13:10Z — CI run 98 (`0b1327a`, brand v2 with the outlined identity SVGs) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37202544411. `0f4a3be` (the first-principles rethink) is docs-only and skips the build workflow. Waiting on the founder: the thesis and the line *Ask. Allow. Prove.*, the door (verification or making things), the "paid when it's real" principle, and trademark counsel.
+
+- 2026-10-04 22:50Z — Codex, added owner-managed human collaboration and private live World invalidation on `codex/world-live-collaboration`. People receive scoped viewer/editor grants by SOV ID; agents cannot be invited through the human panel. A kernel event trigger sends only `{world_id, seq}` to each currently authorized human’s private Realtime topic, and the browser refreshes canonical state on updates and reconnect. Added first failing end-to-end tests before implementation. Staging Auth/two-person live verification remains pending; no staging or production data was changed in this commit.
+- 2026-10-04 — Started: goal-first private World creation. Replace blank-only entry with an optional plain-language goal saved as the first attributed World piece; preserve blank creation, privacy, and retry safety. Plan: `docs/superpowers/plans/2026-10-04-goal-first-world.md`. Tests/checks not yet run. Local clone is blocked; using GitHub branch commits and push-triggered CI/Vercel preview.
+
+- 2026-10-04 — Founder insight added to `VISION-CANON.md` and the need-to-route design: SOV coordinates the finite resources behind a project—time, skill, ideas, capital, labor, tools/materials/information—and uses clear provenance, authority, commitments, and outcome evidence to reduce rechecking and move faster through trust.
+- 2026-10-04 — Started: World Resource Map (`docs/superpowers/plans/2026-10-04-world-resource-map.md`). The first slice will make self-described offers and open needs visible inside a private World, grouped by category and attributed to the person who entered them. No resource will be treated as a promise, verification, or completed delivery. Research candidates are not yet market decisions.
+
+
+- 2026-10-04 — Completed the World Resource Map and connected-bot path on `codex/need-to-route-network-state-spec`: structured self-reported offers/needs, event-derived authorship, bot-for-owner attribution, bounded `read_world`, and explicit `map_world_resource` action. GitHub CI passed all 212 tests plus typecheck, lint, and build on `9c51f71`. Vercel preview for that commit was blocked by the build-rate limit; no production deploy or database change. Next: make person-level collaboration and bot authorization easy to review, then add explicit commitments and delivery evidence.
+- 2026-10-05 00:52Z — Claude, brand v3 (founder: "seems a little generic", then "Go" on the inverted-construct direction).
+  - `docs/brand/BRAND.md` v3: *Everything here is real.* The construct, inverted. The game-to-function map, save points, Practice and Real, where the game stops, the film, identity on the white floor, voice, audiences, the field, the name on conditions, commitments and decisions.
+  - Build Book §2 brand lock, `DECISIONS.md` (2026-10-05 entry), the construct doc (shot list renumbered, the supplier and save beats) and the first-principles §6 (superseded note).
+  - `ACTIVE-WORK.md`: the v3 rules for Codex's surfaces (Arcadia says Practice; the point only on real results).
+  - `public/brand/solve-practice-seal.svg` ("PRACTICE · SIMULATED · NOT REAL") replaces `solve-simulated-seal.svg`.
+  - Brand book page republished at the same link.
+
+  Checks: the SVG parses (xmllint); the page was rendered once in Chromium at 1280 px and 390 px with no horizontal overflow and no console errors besides the sandbox blocking Google Fonts. CI for this push: pending when written.
+
+  Next: the save receipt with the seal on one real loop (agree the split with Codex); founder decisions on counsel, the domain, the business principles and the first door.
+
+- 2026-10-05 00:58Z — CI run 101 (`549ece7`, brand v3) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37249158561. Waiting on the founder: trademark counsel, the domain, the business principles and the first door. Next build: the save receipt with the seal on one real loop.
+
+- 2026-10-05 01:26Z — Claude, back to the software (founder: "go back to the software").
+  - **Proof becomes a save point:**
+    - the connector tool `add_proof` with `lib/bot/proof.ts` (`addProof`, `proofsIn`, `latestSaves`);
+    - Add access grants `kernel.evidence.attach`;
+    - `read_world` shows saves;
+    - `/bot` lists each World's latest saves;
+    - `app/save-point.tsx` exports `SavePoint` and `PracticeLabel`.
+  - The bridge plan and `ACTIVE-WORK.md` ask Codex to show saves on World pieces, label Arcadia as Practice, and add the evidence capability to `lib/world/bot-access.ts`.
+  - **Staging:** v5 and presence are still not applied. A third `apply_migration` timed out waiting for a confirmation; a read confirmed nothing changed. Recorded in the rollout plan, step 3b.
+
+  Paths: `lib/bot/{proof,connector,worlds,presence}.ts`, `app/save-point.tsx`, `app/bot/{page,worlds-panel}.tsx`, `tests/bot/{proof,connector}.test.ts`, `docs/plans/2026-10-04-bot-world-bridge.md`, `docs/plans/2026-10-03-kernel-v4-rollout.md`, `ACTIVE-WORK.md`.
+
+  Checks: bot suite 43/43 (4 new proof tests; the connector's tool list updated); typecheck ok; lint ok (one existing warning). CI for this push: pending when written.
+
+  Next: the founder applies v5 and presence on staging (two files in the SQL editor), then the first real pilot loop: start a World from Claude, add the plan, make the thing, save the proof.
+
+- 2026-10-05 01:28Z — Claude, save copy rewritten (founder: "don't love that copy").
+  - **Before:** "Saved. On the record as self-reported proof, record 1a2b3c4d. It is not independently verified."
+  - **After:** "Saved. No. 1042: Printed the stand in PETG. On your word."
+  - The number is the save's place in the record (the kernel event's sequence). Who vouches is in plain words (`lib/bot/vouch.ts`): *On your word*, *Seen by Ana*, *Verified* (only the system can verify).
+  - The assistant is told never to call a save on someone's word verified, and the structured result keeps `verified: false`.
+  - `SavePoint` shows "Saved · No. 1042", what happened, then "On your word · Oct 5 · See proof".
+
+  Paths: `lib/bot/{vouch,proof,connector}.ts`, `app/save-point.tsx`, `app/bot/{page,worlds-panel}.tsx`, `tests/bot/proof.test.ts`.
+
+  Checks: bot suite 43/43; typecheck ok; lint ok (one existing warning). CI for `7e836bf`: running when written; for this push: pending.
+
+- 2026-10-05 01:37Z — CI run 103 (`713645c`, which carries both the proof slice and the copy rewrite) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37251590184. Run 102 (`7e836bf`) was cancelled because the next push superseded it. Waiting on the founder: v5 and presence on staging (two files in the SQL editor), then the first real pilot loop.
+
+- 2026-10-05 01:52Z — Claude, printable parts (founder: "keep building").
+  - The connector's `design_part` with `lib/bot/part.ts`: outline cleaning and checks, ear-clipping triangulation, a binary STL writer, and an outline preview.
+  - `app/parts/[worldId]/[file]/route.ts` serves the STL under the person's own sign-in.
+  - `app/part-preview.tsx`. `read_world` summarises parts. Presence reads "is designing a part with Nova".
+  - Additive edits to Codex's `app/world/[worldId]/page.tsx`: `PartPreview` for parts, `SavePoint` per piece, "Saved with proof" in history, and the decorative accent dot removed (brand v3). Noted in `ACTIVE-WORK.md`.
+
+  Checks: bot suite 47/47 (4 new part tests: cleaning and refusals; closed, outward STL with exact volume; design → download access → proof; preview rendering); typecheck ok; lint ok (one existing warning). The full local suite was still running at push; CI is the full gate.
+
+- 2026-10-05 01:55Z — Claude, pilot readiness.
+  - **Memory without v5.** `noteMemory` checks that the kernel can keep a memory's key before recording anything. Without v5 (staging today), `remember` and `learn_business` now say "Memory isn't switched on here yet, so nothing was saved." Before, they wrote a sealed memory that nobody could read.
+  - **Arcadia** shows a fixed Practice label ("Arcadia is simulated, so nothing here counts.").
+  - **No change needed** for World-page bot access: its Add goes through `setBotAccess`, which already includes the proof capability. Notes corrected.
+
+  Paths: `lib/bot/{memory,connector}.ts`, `app/arcadia/page.tsx`, `tests/bot/proof.test.ts`, `ACTIVE-WORK.md`, `docs/plans/2026-10-04-bot-world-bridge.md`.
+
+  Checks: bot suite 48/48; typecheck ok; lint ok (one existing warning). CI for `444691f` (parts): running when written.
+
+- 2026-10-05 01:58Z — Claude, first steps on `/bot`. Four steps from sign-in to the first save: make your bot, connect your AI, ask for something real ("Design me a phone stand I can print."), make it and save it. Each step is ticked only by what is on the record (bot, connections, Worlds, saves), and the panel disappears at the first save. `lib/bot/first-steps.ts`, `app/bot/first-steps.tsx`, `app/bot/page.tsx`.
+
+  Checks: bot suite 50/50; typecheck ok; lint ok (one existing warning). One Chromium look at a temporary preview (first steps, a part card with its save, the Practice label) at 1280 px and 390 px: no overflow, no console errors. The preview page was deleted before commit. The full local suite (218/218) ran green on the parts slice. CI run 104 (`444691f`) was cancelled because `e98f55f` superseded it.
+
+- 2026-10-05 02:03Z — Claude, shareable receipts. `lib/bot/receipt.ts` (a signed snapshot: build, sign, open), `shareSaveAction`, `app/bot/share-save.tsx` (Share → a copyable link), and `app/saved/[token]/page.tsx` (the public receipt on the white floor, not indexed). `/saved` stays public in `proxy.ts`.
+
+  Checks: bot suite 53/53 (3 new receipt tests: signature and tamper rejection, only your own saves, private proof detail left out, honest rendering); typecheck ok; lint ok (one existing warning). One Chromium look at a signed receipt from a local dev server at 1280 px and 390 px: no overflow, no console errors; the tampered link returned 404.
+
+- 2026-10-05 02:10Z — Claude, parts with holes and flat parts.
+  - `lib/bot/part.ts`:
+    - hole checking (inside, a wall all round, no overlaps);
+    - `holeLoop`;
+    - joining holes with straight cuts and added points;
+    - ear clipping that drops zero-area slivers before relaxing;
+    - walls from the face's boundary edges;
+    - the flat lay (axes swapped, faces re-wound).
+  - The connector's `design_part` takes `holes` and `lay`. The preview and the receipt draw holes (even-odd fill).
+  - The first version filled a grid of aligned holes wrongly: its loose fallback let a triangle run across a row of holes. Fixed with the cut-and-insert join; the six-hole grid is now a test.
+
+  Checks: bot suite 54/54; typecheck ok; lint ok (one existing warning); a local fuzz of 600 random shapes found 0 bad solids. Holding the push until CI run 107 (`f6a045d`) finishes, so it isn't cancelled.
+
+- 2026-10-05 02:12Z — CI run 107 (`f6a045d`: parts, pilot readiness, first steps, receipts) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37253838904. Then the receipt link-preview card: `app/saved/[token]/opengraph-image.tsx`. `receiptFromPath` is shared by the page and the card. Checks: bot suite 55/55 (a PNG renders for a real receipt and for a broken link); typecheck ok; lint ok (one existing warning); the card was looked at once. CI for this push (with `7b811f9`, holes and flat parts): pending when written.
+
+- 2026-10-05 02:14Z — Claude, print notes for parts (supports, brim, sagging holes) in `design_part`'s answer and `PartPreview`. Removed a stray lint directive from the preview card. Checks: bot suite 56/56; typecheck ok; lint ok (one existing warning). Committed locally; pushing after CI for `9e39ece` finishes.
+
+- 2026-10-05 02:20Z — CI run 109 (`d157b74`: holes and flat parts, receipt preview card, print notes) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37254637235. Still waiting on the founder: v5 and presence on staging (two files in the SQL editor), then the first real pilot loop.
+
+- 2026-10-05 02:32Z — Claude, the founder's master spec is now in the repo: `docs/specs/SOVEREIGN-MASTER-BUILD-SPEC.pdf` (original) and `.md` (transcription, wording unchanged). The founder asked "make sure this meets vision", so it was checked against `VISION-CANON.md`, `DIRECTIVES.md`, `DECISIONS.md` and the code: `docs/specs/2026-10-05-spec-vision-check.md`.
+  - The foundation meets the vision.
+  - Eight drifts are listed with small amendments: community-first instead of person-first; one scaffold instead of three researched routes; the vision's words missing from the ontology, with a mapping table; no personal node; no watchers; a Markdown brief as the default artifact; no Forge; no client-connected runtime kind.
+  - Four items are for the founder: the name, which conflicts with the 2026-10-04 decision; brand promise and palette; Whop versus Discord/Slack; the first pilot.
+  - Docs only, no checks run. Next: gate money (`ENABLE_MONEY`, `ENABLE_PAYMENTS`, `ENABLE_EXTERNAL_FINANCIAL_ACTIONS`); `/money` is reachable today.
+
+- 2026-10-05 02:34Z — Claude, money is gated off the default path (master spec §2).
+  - `lib/flags.ts` defines `moneyEnabled`, `paymentsEnabled` and `externalFinancialActionsEnabled`. Unset means off, and each switch needs the one before it.
+  - `/money` and both of its Server Actions answer 404 unless `ENABLE_MONEY=true`. Before this, anyone could start a 60-second in-memory kernel and chain run by direct POST.
+  - The flags are documented in `.env.example`, `README.md` and `BUILD_STATUS.md`.
+  - Left as is: Arcadia's Horizon still shows the simulated deposit goal. It is Practice, and it is blocked in the browser with no chain connected. Codex's surface; hide it if the founder wants.
+  - Checks: `tests/flags.test.ts` 2/2; typecheck ok; lint ok; `next build` ok (`/money` prerenders with status 404).
+
+- 2026-10-05 02:42Z — CI run 110 (`29d6ba9`, the money gate) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37255971748.
+
+  Then Claude built routes from an ask, the first amendment in the vision check (§3.2): the vision's "I found 3 ways forward" and the spec's Intent → Task path.
+  - **What it does:** the person's own assistant researches and proposes up to three routes with `propose_routes`. The person takes one on the World page, and its steps become kernel tasks they created. Steps are marked done on their word, and `read_world` gives the bot the next step.
+  - **Paths:**
+    - `lib/bot/routes.ts`, `lib/bot/connector.ts`, `lib/bot/presence.ts`;
+    - `app/route-card.tsx`, `app/route-actions.ts`, `app/save-point.tsx` (`day` exported);
+    - additive edits to `app/world/[worldId]/page.tsx`;
+    - `tests/bot/routes.test.ts`, `tests/bot/connector.test.ts` (tool list).
+  - **Checks:** bot suite plus flags 61/61; typecheck ok; lint ok; `next build` ok.
+  - **Next:** Community on existing kernel primitives (spec Build 1). Still waiting on the founder for v5 and presence on staging, and the four spec decisions.
+
+- 2026-10-05 02:44Z — Claude. The founder said Manus has joined the build. Changes:
+  - `docs/handoff/MANUS.md`: who owns what, what to read, rules that never bend, and how to work alongside the others.
+  - A Manus row in `ACTIVE-WORK.md`.
+  - `AGENTS.md` now lists the master spec and the vision check, and the three-builder rules.
+
+  Proposed lane for Manus, for the founder to confirm: real-browser walkthroughs on staging that file friction to `docs/qa/`; contracts for the Whop, Discord and Slack bridges from official docs in `docs/research/`; route quality. Manus works on `manus/<topic>` branches with pull requests, because the build workflow cancels a running build when new code lands on the same branch. Docs only, no checks run. CI run 111 (`0d1d694`, routes) is still running.
+
+- 2026-10-05 02:50Z — Manus started an integration audit on `manus/website-integration-audit`. Confirmed the earlier public website checkpoint lives in a separate Manus-managed Webdev remote, not `Solve-Official-`, and does not touch staging, Vercel, kernel data, or app identities. Added `docs/qa/2026-10-05-website-app-integration-audit.md` mapping the static website surfaces to the real Next.js World, bot, and kernel routes. No code, migration, staging, production, or shared-branch changes. Next: review the additive `/about` or `/start` route as the smallest safe way to bring the narrative into the real app.
+
+- 2026-10-05 02:51Z — Claude. Two corrections and a report.
+  - **Times:** the four entries above were stamped ahead of the clock and now carry their commit times.
+  - **Manus:** relayed by the founder, Manus reports a website built in its own Manus-managed Webdev workspace. It is not in this repo: there is no `manus/` branch or pull request yet. Manus is reading the current branches to choose an integration path.
+  - **Open questions before any of it lands here:**
+    - what the site is (pages, stack, any sign-up form or database);
+    - where it is published;
+    - whether it follows `docs/brand/BRAND.md` (solve as the name, "Everything here is real", no claims beyond the record).
+  - **The home page:** `app/page.tsx` (Codex) serves the signed-out home today, so a public site must not replace it without the founder and Codex.
+  - **CI:** run 111 (`0d1d694`, routes) has passed test, typecheck and lint; the build step is still running.
+
+- 2026-10-05 02:55Z — CI run 111 (`0d1d694`, routes from an ask) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37256466905. Next for Claude: review Manus's site once the founder shares its address. Then Community on existing kernel primitives.
+
+- 2026-10-05 03:20Z — Claude. The founder: "the app should solve the problems im having here.. and it should be built for me first."
+  - **Recorded the direction:** in `DECISIONS.md`, with a plan in `docs/plans/2026-10-05-founder-first.md`. It lists the founder's eight problems from today (not knowing what each builder is doing, copying messages between AIs, work spread over branches, decisions buried in chat, stalled approvals, claims without proof, drift, broken threads) and maps each to what solve already does, what's missing, and the slices in order.
+  - **Working rules:** `ACTIVE-WORK.md` opens with a "Now" block:
+    - the priority;
+    - what blocks the founder's first real use;
+    - every unmerged branch, with its merge check and a proposed disposition;
+    - one home per concept.
+    `AGENTS.md` adds four rules: founder first, one trunk, one concept one home, and canon only by the founder.
+  - **Manus:** its first task is now how each builder connects to solve's MCP endpoint.
+  - **Merged:** Manus's audit (pull request #3, docs only).
+  - **Routes:** they now carry Codex's route-card fields (why it fits, takes, not yet known, done when), so there is one route object. `lib/bot/routes.ts`, `lib/bot/connector.ts`, `app/route-card.tsx`, `tests/bot/routes.test.ts`.
+  - **Checks:** routes and connector tests 11/11; typecheck ok; lint ok.
+  - **Next:** staging for the founder (slice 0), then "Waiting on you" (slice 2).
+
+- 2026-10-05 03:34Z — Claude. CI run 112 (`f18b963`, founder first) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37259245671.
+
+  The founder said "merge", so three Codex branches are now merged into the trunk:
+  - `codex/gateway-oidc-fallback`;
+  - `codex/world-live-collaboration`;
+  - `codex/need-to-route-network-state-spec`.
+
+  This serves the founder's problem 3: work spread over branches.
+  - **Conflicts:** docs keep both sides, in time order. The World page imports both panels. In the connector, `read_world` is Codex's length-bounded version plus the save, part and route notes; `map_world_resource` sits with the other writing tools, and the instructions mention both.
+  - **Left out:** the branch's `VISION-CANON.md` section, which needs the founder's yes.
+  - **Staging:** it now needs three SQL files.
+  - **Checks:** full suite 240/240; typecheck ok; lint ok (one existing warning); build ok.
+  - **Next:** "Waiting on you" (slice 2).
+
+- 2026-10-05 03:36Z — Claude, founder-first slice 2: "Waiting on you" on `/bot`, for the founder's problem 4 (decisions and next steps buried in chat). It lists routes to choose and the next step of each route taken, across the person's Worlds, each linking to its World.
+  - **Paths:** `lib/bot/waiting.ts`, `app/bot/waiting.tsx`, `app/bot/page.tsx`, `tests/bot/waiting.test.ts`.
+  - **Checks:** waiting 2/2; bot suite 61/61; typecheck ok; lint ok.
+  - **Pushing:** after CI for `927e0da` (the merges) finishes, so it isn't cancelled.
+  - **Next:** slice 3, which assistant added each piece.
+
+- 2026-10-05 03:38Z — Claude, for the founder's problem 5 (stalled approvals): staging's three migrations are now one paste, `scripts/staging/2026-10-05-founder-first.sql`. It is built from the three migration files byte for byte, with their sha256 in the header, in one transaction, and ends with a check query (every column should read true on staging).
+  - **The check script:** `scripts/staging/check-founder-first.mts` applies the migrations staging already has (up to v4) to an embedded Postgres, runs the file and prints its check.
+  - **What the check shows:** v5 true and the key store private. The two Realtime checks read false locally only because the embedded Postgres has no Realtime. A second run is refused and nothing changes.
+  - **Checks:** that script; lint ok.
+
+- 2026-10-05 03:50Z — Claude. CI run 120 (`9a842a8`: the merged trunk, "Waiting on you", the one-paste staging SQL) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37260229847.
+
+  The founder: "keep building revert to vision for context". From the Vision Canon, the next missing piece is the personal Command Center (vision check §3.4), built to the canon's promise: where you are, where you're going, the routes, who is with you, what actually happened, what's next. It also serves the founder's problems 1, 4, 6 and 8.
+  - **Paths:** `app/command/{page,view,live-line}.tsx`, `lib/bot/waiting.ts` (one scan, `journeys`), `app/bot/page.tsx` (link), `tests/bot/command.test.ts`.
+  - **Checks:** command and waiting 4/4; typecheck ok; lint ok; build ok.
+  - **Proposed to Codex:** send signed-in `/` to `/command`.
+
+- 2026-10-05 03:52Z — Claude, vision check §3.5 ("the world itself should react"), first and safest form: a "Noticed" section on the Command Center, worked out from the record on each visit. It flags quiet steps (3 days or more), routes done with nothing saved, and choices left waiting. It only points, never acts.
+  - **Paths:** `lib/bot/waiting.ts` (`noticed`, `saved`), `lib/bot/routes.ts` (step `since`), `app/command/view.tsx`, tests.
+  - **Checks:** bot suite 64/64; typecheck ok; lint ok.
+
+- 2026-10-05 03:54Z — Claude, vision check §3.7 (Forge), the first step: "What solve can't do yet" on the Command Center. It lists assistants' capability drafts, grouped by need with how many times each was asked. `overview` reads each World once for routes and gaps.
+  - **Paths:** `lib/bot/gaps.ts`, `lib/bot/waiting.ts`, `app/command/{page,view}.tsx`, `tests/bot/gaps.test.ts`.
+  - **Checks:** gaps, command and waiting 8/8; typecheck ok; lint ok.
+
+- 2026-10-05 04:03Z — Claude. Two founder asks: how to make solve a business with the most leverage and recruiting at once, for kids and serious operators; and an AI-to-business outreach flow "automated with meta accounts", built as an example in the app.
+  - **The plan:** `docs/plans/2026-10-05-business-leverage-outreach.md`.
+    - One loop is the product, the growth and the recruiting: a finished route gives real value, a receipt and a reusable Pack.
+    - One engine for kids and operators, with profiles (young, standard, operator) enforced by grants. No accounts for children until a guardian-consent flow and counsel.
+    - Meta's rules: cold DMs can't be automated. So automate everything up to the first message to a new person, which the person approves. Use Meta where its rules welcome automation: inbound, Lead Ads, opt-in templates, your own posts.
+  - **Built, first slice:** the Outreach Room with a Practice channel.
+    - `propose_outreach` drafts messages, each with its source.
+    - Only the person approves (`outreach.send`), and the approval is recorded with `sent_outside_solve: false`.
+    - The sender's name and an opt-out line are always added.
+    - Approvals show in "Waiting on you" and the Command Center.
+  - **Paths:** `lib/bot/outreach.ts`, `lib/bot/connector.ts`, `lib/bot/presence.ts`, `lib/bot/waiting.ts`, `app/outreach-card.tsx`, `app/route-actions.ts`, `app/world/[worldId]/page.tsx` (additive), `app/bot/waiting.tsx`, `app/command/*`, `tests/bot/outreach.test.ts`; `lib/bot/worlds.ts` (the old lint warning, fixed).
+  - **Checks:** full suite 251/251; typecheck ok; lint clean; build ok.
+  - **Manus:** now also researches Meta's messaging rules and CAN-SPAM/CASL.
+
+- 2026-10-05 04:09Z — CI green:
+  - run 125 (`72b874e`: Command Center, Noticed, gaps): https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37261282665;
+  - run 126 (`48deded`: Outreach Room): https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37261862171.
+
+  Still waiting on the founder:
+  - the staging SQL paste and redirect URL;
+  - a sending address for real email;
+  - whether to set up a Meta Business account;
+  - the canon section and the Idea Graph.
+
+- 2026-10-05 04:32Z — Claude, reviewing what Manus is doing (the founder's problem 1, problem 3 for the trunk). Manus opened four pull requests into the trunk:
+  - **Merged:** #5 (bot save fix) and #7 (start a World from `/bot`).
+  - **Folded in:** #6 (context ledger), into `app/bot/contract.tsx`.
+  - **Changes requested:** #4 (`/start` page): brand v3, white floor, no decorative points or fake state.
+
+  Review comments are on #4 and #6. Checks: bot suite 70/70; typecheck ok; lint clean; build ok.
+
+- 2026-10-05 04:36Z — Claude, Outreach Room slice 2: what happened, on the record (the outreach north star is replies, meetings and wins, never messages sent).
+  - The person or their assistant (`record_outcome`) records replied, meeting, won or said no as evidence on the approval (`self_reported`).
+  - "Said no" is enforced by name and by site: never drafted or approved again in that World.
+  - **Paths:** `lib/bot/outreach.ts`, `lib/bot/proof.ts` (`history` exported), `lib/bot/connector.ts`, `lib/bot/presence.ts`, `app/outreach-card.tsx`, `app/route-actions.ts`, `app/world/[worldId]/page.tsx` (additive), tests.
+  - **Checks:** bot suite 72/72; typecheck ok; lint clean; build ok.
+
+- 2026-10-05 04:37Z — Claude: outreach results now show on the Command Center under "What actually happened" (latest outcome per business, on the person's word). The founder sees the outreach north star in one place. Paths: `lib/bot/waiting.ts`, `app/command/{page,view}.tsx`, `tests/bot/outreach.test.ts`. Checks: outreach, command, gaps and waiting 14/14; lint ok; build ok.
+
+- 2026-10-05 04:42Z — Claude. The founder: solve should eventually help each person make $10,000 a year, and needs to integrate crypto heavily.
+  - **Recorded:** in `DECISIONS.md`, with the interpretation stated.
+  - **Plan §5:** money made through solve per person per year, by basis; crypto in four stages under the monetary constitution's gates.
+  - **Built:** win values on the record and "Made through solve in <year>" on the Command Center.
+  - **Paths:** `lib/bot/outreach.ts`, `lib/bot/waiting.ts`, `lib/bot/connector.ts`, `app/outreach-card.tsx`, `app/route-actions.ts`, `app/command/view.tsx`, tests.
+  - **Checks:** outreach 7/7; typecheck ok.
+  - **Next:** stage 1, anchoring the record so receipts can be checked on Solana devnet.
+
+- 2026-10-05 04:48Z — Claude, crypto stage 1 (founder: "integrate crypto heavily"): the record is anchored on Solana.
+  - A World's event hashes form a Merkle root, written in a memo (fingerprint only), and the anchor is saved on the record.
+  - Shared receipts carry inclusion proofs, and the public page checks them.
+  - The owner can anchor from the World page when an anchor key is configured.
+  - Devnet only; no money moves.
+  - **Paths:** `lib/chain/anchor.ts`, `lib/chain/solve.ts` (`MEMO_PROGRAM` exported), `lib/bot/anchor.ts`, `lib/bot/receipt.ts`, `app/saved/[token]/page.tsx`, `app/anchor-panel.tsx`, `app/route-actions.ts`, `app/world/[worldId]/page.tsx` (additive), `.env.example`, `tests/bot/anchor.test.ts`.
+  - **Checks:** bot and chain 88/88; typecheck ok; lint clean; build ok.
+  - **Needs from the founder:** a dedicated devnet fee keypair and an RPC URL in the staging environment. After that: stage 2, wallets the person controls.
+
+- 2026-10-05 04:50Z — Claude. The founder clarified the $10,000: "that's what the network should make per person". `DECISIONS.md` and plan §5 are corrected:
+  - **The north star:** the network's revenue per person per year, which is a share of value settled through solve.
+  - **What it takes:** $50,000 to $200,000 a year flowing through solve per person at a 20% to 5% share. That is operator scale, carried by serious operators.
+  - **Until money settles through solve,** network revenue is $0.
+
+  Docs only. Next: crypto stage 2, wallets the person controls (proven by signing), the prerequisite for payments.
+
+- 2026-10-05 04:53Z — Claude, crypto stage 2: wallets the person controls.
+  - Linking needs a signed proof: a server-issued, person-bound, 10-minute challenge, signed by the person's own wallet and checked before the kernel links the address.
+  - solve never holds keys. The wallet shows on the Command Center.
+  - Flagged for Codex: make the kernel's `link_wallet` require a proof.
+  - **Paths:** `lib/chain/wallet-proof.ts`, `app/command/{wallet-actions.ts,wallet-panel.tsx,view.tsx,page.tsx}`, `tests/bot/wallet.test.ts`.
+  - **Checks:** bot suite 80/80; typecheck ok; lint clean; build ok.
+  - **Next:** stage 3 (payments settled on chain, the network's share) waits for the founder's approval and legal review.
+
+- 2026-10-05 05:02Z — CI run 132 (`beaa75e`) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37265416621. It covers everything since run 126; runs 127 to 131 were cancelled by newer pushes. Green now:
+  - Manus's merges and the contract fold;
+  - outreach outcomes, values and Command Center results;
+  - anchoring on chain;
+  - wallets.
+
+- 2026-10-05 05:27Z — Claude, for the founder's problem 1 ("what manus doing").
+  - **What happened:** Manus's #6 (duplicate panel on `/bot`) and #8 (`/start` without the brand fixes) were merged into the trunk by the founder's account while a review was open. CI was green (run 136).
+  - **Fixed** on the founder's go: `/start` on the white floor (no decorative points or fake state, signed-in people to `/command`); the duplicate panel removed.
+  - **For Manus:** a working agreement and an updated `ACTIVE-WORK.md` row (research first, no self-merges while a review is open).
+  - **Paths:** `app/start/{view,page}.tsx`, `app/bot/page.tsx`, `app/bot/context-ledger.tsx` (removed), `tests/bot/start.test.ts`, `docs/handoff/MANUS.md`, `ACTIVE-WORK.md`.
+
+- 2026-10-05 05:45Z — Claude, research: Scale AI (founder: "look at scale ai").
+  - **Findings:**
+    - Scale marks up crowd work for AI labs. Since Meta took 49% it lost OpenAI and is turning toward AI applications.
+    - Its contributors sued over misclassification and unpaid time; a $12.5M settlement followed.
+    - Mercor and Surge grew past $1B on vetted, better-paid experts. Mercor's reported figures work out to roughly $20,000–27,000 of net revenue per weekly active contractor a year, above the network's $10,000.
+  - **For solve:**
+    - trusted, verified work on the record;
+    - pay agreed before the work, with no unpaid time;
+    - neutral across AI labs;
+    - minors out of paid work;
+    - stablecoin payouts only at stage 3.
+  - **Suggested build, not started:** paid work in a World, using Practice money.
+  - **Also:** corrected this stream's timestamps from 03:40Z onward to their commit times; they had run ahead of the clock.
+  - **Paths:** `docs/research/2026-10-05-scale-ai.md`, `docs/plans/2026-10-05-business-leverage-outreach.md`, `BUILD-STREAM.md`.
+  - **Checks:** docs only. CI run 137 (`c9df521`) still running.
+
+- 2026-10-05 05:50Z — CI run 137 (`c9df521`) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37267853818. Green now: `/start` on the brand, the duplicate bot panel removed, and the Manus working agreement. The Scale AI note after it is docs only.
+
+- 2026-10-05 06:50Z — Claude, the room (founder: "an immersive app built to be built within"; founder-first slices 5 and 3, problems 1 and 6).
+  - **What:** `/world/<id>/room`. Who is here, the goal and routes; the build read from GitHub (builders by branch, the trunk's builds, branches in flight); or the World's pieces where they were placed; waiting on you (including pull requests to merge), proof, activity and gaps; a command bar.
+  - **Read-only GitHub reader:** `lib/github/repo.ts`. A private repo is read only where `GITHUB_ROOMS` pairs it.
+  - **Rooms by default:** the Command Center, `/worlds` and new Worlds open the room. Waiting items link to their piece (`#piece-<id>`).
+  - **Also:** solve-staging has the founder-first SQL applied (migrations `founder_first_v5_presence_world_live`, `expose_kernel_api_to_postgrest` and a schema reload, at 05:21Z). It has no Worlds yet.
+  - **Paths:** `lib/github/repo.ts`, `app/world/[worldId]/room/*`, `app/world/event-title.ts`, `app/world/[worldId]/page.tsx` (additive: Room tab, piece anchors), `app/command/view.tsx`, `app/bot/waiting.tsx`, `app/worlds/{page,actions}.ts*`, `tests/github/repo.test.ts`, `tests/bot/room.test.ts`, `.env.example`.
+  - **Checks:**
+    - bot and GitHub suites 91/91;
+    - the reader run on real repo data (via `gh`);
+    - typecheck ok; lint clean; build ok.
+  - **Next:**
+    - update the three branches the founder named (by merging the trunk in, not rebasing);
+    - then builder attribution on World writes;
+    - then a one-step "Build solve" room.

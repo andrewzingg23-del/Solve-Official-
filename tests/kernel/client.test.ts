@@ -41,6 +41,9 @@ async function exerciseEveryMethod(supabase: SupabaseClient, actAs?: string) {
   await k.postTransaction({ scope: "system", entries: [{ account_id: id, amount: BigInt(5) }, { account_id: id, amount: "-5" }], memo: "", evidence: [], idempotencyKey: "k", correlationId: id });
   await k.readEvents("system", { afterSeq: 1, limit: 5, newestFirst: true });
   await k.readEvidence(id);
+  await k.sealKey(id, "A".repeat(43) + "=");
+  await k.unsealKeys([id]);
+  await k.destroyKey(id, "erased");
   await k.accountBalance(id);
   await k.myGrants();
   await k.verifyChain();
