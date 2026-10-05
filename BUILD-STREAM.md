@@ -290,3 +290,10 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - Eight drifts are listed with small amendments: community-first instead of person-first; one scaffold instead of three researched routes; the vision's words missing from the ontology, with a mapping table; no personal node; no watchers; a Markdown brief as the default artifact; no Forge; no client-connected runtime kind.
   - Four items are for the founder: the name, which conflicts with the 2026-10-04 decision; brand promise and palette; Whop versus Discord/Slack; the first pilot.
   - Docs only, no checks run. Next: gate money (`ENABLE_MONEY`, `ENABLE_PAYMENTS`, `ENABLE_EXTERNAL_FINANCIAL_ACTIONS`); `/money` is reachable today.
+
+- 2026-10-05 03:05Z — Claude, money is gated off the default path (master spec §2).
+  - `lib/flags.ts` defines `moneyEnabled`, `paymentsEnabled` and `externalFinancialActionsEnabled`. Unset means off, and each switch needs the one before it.
+  - `/money` and both of its Server Actions answer 404 unless `ENABLE_MONEY=true`. Before this, anyone could start a 60-second in-memory kernel and chain run by direct POST.
+  - The flags are documented in `.env.example`, `README.md` and `BUILD_STATUS.md`.
+  - Left as is: Arcadia's Horizon still shows the simulated deposit goal. It is Practice, and it is blocked in the browser with no chain connected. Codex's surface; hide it if the founder wants.
+  - Checks: `tests/flags.test.ts` 2/2; typecheck ok; lint ok; `next build` ok (`/money` prerenders with status 404).
