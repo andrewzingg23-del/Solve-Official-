@@ -330,3 +330,17 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - **CI:** run 111 (`0d1d694`, routes) has passed test, typecheck and lint; the build step is still running.
 
 - 2026-10-05 02:55Z — CI run 111 (`0d1d694`, routes from an ask) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37256466905. Next for Claude: review Manus's site once the founder shares its address. Then Community on existing kernel primitives.
+
+- 2026-10-05 03:20Z — Claude. The founder: "the app should solve the problems im having here.. and it should be built for me first."
+  - **Recorded the direction:** in `DECISIONS.md`, with a plan in `docs/plans/2026-10-05-founder-first.md`. It lists the founder's eight problems from today (not knowing what each builder is doing, copying messages between AIs, work spread over branches, decisions buried in chat, stalled approvals, claims without proof, drift, broken threads) and maps each to what solve already does, what's missing, and the slices in order.
+  - **Working rules:** `ACTIVE-WORK.md` opens with a "Now" block:
+    - the priority;
+    - what blocks the founder's first real use;
+    - every unmerged branch, with its merge check and a proposed disposition;
+    - one home per concept.
+    `AGENTS.md` adds four rules: founder first, one trunk, one concept one home, and canon only by the founder.
+  - **Manus:** its first task is now how each builder connects to solve's MCP endpoint.
+  - **Merged:** Manus's audit (pull request #3, docs only).
+  - **Routes:** they now carry Codex's route-card fields (why it fits, takes, not yet known, done when), so there is one route object. `lib/bot/routes.ts`, `lib/bot/connector.ts`, `app/route-card.tsx`, `tests/bot/routes.test.ts`.
+  - **Checks:** routes and connector tests 11/11; typecheck ok; lint ok.
+  - **Next:** staging for the founder (slice 0), then "Waiting on you" (slice 2).

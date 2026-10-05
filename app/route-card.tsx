@@ -2,7 +2,7 @@
 // the person takes one, and its steps become their tasks. A done step carries the point because it is
 // a person's yes on the record (docs/brand/BRAND.md), and it says whose word it rests on. The page
 // passes the actions in (app/route-actions.ts); without them the card is read only.
-import type { Routes, TakenRoute } from "@/lib/bot/routes";
+import type { Route, Routes, TakenRoute } from "@/lib/bot/routes";
 import { nextStep } from "@/lib/bot/routes";
 import { day } from "@/app/save-point";
 
@@ -23,6 +23,21 @@ function StepLink({ link }: { link?: string | null }) {
 }
 
 type FormAction = (formData: FormData) => void | Promise<void>;
+
+function RouteNotes({ route }: { route: Route }) {
+  const notes = [["Takes", route.takes], ["Not yet known", route.unknowns], ["Done when", route.doneWhen]].filter((n): n is [string, string] => Boolean(n[1]));
+  if (!notes.length) return null;
+  return (
+    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs leading-5">
+      {notes.map(([k, v]) => (
+        <div key={k} className="contents">
+          <dt className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">{k}</dt>
+          <dd className="break-words">{v}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
 export function RouteCard({ pieceId, routes, taken, who = "you", take, markDone }: { pieceId: string; routes: Routes; taken?: TakenRoute | null; who?: string; take?: FormAction; markDone?: FormAction }) {
   if (taken && routes.routes[taken.route]) {
@@ -66,6 +81,7 @@ export function RouteCard({ pieceId, routes, taken, who = "you", take, markDone 
             );
           })}
         </ol>
+        {route.doneWhen ? <p className="text-xs leading-5"><span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">Done when </span>{route.doneWhen}</p> : null}
         {!next ? <p className="text-xs text-muted">Every step is done. If it became something real, save the proof on it.</p> : null}
       </div>
     );
@@ -85,6 +101,7 @@ export function RouteCard({ pieceId, routes, taken, who = "you", take, markDone 
               {r.title}
             </p>
             {r.why ? <p className="text-xs leading-5 text-muted">{r.why}</p> : null}
+            <RouteNotes route={r} />
             <ol className="flex list-decimal flex-col gap-1 pl-5 text-xs leading-5 marker:text-muted">
               {r.steps.map((s, j) => (
                 <li key={j} className="break-words">

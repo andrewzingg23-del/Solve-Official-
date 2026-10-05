@@ -248,4 +248,5 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
   - **Done:** "Mark done" moves the next step to completed, on the person's word, and the record says who.
   - **What the bot sees:** `read_world` shows the route taken, the steps done and the next step with its link.
   - **Limits:** steps need `route.step`, which the World owner holds and a bot or a read-only member does not. A bot can propose and revise routes until one is taken, but it can't take a route or mark a step done.
+  - **Route-card fields:** routes carry the fields of Codex's founder-directed route cards: why it fits, what it takes, what is not yet known, and done when. The World card shows them, and "done when" stays on a taken route as the proof to save. This keeps one route object for both designs.
   - **Tests:** `tests/bot/routes.test.ts` covers limits and hand-edited pieces, the bot proposing, the bot and a member refused, idempotent take and done, `read_world`, and the card (the point only on done steps).

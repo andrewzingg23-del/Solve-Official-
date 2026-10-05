@@ -2,6 +2,42 @@
 
 One writer per architectural surface. Update this file when work starts, changes owner or finishes.
 
+## Now (read first)
+
+Updated 2026-10-05 by Claude. The founder overrides anything here.
+
+**The priority: solve is built for the founder first** (`docs/plans/2026-10-05-founder-first.md`). The first user is the founder; the first project is building solve with its AI builders. Each slice should solve a problem the founder actually has. Name it in your stream entry.
+
+**Blocking the founder's first real use**
+
+| Blocker | Who | State |
+|---|---|---|
+| v5 and presence migrations on solve-staging (`supabase/migrations/20261004040000_erasable_content.sql`, `20261004040100_bot_presence.sql`) | Founder: run them, or approve Claude's tool prompt | Open |
+| Sign-in by email link on the staging preview (Auth redirect URLs) | Founder | Never tried |
+| Connecting the builders to the founder's bot (MCP over HTTP with OAuth) | Manus to research; founder approves | Not started |
+
+**Unmerged work: merge or close.** The trunk is `claude/keen-cerf-tpd7io`. Work that isn't on it can't help the founder.
+
+| Branch | What | Merge check against trunk (2026-10-05) | Proposed |
+|---|---|---|---|
+| `codex/world-live-collaboration` | Live collaboration between people in a World: grants by role, private Realtime notices, migration `20261004040200` | Conflicts in status docs only | Merge. It supersedes the collaboration copy in `development-memory-v1`. |
+| `codex/need-to-route-network-state-spec` (38 commits) | Goal-first World creation, resource map (the spec's Resource), bounded World context for bots, the need-to-route design. It also adds a "Project resource coordination" section to `VISION-CANON.md`. | Conflicts in `lib/bot/connector.ts` (Claude's) | Merge, with Claude resolving the connector conflicts. The canon section needs the founder's yes. |
+| `codex/gateway-oidc-fallback` | AI Gateway auth through Vercel OIDC | Docs conflicts only | Merge |
+| `codex/development-memory-v1` (draft pull request #2) | Idea Graph (eight relation kinds, an Ideas page, AI idea expansion), plus an older copy of collaboration | Conflicts in the World page | Founder decides whether the Idea Graph is in scope (the spec doesn't list it). Before any merge, rename its migration `20261004000000`, which sorts before files already on the trunk, and drop its collaboration copy. |
+| `codex/development-memory-plan` (draft pull request #1) | The plan for #2 | Docs conflicts | Goes with #2 |
+| Manus's website (separate Webdev project) | A static narrative site | Not in the repo | Only as an additive `/about` or `/start` route; never replaces `/` (pull request #3, merged) |
+
+**One concept, one home.** Extend the existing one rather than build a second.
+
+| Concept | Home | Note |
+|---|---|---|
+| Route (ask to steps) | `lib/bot/routes.ts` | Fields follow Codex's route cards (why it fits, what it takes, unknowns, done when). The first-run route cards in Codex's design should build on it. |
+| Decision | A routes piece (each option a route; the person takes one) | Founder-first slice 1 |
+| Collaboration and membership | `lib/world/collaboration.ts` from `codex/world-live-collaboration` | |
+| Resource | Codex's resource map | The spec's Resource |
+| Proof | `lib/bot/proof.ts` saves | The spec's evidence ladder |
+| Community | Not built | Waits on the founder (vision check §3.1) |
+
 | Owner | Task | Branch | Owned paths | Protected paths (do not edit without the owner) | Done when |
 |---|---|---|---|---|---|
 | Codex (founder-directed takeover) | Build the open-ended shared creative World on isolated Supabase staging; verify Auth, then ship one real-time co-creation slice for two people and their separately owned agents. Keep improvement evidence-led and production untouched. | claude/keen-cerf-tpd7io | app/world/, app/api/, lib/world/, new kernel client/domain code, tests/, new migrations only when required, build/status docs | Applied migrations (never edit), DIRECTIVES.md (founder only), docs/MONETARY-CONSTITUTION.md Parts I–III, production Supabase project | Two people on separate devices can create/edit shared World work; an authorized external agent contributes with its own identity and scoped permission; changes sync, persist, show provenance, and survive reload. One actual collaboration task completes on staging. No simulated result is presented as live use. |

@@ -15,13 +15,15 @@ import { createKernelDb, service, user } from "../kernel/harness";
 
 const ASK = "Sell my prints at the Saturday market";
 const ROUTES = [
-  { title: "Rent a stall through the council", why: "Cheapest, but the waiting list can be weeks.", steps: [{ do: "Apply for a casual trader permit", link: "https://example.gov/market-permit" }, { do: "Book a Saturday pitch" }, { do: "Bring 20 framed prints and a card reader" }] },
+  { title: "Rent a stall through the council", why: "Cheapest, but the waiting list can be weeks.", takes: "About $40 a Saturday and a permit", unknowns: "Whether the council needs public liability insurance", done_when: "A receipt for the first pitch", steps: [{ do: "Apply for a casual trader permit", link: "https://example.gov/market-permit" }, { do: "Book a Saturday pitch" }, { do: "Bring 20 framed prints and a card reader" }] },
   { title: "Share a friend's stall", why: "Starts this week; split the fee.", steps: [{ do: "Ask Mo about half his table" }, { do: "Agree the split in writing" }] },
 ];
 
 it("checks routes: up to three, each with steps, links only on the web", () => {
   const body = encodeRoutes({ ask: ASK, routes: ROUTES });
   assert.deepEqual(parseRoutes(body)?.routes.map((r) => r.steps.length), [3, 2]);
+  assert.deepEqual(parseRoutes(body)?.routes[0], { title: ROUTES[0].title, why: ROUTES[0].why, takes: "About $40 a Saturday and a permit", unknowns: "Whether the council needs public liability insurance", doneWhen: "A receipt for the first pitch", steps: ROUTES[0].steps }, "the route-card notes survive the round trip");
+  assert.equal("takes" in parseRoutes(body)!.routes[1], false, "notes left out stay out");
   assert.throws(() => encodeRoutes({ ask: ASK, routes: [...ROUTES, ...ROUTES] }), /at most 3 routes/);
   assert.throws(() => encodeRoutes({ ask: ASK, routes: [] }), /at least one route/);
   assert.throws(() => encodeRoutes({ ask: "", routes: ROUTES }), /what the person asked/);
@@ -114,6 +116,8 @@ it("draws proposed routes with a choice, and a taken route with whose word each 
   assert.match(proposed, /Nothing starts until you take a route\./);
   assert.match(proposed, /example\.gov/);
   assert.doesNotMatch(proposed, /bg-accent/, "a proposal never carries the point");
+  assert.match(proposed, /Not yet known.*Whether the council needs public liability insurance/);
+  assert.match(proposed, /Done when.*A receipt for the first pitch/);
 
   const taken = {
     pieceId: "p", route: 0, takenBy: "a", takenAt: "2026-10-05T12:00:00Z",

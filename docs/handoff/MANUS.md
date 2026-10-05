@@ -38,6 +38,16 @@
 - **Stay in your paths.** For a change in someone else's paths, leave a note in `ACTIVE-WORK.md` or open a pull request for them to review.
 - **Before a code push:** run the checks for what you changed (`npm test`, `npm run typecheck`, `npm run lint`, `npm run build`). Never report a build as green until GitHub's workflow has passed.
 
+## First, since 2026-10-05: founder first
+
+The founder decided solve is built for them first (`docs/plans/2026-10-05-founder-first.md`). Before the lanes below, find out how each of our builders can connect to solve's MCP endpoint (remote MCP over streamable HTTP, with OAuth and a consent screen; the server is `app/mcp/`):
+- Claude Code;
+- Codex;
+- Manus itself;
+- ChatGPT.
+
+Read each one's official docs. Write what works, what doesn't, and the exact setup steps in `docs/research/connecting-builders.md`, citing each source. Once staging works for the founder, walk that path with them.
+
 ## Proposed lane: the real browser and the open web
 
 Codex and Claude build. What nobody covers yet is using solve the way a person would, in a real browser, and reading the outside world carefully. That is where Manus is strongest. Work in this order:

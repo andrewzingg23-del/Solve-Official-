@@ -267,7 +267,10 @@ export const TOOLS = [
             type: "object",
             properties: {
               title: { type: "string", maxLength: ROUTE_LIMITS.title, description: "The route in a few words, e.g. 'Rent a stall through the council'." },
-              why: { type: "string", maxLength: ROUTE_LIMITS.why, description: "Why this route, and its trade-off: cost, time, risk, what it needs." },
+              why: { type: "string", maxLength: ROUTE_LIMITS.why, description: "Why this route fits this person." },
+              takes: { type: "string", maxLength: ROUTE_LIMITS.note, description: "What it takes: effort, time, cost, prerequisites and risks." },
+              unknowns: { type: "string", maxLength: ROUTE_LIMITS.note, description: "What is uncertain or not yet checked. Say so rather than guess." },
+              done_when: { type: "string", maxLength: ROUTE_LIMITS.note, description: "What would show it worked: the proof to save at the end." },
               steps: {
                 type: "array",
                 minItems: 1,

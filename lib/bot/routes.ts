@@ -5,6 +5,10 @@
 // created, so the path and its progress are on the record. A step marked done is done on their word;
 // nothing here calls it verified.
 //
+// The fields follow Codex's route cards (docs/superpowers/specs/2026-10-04-need-to-route-network-state-design.md
+// §5.3, on codex/need-to-route-network-state-spec): why it fits, what it takes, what is uncertain, and
+// what would show it worked. This is the one route object; other surfaces build on it.
+//
 // Steps need `route.step`, a capability the World's owner holds and a bot let in to add does not, so
 // a bot can propose routes but cannot take one or mark its steps done.
 import type { Kernel, Task } from "@/lib/kernel/client";
@@ -12,11 +16,18 @@ import { loadCreativeWorld } from "@/lib/world/creative";
 import { cleanText } from "./memory";
 import { WORLD_LIMITS, WorldInputError } from "./worlds";
 
-export const ROUTE_LIMITS = { ask: 300, routes: 3, title: 120, why: 400, steps: 8, step: 300, link: 2000 } as const;
+export const ROUTE_LIMITS = { ask: 300, routes: 3, title: 120, why: 400, note: 300, steps: 8, step: 300, link: 2000 } as const;
 export const STEP_CAPABILITY = "route.step";
 
 export type RouteStep = { do: string; link?: string };
-export type Route = { title: string; why: string; steps: RouteStep[] };
+export type Route = {
+  title: string;
+  why: string; // why it fits this person
+  takes?: string; // effort, time, cost, prerequisites and risks
+  unknowns?: string; // what is uncertain or not yet checked
+  doneWhen?: string; // what would show it worked
+  steps: RouteStep[];
+};
 export type Routes = { ask: string; routes: Route[] };
 
 export type TakenStep = { taskId: string; step: number; do: string; link: string | null; status: Task["status"]; doneAt: string | null };
@@ -46,6 +57,11 @@ function readRoutes(input: { ask: unknown; routes: unknown }): Routes {
     const r = (raw ?? {}) as Record<string, unknown>;
     const title = cleanText(r.title, ROUTE_LIMITS.title);
     const why = cleanText(r.why, ROUTE_LIMITS.why);
+    const notes = {
+      takes: cleanText(r.takes, ROUTE_LIMITS.note),
+      unknowns: cleanText(r.unknowns, ROUTE_LIMITS.note),
+      doneWhen: cleanText(r.doneWhen ?? r.done_when, ROUTE_LIMITS.note),
+    };
     if (!title) throw new WorldInputError(`route ${i + 1} needs a title`);
     if (!Array.isArray(r.steps) || r.steps.length < 1) throw new WorldInputError(`route ${i + 1} needs at least one step`);
     if (r.steps.length > ROUTE_LIMITS.steps) throw new WorldInputError(`route ${i + 1} has more than ${ROUTE_LIMITS.steps} steps`);
@@ -56,7 +72,7 @@ function readRoutes(input: { ask: unknown; routes: unknown }): Routes {
       const link = cleanLink(s.link);
       return link ? { do: what, link } : { do: what };
     });
-    return { title, why, steps };
+    return { title, why, ...Object.fromEntries(Object.entries(notes).filter(([, v]) => v)), steps };
   });
   return { ask, routes };
 }
