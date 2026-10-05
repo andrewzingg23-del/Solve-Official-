@@ -392,3 +392,7 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 - 2026-10-05 04:45Z — Claude, vision check §3.5 ("the world itself should react"), first and safest form: a "Noticed" section on the Command Center, worked out from the record on each visit. It flags quiet steps (3 days or more), routes done with nothing saved, and choices left waiting. It only points, never acts.
   - **Paths:** `lib/bot/waiting.ts` (`noticed`, `saved`), `lib/bot/routes.ts` (step `since`), `app/command/view.tsx`, tests.
   - **Checks:** bot suite 64/64; typecheck ok; lint ok.
+
+- 2026-10-05 05:00Z — Claude, vision check §3.7 (Forge), the first step: "What solve can't do yet" on the Command Center. It lists assistants' capability drafts, grouped by need with how many times each was asked. `overview` reads each World once for routes and gaps.
+  - **Paths:** `lib/bot/gaps.ts`, `lib/bot/waiting.ts`, `app/command/{page,view}.tsx`, `tests/bot/gaps.test.ts`.
+  - **Checks:** gaps, command and waiting 8/8; typecheck ok; lint ok.

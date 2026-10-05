@@ -7,6 +7,7 @@
 // A decision is proposed the same way as a route: each option is a route. Nothing is inferred or invented.
 import type { Kernel } from "@/lib/kernel/client";
 import { loadCreativeWorld } from "@/lib/world/creative";
+import { parseCapabilityProposal, type Gap } from "./gaps";
 import { proofsIn } from "./proof";
 import { nextStep, parseRoutes, STEP_CAPABILITY, takenRoutes } from "./routes";
 
@@ -30,9 +31,11 @@ export type WaitingItem =
 
 type WorldRef = { worldId: string; title: string; scope: string };
 
-export async function journeys(kernel: Kernel, worlds: WorldRef[], me: string): Promise<Journey[]> {
+// One read of each World serves the whole overview: where each ask stands, and what assistants
+// recorded that solve can't do yet.
+export async function overview(kernel: Kernel, worlds: WorldRef[], me: string): Promise<{ journeys: Journey[]; gaps: Gap[] }> {
   const perWorld = await Promise.all(
-    worlds.map(async (w): Promise<Journey[]> => {
+    worlds.map(async (w): Promise<{ journeys: Journey[]; gaps: Gap[] }> => {
       try {
         const [{ artifacts }, taken, canChoose, saves] = await Promise.all([
           loadCreativeWorld(kernel, w.worldId),
@@ -42,7 +45,10 @@ export async function journeys(kernel: Kernel, worlds: WorldRef[], me: string): 
         ]);
         const savedOn = new Set(saves.map((p) => p.pieceId));
         const out: Journey[] = [];
+        const gaps: Gap[] = [];
         for (const a of artifacts) {
+          const proposal = parseCapabilityProposal(a.body);
+          if (proposal) gaps.push({ ...proposal, worldId: w.worldId, worldTitle: w.title, pieceId: a.entityId, at: new Date(a.updatedAt).toISOString() });
           const routes = parseRoutes(a.body);
           if (!routes) continue;
           const t = taken.get(a.entityId);
@@ -64,14 +70,21 @@ export async function journeys(kernel: Kernel, worlds: WorldRef[], me: string): 
             saved: savedOn.has(a.entityId),
           });
         }
-        return out;
+        return { journeys: out, gaps };
       } catch {
         // A World that can't be read right now (access changed, kernel busy) waits for the next load.
-        return [];
+        return { journeys: [], gaps: [] };
       }
     }),
   );
-  return perWorld.flat().sort((a, b) => b.at.localeCompare(a.at));
+  return {
+    journeys: perWorld.flatMap((p) => p.journeys).sort((a, b) => b.at.localeCompare(a.at)),
+    gaps: perWorld.flatMap((p) => p.gaps),
+  };
+}
+
+export async function journeys(kernel: Kernel, worlds: WorldRef[], me: string): Promise<Journey[]> {
+  return (await overview(kernel, worlds, me)).journeys;
 }
 
 export function waitingFrom(all: Journey[]): WaitingItem[] {

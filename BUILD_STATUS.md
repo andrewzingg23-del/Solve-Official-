@@ -321,4 +321,5 @@ Everything is read from the record with the person's own sign-in, and empty stat
   - routes that have waited 3 days or more for your choice.
 
   It is worked out from the record on each visit (`noticed` in `lib/bot/waiting.ts`). It only points; it never acts, assigns or tells anyone else. Routes now carry when each step last moved, and an ask knows whether proof is saved on it.
+- **What solve can't do yet (the Forge's seed).** The Command Center lists the capability drafts assistants recorded with `propose_capability` when solve couldn't do what was asked. The same need asked again counts once, with how many times and in which Worlds, most repeated first (`lib/bot/gaps.ts`). It is read from the same single scan of each World. Nothing in it runs. Repeated real needs pick the next build, which is the directive's "learn from real friction" in a form the founder can see.
 

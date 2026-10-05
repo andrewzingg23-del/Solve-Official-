@@ -9,6 +9,7 @@ import { day, SavePoint } from "@/app/save-point";
 import { WaitingOnYou } from "@/app/bot/waiting";
 import type { Connection } from "@/lib/bot/memory";
 import type { SavedProof } from "@/lib/bot/proof";
+import { groupGaps, type Gap } from "@/lib/bot/gaps";
 import { noticed, waitingFrom, type Journey } from "@/lib/bot/waiting";
 
 export type CommandData = {
@@ -18,6 +19,7 @@ export type CommandData = {
   journeys: Journey[];
   now?: Date; // for what is noticed; the page passes the time of the request
   connections: Connection[];
+  gaps?: Gap[]; // what assistants recorded that solve can't do yet
   saves: (SavedProof & { worldId: string; worldTitle: string })[];
   live?: ReactNode; // who is working right now, when presence is available
 };
@@ -137,6 +139,23 @@ export function CommandView({ data }: { data: CommandData }) {
           <p className="text-sm leading-6 text-muted">Nothing saved yet. When something becomes real, save the proof on it and it shows here.</p>
         )}
       </Section>
+
+      {data.gaps?.length ? (
+        <Section id="gaps" title="What solve can't do yet">
+          <ul className="flex flex-col divide-y divide-line">
+            {groupGaps(data.gaps).map((g) => (
+              <li key={g.latest.pieceId} className="flex flex-col gap-1 py-3 text-sm">
+                <Link href={`/world/${g.latest.worldId}`} className="break-words hover:text-accent">{g.goal}</Link>
+                <span className="break-words text-xs leading-5 text-muted">{g.result}</span>
+                <span className="text-xs text-muted tabular-nums">
+                  {g.times > 1 ? `Needed ${g.times} times` : "Needed once"} · in {g.worlds.join(", ")}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs leading-5 text-muted">Drafts your assistants recorded when solve couldn&apos;t do what you asked. Needs that repeat are the next things to build. Nothing here runs.</p>
+        </Section>
+      ) : null}
 
       <Section id="next" title="What's next">
         <p className="text-sm leading-6 text-muted">

@@ -5,7 +5,7 @@ import { quietLink } from "@/app/ui";
 import { readConnections } from "@/lib/bot/memory";
 import { latestSaves } from "@/lib/bot/proof";
 import { loadBot } from "@/lib/bot/store";
-import { journeys } from "@/lib/bot/waiting";
+import { overview } from "@/lib/bot/waiting";
 import { worldsForBot } from "@/lib/bot/worlds";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
@@ -23,8 +23,8 @@ async function load(userId: string): Promise<CommandData | "identity" | "unavail
     const kernel = await getKernel();
     const [me, bot] = await Promise.all([kernel.whoami(), loadBot(kernel)]);
     const worlds = bot.avatar ? await worldsForBot(kernel, bot.avatar.agent_id) : await listCreativeWorlds(kernel);
-    const [all, connections, savesByWorld] = await Promise.all([
-      journeys(kernel, worlds, me.actor_id),
+    const [{ journeys: all, gaps }, connections, savesByWorld] = await Promise.all([
+      overview(kernel, worlds, me.actor_id),
       bot.avatar ? readConnections(kernel, bot.ownerId) : Promise.resolve([]),
       latestSaves(kernel, worlds, 3),
     ]);
@@ -39,6 +39,7 @@ async function load(userId: string): Promise<CommandData | "identity" | "unavail
       botName,
       worlds: worlds.map((w) => ({ worldId: w.worldId, title: w.title, updatedAt: w.updatedAt })),
       journeys: all,
+      gaps,
       connections,
       saves,
       live: botName ? <LiveLine userId={userId} botName={botName} /> : undefined,
