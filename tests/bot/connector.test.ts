@@ -46,7 +46,7 @@ it("speaks the protocol: initialize, ping, tools, notifications and errors", asy
   assert.equal(unknownVersion.result.protocolVersion, PROTOCOL_VERSIONS[0], "otherwise the newest version is offered");
   assert.deepEqual(await c.handle({ jsonrpc: "2.0", id: 3, method: "ping" }), { jsonrpc: "2.0", id: 3, result: {} });
   const list = (await c.handle({ jsonrpc: "2.0", id: 4, method: "tools/list" })) as { result: { tools: { name: string }[] } };
-  assert.deepEqual(list.result.tools.map((t) => t.name), ["whoami", "get_context", "search", "fetch", "remember", "learn_business", "list_worlds", "read_world", "start_world", "add_to_world", "add_proof", "create_pixel_art", "propose_capability"]);
+  assert.deepEqual(list.result.tools.map((t) => t.name), ["whoami", "get_context", "search", "fetch", "remember", "learn_business", "list_worlds", "read_world", "start_world", "add_to_world", "add_proof", "design_part", "create_pixel_art", "propose_capability"]);
   assert.equal(TOOLS.find((t) => t.name === "remember")!.annotations.readOnlyHint, false);
   assert.equal(await c.handle({ jsonrpc: "2.0", method: "notifications/initialized" }), null, "notifications get no response");
   assert.equal((await c.handle({ jsonrpc: "2.0", id: 5, method: "resources/list" }) as { error: { code: number } }).error.code, -32601);

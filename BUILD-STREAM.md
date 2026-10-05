@@ -240,3 +240,11 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   Checks: bot suite 43/43; typecheck ok; lint ok (one existing warning). CI for `7e836bf`: running when written; for this push: pending.
 
 - 2026-10-05 01:37Z — CI run 103 (`713645c`, which carries both the proof slice and the copy rewrite) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37251590184. Run 102 (`7e836bf`) was cancelled because the next push superseded it. Waiting on the founder: v5 and presence on staging (two files in the SQL editor), then the first real pilot loop.
+
+- 2026-10-05 01:52Z — Claude, printable parts (founder: "keep building").
+  - The connector's `design_part` with `lib/bot/part.ts`: outline cleaning and checks, ear-clipping triangulation, a binary STL writer, and an outline preview.
+  - `app/parts/[worldId]/[file]/route.ts` serves the STL under the person's own sign-in.
+  - `app/part-preview.tsx`. `read_world` summarises parts. Presence reads "is designing a part with Nova".
+  - Additive edits to Codex's `app/world/[worldId]/page.tsx`: `PartPreview` for parts, `SavePoint` per piece, "Saved with proof" in history, and the decorative accent dot removed (brand v3). Noted in `ACTIVE-WORK.md`.
+
+  Checks: bot suite 47/47 (4 new part tests: cleaning and refusals; closed, outward STL with exact volume; design → download access → proof; preview rendering); typecheck ok; lint ok (one existing warning). The full local suite was still running at push; CI is the full gate.

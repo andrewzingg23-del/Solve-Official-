@@ -10,6 +10,7 @@ import type { Kernel } from "@/lib/kernel/client";
 import { KernelError } from "@/lib/kernel/client";
 import { personaBrief } from "./persona";
 import { encodePixelArt } from "./pixel-art";
+import { encodePart, MATERIALS, PART_LIMITS, PartInputError, parsePart, partUrl, sizeText } from "./part";
 import { addProof, PROOF_LIMITS, proofsIn, type SavedProof } from "./proof";
 import { saveNumber, vouch } from "./vouch";
 import { companionOf, readPersona } from "./store";
@@ -195,6 +196,32 @@ export const TOOLS = [
     annotations: ADD,
   },
   {
+    name: "design_part",
+    title: "Design a printable part",
+    description: "Designs a simple part the person can 3D print: a side outline in millimetres, extruded to a width. Good for stands, brackets, hooks, clips, spacers and shims. Sovereign checks the outline and serves an STL for their slicer (Bambu Studio, PrusaSlicer, Cura). Put the flat side on the bed (z = 0), keep the outline one closed loop that never crosses itself, keep walls at least 2 mm thick, and avoid long unsupported overhangs. Revise with artifact_id. It is a design until it is printed; when the person shares proof, use add_proof.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        world_id: { type: "string" },
+        title: { type: "string", maxLength: WORLD_LIMITS.title, description: "A short name, e.g. 'Phone stand'." },
+        purpose: { type: "string", maxLength: PART_LIMITS.purpose, description: "What it is for and any fit it must meet, e.g. 'Holds a phone in a case up to 12 mm thick at 65°'." },
+        profile: {
+          type: "array",
+          minItems: 3,
+          maxItems: PART_LIMITS.points,
+          items: { type: "array", minItems: 2, maxItems: 2, items: { type: "number" } },
+          description: "The side outline as [x, z] points in millimetres, in order around the shape. z = 0 is the bed.",
+        },
+        width_mm: { type: "number", minimum: PART_LIMITS.minWidth, maximum: PART_LIMITS.size, description: "How far the outline is extruded, in millimetres." },
+        material: { type: "string", enum: [...MATERIALS] },
+        artifact_id: { type: "string", description: "Revise this part instead of making a new one." },
+      },
+      required: ["world_id", "title", "purpose", "profile", "width_mm", "material"],
+      additionalProperties: false,
+    },
+    annotations: ADD,
+  },
+  {
     name: "create_pixel_art",
     title: "Create pixel art",
     description: "Creates or revises a small pixel-art image as a visible, versioned World artifact. Turn the prompt (or a vision-capable assistant's reference-image analysis) into a 1–32 pixel grid. Use palette indexes 0–9 in each row; dot means transparent. The palette is a list of six-digit hex colors. The pixel image is rendered directly by Sovereign; no external image provider is called.",
@@ -375,7 +402,9 @@ export function createConnector(s: Session) {
         const lines: string[] = [];
         let used = 0;
         for (const a of artifacts) {
-          const line = `- [${a.entityId}] ${inert(a.title)}: ${inert(a.body)}${saveNote(a.entityId)}`;
+          const part = parsePart(a.body);
+          const shown = part ? `printable part, ${sizeText(part)} mm in ${part.material}, for: ${part.purpose} (STL: ${partUrl(s.appUrl, world.worldId, a.entityId)})` : a.body;
+          const line = `- [${a.entityId}] ${inert(a.title)}: ${inert(shown)}${saveNote(a.entityId)}`;
           if (used + line.length > CONTEXT_CHARS) {
             lines.push(`- (${artifacts.length - lines.length} more pieces left out for length)`);
             break;
@@ -433,7 +462,7 @@ export function createConnector(s: Session) {
       }
     }
 
-    if (name === "start_world" || name === "add_to_world" || name === "propose_capability" || name === "create_pixel_art") {
+    if (name === "start_world" || name === "add_to_world" || name === "propose_capability" || name === "create_pixel_art" || name === "design_part") {
       if (!canRemember) return fail(`This connection (${connection.clientName}) is read only. The person can allow it to add in Sovereign.`);
       if (!s.botAs) return fail("This deployment cannot act as the bot yet. Nothing was written.");
       const bot = s.botAs(avatar.agent_id);
@@ -447,6 +476,27 @@ export function createConnector(s: Session) {
           return ok(`${existing ? "Already started" : "Started"} "${world.title}", a private World. ${persona.name} can add to it. Open it: ${url}`, { world_id: world.worldId, title: world.title, url, existing });
         }
         const worldId = typeof args.world_id === "string" ? args.world_id : "";
+        if (name === "design_part") {
+          let body: string;
+          try {
+            body = encodePart({ purpose: args.purpose, profile: args.profile, width: args.width_mm, material: args.material });
+          } catch (error) {
+            throw new WorldInputError(error instanceof PartInputError ? error.message : "the part is invalid");
+          }
+          const artifactId = typeof args.artifact_id === "string" && args.artifact_id ? args.artifact_id : null;
+          const requestId = createHash("sha256").update([s.clientId, worldId, "part", artifactId ?? "", String(args.title ?? ""), body].join("|")).digest("hex").slice(0, 40);
+          const saved = await addToWorld(bot, { worldId, title: args.title, body, artifactId }, requestId);
+          const part = parsePart(body)!;
+          const stl = partUrl(s.appUrl, worldId, saved.entityId);
+          return ok(`${saved.revised ? "Revised" : "Ready to print"}: ${cleanText(args.title, WORLD_LIMITS.title)}, ${sizeText(part)} mm in ${part.material}. STL: ${stl}. It's a design until it's printed; when it is, ask for a photo and use add_proof.`, {
+            artifact_id: saved.entityId,
+            world_id: worldId,
+            revised: saved.revised,
+            size_mm: sizeText(part),
+            material: part.material,
+            stl_url: stl,
+          });
+        }
         if (name === "create_pixel_art") {
           const prompt = typeof args.prompt === "string" ? args.prompt : "";
           let body: string;

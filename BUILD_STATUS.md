@@ -214,3 +214,9 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
 
   No browser check: the panel addition is one list rendered by a tested component.
 - **Staging is still blocked on v5.** A third `apply_migration` attempt timed out waiting for a confirmation and applied nothing (verified by a read). Without v5, memory writes fail on staging. The founder applies both files from the SQL editor (rollout plan, step 3b).
+- **Printable parts (2026-10-05).** The connector's `design_part` lets a person's AI design a simple part: a side outline in millimetres, extruded to a width. That covers stands, brackets, hooks, clips, spacers and shims.
+  - **Checking and storage:** `lib/bot/part.ts` cleans the outline onto the bed and refuses crossing, too-small or oversized shapes (a 256 mm build volume). The part is stored as a World piece, like pixel art.
+  - **The STL:** `/parts/<world>/<piece>.stl` serves a binary STL to anyone the kernel lets read that World, for Bambu Studio, PrusaSlicer or Cura.
+  - **What people see:** `read_world` summarises the part instead of showing its encoding. The World page shows the outline, size, material and a Download STL link (`app/part-preview.tsx`), plus each piece's save points.
+  - **The loop:** design, print, `add_proof`, "Saved. No. …".
+  - **Tests:** bot suite 47/47, including STL faces that are closed and outward with volume equal to area × width, download access, and the full design → print → save loop.

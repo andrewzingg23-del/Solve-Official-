@@ -8,6 +8,10 @@ import { getUser } from "@/lib/supabase/server";
 import { loadCreativeWorld, type CreativeArtifact, type CreativePosition } from "@/lib/world/creative";
 import { formatWorldActorAttribution } from "@/lib/world/attribution";
 import { parsePixelArt } from "@/lib/bot/pixel-art";
+import { parsePart } from "@/lib/bot/part";
+import { proofsIn, type SavedProof } from "@/lib/bot/proof";
+import { PartPreview } from "@/app/part-preview";
+import { SavePoint } from "@/app/save-point";
 import { createArtifactAction, updateArtifactAction } from "./actions";
 import { WorldBotAccessPanel } from "./bot-access-panel";
 
@@ -17,6 +21,7 @@ function eventTitle(type: string) {
     case "kernel.entity.created": return "Artifact created";
     case "kernel.entity.updated": return "Artifact updated";
     case "kernel.relation.created": return "Connection recorded";
+    case "kernel.evidence.attached": return "Saved with proof";
     case "kernel.grant.issued": return "Access granted";
     case "kernel.grant.revoked": return "Access removed";
     default: return type.replace(/^kernel\./, "").replaceAll(".", " ");
@@ -52,10 +57,11 @@ function PixelArtPreview({ body, title }: { body: string; title: string }) {
   );
 }
 
-function ArtifactCard({ worldId, artifact }: { worldId: string; artifact: CreativeArtifact }) {
+function ArtifactCard({ worldId, artifact, saves = [] }: { worldId: string; artifact: CreativeArtifact; saves?: SavedProof[] }) {
   const position = positionFromArtifact(artifact);
   const update = updateArtifactAction.bind(null, worldId);
   const isPixelArt = parsePixelArt(artifact.body) !== null;
+  const isPart = parsePart(artifact.body) !== null;
   return (
     <article className="flex w-full flex-col gap-3 rounded-md border border-line bg-surface/95 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.25)] backdrop-blur-md">
       <header className="flex items-start justify-between gap-3">
@@ -63,15 +69,23 @@ function ArtifactCard({ worldId, artifact }: { worldId: string; artifact: Creati
           <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-accent">Document · v{artifact.version}</p>
           <h3 className="mt-1 break-words text-base font-medium leading-snug">{artifact.title}</h3>
         </div>
-        <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full bg-accent shadow-[0_0_14px_var(--accent)]" />
       </header>
-      {isPixelArt ? (
+      {isPart ? (
+        <PartPreview worldId={worldId} pieceId={artifact.entityId} body={artifact.body} title={artifact.title} />
+      ) : isPixelArt ? (
         <PixelArtPreview body={artifact.body} title={artifact.title} />
       ) : artifact.body ? (
         <p className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-sm leading-6 text-muted">{artifact.body}</p>
       ) : (
         <p className="text-sm italic text-muted">No text yet.</p>
       )}
+      {saves.length ? (
+        <div className="flex flex-col gap-2 border-t border-line pt-3">
+          {saves.slice(-2).reverse().map((p) => (
+            <SavePoint key={p.recordId} what={p.what} basis={p.basis} at={p.at} number={p.number} link={p.link} />
+          ))}
+        </div>
+      ) : null}
       <details className="border-t border-line pt-2">
         <summary className="cursor-pointer list-none text-[10px] font-semibold uppercase tracking-[0.18em] text-muted hover:text-accent">Edit · move</summary>
         <form action={update} className="mt-3 flex flex-col gap-3">
@@ -145,11 +159,13 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
   let artifacts: CreativeArtifact[];
   let events: Awaited<ReturnType<typeof kernel.readEvents>> = [];
   let profiles: Awaited<ReturnType<typeof kernel.readActors>> = [];
+  let saves: SavedProof[] = [];
   try {
     const loaded = await loadCreativeWorld(kernel, worldId);
     world = loaded.world;
     artifacts = loaded.artifacts;
     events = await kernel.readEvents(world.scope, { newestFirst: true, limit: 12 });
+    saves = await proofsIn(kernel, world.scope).catch(() => []);
     profiles = await kernel.readActors([...new Set(events.map((event) => event.actor_id))]);
     const ownerIds = [...new Set(profiles.map((profile) => profile.accountable_party).filter((id): id is string => Boolean(id)))];
     const knownProfileIds = new Set(profiles.map((profile) => profile.actor_id));
@@ -168,6 +184,8 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
     );
   }
 
+  const savesByPiece = new Map<string, SavedProof[]>();
+  for (const save of saves) savesByPiece.set(save.pieceId, [...(savesByPiece.get(save.pieceId) ?? []), save]);
   const profilesById = new Map(profiles.map((profile) => [profile.actor_id, profile]));
   const actorLabels = new Map(profiles.map((profile) => [profile.actor_id, profile.label || profile.actor_id.slice(0, 8)]));
   const nextPosition = { x: 24 + (artifacts.length % 3) * 26, y: 26 + (Math.floor(artifacts.length / 3) % 3) * 22 };
@@ -217,12 +235,12 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
               >
                 {[...artifacts].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x).map((artifact) => (
                   <div key={artifact.entityId} className="min-w-0" style={{ gridColumnStart: canvasColumn(artifact.position) }}>
-                    <ArtifactCard worldId={worldId} artifact={artifact} />
+                    <ArtifactCard worldId={worldId} artifact={artifact} saves={savesByPiece.get(artifact.entityId)} />
                   </div>
                 ))}
               </div>
               <div className="grid gap-3 md:hidden">
-                {[...artifacts].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x).map((artifact) => <ArtifactCard key={artifact.entityId} worldId={worldId} artifact={artifact} />)}
+                {[...artifacts].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x).map((artifact) => <ArtifactCard key={artifact.entityId} worldId={worldId} artifact={artifact} saves={savesByPiece.get(artifact.entityId)} />)}
               </div>
             </>
           ) : (
