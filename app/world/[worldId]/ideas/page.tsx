@@ -5,7 +5,7 @@ import { label, quietLink, secondaryAction } from "@/app/ui";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
-import { IDEA_RELATION_KINDS, IDEA_STATUSES, readIdeaGraph, type IdeaRecord, type IdeaRelationKind, type IdeaStatus } from "@/lib/world/ideas";
+import { IDEA_RELATION_KINDS, IDEA_STATUSES, readIdeaGraph, type IdeaRecord, type IdeaRelationKind } from "@/lib/world/ideas";
 import { loadCreativeWorld } from "@/lib/world/creative";
 import { createIdeaAction, relateIdeaAction, updateIdeaStatusAction } from "./actions";
 import { IdeaExpansion } from "./expansion";

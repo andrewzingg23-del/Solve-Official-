@@ -143,10 +143,10 @@ export function RoomView({ data }: { data: RoomData }) {
           <span className="text-muted">/</span>
           <span className="font-semibold uppercase tracking-[0.2em] text-accent">Room</span>
         </nav>
-        <div className="flex items-center gap-4 text-[10px] uppercase tracking-[0.16em] text-muted">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 whitespace-nowrap text-[10px] uppercase tracking-[0.16em] text-muted">
           {data.sync}
           <span className="tabular-nums">{here} here</span>
-          <span>Private</span>
+          <span className="hidden sm:inline">Private</span>
           <Link href={`/world/${data.worldId}`} className="hover:text-accent">Details</Link>
           <Link href="/command" className="hover:text-accent">Command Center</Link>
         </div>
@@ -159,7 +159,7 @@ export function RoomView({ data }: { data: RoomData }) {
       ) : null}
 
       <div className="grid flex-1 gap-4 p-4 md:p-6 lg:min-h-0 lg:grid-cols-[16rem_minmax(0,1fr)_20rem]">
-        <aside aria-label="Who and what" className="order-2 flex flex-col gap-4 lg:order-1 lg:min-h-0 lg:overflow-y-auto">
+        <aside aria-label="Who and what" className="order-3 flex flex-col gap-4 lg:order-1 lg:min-h-0 lg:overflow-y-auto">
           <Panel title="After" id="room-goal">
             <p className="break-words text-sm leading-6">{data.goal || data.title}</p>
           </Panel>
@@ -205,7 +205,7 @@ export function RoomView({ data }: { data: RoomData }) {
           </Panel>
         </aside>
 
-        <section aria-label="Room canvas" className="order-1 flex min-w-0 flex-col gap-3 lg:order-2 lg:min-h-0">
+        <section aria-label="Room canvas" className="order-2 flex min-w-0 flex-col gap-3 lg:order-2 lg:min-h-0">
           <div className="flex items-center justify-between gap-3">
             <div role="tablist" aria-label="Canvas" className="flex items-center gap-1 rounded-md border border-line bg-surface/60 p-1 backdrop-blur-md">
               {data.repo ? (
@@ -227,7 +227,7 @@ export function RoomView({ data }: { data: RoomData }) {
           </div>
         </section>
 
-        <aside aria-label="What needs you and what happened" className="order-3 flex flex-col gap-4 lg:min-h-0 lg:overflow-y-auto">
+        <aside aria-label="What needs you and what happened" className="order-1 flex flex-col gap-4 lg:order-3 lg:min-h-0 lg:overflow-y-auto">
           <Panel title="Waiting on you" id="room-waiting" aside={<span className="text-[10px] text-muted tabular-nums">{waitingCount}</span>}>
             {waitingCount ? (
               <ul className="flex flex-col divide-y divide-line">

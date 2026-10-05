@@ -566,3 +566,14 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - The wording for record saves is now "With the record attached" (it was "file").
   - **Paths:** `lib/github/build-proof.ts`, `app/world/[worldId]/room/{actions.ts,page.tsx,view.tsx,build-map.tsx}`, `lib/bot/vouch.ts`, `tests/github/build-proof.test.ts`, `tests/bot/room.test.ts`, `BUILD_STATUS.md`.
   - **Checks:** full suite 279/279; lint clean; build ok.
+
+- 2026-10-05 07:55Z — Claude, the room looked at, not only tested.
+  - Rendered from a temporary page with the real repository's GitHub data, screenshotted in Chromium at 1440×900 and 390×844. The page was deleted before this commit.
+  - **Fixed from what the screenshots showed:**
+    - Claude and Codex both showed "C"; builders sharing a first letter now show two ("Cl", "Co").
+    - A builder working on the trunk showed "no build yet"; it now shows the trunk's build of its latest commit.
+    - Branches whose pull requests all merged were listed as in flight; they now count toward their builder only.
+    - On a phone, what's waiting on you comes first, the builder stations sit two to a row, and the header links wrap cleanly.
+  - **Also:** an unused import in the Ideas page (lint warning).
+  - **Paths:** `lib/github/repo.ts`, `app/world/[worldId]/room/{build-map,view}.tsx`, `app/world/[worldId]/ideas/page.tsx`, `tests/github/repo.test.ts`.
+  - **Checks:** full suite 280/280; lint clean (0 warnings); build ok.

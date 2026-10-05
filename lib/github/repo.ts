@@ -176,7 +176,9 @@ export function builderOfCommit(message: string): Builder | null {
 
 // Each builder's part, from the lanes and the trunk: open pull requests, what merged, their commits on
 // the trunk, and their latest build.
-export function buildersFrom(lanes: Lane[], commits: Commit[]): BuilderSummary[] {
+export function buildersFrom(lanes: Lane[], commits: Commit[], trunkBuilds: Build[] = []): BuilderSummary[] {
+  const trunkBuild = new Map<string, Build>();
+  for (const b of trunkBuilds) if (!trunkBuild.has(b.sha) || b.at > trunkBuild.get(b.sha)!.at) trunkBuild.set(b.sha, b);
   const by = new Map<Builder, BuilderSummary>();
   const of = (builder: Builder) => {
     let b = by.get(builder);
@@ -196,9 +198,16 @@ export function buildersFrom(lanes: Lane[], commits: Commit[]): BuilderSummary[]
     const b = of(c.builder);
     b.commits += 1;
     if (c.at > b.at) b.at = c.at;
+    // A builder working on the trunk is built there: its latest commit's build is its build.
+    const built = trunkBuild.get(c.sha);
+    if (built && (!b.build || built.at > b.build.at)) b.build = built;
   }
   return [...by.values()].sort((a, b) => b.at.localeCompare(a.at));
 }
+
+// A branch still in flight: an open pull request, or recent builds with no pull request yet. A branch
+// whose pull requests all merged or closed has landed; it counts toward its builder, not here.
+export const inFlight = (lane: Lane) => lane.pulls.some((p) => p.state === "open" || p.state === "draft") || lane.pulls.length === 0;
 
 // The branches with something happening: an open pull request, or a build or pull request in the
 // last few days. The trunk is shown on its own.
@@ -264,8 +273,8 @@ export async function readRepo(ref: RepoRef, opts: { token?: string | null; fetc
         readAt: now.toISOString(),
         trunkBuilds: builds.filter((b) => b.branch === trunk),
         commits,
-        lanes: lanes.slice(0, REPO_LIMITS.lanes),
-        builders: buildersFrom(lanes, commits),
+        lanes: lanes.filter(inFlight).slice(0, REPO_LIMITS.lanes),
+        builders: buildersFrom(lanes, commits, builds.filter((b) => b.branch === trunk)),
       },
     };
   } catch (error) {

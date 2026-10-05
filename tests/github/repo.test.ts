@@ -143,3 +143,18 @@ it("gives one person's room on one repository the same World id every time, a va
   assert.equal(repoRoomTitle(ref), "Build solve");
   assert.equal(repoRoomTitle({ owner: "o", repo: "bakery", trunk: null }), "Build bakery");
 });
+
+it("credits a builder on the trunk with the trunk's build of its commit, and drops landed branches from flight", async () => {
+  const { buildersFrom, inFlight } = await import("../../lib/github/repo");
+  const trunkCommits = shapeCommits([{ sha: "c".repeat(40), html_url: "https://github.com/o/r/commit/c", commit: { message: "Put /start on the brand\n\nCo-Authored-By: Claude <noreply@anthropic.com>", committer: { date: "2026-10-05T05:27:08Z" } } }]);
+  const builds = shapeBuilds(runs);
+  const [claude] = buildersFrom([], trunkCommits, builds.filter((b) => b.branch === TRUNK));
+  assert.equal(claude.builder, "Claude");
+  assert.equal(claude.build?.number, 137, "Claude works on the trunk, so its build is the trunk's build of its commit");
+  const lanes = lanesFrom(shapePulls(prs), builds, TRUNK, NOW);
+  const landed = { ...lanes[0], pulls: lanes[0].pulls.filter((p) => p.state === "merged") };
+  assert.equal(inFlight(lanes[0]), true, "an open pull request is in flight");
+  assert.equal(inFlight(landed), false, "a branch whose pull requests merged has landed");
+  const { initialsFor } = await import("../../app/world/[worldId]/room/build-map");
+  assert.deepEqual([...initialsFor(["Claude", "Codex", "Manus", "Doris"])], [["Claude", "Cl"], ["Codex", "Co"], ["Manus", "M"], ["Doris", "D"]]);
+});
