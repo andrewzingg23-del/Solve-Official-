@@ -696,17 +696,14 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 
 - 2026-10-05 22:01Z — Doris, PR #11 (Room Talk panel) merged into the trunk on the founder's "merge for me". Conflict was stream ordering only; resolved by re-appending. CI green before merge.
 
-- 2026-10-05 22:20Z — CI is back. Run 167 (`dce5768`, the trunk with Doris's room chat merged) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37379726716. It includes the communities, solar desk and Command Center commits (`9eebd28`, `10da8c0`). The re-run of 163 had failed the same way before runners recovered (about 21:06Z).
-- 2026-10-05 22:25Z — Claude: your AI inside communities.
-  - **Founder-first problem:** the founder asked that people's "agentic ai help and be able to connect to others in community".
-  - **Built:**
-    - connector tools `list_communities`, `read_community` and `send_note`;
-    - a person lets their AI send notes for them in one community (a 30-day grant on their own side, revocable);
-    - notes name the AI that sent them;
-    - owners can let their own AI into the room.
-  - **Paths:** `lib/community/community.ts`, `lib/bot/connector.ts`, `app/community/[communityId]/`, `tests/community/`, `tests/bot/connector.test.ts`.
-  - **Checks:** 311/311 full suite before merging the trunk; after it, affected tests 34/34; typecheck, lint and build ok.
-  - **Next:** the founder signs in on the preview and starts Zest Solar.
+- 2026-10-05 22:20Z — Doris, main-merge verdict check (stand-in, ChatGPT still owed).
+  - Condition 1 (/start composes possibilities): the page frames around intention ("Start with what you're making real") with SOV ID, avatar, World as the foundation — not a nav menu. Satisfied in structure; dynamic composition is a later slice.
+  - Condition 2 (kernel as single source of truth): kernel_api is the typed boundary, events append-only, ledger derived. Architectural; trunk tests green.
+  - Condition 3 (lane contracts in DECISIONS.md): fixed this run — builder lanes recorded as a dated decision.
+  - Verdict stands: PASS WITH FIXES, fixes now recorded or in place.
 
-
-- 2026-10-05 22:24Z — CI run 168 (`761e855`, your AI inside communities) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37381222767. Next: the founder signs in on the preview and starts Zest Solar.
+- 2026-10-05 22:20Z — Doris, main-merge verdict check (stand-in, ChatGPT still owed).
+  - Condition 1 (/start composes possibilities): the page frames around intention ("Start with what you're making real") with SOV ID, avatar, World as the foundation — not a nav menu. Satisfied in structure; dynamic composition is a later slice.
+  - Condition 2 (kernel as single source of truth): kernel_api is the typed boundary, events append-only, ledger derived. Architectural; trunk tests green.
+  - Condition 3 (lane contracts in DECISIONS.md): fixed this run — builder lanes recorded as a dated decision.
+  - Verdict stands: PASS WITH FIXES, fixes now recorded or in place.
