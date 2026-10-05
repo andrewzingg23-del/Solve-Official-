@@ -211,3 +211,19 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   Next: the save receipt with the seal on one real loop (agree the split with Codex); founder decisions on counsel, the domain, the business principles and the first door.
 
 - 2026-10-05 00:58Z — CI run 101 (`549ece7`, brand v3) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37249158561. Waiting on the founder: trademark counsel, the domain, the business principles and the first door. Next build: the save receipt with the seal on one real loop.
+
+- 2026-10-05 01:26Z — Claude, back to the software (founder: "go back to the software").
+  - **Proof becomes a save point:**
+    - the connector tool `add_proof` with `lib/bot/proof.ts` (`addProof`, `proofsIn`, `latestSaves`);
+    - Add access grants `kernel.evidence.attach`;
+    - `read_world` shows saves;
+    - `/bot` lists each World's latest saves;
+    - `app/save-point.tsx` exports `SavePoint` and `PracticeLabel`.
+  - The bridge plan and `ACTIVE-WORK.md` ask Codex to show saves on World pieces, label Arcadia as Practice, and add the evidence capability to `lib/world/bot-access.ts`.
+  - **Staging:** v5 and presence are still not applied. A third `apply_migration` timed out waiting for a confirmation; a read confirmed nothing changed. Recorded in the rollout plan, step 3b.
+
+  Paths: `lib/bot/{proof,connector,worlds,presence}.ts`, `app/save-point.tsx`, `app/bot/{page,worlds-panel}.tsx`, `tests/bot/{proof,connector}.test.ts`, `docs/plans/2026-10-04-bot-world-bridge.md`, `docs/plans/2026-10-03-kernel-v4-rollout.md`, `ACTIVE-WORK.md`.
+
+  Checks: bot suite 43/43 (4 new proof tests; the connector's tool list updated); typecheck ok; lint ok (one existing warning). CI for this push: pending when written.
+
+  Next: the founder applies v5 and presence on staging (two files in the SQL editor), then the first real pilot loop: start a World from Claude, add the plan, make the thing, save the proof.

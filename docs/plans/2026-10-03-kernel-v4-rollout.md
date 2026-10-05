@@ -119,7 +119,7 @@ Two more migrations follow v4, in order. Each gets the same treatment as v4: fro
 1. `supabase/migrations/20261004040000_erasable_content.sql`, sha256 `39293c226aa7db366d4a3e4acd7a2a35b9fc9e2bf4f7e96f51a344f582296f42`. It adds the `kernel_keys` schema and `seal_key`, `unseal_keys` and `destroy_key` in `kernel_api`. Post-check: no API role can select from `kernel_keys.*`; `verify_chain` passes; the three functions exist.
 2. `supabase/migrations/20261004040100_bot_presence.sql`, sha256 `470ce3b25511113af01245204fe72041df9edfd8fc5b7c7a5deab064b8b9f21e`. It adds one select policy on `realtime.messages` for the topic `bot-live:<auth uid>`, and touches nothing in the kernel.
 
-Staging has neither yet. On 2026-10-04 the connector timed out twice on `apply_migration` for v5, once plain and once in the hash-checked wrapper; it waits for a confirmation, and nothing was applied. Apply both on staging first, from the dashboard SQL editor or a session that can confirm, then repeat the post-checks.
+Staging has neither yet. On 2026-10-04 the connector timed out twice on `apply_migration` for v5, once plain and once in the hash-checked wrapper; it waits for a confirmation, and nothing was applied. A third attempt on 2026-10-05 timed out the same way; a read afterwards confirmed no `kernel_keys` schema and none of the three functions. Without v5, the bot's `remember` and `learn_business` fail on staging, so this blocks the pilot. Apply both on staging first, from the dashboard SQL editor or a session that can confirm, then repeat the post-checks.
 
 ## Step 4: the pilot (after step 3)
 

@@ -197,3 +197,20 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
   - **Identity:** brand surfaces open on the white floor; the practice label is `public/brand/solve-practice-seal.svg`, replacing `solve-simulated-seal.svg`.
   - **Other docs updated:** Build Book §2, `DECISIONS.md` and the construct film (real places only, the save beat). The first-principles business model still stands, pending the founder.
   - **Brand book page v2:** https://claude.ai/artifact/NAtCcEYspQzpPBLoKMdeY3
+
+## 2026-10-05 checkpoint — Proof becomes a save point (Claude)
+
+- **`add_proof` in the connector.** When something real happens, the person gives their assistant the proof: a link, a tracking or order number, or what a photo shows. The bot saves it on that piece in a World, and it becomes a save point on the record (`lib/bot/proof.ts`).
+  - **How it is stored:** kernel evidence on the piece's latest version.
+  - **Basis comes from the kernel's own rules:** `self_reported` on the person's own pieces, `witnessed` on someone else's. It never counts as verified.
+  - A retry saves once. Only http(s) links are kept.
+  - `read_world` shows each piece's saves. The presence line reads "Claude is saving proof with Nova."
+- **Access.** Add access now also grants `kernel.evidence.attach`. Bots let in earlier are refused with a clear message until set to Add again.
+- **On screen.** `/bot` shows each World's latest saves with the shared `SavePoint` (`app/save-point.tsx`). That file also exports `PracticeLabel` for simulated surfaces (Codex: Arcadia).
+- **Checks:**
+  - bot suite 43/43, with 4 new proof tests: self-reported and once, witnessed on someone else's piece, every refusal, and the render rules;
+  - typecheck ok;
+  - lint ok, with one existing warning.
+
+  No browser check: the panel addition is one list rendered by a tested component.
+- **Staging is still blocked on v5.** A third `apply_migration` attempt timed out waiting for a confirmation and applied nothing (verified by a read). Without v5, memory writes fail on staging. The founder applies both files from the SQL editor (rollout plan, step 3b).

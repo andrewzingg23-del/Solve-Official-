@@ -34,6 +34,7 @@ Inviting a bot means the World owner issues grants to the bot's agent on `world:
 | `read_world` {world_id} | the bot | `loadCreativeWorld(botKernel, worldId)`: the World and its text pieces, wrapped as inert data like memories |
 | `start_world` {title, goal?} | the person | `createCreativeWorld(person, …)`, since an agent can never claim a scope; then the bot is let in to add, and `goal` becomes the first piece, written by the bot |
 | `add_to_world` {world_id, title, body, artifact_id?} | the bot | `createCreativeArtifact` / `updateCreativeArtifact`, with `requestId = sha256(client, world, artifact, title, body)` and a canvas spot derived from it, so a retry is one change |
+| `add_proof` {world_id, artifact_id, what_happened, proof?, link?} | the bot | `addProof` in `lib/bot/proof.ts`: kernel evidence on the piece's latest version (`attachEvidence`). Basis is set by the kernel's rules: `self_reported` on the owner's own pieces and `witnessed` on someone else's, never verified. A retry saves once. `read_world` shows each piece's saves. (2026-10-05) |
 
 The writing tools (`start_world`, `add_to_world`) need a connection allowed to add. That is the "read and add" mode, formerly "read and remember". `read_world` and `add_to_world` also need the bot's own grant on that World. Revoking either one stops the tool. Calls go out on the same presence signal as memory tools, so the owner's `/bot` page shows "Claude is adding to a World as Nova."
 
@@ -42,11 +43,14 @@ The writing tools (`start_world`, `add_to_world`) need a connection allowed to a
 - `setBotAccess` issues or revokes the grants above, which expire after 30 days and show in the World's history as `kernel.grant.issued` and `kernel.grant.revoked`.
 - The kernel already decides who may pass access on. A World's owner can let *anyone's* bot in, for example a brother's. A member who was only given read and add cannot pass that on to their own bot.
 
+**Proof and save points (2026-10-05, brand v3).** Add access now also grants `kernel.evidence.attach` on the World's scope, so the bot can save proof. Bots let in before this hold only read and write; setting them to Add again issues the missing grant. `/bot` shows each World's latest saves with the shared `SavePoint` component (`app/save-point.tsx`); `PracticeLabel` is for simulated surfaces.
+
 ### What Codex adds to the World (proposed)
 
 1. **An invite flow** in `/world/[worldId]`. It lists bots: the owner's own, plus those of people already in the World. It calls `setBotAccess` from `lib/bot/worlds.ts` (or issues the same grants), so History shows the grant events.
 2. **Attribution.** For entities whose latest version was written by an agent, History and the canvas show the bot's name. The bot's name comes from `readActors`. They also show its owner, and the client from the event's correlation, when the connector supplies one.
 3. **One read helper** for the bot side, so Claude never parses entities: `loadCreativeWorld` as it is works. If Codex changes the artifact shape, it keeps exporting `CreativeArtifact`.
+4. **Save points on the World page (2026-10-05).** Show `proofsIn(kernel, scope)` beside each piece with `SavePoint`, and add `kernel.evidence.attach` to the Add level in `lib/world/bot-access.ts` (`BOT_CAPABILITIES`), so bots let in from the World page can save proof too.
 
 ### Safety
 

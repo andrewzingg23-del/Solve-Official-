@@ -3,7 +3,7 @@
 // kernel grants on the World's scope, issued by someone who holds them (the World's owner) to the
 // bot's agent, for 30 days at a time:
 //   read  kernel.read
-//   add   kernel.read + world.entity.write
+//   add   kernel.read + world.entity.write + kernel.evidence.attach (proof, lib/bot/proof.ts)
 // A person can also start a new World from their assistant. The World is theirs: it is created
 // with their own sign-in, because an agent can never claim a scope, and their bot is let in to add.
 // The World itself (its entities, canvas and history) is Codex's lib/world/creative.ts; this file
@@ -15,7 +15,7 @@ import { cleanText } from "./memory";
 export type WorldAccess = "none" | "read" | "add";
 export const ACCESS_CAPABILITIES: Record<Exclude<WorldAccess, "none">, readonly string[]> = {
   read: ["kernel.read"],
-  add: ["kernel.read", "world.entity.write"],
+  add: ["kernel.read", "world.entity.write", "kernel.evidence.attach"],
 };
 export const ACCESS_DAYS = 30;
 export const WORLD_LIMITS = { title: 160, body: 7000, perPerson: 50 } as const;

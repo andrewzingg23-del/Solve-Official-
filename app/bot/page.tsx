@@ -8,6 +8,7 @@ import { machineData, type MachineData } from "@/lib/bot/machine";
 import { botPulse, type Pulse } from "@/lib/bot/pulse";
 import { loadBot } from "@/lib/bot/store";
 import { worldsForBot, type WorldWithAccess } from "@/lib/bot/worlds";
+import { latestSaves, shortRecord, type SavedProof } from "@/lib/bot/proof";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
@@ -24,7 +25,7 @@ type Loaded =
   | { kind: "signed-out" }
   | { kind: "identity" }
   | { kind: "unavailable" }
-  | { kind: "ready"; userId: string; persona: Persona; version: number; savedAt: string | null; exists: boolean; connections: Connection[]; memories: Memory[]; worlds: WorldWithAccess[]; botAgentId: string | null; pulse: Pulse | null; machine: MachineData };
+  | { kind: "ready"; userId: string; persona: Persona; version: number; savedAt: string | null; exists: boolean; connections: Connection[]; memories: Memory[]; worlds: WorldWithAccess[]; saves: Record<string, SavedProof[]>; botAgentId: string | null; pulse: Pulse | null; machine: MachineData };
 
 async function load(): Promise<Loaded> {
   const user = await getUser();
@@ -34,9 +35,10 @@ async function load(): Promise<Loaded> {
     const bot = await loadBot(kernel);
     const [connections, memories] = bot.avatar ? await Promise.all([readConnections(kernel, bot.ownerId), readMemories(kernel, bot.ownerId)]) : [[], []];
     const worlds = bot.avatar ? await worldsForBot(kernel, bot.avatar.agent_id).catch(() => []) : [];
+    const saves = await latestSaves(kernel, worlds);
     const pulse = bot.avatar ? botPulse({ persona: bot.persona, since: bot.avatar.created_at, memories, connections, history: bot.history, now: new Date() }) : null;
     const machine = machineData({ connections, worlds, memories, versions: bot.history.length, now: new Date() });
-    return { kind: "ready", machine, userId: user.id, persona: bot.persona, version: bot.history.length, savedAt: bot.saved?.at ?? null, exists: Boolean(bot.avatar), connections, memories: memories.slice(0, 50), worlds, botAgentId: bot.avatar?.agent_id ?? null, pulse };
+    return { kind: "ready", machine, userId: user.id, persona: bot.persona, version: bot.history.length, savedAt: bot.saved?.at ?? null, exists: Boolean(bot.avatar), connections, memories: memories.slice(0, 50), worlds, saves, botAgentId: bot.avatar?.agent_id ?? null, pulse };
   } catch (error) {
     if (error instanceof KernelError && error.name === "unauthenticated") return { kind: "identity" };
     return { kind: "unavailable" };
@@ -90,7 +92,7 @@ export default async function BotPage() {
               live={state.pulse ? <LiveBot persona={state.persona} initial={state.pulse} userId={state.userId} /> : null}
             />
           ) : null}
-          {state.kind === "ready" && state.exists && state.botAgentId ? <WorldsPanel botName={state.persona.name} botAgentId={state.botAgentId} worlds={state.worlds} /> : null}
+          {state.kind === "ready" && state.exists && state.botAgentId ? <WorldsPanel botName={state.persona.name} botAgentId={state.botAgentId} worlds={state.worlds} saves={Object.fromEntries(Object.entries(state.saves).map(([id, list]) => [id, list.map((p) => ({ ...p, record: shortRecord(p.recordId) }))]))} /> : null}
           {state.kind === "ready" ? <BotPortraitCreator persona={state.persona} /> : null}
         </>
       )}

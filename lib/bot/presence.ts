@@ -32,6 +32,7 @@ export function describeActivity(a: Pick<Activity, "tool" | "client">, botName: 
     read_world: `is reading a World with ${botName}`,
     start_world: `is starting a new World with ${botName}`,
     add_to_world: `is adding to a World as ${botName}`,
+    add_proof: `is saving proof with ${botName}`,
   };
   return `${a.client} ${doing[a.tool] ?? `is working with ${botName}`}`;
 }

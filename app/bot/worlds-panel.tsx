@@ -6,6 +6,8 @@ import { label } from "@/app/ui";
 import { CopyField } from "./copy-field";
 import { ACCESS_DAYS, type WorldAccess, type WorldWithAccess } from "@/lib/bot/worlds";
 import { setWorldAccessAction } from "./actions";
+import { SavePoint } from "@/app/save-point";
+import type { SavedProof } from "@/lib/bot/proof";
 
 const LEVELS: [WorldAccess, string][] = [
   ["none", "Out"],
@@ -13,13 +15,13 @@ const LEVELS: [WorldAccess, string][] = [
   ["add", "Add"],
 ];
 
-export function WorldsPanel({ botName, botAgentId, worlds }: { botName: string; botAgentId: string; worlds: WorldWithAccess[] }) {
+export function WorldsPanel({ botName, botAgentId, worlds, saves = {} }: { botName: string; botAgentId: string; worlds: WorldWithAccess[]; saves?: Record<string, (SavedProof & { record: string })[]> }) {
   return (
     <section className="flex flex-col gap-4 border-t border-line pt-6">
       <div className="flex flex-col gap-2">
         <p className={label}>Where {botName} works</p>
         <p className="max-w-2xl text-sm leading-6 text-muted">
-          Let {botName} into a World, and the assistant you connected can read it or add drafts to it as {botName}. Access lasts {ACCESS_DAYS} days, appears in the World&apos;s history, and you can take it back here. Your assistant can also start a new World for a goal.
+          Let {botName} into a World, and the assistant you connected can read it or add drafts to it as {botName}. Access lasts {ACCESS_DAYS} days, appears in the World&apos;s history, and you can take it back here. Your assistant can also start a new World for a goal. When something there becomes real, give your assistant the proof and it is saved on the record.
         </p>
         <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(18rem,0.7fr)] sm:items-center">
           <p className="text-xs leading-5 text-muted">Share this ID with a World owner who wants to invite {botName}.</p>
@@ -55,6 +57,13 @@ export function WorldsPanel({ botName, botAgentId, worlds }: { botName: string; 
                   </button>
                 ))}
               </form>
+              {saves[w.worldId]?.length ? (
+                <div className="flex w-full flex-col gap-2 border-t border-line pt-3">
+                  {saves[w.worldId].map((p) => (
+                    <SavePoint key={p.recordId} what={p.what} basis={p.basis} at={p.at} record={p.record} link={p.link} />
+                  ))}
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>
