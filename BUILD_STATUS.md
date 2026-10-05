@@ -190,3 +190,10 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
   - **Proposed business:** free to bring your AI; paid when an outcome settles; platforms pay to verify; settlement later, gated. Moat: the record graph, neutrality, the authority engine and the human network. North star: verified outcomes per person per month and time to first proof.
   - `BRAND.md` and the construct doc are updated to match.
   - Visual brand book (private artifact): https://claude.ai/artifact/NAtCcEYspQzpPBLoKMdeY3
+- **Brand v3: "Everything here is real" (founder approved, 2026-10-05).** The founder found *Ask. Allow. Prove.* generic. `docs/brand/BRAND.md` v3 is the construct, inverted: games gave us worlds that aren't real, AI gave us answers that aren't real, and solve is a world where everything is real.
+  - **The game, made real:** the product's game-like structure (World, your character, party, quests, rules, Packs, progression) maps to built functions.
+  - **Save points and Practice:** a real result is a save point on the record; simulated activity is Practice, always labeled.
+  - **Guardrails:** the game stops at money and voice (no confetti, streaks, points or gamified copy).
+  - **Identity:** brand surfaces open on the white floor; the practice label is `public/brand/solve-practice-seal.svg`, replacing `solve-simulated-seal.svg`.
+  - **Other docs updated:** Build Book §2, `DECISIONS.md` and the construct film (real places only, the save beat). The first-principles business model still stands, pending the founder.
+  - **Brand book page v2:** https://claude.ai/artifact/NAtCcEYspQzpPBLoKMdeY3

@@ -1,245 +1,239 @@
-# solve: the brand (v2)
+# solve: the brand (v3)
 
-**Status.** The founder adopted v1 on 2026-10-04. Later the same day, a first-principles rethink of the business (`docs/brand/2026-10-04-first-principles.md`) rebuilt the brand around the app's three functions: **Ask. Allow. Prove.** v2 applies four research tracks done the same day: naming, competition, people and precedents (`docs/brand/research/`). The changes from v1 are listed in §1. **They take effect when the founder confirms them.** Until then, the v1 lines in the Build Book (§2) hold. The construct ad, production and prompts are in `docs/brand/2026-10-04-the-construct.md`. Brand changes go through the founder.
+**Status.** Direction approved by the founder on 2026-10-05 ("Go"). This is the canonical brand.
+- **History:**
+  - v1, the construct (2026-10-04).
+  - v2, research-backed (`docs/brand/research/`).
+  - The first-principles rethink of the business (`docs/brand/2026-10-04-first-principles.md`). Its business model still stands; its line, *Ask. Allow. Prove.*, read as generic and now describes how the system works inside, not the brand.
+- **Still conditional:** the name (§13) until trademark counsel clears it.
+- **Film and production:** `docs/brand/2026-10-04-the-construct.md`.
+- **Brand changes go through the founder.**
 
-## 1. What v2 changes, and why
+## 1. The idea
 
-| v1 | v2 | Why |
+> **Everything here is real.**
+
+Games gave us worlds that aren't real. AI gave us answers that aren't real. **solve is a world where everything is real.**
+
+**The construct, inverted.** It is the founder's image: a person at their own desk while a world assembles around them. In the film that inspired it, the construct loads a world that isn't real. solve's construct loads one that is. The factory is a real factory, the supplier is a real person, the order really ships, and the proof is on the record. (Internal only: we never name or copy the film, its chair, its code rain or its colours.)
+
+**Why now.**
+- "Slop" was Merriam-Webster's word of the year for 2025.
+- 68% of US consumers often wonder whether content is real (Gartner, 2026).
+- People are surrounded by worlds and answers that only look real, and they are tired of it. "Real" is the scarcest thing on the internet.
+
+## 2. Why it is ours, not a slogan
+
+The product is already a world: the founder's vision calls the person *the player*. Every game idea below maps to something built and tested, so the line is a promise the product keeps.
+
+| In a game | In solve | Built |
 |---|---|---|
-| The idea was a feeling: the world builds around you | **The brand is the product's three functions: Ask. Allow. Prove.** Thesis: *Everyone wants you to trust their AI. solve removes the need to.* | The first-principles rethink. Intelligence is a commodity; permission and proof are scarce. The industry sells power and trust campaigns; solve sells accountability. The thesis is the founder's own Build Book line (§12). |
-| Promise: *"Stay in your seat. The world builds around you."* | **"Ask. Allow. Prove."** (An intermediate draft, "You decide. The world builds.", is superseded.) The seat stays as the film's image, but it is the driver's seat. | Three tracks flagged "stay in your seat" as passive, each on its own evidence:<br>- **Effort and labor research:** people value what they put effort into.<br>- **The AI-user laziness penalty:** AI users are judged lazier.<br>- **Gen Z's fear of getting worse:** 61% of adults under 30 expect AI to make people worse at creative thinking.<br>"The world builds around you" alone also sounds like Meta Muse and OpenAI's Dots ("keeps working while you're away"). |
-| The lead was "the world builds" | The lead is **proof and authority**: *on the record* and *your yes*; convenience is the reward | The open ground in the market is provable outcomes plus authority that stays with the person, on top of whatever AI they already use. No consumer brand owns it. |
-| A working mark: a point above a horizon | **The point:** the wordmark `solve.`, the symbol `s.`, the record seal and a simulated-evidence label | The horizon read as a sunrise icon. The bare word *solve* is crowded in trademark terms, so the brand needs a distinctive device. A point that appears only where something is real gives the device a meaning that can't be faked. |
-| Generated imagery allowed where the world changes, disclosed | **No generated imagery in paid brand ads.** Every world in the film is a real place, filmed. Generated imagery is for storyboards only. | 50% of US consumers prefer brands that avoid generative AI in consumer content. AI ads are rated more annoying, and the dislike spills onto the brand. A film whose worlds are all real is itself the proof. |
-| The name was adopted with "a trademark search later" | The name holds **only on conditions** (§7): a composite mark, a modified domain, no paid media before counsel clears it, and assets that don't depend on the word | MIT holds an incontestable SOLVE registration. SolveAI raised $50M (GV) for a product close to ours in wording. Solve Intelligence has applied for the bare word. |
-| SOV for identity and the token | **Choose another ticker before any token exists** | Sovryn's governance token is already SOV. |
+| The world you enter | Your **World**, where the real thing gets made | Worlds, the World interface |
+| Your character | Your **bot**, designed by you and named by you | Persona, creator, presence |
+| Your party | People and their bots, with the access you give them | World membership, per-World bot access |
+| Quests | A goal becomes a route of real steps through real providers | The causal planner, providers |
+| The rules of the world | Who may do what; spending, signing, publishing and access wait for your yes, and are checked again at the moment of action | Grants, approval gates, enactment re-checks |
+| **Save points** | A real result lands **on the record**, and progress becomes permanent | Append-only, hash-chained record with evidence |
+| **Practice mode** | A labeled sandbox where nothing counts | Arcadia, always labeled as simulated |
+| Delete a save | Erase what you said; the record keeps only that something existed | Erasure by destroying the key (kernel v5) |
+| Expansions | **Packs** for a sector or a platform | Packs, the Whop bridge |
+| Progression | The ascent: seat → room → network → economy | §11 |
 
-## 2. Core
+How it works inside (for investors, partners and the product team): **Ask. Allow. Prove.** You ask, you allow what matters, and what happened is proven. For investors and press, the thesis is the founder's Build Book line: *we're not asking you to trust us; we're removing the need to.*
 
-- **Purpose:** the world should build around the person, not the other way around.
-- **The enemy: pretending.** The internet is filling with things that only look real: generated content, fake results, and agents that say "done" when nothing happened. solve is for what is real.
-- **Thesis:** everyone wants you to trust their AI. solve removes the need to.
-- **Promise:** **Ask. Allow. Prove.** Ask for anything, allow only what you choose, and get proof of what happened.
-- **Proof:** every result is real, and on the record.
+## 3. The enemy: things that aren't real
 
-**Positioning.** For people with something they want to make real, solve is the world that builds it with them:
-- it works with the AI they already use;
-- it brings the people, makers and steps it takes;
-- it never acts without their yes;
-- it keeps an honest record of what actually happened.
+- **Game worlds** that are vivid and fake.
+- **The metaverse:** a fake world, and more than $70B lost on it.
+- **AI answers** that sound sure and aren't, and agents that say "done" when nothing happened.
+- **Slop:** content made to look real.
+- **"Make money online" claims** that no one can check.
 
-Other AI gives you answers and says "done". solve gives you results you can prove.
+solve is the opposite of each one: a real world, real answers, real results, real proof.
 
-**The core abstraction is the record.** It is what we name, show and defend: the record is yours, it spans every AI you use, and it only says what happened. The *World* is where the record grows. The living model of the person's world (the ontology) stays internal; copy only hints at it ("it understands how your world fits together").
-
-## 3. Lines
+## 4. Lines
 
 | Use | Line |
 |---|---|
-| Thesis (manifesto, press, pitch) | **Everyone wants you to trust their AI. solve removes the need to.** |
-| Brand line | **Ask. Allow. Prove.** |
+| Brand line | **Everything here is real.** |
+| Thesis (manifesto, film, press) | **Games gave us worlds that aren't real. AI gave us answers that aren't real. solve is a world where everything is real.** |
 | Invitation (the product's first words) | **Ask for a way.** |
-| Proof (every result, every receipt) | **On the record.** |
+| A real result lands | **Saved. On the record.** |
+| Practice | **Practice. Simulated, so nothing here counts.** |
 | Ownership | **Your world. Your record. Your call.** |
-| The film's super (the ad's closing text) | *Ask. Allow. Prove.* Then: *Every world in this film is real. On the record.* |
+| Investors and partners | *We're not asking you to trust us. We're removing the need to.* |
 
-## 4. Messaging house
+**"Everything here is real" is a claim the product must keep.**
+- "Here" means your World and your record.
+- Practice is a separate, labeled place, and simulated results never appear as real anywhere.
+- If something can't be shown to be real, it doesn't get the point (§8).
 
-**Roof:** Ask. Allow. Prove. Every result on the record.
+## 5. Practice and Real
 
-The pillars map onto the line: **Any AI** and **The whole path** are *Ask*, **Yours** is *Allow*, and **Real** is *Prove*.
+The founder's directive "label simulated evidence honestly" becomes the most natural thing in the product:
 
-| Pillar | Says | Proof in the product today | Still to build |
-|---|---|---|---|
-| **Real** | Every result is real, and the record shows how it happened. Simulated is always labeled. | Append-only, hash-chained kernel record; Arcadia labeled as a sandbox | The record seal on finished results; a proof photo for physical things |
-| **Yours** | Nothing spends, signs, publishes or changes who has access without your yes. Erase means erase. | Grants with capabilities; connected assistants get no tool to spend, sign, publish or grant; sealed memory erased by destroying its key (kernel v5) | Export your record; v5 applied to staging |
-| **Any AI** | Bring the assistant you already use, and solve gives it a real world to work in. No new AI bill. | MCP connector (Claude and other assistants), read or read-and-add, per-World access | More assistants verified end to end |
-| **The whole path** | From "I want to make this" to the thing in your hand. | The World loop; Codex's 3D viewer | The first "make a real thing" loop: design, print or order, prove |
+- **Practice:**
+  - try a world, rehearse a plan, learn the rules;
+  - everything is simulated and says so;
+  - a dashed ring, never the point.
+- **Real:**
+  - real people, real money (only when the founder allows it), real things;
+  - every result is a save point on the record.
+- **The line between them is never blurred.** No practice number appears in a real view, and no real result is mixed into practice.
 
-## 5. Who we serve first
+## 6. Where the game stops
 
-From `docs/brand/research/2026-10-04-people.md`:
+The game is in the feeling: a world, your character, your party, progress that stays. It is never in the money and never in the voice.
 
-1. **Makers with physical-object ideas.** 3D-printer owners and crafters. Entry-level printer shipments rose 26% in 2025, and Bambu Lab holds a 37% share.
-   - **Lead with** craft and authorship.
-   - **Proof they need:** a thing in hand, and a record that the design is theirs.
-2. **Gen Z and millennial side-builders.**
-   - **Lead with** authorship and honest money.
-   - **Proof they need:** a cost and time ledger, and spending only with their approval.
-3. **Time-poor parents.**
-   - **Lead with** time and control.
-   - **Proof they need:** visible caps, approval gates, hours saved.
-4. **Experts going solo.**
-   - **Lead with** a checkable track record of *their* judgment.
+- **Never gamify money.** No confetti, streaks, loot boxes, spin-to-win, countdown pressure or variable rewards anywhere near spending, trading or payments. Massachusetts regulators charged Robinhood in 2020 partly over gamified trading, and it removed its confetti in 2021.
+- **No points, XP or badges.** The only score is the record.
+- **No leaderboards of money or income.** Never equate screen time, spending or earnings with rank or skill (Build Book §10).
+- **No engagement loops.** The north star is verified outcomes per person, not time in app (`2026-10-04-first-principles.md` §5).
+- **No gamified voice.** Never write "Level up!" or "Quest complete!", no emoji confetti, no hashtags. The voice stays terse and adult (§10).
+- **Age.** A world that feels like a game will attract minors. Anything touching money or contracts is gated by age and identity.
 
-The brand's first hero audience is the maker: "a thing in hand" is the most visible proof there is. The founder still owns the wedge choice. The Build Book's Whop verification wedge fits the same brand, since verifying a creator's claim is also *on the record*.
+## 7. The film
 
-## 6. Where we stand against the field
+One locked frame: a person at their own desk in an empty apartment. Shot list in the construct doc.
 
-- **Crowded territory; don't fight there:**
-  - assistant or companion;
-  - "does it for you" and "works while you're away";
-  - "AI OS";
-  - personal superintelligence;
-  - "build things" and "ideas into reality", which OpenAI and Google now say.
-- **Ours:**
-  - the neutral home for any AI;
-  - provable outcomes for individuals;
-  - authority that stays with the person;
-  - the whole path to a physical thing.
-- **Defensibility comes from what the labs can't easily become:** the person's own record across every AI, the real-world network of makers and suppliers, and the living model of the person's world. Claim *on the record* before a lab does.
+1. Night. They type: "I want to make pens."
+2. The floor turns white, and a real molding shop assembles around the desk, piece by piece. It was filmed for real, with the desk set in it.
+3. A real person walks in: the supplier.
+4. The yes on screen: "Approve: 2,000 units, ships Friday?" They click yes.
+5. "Order 1042 shipped." The point lands. **Saved. On the record.**
+6. Montage: each keystroke loads a new real world at the same framing.
+7. The empty room again. Super: **Everything here is real.** End card: `solve.` Small type: *Every world in this film is a real place.*
 
-Full map: `docs/brand/research/2026-10-04-competition.md`.
+**No generated imagery in the paid film.** Generated stills are for storyboards only. A film that claims "everything here is real" has to be real.
 
-## 7. Name: solve, on conditions
+## 8. Identity
 
-Research: `docs/brand/research/2026-10-04-naming.md`. **Not legal advice.**
+Working files in `public/brand/` are outlined from Archivo (SIL OFL) at weight 600, and hold until a designer refines them.
 
-**Risk**
-- **Medium-high** for the bare word SOLVE in software and AI.
-- **Medium** as a stylized consumer wordmark inside a distinctive identity.
-
-**Rules**
-1. **File a composite, not the bare word.** That means the `solve.` wordmark with the point, and the record seal as a design mark, after counsel's clearance search. Counsel should assess first:
-   - MIT's SOLVE (Reg. 5352924, incontestable);
-   - Solve Intelligence's SOLVE (Ser. 98550624);
-   - SolveAI's SOLVEAI (UK).
-2. **Never "solve ai" or "Solve Intelligence".** Descriptors go in lines, not in the name.
-3. **No paid media until counsel clears the name.**
-4. **Use a modified domain now and buy the .com later.** Square, Ramp and Notion all did this.
-   - solve.com and the obvious variants are taken.
-   - On 2026-10-04 Vercel's registrar listed as available: **solve.new** ($499.99 a year, fitting a "start a World" link), **solve.place** ($25.99), **solve.build** ($1,650), **solve.inc** ($2,499) and others.
-   - Nothing was bought; that's the founder's call.
-5. **Build assets that don't depend on the word:** the point, the seal, the construct film and *On the record*. If counsel says no, the brand transfers to a new name without resetting.
-6. **Sovereign stays internal** (extremism associations, "sovereign AI" meaning national AI, a crowded register). Don't say "Sovereign engine" in public: a SOVEREIGN ENGINE application exists.
-7. **SOV:** choose another ticker before any token, since Sovryn's SOV exists. "SOV ID" needs the same check.
-
-## 8. Architecture
-
-One master brand. Everything else is a plain descriptor, never a rival name.
-- **solve:** the brand and the product.
-- **Sovereign:** the engine and philosophy underneath, used internally.
-- **Descriptors, lowercase in running text:**
-  - your **World**: each thing you're making;
-  - **Rooms**: purpose-built spaces;
-  - **Packs**: sector mechanics;
-  - your **bot**, named by you (for example Nova);
-  - **the record**.
-
-Name rules:
-- **Wordmark:** the logo is always `solve.` (lowercase, with the point). Running copy says `solve`, without the period.
-- **Never stack names.** Never call it an AI app.
-
-## 9. The ascent
-
-The brand stays the same while the product grows. Show only the rung that is real, and the next one as an ambition.
-
-1. **The seat:** one person, one World, one real thing made and proven. *(Now.)*
-2. **The room:** Worlds with a purpose, where a person's bot and tools work together.
-3. **The network:** worlds connect; people and their bots build together.
-4. **The economy:** communities with members, rules, treasuries and reputation settle value.
-5. **The interface for reality:** the vision's end state.
-
-## 10. Identity
-
-Working files in `public/brand/` are outlined from Archivo (SIL OFL) at weight 600. They hold until a designer refines them; a bespoke typeface is a later step.
-
-- **The point.** The brand's one device: a solid circle, cyan `#22d3ee` on dark, ink on light. It means *real*.
-  - It ends the wordmark: `solve.`, a finished result.
-  - It is the person: the one thing that stays still while the world builds around it.
-  - **Rule: the point is never decoration.** It marks the two moments that matter, *your yes* (Allow) and *a result that is real* (Prove), plus the brand itself and a person's live presence.
-- **Wordmark.** `solve.` Files:
+- **The point is the save point.** It is the brand's one device. Where it appears, something real became permanent.
+  - It ends the wordmark: `solve.`
+  - It lands when a real result reaches the record, and when you give your yes.
+  - **It is never decoration** and never appears in Practice.
+- **Wordmark.** `solve.`:
   - `solve-wordmark.svg` (currentColor);
-  - `solve-wordmark-on-dark.svg` (ice white, cyan point);
-  - `solve-wordmark-on-light.svg` (ink).
+  - `solve-wordmark-on-dark.svg`;
+  - `solve-wordmark-on-light.svg`.
 - **Symbol and app icon.** `s.`:
-  - `solve-mark.svg` (currentColor);
-  - `solve-app-icon.svg` (abyssal tile);
-  - `solve-favicon.svg` (heavier weight for 16–32 px).
-- **The record seal.** The point ringed by *ON THE RECORD · SOLVE ·* (`solve-record-seal.svg`).
-  - It appears only beside a real, verifiable result, and in the product it carries the record's ID and date.
-  - Below about 96 px, use the point followed by the words *On the record*.
-- **Simulated label.** A dashed ring with no point, reading *SIMULATED · NOT ON THE RECORD* (`solve-simulated-seal.svg`). Simulated evidence never gets the point.
+  - `solve-mark.svg`;
+  - `solve-app-icon.svg`;
+  - `solve-favicon.svg`.
+- **The record seal.** The point ringed by *ON THE RECORD · SOLVE ·* (`solve-record-seal.svg`). It sits only beside a real, verifiable result, and in the product it carries the record's ID and date. Below about 96 px, use the point followed by *Saved* or *On the record*.
+- **The practice label.** A dashed ring with no point: *PRACTICE · SIMULATED · NOT REAL ·* (`solve-practice-seal.svg`).
+- **The white floor.** Brand surfaces (site, film, social) open on the construct's clean white floor, ice `#f2f7fb`, with ink type `#04070d`. The product keeps its calm dark mode. This moves the brand off the dark-and-neon look every AI product shares.
 - **Colour:**
-  - abyssal blue-black `#04070d`–`#0a1220`;
-  - ice white `#f2f7fb`;
-  - cyan `#22d3ee`, reserved for the point and for interaction;
-  - emerald `#00e5a0` for positive, red `#ff4d5e` for destructive.
+  - ink `#04070d`;
+  - ice `#f2f7fb`;
+  - abyssal `#0a1220` for the product's dark surfaces;
+  - the point: `#22d3ee` on dark, deep cyan `#0891b2` on light;
+  - emerald `#00e5a0` positive, red `#ff4d5e` destructive.
 
   **No gold.**
-- **Type.** Archivo; uppercase labels with generous tracking; stable tabular numbers.
-- **Motion: assembly.** Letters rise from the floor line and settle (about 600 ms, calm easing), and **the point lands last.** Every result that reaches the record lands the same way. No glitch, particle swarms or spinning HUD.
-- **Sound.** One soft "set" tone when the point lands. Never notification noise.
-- **Imagery:**
-  - real people, real places and a locked frame;
-  - the person is visibly deciding (the yes on screen);
-  - every story ends on proof;
-  - **no generated imagery in paid brand ads.**
-- **Interface.** Calm: the World and the person first, few panels.
+- **Type.** Archivo; uppercase labels with generous tracking; tabular numbers.
+- **Motion: assembly.** A world assembles from the floor up and settles with calm easing. **The point lands last: the save.** No glitch, particles, code rain or spinning HUD.
+- **Sound.** One soft "save" tone when the point lands. Never notification noise.
+- **Imagery.** Real people, real places, a locked frame. The person is visibly deciding. Every story ends on a save point.
 
-## 11. Voice
+## 9. Who first
 
-Terse, confident, plain. Old money, not hype. Say what the AI did and what the person decided.
+From `docs/brand/research/2026-10-04-people.md`. Same people, with what "real" means to each:
+
+| Audience | What "real" means to them |
+|---|---|
+| **Makers with object ideas** (3D printers grew 26% in 2025; Bambu Lab holds 37%) | The thing is in their hand, and the record says the design is theirs. **The film's hero.** |
+| **Gen Z and millennial side-builders** (Minecraft and Roblox grew up with them) | A world they build in where the money and customers are real, and nothing is faked |
+| **Sellers whose claims need proof** (the Build Book wedge, the Whop bridge) | A track record that is real: every claim saved before the outcome |
+| **Time-poor parents, experts going solo** | Real progress in stolen hours, with nothing spent without their yes |
+
+## 10. Voice
+
+Terse, confident, plain. Old money, not hype. The game shows in the structure, never in the voice.
 
 | Write | Not |
 |---|---|
-| "Ask for a way." | "Unlock the power of AI agents." |
-| "Order 1042 shipped. On the record." | "Our revolutionary platform delivers results." |
+| "Everything here is real." | "The future of AI-powered productivity." |
+| "Saved. On the record." | "Quest complete! +50 XP" |
+| "Practice. Nothing here counts." | "Demo mode 🎉" |
+| "Order 1042 shipped." | "Our revolutionary platform delivers results." |
 | "Designed with Nova. Decided by you." | "Generated by AI." |
 | "Nothing spends without your yes." | "Seamless, frictionless, autonomous." |
-| "Works with the assistant you already use." | "AI-powered operating system." |
 
-**Words to avoid in headlines:**
-- "AI", "AI-powered" (they lower trust and purchase intent);
-- "agent", "superintelligence";
-- "operating system" (OpenAI owns that framing, and Humane and Rabbit made it sound like overclaiming);
-- "automation", "does it for you", "effortless" (the laziness penalty);
-- "revolutionary";
-- hustle and income language.
+**Never in headlines:** AI, AI-powered, agent, superintelligence, operating system, metaverse, automation, "does it for you", effortless, revolutionary, level up, hustle or income talk. "Player" stays internal; copy says "you".
 
-"Bot" versus "assistant" versus a name alone is untested. Lead with the name the person gives it, and test before settling the generic word.
+## 11. Architecture and the ascent
 
-## 12. Iconic assets, built once and repeated for years
+- **solve** is the brand and the product. **Sovereign** is the engine, internal only. Descriptors, lowercase in running text:
+  - your **World**;
+  - **Rooms**;
+  - **Packs**;
+  - your **bot** (named by you);
+  - **Practice**;
+  - **the record**.
+- **The logo is always `solve.`** Running copy says `solve`. Never stack names; never call it an AI app.
+- **The ascent:**
+  1. **The seat:** one person, one real thing. *(Now.)*
+  2. **The room:** a World with a purpose.
+  3. **The network:** worlds connect.
+  4. **The economy:** communities settle real value.
+  5. **The interface for reality.**
 
-1. **The construct film.** Ask, allow, prove. Every world in it is real.
-2. **The point.** It lands last, everywhere.
-3. **The record seal.**
-4. **"Ask for a way."**
-5. **The assembly transition.** How every world and every result arrives.
+  Show only the rung that is real.
 
-## 13. Commitments
+## 12. Against the field
 
-Costly, structural commitments are what make a brand believable.
+| They | solve |
+|---|---|
+| **Pokémon Go:** the real world, fake creatures | The real world, real results |
+| **The metaverse:** a fake world | A real one |
+| **AI assistants:** answers, then "done" | A world where the result is saved only when it's real |
+| **Gamification apps:** points for fake things | No points. The record is the score. |
+| **Agents that act while you're away** (Muse, Dots) | You in the world, deciding. The irreversible waits for your yes. |
+
+The neutral home for any AI, provable outcomes and authority that stays with the person are still the open ground (`research/2026-10-04-competition.md`). "Everything here is real" is how a person feels all three at once.
+
+## 13. Name: solve, on conditions
+
+Unchanged from v2; research in `research/2026-10-04-naming.md`. Not legal advice. Risk is medium-high for the bare word.
+
+1. File a composite (`solve.` with the point, plus the record seal) after counsel's clearance, never the bare word.
+2. Never "solve ai" or "Solve Intelligence".
+3. No paid media until counsel clears the name.
+4. Use a modified domain now: solve.new ($499.99 a year) or solve.place ($25.99) were available on 2026-10-04. Nothing has been bought.
+5. Name-independent assets (the point, the seal, the film, "Everything here is real") let the brand survive a rename.
+6. Sovereign stays internal. Choose a token ticker other than SOV, which Sovryn already uses.
+
+## 14. Commitments
 
 **True in the product today:**
-- Nothing spends, signs, publishes or changes access without your yes. Connected assistants get no tool for it.
-- Erase means erase: forgetting a memory destroys its key. This is built; it still has to be applied to staging and live.
+- Nothing spends, signs, publishes or changes access without your yes.
+- Erase means erase. This is built; it still has to be applied to staging and live.
 - Simulated is always labeled.
 
 **Proposed; the founder decides:**
-- Your record is yours: export it anytime (to build).
-- No ads in solve, ever.
-- We never sell your record or train models on it.
+- Export your record any time.
+- No ads, ever.
+- Never sell your record or train models on it.
 
-## 14. Never
+## 15. Never
 
-- Glitch effects, particle swarms or HUD dashboards on brand surfaces.
-- The point used as decoration, or the seal beside anything unverified.
-- Generated imagery in paid brand ads.
-- "AI-powered", "agents", "superintelligence", "operating system", "revolutionary" as a headline.
-- Income promises or projections without evidence (Build Book §10).
+- Anything simulated shown as real, or the point in Practice.
+- Gamified money: confetti, streaks, loot boxes, variable rewards, money leaderboards.
+- Points, XP, badges or a gamified voice.
+- Generated imagery in the paid film.
+- Glitch, particles, code rain, HUD rings, or copied imagery from the film that inspired the construct (its chair, code or palette).
+- Income promises or projections without evidence.
 - Leading with a token.
-- Simulated activity shown as real.
-- Copied Matrix imagery, including the red chair. The seat is the person's own.
-- Sub-brands that compete with the master brand.
+- Sub-brands that compete with `solve.`
 - Filing or advertising the bare word SOLVE before counsel clears it.
 
-## 15. Founder decisions open
+## 16. Founder decisions open
 
-1. Confirm v2's changes (§1): the thesis and the line *Ask. Allow. Prove.*, the point identity, real-only imagery in paid ads.
-2. The business principles in `2026-10-04-first-principles.md` §5: "paid when it's real" pricing, and verified outcomes per person as the north star.
-3. Trademark counsel: a clearance search for the composite mark.
-4. Domain: buy a modified domain (for example solve.new or solve.place), or wait.
-5. The token ticker, if and when a token is real.
-6. The commitments in §13 that aren't yet true.
-7. The wedge: makers or Whop verification. Both are on the record.
+1. Trademark counsel: a clearance search for the composite mark.
+2. Domain: solve.new and/or solve.place, or wait.
+3. The business principles: "paid when it's real" and the north star (`2026-10-04-first-principles.md` §5).
+4. The door: verification or making things. Both are real.
+5. The proposed commitments in §14.

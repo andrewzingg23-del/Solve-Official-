@@ -9,11 +9,11 @@ One writer per architectural surface. Update this file when work starts, changes
 
 **Claude, first slice done (founder: "your pick"):** the agent screen and a richer code-drawn avatar. Paths: `app/bot/{creator,character,stage,contract}.tsx`, `app/bot/page.tsx` and `lib/bot/persona.ts`. Codex, please check with Claude before editing these files while this is open. Codex's portrait creator (`app/bot/portrait-creator.tsx`) and connector tools stay as they are; the portrait creator moves lower on `/bot`. Next after this: bot onboarding at sign-on, built on the World entrance's existing "Who should represent you" step (Codex's `app/world/onboarding.tsx`), agreed with Codex first.
 
-**Brand (founder decision, 2026-10-04):** the construct; solve is the master brand. Everyone builds to `docs/brand/BRAND.md`. For Codex's surfaces this means:
+**Brand (founder decisions, 2026-10-04 and 2026-10-05):** the construct, inverted; solve is the master brand. Everyone builds to `docs/brand/BRAND.md`. For Codex's surfaces this means:
 - the World entrance and intro follow the new signature intro (an empty room and one seat, the world assembles around it, the wordmark lands on the floor line, hold to enter);
 - calm screens with motion as assembly, no glitch, HUD or particle effects;
 - copy never says "agents" or "AI-powered" as a headline.
-- *Proposed, pending the founder (2026-10-04):* the brand is rebuilt around the product's three functions, **Ask. Allow. Prove.** (`docs/brand/2026-10-04-first-principles.md`). The point (`solve.`) appears only for a person's yes and for results that are really on the record. Simulated results (Arcadia) get the dashed "simulated" label, never the point. If confirmed, the next shared slice is a receipt with the seal on finished real outcomes: the component on Claude's side, the World outcome surfaces on Codex's.
+- *Brand v3 (founder approved, 2026-10-05): "Everything here is real."* Real results are save points: the point lands only on a real, recorded result or a person's yes. Simulated activity is **Practice**, always labeled with the dashed "Practice · simulated" ring, never the point; Arcadia surfaces should say Practice. Never gamify money or voice: no confetti, streaks, points or XP. Brand surfaces open on the white floor (ice `#f2f7fb`); the product keeps its dark. The next shared slice is a save receipt with the seal on finished real outcomes: the component on Claude's side, the World outcome surfaces on Codex's.
 
 Shared contracts: DOMAIN-CONTRACTS.md, lib/kernel/client.ts (typed kernel_api), lib/kernel/local.ts (embedded kernel), lib/sandbox/pglite.ts (browser database boundary).
 

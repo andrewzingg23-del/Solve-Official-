@@ -91,6 +91,8 @@ The Build Book's internal loop (Ask → Find a route → Enter a Room → Act �
 
 ## 6. What the brand becomes
 
+**Superseded on 2026-10-05.** The founder found *Ask. Allow. Prove.* generic, and the brand is now **"Everything here is real."** (`BRAND.md` v3): the construct, inverted, with save points and Practice. Ask, Allow and Prove remain the description of how the system works inside. The business in §5 still stands. The original text follows for the record.
+
 The brand is built around the three functions, so it can't drift from the product.
 
 | Role | Line |

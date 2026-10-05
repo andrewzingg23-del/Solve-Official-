@@ -2,16 +2,15 @@
 
 Date: 2026-10-04. Status: **adopted by the founder** (2026-10-04). The canonical brand is `docs/brand/BRAND.md`, and the Build Book's brand lock (§2) points to it. This doc keeps the reasoning, the research, the ad's shot list and the production prompts.
 
-**v2 update, same day, pending the founder's confirmation.** Deeper research (`docs/brand/research/`) changes three things here:
-- The line is now **"Ask. Allow. Prove."** "Stay in your seat" read as passive. See `2026-10-04-first-principles.md`.
-- The person is visibly deciding in the film.
-- **Every world in the paid film is a real place, filmed.** Generated imagery is only for storyboards.
+**v3, approved 2026-10-05: the construct, inverted.** The line is **"Everything here is real."** In the film that inspired the construct, it loads a world that isn't real; solve's loads one that is. Two rules carry over from v2:
+- **The person is visibly deciding.** The yes appears on screen.
+- **Every world in the paid film is a real place, filmed.** Generated imagery is for storyboards only.
 
-The sections below are updated to match.
+The canonical brand is `BRAND.md` v3; the shot list below matches it.
 
 ## The idea
 
-**Ask. Allow. Prove.** The person asks, the world assembles, they allow the step that matters, and the proof lands.
+**Everything here is real.** The person asks, a real world assembles around their desk, they allow the step that matters, and the result is saved on the record.
 
 The seat is the driver's seat, not the couch: the person never leaves it, and they are deciding the whole time.
 
@@ -87,15 +86,16 @@ The world in SOLVE doesn't appear by magic. It **assembles**: people, machines, 
 
 Every shot is locked off at the same framing: the person at the desk, centered.
 
-1. **Empty apartment, night.** Desk, laptop, a lamp. They type into SOLVE: "I want to make pens." Silence.
-2. **The construct.** On a keystroke, the walls fall away to a clean white floor, and a pen factory builds itself around the desk: molding machines, the line starting, workers, boxes with the brand. They keep working.
-2b. **The yes.** On screen: "Approve: 2,000 units from the molding shop, ships Friday?" They click yes. The line speeds up.
-3. **Proof beat.** A close-up of the screen: "Order 1042 shipped." A real record.
-4. **Montage of keystrokes.** Each one a new world at the same framing: a car design studio (clay model, designers), a restaurant kitchen at rush, a streaming stage, an agency floor, a house going up.
-5. **Return.** The empty apartment again. On the screen is their World, holding all of it.
-6. **Super:** *Ask. Allow. Prove.* Then: *Every world in this film is real. On the record.* The wordmark `solve.` lands, the point last.
+1. **Empty apartment, night.** Desk, laptop, a lamp. They type into solve: "I want to make pens." Silence.
+2. **The construct.** On a keystroke, the floor turns white and a real pen factory assembles around the desk: molding machines, the line starting, workers, boxes with the brand. They keep working.
+3. **A real person.** The supplier walks in, a human, not a rendering.
+4. **The yes.** On screen: "Approve: 2,000 units from the molding shop, ships Friday?" They click yes. The line speeds up.
+5. **The save.** A close-up of the screen: "Order 1042 shipped." The point lands: *Saved. On the record.*
+6. **Montage of keystrokes.** Each one loads a new real world at the same framing: a car design studio (clay model, designers), a restaurant kitchen at rush, a streaming stage, an agency floor, a house going up.
+7. **Return.** The empty apartment again. On the screen is their World, holding all of it.
+8. **Super:** *Everything here is real.* The wordmark `solve.` lands, the point last (the save). Small type: *Every world in this film is a real place.*
 
-**The 15-second social cut (the 3D-print mini).** "Asked SOLVE for a phone stand." The design turns on screen, the printer runs, the part is in hand, and the record reads "Designed by Nova, printed Oct 4."
+**The 15-second social cut (the 3D-print mini).** "Asked solve for a phone stand." The design turns on screen in Practice, then goes Real: the printer runs, the part is in hand, and the point lands: "Designed with Nova. Printed Oct 4. Saved."
 
 ## Production pipeline
 
