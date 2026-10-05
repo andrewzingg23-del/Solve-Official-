@@ -14,6 +14,7 @@ import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { Connections } from "./connections";
 import { AgentContract } from "./contract";
+import { ContextLedger } from "./context-ledger";
 import { BotCreator } from "./creator";
 import { BotPortraitCreator } from "./portrait-creator";
 import { LiveBot } from "./live-bot";
@@ -96,6 +97,7 @@ export default async function BotPage() {
             machine={state.kind === "ready" ? state.machine : undefined}
           />
           {state.kind === "ready" && state.exists ? <AgentContract botName={state.persona.name} connections={state.connections} worlds={state.worlds} /> : null}
+          {state.kind === "ready" && state.exists ? <ContextLedger botName={state.persona.name} connections={state.connections} memories={state.memories} worlds={state.worlds} /> : null}
           {state.kind === "ready" && state.exists ? (
             <Connections
               botName={state.persona.name}
