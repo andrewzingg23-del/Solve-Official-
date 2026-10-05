@@ -334,3 +334,11 @@ The founder asked for "a ai to business outreach flow ... with meta accounts but
 - **Tests:** `tests/bot/outreach.test.ts` (3 tests). Full suite 251/251; lint clean (the old warning in `lib/bot/worlds.ts` is fixed); build ok.
 - **Next:** replies and outcomes on each lead; a real email channel; Meta inbound inside its rules. Those need the founder's accounts, and Manus's research on Meta's current rules.
 
+## 2026-10-05: Manus's pull requests, reviewed on the trunk
+
+- **#5 merged:** saving the bot no longer drops the values field when Save is clicked before the field loses focus. The creator shows the persona the server saved, and a reused save key with a different persona reports a conflict (tested).
+- **#7 merged:** start a private World from `/bot`, through the same `startWorld` path, landing in the new World.
+- **#6 folded in, not merged:** its context ledger repeated "What your bot may do", and its memory count was capped at 50. The useful part (each World the bot was let into, with an Open link, and "Outside services: none connected") is now in `app/bot/contract.tsx`, with a test. Review comment on the pull request.
+- **#4 changes requested:** the `/start` page needs to follow brand v3 (white floor, no decorative points or glows, no static fake state, lowercase solve). Review comment on the pull request.
+- **Checks:** bot suite 70/70; typecheck ok; lint clean; build ok.
+

@@ -420,3 +420,10 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - a sending address for real email;
   - whether to set up a Meta Business account;
   - the canon section and the Idea Graph.
+
+- 2026-10-05 06:00Z — Claude, reviewing what Manus is doing (the founder's problem 1, problem 3 for the trunk). Manus opened four pull requests into the trunk:
+  - **Merged:** #5 (bot save fix) and #7 (start a World from `/bot`).
+  - **Folded in:** #6 (context ledger), into `app/bot/contract.tsx`.
+  - **Changes requested:** #4 (`/start` page): brand v3, white floor, no decorative points or fake state.
+
+  Review comments are on #4 and #6. Checks: bot suite 70/70; typecheck ok; lint clean; build ok.

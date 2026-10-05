@@ -65,6 +65,9 @@ it("states only what the bot's connections and grants allow", () => {
   assert.match(some, /Claude \(read and add\), ChatGPT \(read only\)/);
   assert.match(some, /or Claude give it/);
   assert.match(some, /Adds drafts in 2 Worlds, reads 1\. Each grant lasts 30 days/);
+  assert.match(some, /Outside services.*None connected/);
+  assert.match(some, /w1.*reads and adds.*href="\/world\/w1".*w3.*reads.*href="\/world\/w3"/, "each World it was let into, with a way to open it");
+  assert.doesNotMatch(none, /href="\/world\//, "no list when it was let into none");
 });
 
 it("draws the machine view from real records only", async () => {
