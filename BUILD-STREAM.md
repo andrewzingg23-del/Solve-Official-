@@ -534,3 +534,9 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
     - `app/worlds/{page,actions}.ts*`;
     - `tests/bot/worlds.test.ts`.
   - **Checks:** full suite 272/272; lint clean; build ok.
+
+- 2026-10-05 21:15Z — Doris, Room Talk panel: finishing the slice (Claude out of credits).
+  - The "Inside" order: signed-in conversational chat inside the Room. Talk panel (talk.tsx) wired into room/view.tsx; /api/bot/chat validates input server-side and calls Anthropic with the cheapest capable model; lib/bot/chat.ts holds validation, system prompt, model picker.
+  - **Paths:** `app/world/[worldId]/room/talk.tsx`, `app/world/[worldId]/room/view.tsx` (wiring), `app/api/bot/chat/route.ts`, `lib/bot/chat.ts`, `tests/bot/chat.test.ts`.
+  - **Checks:** tests/bot/chat.test.ts 5/5 via the project's runner (`node --import tsx --test`); new files typecheck clean (remaining tsc errors are pre-existing PageProps/LayoutProps from the Next 16 upgrade, untouched by this slice). Full suite + CI run on the PR.
+  - Founder-first problem: the founder talks to the AI from inside the app and builds from the inside — this is the first version of that.
