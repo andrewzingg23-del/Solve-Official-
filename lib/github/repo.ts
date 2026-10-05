@@ -10,7 +10,7 @@
 
 export type RepoRef = { owner: string; repo: string; trunk: string | null };
 
-export type Builder = "Claude" | "Codex" | "Manus";
+export type Builder = string; // a builder's name, from its branches: Claude, Codex, Manus, Doris…
 export type BuildState = "running" | "passed" | "failed" | "cancelled" | "other";
 export type Build = { id: number; number: number; branch: string; sha: string; title: string; event: string; state: BuildState; url: string; at: string };
 export type PullState = "open" | "draft" | "merged" | "closed";
@@ -87,11 +87,19 @@ export function repoForWorld(input: { worldId: string; viewerEmail?: string | nu
   return { ref, paired: false };
 }
 
-// Each builder works on branches named for it (claude/…, codex/…, manus/…). The pull requests all come
-// from the founder's account, so the branch is what says who did the work.
+// Each builder works on branches named for it (claude/…, codex/…, manus/…, doris/…). The pull requests
+// all come from the founder's account, so the branch is what says who did the work. Conventional
+// prefixes (feature/, fix/…) name no one.
+const KNOWN: Record<string, Builder> = { claude: "Claude", codex: "Codex", manus: "Manus", chatgpt: "ChatGPT", doris: "Doris" };
+const NOT_A_BUILDER = new Set(["feature", "feat", "fix", "bugfix", "hotfix", "chore", "release", "docs", "refactor", "test", "dependabot", "renovate", "main", "master", "dev", "develop", "staging"]);
+
 export function builderOf(branch: string): Builder | null {
-  const prefix = branch.split("/")[0]?.toLowerCase();
-  return prefix === "claude" ? "Claude" : prefix === "codex" ? "Codex" : prefix === "manus" ? "Manus" : null;
+  const parts = branch.split("/");
+  if (parts.length < 2) return null;
+  const prefix = parts[0].toLowerCase();
+  if (KNOWN[prefix]) return KNOWN[prefix];
+  if (NOT_A_BUILDER.has(prefix) || !/^[a-z][a-z0-9-]{1,30}$/.test(prefix)) return null;
+  return prefix[0].toUpperCase() + prefix.slice(1);
 }
 
 const text = (v: unknown, max: number = REPO_LIMITS.title) => (typeof v === "string" ? v.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max) : "");
@@ -162,8 +170,8 @@ export function shapeCommits(json: unknown): Commit[] {
 export function builderOfCommit(message: string): Builder | null {
   const merged = /^Merge pull request #\d+ from [^/\s]+\/(\S+)/.exec(message);
   if (merged) return builderOf(merged[1]);
-  const coauthor = /^Co-Authored-By:\s*(Claude|Codex|Manus)\b/im.exec(message);
-  return coauthor ? (coauthor[1] as Builder) : null;
+  const coauthor = /^Co-Authored-By:\s*([A-Za-z][A-Za-z0-9-]{1,30})\b/im.exec(message);
+  return coauthor ? (KNOWN[coauthor[1].toLowerCase()] ?? coauthor[1]) : null;
 }
 
 // Each builder's part, from the lanes and the trunk: open pull requests, what merged, their commits on

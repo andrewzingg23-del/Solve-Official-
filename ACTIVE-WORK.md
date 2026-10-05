@@ -12,9 +12,10 @@ Updated 2026-10-05 by Claude. The founder overrides anything here.
 
 | Blocker | Who | State |
 |---|---|---|
-| Three migrations on solve-staging, in order: `supabase/migrations/20261004040000_erasable_content.sql` (v5), `20261004040100_bot_presence.sql`, `20261004040200_world_live_collaboration.sql` | Founder: paste `scripts/staging/2026-10-05-founder-first.sql` (all three in one transaction, with a check at the end) into the solve-staging SQL editor. Claude's tool prompt timed out a fourth time on 2026-10-05. | Open |
+| ~~Three migrations on solve-staging (v5, presence, live collaboration)~~ | Founder | Done: applied by 05:21Z on 2026-10-05 (`founder_first_v5_presence_world_live`, plus `expose_kernel_api_to_postgrest` and a schema reload). The Idea Graph migration (`20261005070000_idea_graph_relations.sql`) was applied by Claude at 07:15Z, on the founder's "all permission". |
 | Sign-in by email link on the staging preview (Auth redirect URLs) | Founder | Never tried |
-| Connecting the builders to the founder's bot (MCP over HTTP with OAuth) | Manus to research; founder approves | Not started |
+| Connecting the builders to the founder's bot (MCP over HTTP with OAuth) | Founder, following `docs/research/connecting-builders.md` (Manus, merged in #9) | Researched; not tried on staging |
+| Seeing the solve build in its room (`/world/<id>/room`) | Founder: a read-only fine-grained GitHub token as `GITHUB_TOKEN`, and `GITHUB_ROOMS=<sign-in email>=andrewzingg23-del/Solve-Official-@claude/keen-cerf-tpd7io`, in Vercel | Not set |
 
 **Branches.** Merged on 2026-10-05 (founder: "merge"): `codex/gateway-oidc-fallback`, `codex/world-live-collaboration` and `codex/need-to-route-network-state-spec` (without its canon section). Full suite 240/240, lint and build ok. Still open: the canon section and the Idea Graph.
 
@@ -25,9 +26,11 @@ Updated 2026-10-05 by Claude. The founder overrides anything here.
 | ~~`codex/world-live-collaboration`~~ merged | Live collaboration between people in a World: grants by role, private Realtime notices, migration `20261004040200` | Conflicts in status docs only | Merge. It supersedes the collaboration copy in `development-memory-v1`. |
 | ~~`codex/need-to-route-network-state-spec`~~ merged, without the canon section | Goal-first World creation, resource map (the spec's Resource), bounded World context for bots, the need-to-route design. It also adds a "Project resource coordination" section to `VISION-CANON.md`. | Conflicts in `lib/bot/connector.ts` (Claude's) | Merge, with Claude resolving the connector conflicts. The canon section needs the founder's yes. |
 | ~~`codex/gateway-oidc-fallback`~~ merged | AI Gateway auth through Vercel OIDC | Docs conflicts only | Merge |
-| `codex/development-memory-v1` (draft pull request #2) | Idea Graph (eight relation kinds, an Ideas page, AI idea expansion), plus an older copy of collaboration | Conflicts in the World page | Founder decides whether the Idea Graph is in scope (the spec doesn't list it). Before any merge, rename its migration `20261004000000`, which sorts before files already on the trunk, and drop its collaboration copy. |
-| `codex/development-memory-plan` (draft pull request #1) | The plan for #2 | Docs conflicts | Goes with #2 |
+| ~~`codex/development-memory-v1`~~ merged (#2, 2026-10-05) | Idea Graph (eight relation kinds, an Ideas page, AI idea expansion) | Claude merged the trunk in (no force-push), took the trunk's collaboration files and renamed its migration to `20261005070000` | The founder merged it |
+| ~~`codex/development-memory-plan`~~ merged (#1) | The plan for #2 | Docs conflicts | Merged |
 | Manus's website (separate Webdev project) | A static narrative site | Not in the repo | Only as an additive `/about` or `/start` route; never replaces `/` (pull request #3, merged) |
+| ~~`manus/start-route-clean`~~ merged (#9) | How each builder connects to solve's MCP endpoint (`docs/research/connecting-builders.md`) | Docs only | Merged |
+| ~~`doris/landing-routes`~~ merged (#10) | Ten venture landing pages (`app/<venture>/page.tsx`, `app/venture-template.tsx`, `app/ventures.ts`) from Doris, a new builder | | Merged by the founder. Doris has no row below yet. |
 
 **One concept, one home.** Extend the existing one rather than build a second.
 

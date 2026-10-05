@@ -551,3 +551,11 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - The World id is derived from the person and the repository, so opening it twice opens the same World.
   - **Paths:** `lib/github/room-id.ts`, `app/command/{repo-actions.ts,repo-room.tsx,page.tsx,view.tsx}`, `tests/github/repo.test.ts`.
   - **Checks:** full suite 277/277 on the merged trunk; typecheck ok; lint clean; build ok.
+
+- 2026-10-05 07:20Z — Claude.
+  - **Staging:** applied the Idea Graph migration (`idea_graph_relations`) to solve-staging, on the founder's "all permission". Checked after: the relation kinds include the eight idea kinds, and the duplicate-link index exists. It keeps all 18 earlier kinds, so existing relations are unaffected.
+  - **Builders by branch, generally:** the room names any builder from its branch prefix (`doris/…` is Doris, `chatgpt/…` is ChatGPT), not only Claude, Codex and Manus. Conventional prefixes (`feature/`, `fix/`…) name no one, and the build map shows up to eight stations.
+    - Doris is a new builder: its landing pages merged as #10 at 06:55Z, and run 154 passed.
+  - **`ACTIVE-WORK.md`:** the staging blocker is done; #1, #2, #9 and #10 are merged; a new blocker is seeing the solve build in its room (the founder's GitHub token and pairing).
+  - **Paths:** `lib/github/repo.ts`, `app/world/[worldId]/room/build-map.tsx`, `tests/github/repo.test.ts`, `ACTIVE-WORK.md`.
+  - **Checks:** GitHub and room tests 11/11; typecheck ok; lint clean.

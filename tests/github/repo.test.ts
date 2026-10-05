@@ -60,6 +60,10 @@ it("names the builder from the branch", () => {
   assert.equal(builderOf("codex/need-to-route"), "Codex");
   assert.equal(builderOf("manus/start-route-clean"), "Manus");
   assert.equal(builderOf("main"), null);
+  assert.equal(builderOf("doris/landing-routes"), "Doris");
+  assert.equal(builderOf("chatgpt/higgsfield-staging"), "ChatGPT");
+  assert.equal(builderOf("ana/first-try"), "Ana", "a new builder is named by its prefix");
+  assert.equal(builderOf("feature/login"), null, "a conventional prefix names no one");
 });
 
 it("shapes builds, pull requests and commits, dropping anything that isn't a GitHub link", () => {

@@ -79,8 +79,8 @@ export function BuildMap({ view, now }: { view: RepoView; now: string }) {
   return (
     <div className="flex flex-col gap-6">
       {view.builders.length ? (
-        <ul aria-label="Builders" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {view.builders.slice(0, 3).map((s) => <Station key={s.builder} s={s} now={now} />)}
+        <ul aria-label="Builders" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {view.builders.slice(0, 8).map((s) => <Station key={s.builder} s={s} now={now} />)}
         </ul>
       ) : null}
 
