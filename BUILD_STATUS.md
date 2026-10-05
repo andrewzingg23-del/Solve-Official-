@@ -257,3 +257,11 @@ Updated 2026-10-04. Branch `claude/keen-cerf-tpd7io`.
 - Vercel Secure Backend Access is enabled with the team issuer. Reasoning remains available to signed-in people only; the token is never returned to the browser.
 - Regression coverage checks runtime request-header and build/local environment token paths, provider precedence, and the no-credential case.
 - CI run 70 passed 214 tests, typecheck, lint and build. The preview is READY and its anonymous availability check confirms the sign-in gate; a signed-in model request remains unverified and would use AI Gateway credits. No Supabase schema or production application deployment changes were made.
+
+## Shared World collaboration slice — 2026-10-04
+
+- Added owner-managed human viewer/editor access by SOV ID, with explicit removal of both scoped capabilities and rejection of agent IDs.
+- Added private per-person Realtime invalidation. A kernel event trigger checks each recipient’s active `kernel.read` grant and publishes only World ID and event sequence; the browser refreshes the persisted kernel view after updates and reconnect.
+- New end-to-end tests cover editor and viewer authority, provenance through the existing kernel path, revocation, delegation refusal, and human-only invitations.
+- Validation: test-only CI run #99 failed before implementation as expected; implementation CI and staging Auth/two-person live validation are pending.
+- Production was untouched.

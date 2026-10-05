@@ -87,3 +87,7 @@ The founder said “Go” after review of the recommended page structure. Use th
 - Keep one World model with multiple views. Preserve the spatial Earth experience and add canvas or 3D representations as useful; do not require a map or a 3D scene for every creation.
 - Connect an existing outside agent through a provider-neutral API/MCP before prioritizing a built-in companion for shared creative work.
 - Keep production untouched. The verified v4 database is staging; sign-in and the staging-backed authoring path remain to be demonstrated.
+
+## Implementation state — 2026-10-04
+
+Owner-managed human viewer/editor grants and private live invalidation are implemented on `codex/world-live-collaboration`. The event stream remains canonical; Realtime carries only an invalidation (World ID and sequence), and clients re-read through the existing kernel API. CI, staging migration installation, and two-person authenticated browser validation are pending.
