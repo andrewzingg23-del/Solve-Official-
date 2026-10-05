@@ -14,6 +14,7 @@ import type { Journey, WaitingItem } from "@/lib/bot/waiting";
 import type { Pull, RepoRead, RepoReadFailure, RepoRef } from "@/lib/github/repo";
 import { BuildMap, BuildMark } from "./build-map";
 import { PiecesMap, type RoomPiece } from "./pieces-map";
+import { TalkPanel } from "./talk";
 import { ago } from "./time";
 
 export type RoomLens = "build" | "pieces";
@@ -197,6 +198,7 @@ export function RoomView({ data }: { data: RoomData }) {
             )}
             {data.live}
           </Panel>
+          {data.botName ? <TalkPanel botName={data.botName} /> : null}
           <Panel title="Routes" id="room-routes">
             {data.journeys.length ? (
               <ul className="flex flex-col gap-3">
