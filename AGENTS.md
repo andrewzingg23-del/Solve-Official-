@@ -11,7 +11,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 # solve builder notes
 
 - Start every session by pulling `main` and reading `DIRECTIVES.md`. Active directives are orders; only the founder edits them.
-- Then read `BUILD-BOOK.md`, `VISION-CANON.md`, `docs/MONETARY-CONSTITUTION.md` and `BUILD_STATUS.md`.
+- Then read `BUILD-BOOK.md`, `VISION-CANON.md`, `docs/MONETARY-CONSTITUTION.md` and `BUILD_STATUS.md`, then the founder's master spec (`docs/specs/SOVEREIGN-MASTER-BUILD-SPEC.md`) and where it differs from the vision (`docs/specs/2026-10-05-spec-vision-check.md`).
+- Three builders share this repo (Codex, Claude, Manus). Claim a row in `ACTIVE-WORK.md` before starting, stay in your owned paths, and push code from your own branch where you can: the build workflow cancels a running build when new code lands on the same branch. A builder joining starts at `docs/handoff/`.
 - Kernel memory is reached only through `kernel_api` (`supabase/migrations/`). Never grant API roles access to the `kernel` schema, and never edit an applied migration; add a new one.
 - Follow the founder's product order: AI should use Sovereign's governed World loop to accomplish useful work and improve the system from real outcomes. Prefer a finished user outcome or the smallest high-value blocker over more features or simulations. Label simulated evidence honestly.
 - Make continuous improvement evidence-led: observe real friction, propose the smallest reusable change, verify the affected behavior and safety boundary, then review/promote according to its change class. Agents never bypass identity, grants, evidence, review or deployment gates.

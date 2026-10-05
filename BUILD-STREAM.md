@@ -309,3 +309,10 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
     - `tests/bot/routes.test.ts`, `tests/bot/connector.test.ts` (tool list).
   - **Checks:** bot suite plus flags 61/61; typecheck ok; lint ok; `next build` ok.
   - **Next:** Community on existing kernel primitives (spec Build 1). Still waiting on the founder for v5 and presence on staging, and the four spec decisions.
+
+- 2026-10-05 04:00Z — Claude. The founder said Manus has joined the build. Changes:
+  - `docs/handoff/MANUS.md`: who owns what, what to read, rules that never bend, and how to work alongside the others.
+  - A Manus row in `ACTIVE-WORK.md`.
+  - `AGENTS.md` now lists the master spec and the vision check, and the three-builder rules.
+
+  Proposed lane for Manus, for the founder to confirm: real-browser walkthroughs on staging that file friction to `docs/qa/`; contracts for the Whop, Discord and Slack bridges from official docs in `docs/research/`; route quality. Manus works on `manus/<topic>` branches with pull requests, because the build workflow cancels a running build when new code lands on the same branch. Docs only, no checks run. CI run 111 (`0d1d694`, routes) is still running.
