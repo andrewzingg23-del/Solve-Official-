@@ -62,3 +62,11 @@ it("picks the cheapest capable model", () => {
   assert.equal(pickChatModel(["claude-opus-4-6", "claude-sonnet-4-6"]), "claude-sonnet-4-6");
   assert.equal(pickChatModel(["claude-opus-4-6"]), "claude-opus-4-6");
 });
+
+it("rate-limits each person to 30 messages an hour", async () => {
+  const { rateLimited, MAX_PER_WINDOW } = await import("../../lib/bot/chat");
+  const user = `test-user-${Date.now()}`;
+  for (let i = 0; i < MAX_PER_WINDOW; i++) assert.equal(rateLimited(user), false);
+  assert.equal(rateLimited(user), true, "the 31st message in the hour is refused");
+  assert.equal(rateLimited("someone-else"), false, "limits are per person");
+});

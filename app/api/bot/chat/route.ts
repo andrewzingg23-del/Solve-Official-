@@ -5,6 +5,7 @@ import { getUser } from "@/lib/supabase/server";
 import {
   buildChatSystemPrompt,
   pickChatModel,
+  rateLimited,
   validateChatBody,
 } from "@/lib/bot/chat";
 
@@ -42,8 +43,10 @@ async function chatModel(apiKey: string): Promise<string | null> {
 }
 
 export async function POST(request: Request) {
-  if (!(await getUser().catch(() => null)))
-    return json({ error: "Sign in to talk to your bot." }, 401);
+  const user = await getUser().catch(() => null);
+  if (!user) return json({ error: "Sign in to talk to your bot." }, 401);
+  if (rateLimited(user.id))
+    return json({ error: "Slow down — 30 messages an hour keeps the lights on." }, 429);
 
   let body: unknown;
   try {

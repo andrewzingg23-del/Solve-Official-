@@ -69,3 +69,21 @@ export function pickChatModel(ids: string[]): string | null {
   };
   return find(["haiku"]) ?? find(["sonnet"]) ?? find(["opus"]) ?? ids[0];
 }
+
+// Cost guard: every message spends Anthropic money, so each signed-in person
+// gets a sliding window. In-memory per instance (v1) — stops casual overuse;
+// a kernel-backed limiter across instances is the follow-up.
+const WINDOW_MS = 60 * 60 * 1000;
+export const MAX_PER_WINDOW = 30;
+const hits = new Map<string, number[]>();
+export function rateLimited(userId: string): boolean {
+  const now = Date.now();
+  const window = (hits.get(userId) ?? []).filter((t) => now - t < WINDOW_MS);
+  if (window.length >= MAX_PER_WINDOW) {
+    hits.set(userId, window);
+    return true;
+  }
+  window.push(now);
+  hits.set(userId, window);
+  return false;
+}
