@@ -199,7 +199,7 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
 
 - 2026-10-04 13:10Z — CI run 98 (`0b1327a`, brand v2 with the outlined identity SVGs) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37202544411. `0f4a3be` (the first-principles rethink) is docs-only and skips the build workflow. Waiting on the founder: the thesis and the line *Ask. Allow. Prove.*, the door (verification or making things), the "paid when it's real" principle, and trademark counsel.
 
-- 2026-10-05 — Claude, brand v3 (founder: "seems a little generic", then "Go" on the inverted-construct direction).
+- 2026-10-05 00:52Z — Claude, brand v3 (founder: "seems a little generic", then "Go" on the inverted-construct direction).
   - `docs/brand/BRAND.md` v3: *Everything here is real.* The construct, inverted. The game-to-function map, save points, Practice and Real, where the game stops, the film, identity on the white floor, voice, audiences, the field, the name on conditions, commitments and decisions.
   - Build Book §2 brand lock, `DECISIONS.md` (2026-10-05 entry), the construct doc (shot list renumbered, the supplier and save beats) and the first-principles §6 (superseded note).
   - `ACTIVE-WORK.md`: the v3 rules for Codex's surfaces (Arcadia says Practice; the point only on real results).
@@ -209,3 +209,5 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   Checks: the SVG parses (xmllint); the page was rendered once in Chromium at 1280 px and 390 px with no horizontal overflow and no console errors besides the sandbox blocking Google Fonts. CI for this push: pending when written.
 
   Next: the save receipt with the seal on one real loop (agree the split with Codex); founder decisions on counsel, the domain, the business principles and the first door.
+
+- 2026-10-05 00:58Z — CI run 101 (`549ece7`, brand v3) succeeded: https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/37249158561. Waiting on the founder: trademark counsel, the domain, the business principles and the first door. Next build: the save receipt with the seal on one real loop.
