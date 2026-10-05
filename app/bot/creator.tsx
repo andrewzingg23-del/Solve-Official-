@@ -91,6 +91,7 @@ const ERRORS: Record<string, string> = {
   "signed-out": "Sign in to keep your bot.",
   identity: "Finish setting up your SOV ID first (open You).",
   forbidden: "The kernel refused this save.",
+  conflict: "This save was already used for a different draft. Reload the bot before trying again.",
   unavailable: "Couldn't save just now. Nothing was changed; try again.",
 };
 
@@ -106,7 +107,7 @@ export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPT
   const dirty = useMemo(() => JSON.stringify(persona) !== JSON.stringify(saved), [persona, saved]);
 
   const update = (patch: Partial<Persona>) => setPersona((p) => validatePersona({ ...p, ...patch }, p));
-  const setTrait = (t: Trait, v: number) => setPersona((p) => ({ ...p, traits: { ...p.traits, [t]: v } }));
+  const setTrait = (t: Trait, v: number) => setPersona((p) => validatePersona({ ...p, traits: { ...p.traits, [t]: v } }, p));
   const setColor = (key: keyof Persona["palette"], v: string) => setPersona((p) => ({ ...p, palette: { ...p.palette, [key]: v } }));
 
   function roll() {
@@ -121,17 +122,25 @@ export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPT
   }
 
   function save() {
+    // Values is edited as a comma-separated draft. Normalize it here too, because a user can
+    // click Save before the field's blur handler runs. The server validates again and returns the
+    // canonical persona so the preview never claims to have saved text that was truncated/cleaned.
+    const draft = validatePersona({ ...persona, values: valuesText.split(",") }, saved);
+    setPersona(draft);
+    setValuesText(draft.values.join(", "));
     setMessage(null);
     const requestId = crypto.randomUUID();
     startTransition(async () => {
-      const result = await saveBotAction(requestId, persona);
+      const result = await saveBotAction(requestId, draft);
       if (result.ok) {
-        setSaved(persona);
+        setPersona(result.persona);
+        setSaved(result.persona);
+        setValuesText(result.persona.values.join(", "));
         setSaveInfo({ version: result.version, savedAt: result.savedAt });
-        setMessage({ tone: "ok", text: `${persona.name} saved.` });
+        setMessage({ tone: "ok", text: `${result.persona.name} saved.` });
         setMood("happy");
       } else {
-        setMessage({ tone: "error", text: ERRORS[result.error] });
+        setMessage({ tone: "error", text: ERRORS[result.error] ?? ERRORS.unavailable });
       }
     });
   }

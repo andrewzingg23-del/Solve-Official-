@@ -10,8 +10,9 @@ import { setBotAccess, worldScope, type WorldAccess } from "@/lib/bot/worlds";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { createClient, getUser } from "@/lib/supabase/server";
+import type { Persona } from "@/lib/bot/persona";
 
-export type SaveResult = { ok: true; version: number; savedAt: string | null } | { ok: false; error: "signed-out" | "identity" | "forbidden" | "unavailable" };
+export type SaveResult = { ok: true; version: number; savedAt: string | null; persona: Persona } | { ok: false; error: "signed-out" | "identity" | "forbidden" | "conflict" | "unavailable" };
 
 // Saves the signed-in person's bot. The persona is validated again inside saveBot; the request id
 // makes a double-click or a retried request write one version, not two.
@@ -20,10 +21,11 @@ export async function saveBotAction(requestId: string, persona: unknown): Promis
   try {
     const bot = await saveBot(await getKernel(), persona, requestId);
     revalidatePath("/bot");
-    return { ok: true, version: bot.history.length, savedAt: bot.saved?.at ?? null };
+    return { ok: true, version: bot.history.length, savedAt: bot.saved?.at ?? null, persona: bot.persona };
   } catch (error) {
     if (error instanceof KernelError && error.name === "unauthenticated") return { ok: false, error: "identity" };
     if (error instanceof KernelError && error.name === "forbidden") return { ok: false, error: "forbidden" };
+    if (error instanceof KernelError && error.name === "conflict") return { ok: false, error: "conflict" };
     return { ok: false, error: "unavailable" };
   }
 }
