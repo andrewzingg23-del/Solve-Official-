@@ -56,15 +56,15 @@ it("falls back safely on corrupted metadata", () => {
     name: "",
   });
   assert.deepEqual(getBotAvatar({ user_metadata: { bot_avatar: ["ember"] } }), {
-    face: "host",
+    face: "blank",
     name: "",
   });
   assert.deepEqual(
     getBotAvatar({ user_metadata: { bot_avatar: { face: "hacker", name: "x".repeat(99) } } }),
-    { face: "host", name: "x".repeat(40) },
+    { face: "blank", name: "x".repeat(40) },
   );
   assert.deepEqual(getBotAvatar({ user_metadata: { bot_avatar: { face: 42 } } }), {
-    face: "host",
+    face: "blank",
     name: "",
   });
 });
