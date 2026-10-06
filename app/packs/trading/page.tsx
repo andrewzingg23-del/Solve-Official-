@@ -44,8 +44,10 @@ export default async function TradingPackPage() {
   const kernel = await getKernel();
   const me = await kernel.whoami().catch(() => null);
   const ownerId = me?.actor_id ?? "";
-  const bot = await loadBot(kernel);
-  const botName = bot.avatar ? bot.persona.name : "Your bot";
+  // Guests have no kernel identity — the bot name degrades honestly instead
+  // of 500ing (sign-in gate is off; visitors see this page).
+  const bot = await loadBot(kernel).catch(() => null);
+  const botName = bot?.avatar ? bot.persona.name : "Your bot";
 
   let snapshot: Record<SymbolId, { openTime: number; open: number; high: number; low: number; close: number; volume: number }[]> | null = null;
   try {
