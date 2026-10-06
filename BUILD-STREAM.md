@@ -784,3 +784,6 @@ Paths: lib/bot/chat.ts (parseTier, pickChatModel tier, spend window, estimateCos
 Checks: tsx --test tests/bot/chat.test.ts 9/9 pass; tsc --noEmit clean on touched files; eslint clean.
 Behavior: "smart:" prefix or complex turn (600+ chars, code fences, 120+ words) → Sonnet tier; else Haiku. Spend cap 150k tokens/hr/user (CHAT_MAX_TOKENS_PER_HOUR override); 429 when spent. Response carries usage {model, tier, inputTokens, outputTokens, estimatedCostUsd, tokensSpentThisHour} for the future panel readout.
 Next: push, CI green, merge to trunk.
+
+## 2026-10-06 ~15:05 EDT — Doris: Talk cost controls CI green
+Run 37511808368 success on trunk commit 244af4e (test, typecheck, lint, build). Slice complete: tiered routing + spend cap live.
