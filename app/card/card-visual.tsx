@@ -89,8 +89,7 @@ export function SovCard({ name, sovId }: { name: string; sovId: string }) {
 
       <p className="max-w-md text-xs leading-5 text-muted">
         One card, two faces. The business side is public — your name, your verified identity. Flip it over and it's
-        private: your spend, your money, visible only to you. Same card, same identity — showing the right face to the
-        right person.
+        private: your spend, your money, visible only to you.
       </p>
     </div>
   );
