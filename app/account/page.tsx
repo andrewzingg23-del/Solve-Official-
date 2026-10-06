@@ -114,11 +114,12 @@ export default async function AccountPage() {
       )}
 
       {record.state === "unavailable" && (
-        <div className="alert-pin flex flex-col gap-2 rounded-xl p-5 text-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em]">Kernel unreachable</p>
-          <p>
-            Apply <code className="font-mono text-foreground">supabase/migrations</code> and expose the{" "}
-            <code className="font-mono text-foreground">kernel_api</code> schema. ({record.message})
+        <div className="glass flex flex-col gap-2 rounded-xl p-5 text-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted">Record unavailable</p>
+          <p className="text-muted">
+            {user
+              ? "Your record can't be reached right now. Check back in a bit."
+              : "Sign in and claim your ID and your record will live here."}
           </p>
         </div>
       )}
