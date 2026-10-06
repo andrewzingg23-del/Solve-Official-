@@ -19,7 +19,8 @@ export default async function CardPage() {
   const liveCard = cards[0];
 
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-1 flex-col gap-8 px-4 py-12">
+    <div data-theme="dark" className="min-h-svh bg-background text-foreground">
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-4 py-12">
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted">SOV ID</p>
         <h1 className="mt-1 text-2xl font-medium tracking-tight md:text-4xl">One card, two faces.</h1>
@@ -52,5 +53,6 @@ export default async function CardPage() {
         </p>
       </section>
     </main>
+    </div>
   );
 }

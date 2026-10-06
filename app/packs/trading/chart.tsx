@@ -49,13 +49,13 @@ export function PriceChart({ symbol, candles }: { symbol: SymbolId; candles: Can
           const i = Math.round(((e.clientX - rect.left) / rect.width) * (candles.length - 1));
           setHover(Math.max(0, Math.min(candles.length - 1, i)));
         }}>
-        <path d={d} fill="none" stroke={up ? "#00e5a0" : "#ff4d5e"} strokeWidth={1.5} />
+        <path d={d} fill="none" stroke="var(--positive)" strokeWidth={1.5} />
         {hover !== null && hovered && (
           <g>
             <line x1={PAD + (hover / Math.max(candles.length - 1, 1)) * (W - PAD * 2)} y1={PAD}
               x2={PAD + (hover / Math.max(candles.length - 1, 1)) * (W - PAD * 2)} y2={H - PAD}
-              stroke="#22d3ee" strokeWidth={1} strokeDasharray="3 3" />
-            <text x={W - PAD} y={PAD + 12} textAnchor="end" fontSize={11} fill="#f2f7fb" fontFamily="monospace">
+              stroke="var(--accent)" strokeWidth={1} strokeDasharray="3 3" />
+            <text x={W - PAD} y={PAD + 12} textAnchor="end" fontSize={11} fill="var(--foreground)" fontFamily="monospace">
               ${hovered.close.toLocaleString("en-US", { maximumFractionDigits: 2 })}
             </text>
           </g>

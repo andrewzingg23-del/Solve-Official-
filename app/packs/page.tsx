@@ -13,6 +13,7 @@ const PACKS = [
     desc: "Live charts, your bot reading them with you, real on-chain swaps.",
     href: "/packs/trading",
     live: true,
+    wash: "from-accent-dim via-transparent to-transparent",
   },
   {
     id: "build",
@@ -21,6 +22,7 @@ const PACKS = [
     desc: "Rooms, packs, and tools that compound. Coming soon.",
     href: "/packs",
     live: false,
+    wash: "from-surface-sunken via-transparent to-transparent",
   },
   {
     id: "create",
@@ -29,6 +31,7 @@ const PACKS = [
     desc: "Your avatar, your content, your worlds. Coming soon.",
     href: "/packs",
     live: false,
+    wash: "from-surface-sunken via-transparent to-transparent",
   },
   {
     id: "gather",
@@ -37,6 +40,7 @@ const PACKS = [
     desc: "Communities with portable identity. Coming soon.",
     href: "/packs",
     live: false,
+    wash: "from-surface-sunken via-transparent to-transparent",
   },
 ];
 
@@ -52,24 +56,33 @@ export default async function PacksPage() {
           One ID, four verbs. Pick one — the rest are here when you are ready.
         </p>
       </div>
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {PACKS.map((p) => (
           <Link key={p.id} href={p.href}
-            className={`group flex flex-col gap-2 rounded-lg border p-6 transition-all ${
+            className={`group relative flex flex-col gap-2 overflow-hidden rounded-2xl border p-7 transition-all duration-300 ${
               p.live
-                ? "border-line bg-surface/60 hover:border-accent/40 hover:bg-surface-raise"
-                : "border-line-soft bg-transparent opacity-50"
+                ? "border-line bg-surface hover:-translate-y-1 hover:border-accent/30 hover:shadow-[var(--shadow-lift)]"
+                : "border-line-soft bg-surface/50 opacity-60"
             }`}>
-            <div className="flex items-center justify-between">
+            <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${p.wash}`} aria-hidden="true" />
+            <div className="relative flex items-center justify-between">
               <p className={`eyebrow ${p.live ? "eyebrow-accent" : ""}`}>{p.verb}</p>
               {p.live ? (
-                <span className="rounded-full bg-accent-dim px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent">Live</span>
+                <span className="flex items-center gap-1.5 rounded-full bg-accent-dim px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" aria-hidden="true" />
+                  Live
+                </span>
               ) : (
                 <span className="rounded-full border border-line px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] text-faint">Soon</span>
               )}
             </div>
-            <h2 className="text-xl font-medium tracking-tight">{p.title}</h2>
-            <p className="text-sm leading-6 text-muted">{p.desc}</p>
+            <h2 className="relative text-2xl font-medium tracking-tight">{p.title}</h2>
+            <p className="relative text-sm leading-6 text-muted">{p.desc}</p>
+            {p.live && (
+              <span className="relative mt-2 text-xs font-medium text-accent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                Enter →
+              </span>
+            )}
           </Link>
         ))}
       </div>

@@ -92,6 +92,7 @@ export function ClaimFlow() {
       )}
 
       {step === "reveal" && sovId && (
+        <div data-theme="dark" className="-m-4 rounded-2xl bg-background px-4 py-8 text-foreground">
         <div className="flex flex-col gap-6 text-center">
           <div className="relative">
             <div className="absolute -inset-8 rounded-full bg-accent/10 blur-3xl" aria-hidden="true" />
@@ -109,6 +110,7 @@ export function ClaimFlow() {
             className="rounded-full bg-accent px-6 py-3.5 text-xs font-semibold uppercase tracking-[0.16em] text-background">
             What do you want to do?
           </button>
+        </div>
         </div>
       )}
     </div>
