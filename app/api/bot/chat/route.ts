@@ -2,6 +2,8 @@
 // the key never reaches a browser. Conversational only — it never acts.
 import Anthropic from "@anthropic-ai/sdk";
 import { getUser } from "@/lib/supabase/server";
+import { getKernel } from "@/lib/kernel/server";
+import { classifyTurn, WAY_REQUESTED, talkScope } from "@/lib/bot/intent";
 import {
   buildChatSystemPrompt,
   estimateCostUsd,
@@ -82,6 +84,29 @@ export async function POST(request: Request) {
   if (!model) return json({ error: "No chat model is available right now." }, 503);
 
   const client = new Anthropic({ apiKey });
+  // The Inside loop, first half: when the person asks for a way (not small
+  // talk), their ask goes on the kernel record before the bot answers.
+  // Speech in → kernel gates and records. The world's live update renders
+  // off this event (redesign slice); the record is this slice.
+  let wayEventId: string | null = null;
+  const intent = classifyTurn(chat.message);
+  if (intent.kind === "way") {
+    try {
+      const kernel = await getKernel();
+      const me = await kernel.whoami().catch(() => null);
+      if (me) {
+        wayEventId = await kernel
+          .recordEvent({
+            type: WAY_REQUESTED,
+            scope: talkScope(me.actor_id),
+            payload: { goal: intent.goal, at: new Date().toISOString() },
+          })
+          .catch(() => null);
+      }
+    } catch {
+      // Recording must never break the conversation.
+    }
+  }
   try {
     const response = await client.messages.create({
       model,
@@ -100,6 +125,7 @@ export async function POST(request: Request) {
     recordSpend(user.id, inputTokens + outputTokens);
     return json({
       reply,
+      wayEventId,
       usage: {
         model,
         tier,

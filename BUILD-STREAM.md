@@ -796,3 +796,13 @@ No UI — design freeze honored. Pure backend contracts the redesign will build 
 Checks: 14/14 new tests pass; tsc clean; eslint clean.
 Founder problem: packs need a safe way to act inside Talk; the team agent needs consent boundaries; AI output needs a provenance hook.
 Next: push, CI green.
+
+## 2026-10-06 ~16:10 EDT — Doris: "everything else" batch (founder order; Lagon excluded per founder)
+Three backend slices, no UI (design freeze honored).
+1. World-scoped swap sharing (lib/trading/social.ts): readWorldSwaps merges opted-in members' swaps newest-first; money privacy defaults closed via trading.sharing events; server actions setSwapSharing + worldSwapFeed. Observation only — never auto-mirrors. Tests 3/3.
+2. Consent gates hardened (lib/bot/consent.ts): grants now issued ON the data scope so the kernel enforces them; memoryConsent helper; events as provenance. Tests 5/5.
+3. Team agent (lib/team/agent.ts): createTeamAgent / inviteMember / teamDigest — consent-checked 24h activity radar per member, sealed content never read, digest recorded as team.digest event. GHL lead bridge noted as next slice (leads live in GHL, not the kernel). Tests 4/4.
+4. Inside loop, first half (lib/bot/intent.ts + chat route): classifyTurn detects "asks for a way"; talk.way.requested recorded on the kernel before the bot answers; wayEventId in the response; system prompt tells the bot to say it's on the record. Live world rendering is the redesign slice. Tests 3/3.
+Checks: 34/34 across touched suites; tsc clean; eslint clean.
+Founder problems: social trading extends to the world; the team selling hook gets its consent-checked brain; Talk starts the Inside loop for real.
+Next: push, CI green. Still his: design go/no-go, P7/P8/P11, SOV vs SOLVE, "play", mainnet, copy-trading legal, real-wallet test, HeyGen spend, kernel store, Rain outreach (he sends).

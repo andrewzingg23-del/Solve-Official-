@@ -1,8 +1,8 @@
-// Consent gates: the grant is the enforcement, the events are the record.
-// The kernel client is faked — these test the orchestration, not the DB.
+// Consent gates: the grant is on the data scope, so the kernel enforces it;
+// the events are the provenance record. Kernel client is faked.
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { grantConsent, hasConsent, requestConsent, revokeConsent } from "../../lib/bot/consent";
+import { grantConsent, hasConsent, memoryConsent, requestConsent, revokeConsent } from "../../lib/bot/consent";
 
 type FakeKernel = {
   calls: string[];
@@ -38,22 +38,30 @@ function fakeKernel(): FakeKernel {
   };
 }
 
-const req = { ownerActorId: "owner-1", granteeActorId: "agent-1", area: "memories" };
+const req = memoryConsent("owner-1", "agent-1");
+
+it("memoryConsent targets the data scope with the memory capability", () => {
+  assert.equal(req.scope, "actor:owner-1/bot:memory");
+  assert.equal(req.capability, "bot.memory.*");
+});
 
 it("requesting consent records an event and grants nothing", async () => {
   const k = fakeKernel();
   const eventId = await requestConsent(k as never, req);
   assert.ok(eventId.startsWith("evt-"));
-  assert.ok(k.calls.some((c) => c.startsWith("event:consent.requested:")));
+  assert.ok(k.calls.some((c) => c.startsWith("event:consent.requested:actor:owner-1/bot:memory")));
   assert.equal(await hasConsent(k as never, req), false, "asking alone grants nothing");
 });
 
-it("granting issues a kernel grant and records it; hasConsent flips true", async () => {
+it("granting issues a kernel grant on the data scope; hasConsent flips true", async () => {
   const k = fakeKernel();
   const { grantId, eventId } = await grantConsent(k as never, req);
   assert.ok(grantId.startsWith("grant-"));
   assert.ok(eventId.startsWith("evt-"));
-  assert.ok(k.calls.some((c) => c.startsWith("event:consent.granted:")));
+  assert.ok(
+    k.calls.some((c) => c === "grant:agent-1:bot.memory.*:actor:owner-1/bot:memory"),
+    "grant is on the data scope so the kernel enforces it",
+  );
   assert.equal(await hasConsent(k as never, req), true);
 });
 
@@ -67,9 +75,12 @@ it("revoking removes the grant and records it; hasConsent flips false", async ()
   assert.equal(await hasConsent(k as never, req), false);
 });
 
-it("consent is scoped: other areas and capabilities do not match", async () => {
+it("consent is scoped: other owners and scopes do not match", async () => {
   const k = fakeKernel();
   await grantConsent(k as never, req);
-  assert.equal(await hasConsent(k as never, { ...req, area: "leads" }), false);
-  assert.equal(await hasConsent(k as never, { ...req, capability: "write" }), false);
+  assert.equal(await hasConsent(k as never, memoryConsent("owner-2", "agent-1")), false);
+  assert.equal(
+    await hasConsent(k as never, { ...req, scope: "actor:owner-1/bot:links" }),
+    false,
+  );
 });

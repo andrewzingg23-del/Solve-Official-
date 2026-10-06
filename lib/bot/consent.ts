@@ -2,13 +2,10 @@
 //
 // The rule: one person's data becomes visible to another person's agent
 // only through an explicit, revocable grant the data owner issued. The grant
-// itself lives in the kernel (issueGrant / revokeGrant / myGrants); the
-// request and every state change are recorded as kernel events, so consent
-// has provenance like everything else.
-//
-// Scope convention: `consent:<ownerActorId>:<area>` (area e.g. "memories").
-// Capability defaults to "read" — consent is read-scoped; anything that
-// writes goes through the kernel's own authority checks.
+// is issued ON the data scope itself (e.g. `actor:<id>/bot:memory`), so the
+// kernel's own read authority enforces it — the grant is the enforcement.
+// The request and every state change are recorded as kernel events on the
+// same scope, so consent has provenance like everything else.
 
 import type { kernelClient } from "@/lib/kernel/client";
 
@@ -19,13 +16,26 @@ export type ConsentRequest = {
   ownerActorId: string;
   /** Actor id of the agent asking (usually the team agent). */
   granteeActorId: string;
-  /** What data: "memories", "leads", "schedule", ... */
-  area: string;
+  /** The data scope being shared, e.g. `actor:<id>/bot:memory`. */
+  scope: string;
+  /** Defaults to "read" — consent is read-scoped. */
   capability?: string;
+  /** Human label for the area, e.g. "memories" — for event payloads. */
+  area?: string;
 };
 
-const scopeFor = (req: ConsentRequest) => `consent:${req.ownerActorId}:${req.area}`;
 const capabilityFor = (req: ConsentRequest) => req.capability ?? "read";
+
+/** Convenience: consent over someone's bot memories. */
+export function memoryConsent(ownerActorId: string, granteeActorId: string): ConsentRequest {
+  return {
+    ownerActorId,
+    granteeActorId,
+    scope: `actor:${ownerActorId}/bot:memory`,
+    capability: "bot.memory.*",
+    area: "memories",
+  };
+}
 
 /**
  * Record that consent was asked for. Returns the kernel event id.
@@ -35,19 +45,19 @@ const capabilityFor = (req: ConsentRequest) => req.capability ?? "read";
 export async function requestConsent(client: Kernel, req: ConsentRequest): Promise<string> {
   return client.recordEvent({
     type: "consent.requested",
-    scope: scopeFor(req),
+    scope: req.scope,
     payload: {
       owner_actor_id: req.ownerActorId,
       grantee_actor_id: req.granteeActorId,
-      area: req.area,
+      area: req.area ?? "",
       capability: capabilityFor(req),
     },
   });
 }
 
 /**
- * The owner approves: issues the kernel grant and records it.
- * Call with a client acting as the owner.
+ * The owner approves: issues the kernel grant on the data scope and
+ * records it. Call with a client acting as the owner.
  */
 export async function grantConsent(
   client: Kernel,
@@ -57,18 +67,18 @@ export async function grantConsent(
   const grantId = await client.issueGrant({
     grantee: req.granteeActorId,
     capability: capabilityFor(req),
-    scope: scopeFor(req),
+    scope: req.scope,
     expiresAt: opts.expiresAt,
     idempotencyKey: opts.idempotencyKey,
   });
   const eventId = await client.recordEvent({
     type: "consent.granted",
-    scope: scopeFor(req),
+    scope: req.scope,
     payload: {
       grant_id: grantId,
       owner_actor_id: req.ownerActorId,
       grantee_actor_id: req.granteeActorId,
-      area: req.area,
+      area: req.area ?? "",
       capability: capabilityFor(req),
     },
   });
@@ -88,7 +98,7 @@ export async function revokeConsent(
   await client.revokeGrant(grantId, reason);
   return client.recordEvent({
     type: "consent.revoked",
-    scope: scopeFor(req),
+    scope: req.scope,
     payload: { grant_id: grantId, reason },
   });
 }
@@ -100,7 +110,5 @@ export async function revokeConsent(
  */
 export async function hasConsent(granteeClient: Kernel, req: ConsentRequest): Promise<boolean> {
   const grants = await granteeClient.myGrants();
-  const scope = scopeFor(req);
-  const capability = capabilityFor(req);
-  return grants.some((g) => g.scope === scope && g.capability === capability);
+  return grants.some((g) => g.scope === req.scope && g.capability === capabilityFor(req));
 }
