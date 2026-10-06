@@ -20,6 +20,7 @@ import { repoRoomId, repoRoomTitle } from "@/lib/github/room-id";
 import { openRepoRoomAction } from "./repo-actions";
 import { RepoRoomCard } from "./repo-room";
 import { CommandView, type CommandData } from "./view";
+import { loginRequired } from "@/lib/auth/gate";
 
 export const metadata: Metadata = { title: "Command Center · solve" };
 
@@ -68,7 +69,9 @@ async function load(userId: string, email: string | null): Promise<CommandData |
 
 export default async function CommandPage({ searchParams }: PageProps<"/command">) {
   const user = await getUser();
-  if (!user) redirect("/login?next=/command");
+  if (!user && loginRequired()) redirect("/login?next=/command");
+  // The command center is a builder tool — it needs an identity. Guests go to packs.
+  if (!user) redirect("/packs");
   const { error } = await searchParams;
   const data = await load(user.id, user.email ?? null);
   return (

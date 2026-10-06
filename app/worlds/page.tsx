@@ -7,10 +7,11 @@ import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { listCreativeWorlds } from "@/lib/world/creative";
+import { loginRequired } from "@/lib/auth/gate";
 
 export default async function WorldsPage({ searchParams }: PageProps<"/worlds">) {
   const user = await getUser();
-  if (!user) redirect("/login?next=%2Fworlds");
+  if (!user && loginRequired()) redirect("/login?next=%2Fworlds");
   const { error } = await searchParams;
   const nextWorldId = randomUUID();
 

@@ -5,6 +5,7 @@ import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { label, quietLink, secondaryAction } from "@/app/ui";
 import { registerActor, signOut } from "./actions";
+import { loginRequired } from "@/lib/auth/gate";
 
 const eventNames: Record<string, string> = {
   "kernel.actor.registered": "SOV ID created",
@@ -38,7 +39,7 @@ async function loadRecord(): Promise<AccountRecord> {
 export default async function AccountPage() {
   // proxy.ts already redirects signed-out visitors; this is the real check.
   const user = await getUser();
-  if (!user) redirect("/login?next=/account");
+  if (!user && loginRequired()) redirect("/login?next=/account");
 
   const record = await loadRecord();
 
@@ -55,9 +56,11 @@ export default async function AccountPage() {
           {record.state === "ready" ? record.actor.actor_id : "Not issued"}
         </dd>
         <dt className={label}>Email</dt>
-        <dd className="truncate">{user.email}</dd>
+        <dd className="truncate">{user?.email ?? "Not signed in"}</dd>
         <dt className={label}>Joined</dt>
-        <dd>{new Date(user.created_at).toLocaleDateString("en-US", { dateStyle: "medium" })}</dd>
+        <dd>
+          {user ? new Date(user.created_at).toLocaleDateString("en-US", { dateStyle: "medium" }) : "—"}
+        </dd>
       </dl>
 
       {record.state === "ready" && (

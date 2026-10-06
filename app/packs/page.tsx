@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getUser } from "@/lib/supabase/server";
+import { loginRequired } from "@/lib/auth/gate";
 
 export const metadata: Metadata = { title: "What do you want to do? — solve" };
 
@@ -46,7 +47,7 @@ const PACKS = [
 
 export default async function PacksPage() {
   const user = await getUser();
-  if (!user) redirect("/login?next=/packs");
+  if (!user && loginRequired()) redirect("/login?next=/packs");
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-1 flex-col gap-8 px-4 py-12 pb-24">
       <div>

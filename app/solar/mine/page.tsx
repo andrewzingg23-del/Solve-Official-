@@ -10,6 +10,7 @@ import { deskCommunityId, myDesigns, type DesignRequest } from "@/lib/solar/desk
 import { getUser } from "@/lib/supabase/server";
 import { accent, label, line, muted, panel } from "../../venture-style";
 import { Current, Empty, Erase, when } from "./view";
+import { loginRequired } from "@/lib/auth/gate";
 
 export const metadata: Metadata = { title: "My solar · Zest Solar", robots: { index: false, follow: false } };
 
@@ -27,7 +28,7 @@ async function load(): Promise<DesignRequest[] | "offline" | "unavailable"> {
 
 
 export default async function MySolar({ searchParams }: PageProps<"/solar/mine">) {
-  if (!(await getUser())) redirect("/login?next=%2Fsolar%2Fmine");
+  if (!(await getUser()) && loginRequired()) redirect("/login?next=%2Fsolar%2Fmine");
   const { sent, erased, error } = await searchParams;
   const data = await load();
   const live = Array.isArray(data) ? data.filter((r) => r.details) : [];

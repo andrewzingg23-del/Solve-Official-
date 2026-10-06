@@ -12,6 +12,7 @@ import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { startCommunityAction } from "./actions";
+import { loginRequired } from "@/lib/auth/gate";
 
 export const metadata: Metadata = { title: "Communities · solve" };
 
@@ -31,7 +32,7 @@ async function load(): Promise<Row[] | "identity" | "unavailable"> {
 const input = "rounded-md border border-line bg-background px-3 text-sm outline-none transition-colors focus:border-accent";
 
 export default async function CommunitiesPage({ searchParams }: PageProps<"/communities">) {
-  if (!(await getUser())) redirect("/login?next=%2Fcommunities");
+  if (!(await getUser()) && loginRequired()) redirect("/login?next=%2Fcommunities");
   const { error } = await searchParams;
   const rows = await load();
   const nonce = randomUUID();

@@ -4,12 +4,13 @@ import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { isConfigured, listCards } from "@/lib/lithic/sandbox";
 import { SovCard } from "./card-visual";
+import { loginRequired } from "@/lib/auth/gate";
 
 export const metadata: Metadata = { title: "Your card — solve" };
 
 export default async function CardPage() {
   const user = await getUser();
-  if (!user) redirect("/login?next=/card");
+  if (!user && loginRequired()) redirect("/login?next=/card");
   const kernel = await getKernel();
   const me = await kernel.whoami().catch(() => null);
   const name = me?.label || "Your name";

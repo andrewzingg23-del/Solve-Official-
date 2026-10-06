@@ -11,12 +11,13 @@ import { WalletConnect } from "./wallet-connect";
 import { SwapQuotes } from "./swap-quotes";
 import { SwapBox } from "./swap";
 import { SwapFeed } from "./social";
+import { loginRequired } from "@/lib/auth/gate";
 
 export const metadata: Metadata = { title: "Trading pack — solve" };
 
 export default async function TradingPackPage() {
   const user = await getUser();
-  if (!user) redirect("/login?next=/packs/trading");
+  if (!user && loginRequired()) redirect("/login?next=/packs/trading");
   const kernel = await getKernel();
   const me = await kernel.whoami().catch(() => null);
   const ownerId = me?.actor_id ?? "";
