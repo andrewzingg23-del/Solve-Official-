@@ -46,6 +46,22 @@ export function Dialer() {
   }, []);
 
   const now = practiceClock ? new Date(practiceClock.getTime() + (tick % 1000)) : new Date(tick);
+
+  // Honest empty state: no fake leads. The queue fills from the connected CRM.
+  if (leads.length === 0) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="rounded-2xl border border-line bg-surface p-8 text-center">
+          <p className="eyebrow">Dialer</p>
+          <h2 className="mt-2 text-xl font-medium tracking-tight">No leads yet</h2>
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted">
+            Connect your lead source (GoHighLevel) and your real queue shows up here. Nothing fake, nothing sample.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const lead = leads.find((l) => l.id === current) ?? leads[0];
   const open = leads.filter((l) => !isDone(l));
   const anyCallable = open.some((l) => callableNow(l.timeZone, now));
@@ -68,16 +84,6 @@ export function Dialer() {
 
   return (
     <div className="flex flex-col gap-4">
-      {leads.length === 0 ? (
-        <div className="rounded-2xl border border-line bg-surface p-8 text-center">
-          <p className="eyebrow">Dialer</p>
-          <h2 className="mt-2 text-xl font-medium tracking-tight">No leads yet</h2>
-          <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted">
-            Connect your lead source (GoHighLevel) and your real queue shows up here. Nothing fake, nothing sample.
-          </p>
-        </div>
-      ) : (
-      <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className={`inline-flex items-center gap-2 text-xs ${muted}`}>
           <span aria-hidden className="h-2.5 w-2.5 rounded-full border border-dashed border-current" />
@@ -185,8 +191,6 @@ export function Dialer() {
           <p className={`border-t ${line} pt-3 text-[11px] leading-4 ${muted}`}>Calls and texts only 8am–9pm in the lead&apos;s time zone. Texts only with written consent. Three tries, then email. Do-not-call stops everything.</p>
         </div>
       </div>
-      </>
-      )}
     </div>
   );
 }
