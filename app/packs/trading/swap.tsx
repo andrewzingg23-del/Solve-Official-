@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { MINTS, getSwapOrder, deserializeTx, executeSwap } from "@/lib/jupiter/swap";
+import { logSwap } from "./social-actions";
 
 type Token = "SOL" | "USDC";
 
@@ -19,6 +20,21 @@ export function SwapBox() {
   const to: Token = from === "SOL" ? "USDC" : "SOL";
   const flip = () => { setFrom(to); setAmount(""); setQuote(null); setStatus(null); };
 
+  // Listen for copy-trade events from the activity feed.
+  useEffect(() => {
+    const onCopy = (e: Event) => {
+      const d = (e as CustomEvent).detail as { from: string; amount: string };
+      if (d.from === "SOL" || d.from === "USDC") {
+        setFrom(d.from);
+        setAmount(d.amount);
+        setQuote(null);
+        setStatus("Copied — get a fresh quote to execute.");
+      }
+    };
+    window.addEventListener("swap:copy", onCopy);
+    return () => window.removeEventListener("swap:copy", onCopy);
+  }, []);
+
   const getQuote = async () => {
     if (!publicKey || !amount || Number(amount) <= 0) return;
     setBusy(true); setStatus(null);
@@ -29,6 +45,7 @@ export function SwapBox() {
       setQuote(`≈ ${out.toFixed(to === "USDC" ? 2 : 4)} ${to}`);
       setStatus(null);
       (window as unknown as { __swapOrder?: unknown }).__swapOrder = order;
+      (window as unknown as { __swapOut?: string }).__swapOut = out.toFixed(to === "USDC" ? 2 : 4);
     } catch (e) {
       setStatus(`Quote failed: ${e instanceof Error ? e.message : "unknown"}`);
     } finally {
@@ -50,6 +67,9 @@ export function SwapBox() {
       setStatus("Submitting to Solana…");
       const result = await executeSwap(sig, order.requestId);
       setStatus(`Done — ${result.signature.slice(0, 8)}…${result.signature.slice(-8)}`);
+      // Record the swap as a kernel event (powers the activity feed + copy trading).
+      const outAmt = (window as unknown as { __swapOut?: string }).__swapOut;
+      await logSwap({ from, to, inAmount: amount, outAmount: outAmt ?? "", signature: result.signature });
       setQuote(null);
     } catch (e) {
       setStatus(`Failed: ${e instanceof Error ? e.message : "unknown"}`);

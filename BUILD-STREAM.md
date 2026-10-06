@@ -771,3 +771,8 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - Slice: Jupiter Ultra execute flow. SwapBox: amount input, SOL/USDC flip, live quote, wallet signs, on-chain execution. Real money on mainnet, self-custodial — user signs every tx in their wallet, we never hold funds. Fixed browser Buffer → btoa.
   - Paths: lib/jupiter/swap.ts, app/packs/trading/swap.tsx, app/packs/trading/page.tsx.
   - Checks: typecheck clean, lint clean. Next: commit + push, CI watch.
+
+- 2026-10-06 04:05Z — Doris, launch sequence all 3 (founder: "all 3 go").
+  - (1) Claim flow: 60-second SOV ID issuance — name → avatar naming → animated ID reveal → pack picker. (2) Pack picker: "what do you want to do?" — Trading live, Build/Create/Gather honest "soon". (3) Social trading: swaps recorded as kernel events, activity feed, tap-to-copy pre-fills SwapBox (manual, never auto-mirror).
+  - Paths: app/claim/ (page, claim-flow, actions), app/packs/page.tsx, lib/trading/social.ts, app/packs/trading/ (social, social-client, social-actions, swap updates, page).
+  - Checks: typecheck clean, lint clean. Next: commit + push, CI watch.

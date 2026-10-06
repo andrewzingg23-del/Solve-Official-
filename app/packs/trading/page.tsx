@@ -10,6 +10,7 @@ import { BotAnalysis } from "./analysis";
 import { WalletConnect } from "./wallet-connect";
 import { SwapQuotes } from "./swap-quotes";
 import { SwapBox } from "./swap";
+import { SwapFeed } from "./social";
 
 export const metadata: Metadata = { title: "Trading pack — solve" };
 
@@ -17,6 +18,8 @@ export default async function TradingPackPage() {
   const user = await getUser();
   if (!user) redirect("/login?next=/packs/trading");
   const kernel = await getKernel();
+  const me = await kernel.whoami().catch(() => null);
+  const ownerId = me?.actor_id ?? "";
   const bot = await loadBot(kernel);
   const botName = bot.avatar ? bot.persona.name : "Your bot";
 
@@ -59,9 +62,15 @@ export default async function TradingPackPage() {
 
       <SwapQuotes />
 
-      <section aria-labelledby="swap-heading" className="rounded-md border border-line bg-surface/60 p-4 md:p-5">
+      <section id="swap-box" aria-labelledby="swap-heading" className="rounded-md border border-line bg-surface/60 p-4 md:p-5">
         <h2 id="swap-heading" className="text-sm font-medium">Trade for real</h2>
         <div className="mt-3"><SwapBox /></div>
+      </section>
+
+      <section aria-labelledby="activity-heading" className="rounded-md border border-line bg-surface/60 p-4 md:p-5">
+        <h2 id="activity-heading" className="text-sm font-medium">Your activity</h2>
+        <p className="mt-1 text-xs text-muted">Every swap, recorded. Tap copy on any trade to run it again.</p>
+        <div className="mt-3"><SwapFeed ownerId={ownerId} /></div>
       </section>
     </main>
     </SolanaProviders>
