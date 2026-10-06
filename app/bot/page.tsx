@@ -68,7 +68,7 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
   const params = searchParams ? await searchParams : {};
   const worldError = typeof params.world_error === "string" ? params.world_error : null;
   const avatar = getBotAvatar(await getUser());
-  const face = faceSrc(avatar.face);
+  const face = faceSrc(avatar.face, avatar.face_url);
   const botName =
     state.kind === "ready"
       ? avatar.name || state.persona.name

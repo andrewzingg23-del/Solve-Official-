@@ -1,20 +1,6 @@
-import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getUser } from "@/lib/supabase/server";
-import { loginRequired } from "@/lib/auth/gate";
-import { ClaimFlow } from "./claim-flow";
 
-export const metadata: Metadata = { title: "Claim your SOV ID — solve" };
-
-export default async function ClaimPage() {
-  const user = await getUser();
-  // Claiming mints a real identity — guests can't fake one (pre-launch law).
-  // With the gate off, guests skip claim and land on packs.
-  if (!user && loginRequired()) redirect("/login?next=/claim");
-  if (!user) redirect("/packs");
-  return (
-    <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-1 flex-col justify-center px-4 py-12">
-      <ClaimFlow />
-    </main>
-  );
+// Claiming now lives in the guided flow at /start (step: sovid).
+export default function ClaimPage() {
+  redirect("/start?step=sovid");
 }

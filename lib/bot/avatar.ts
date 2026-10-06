@@ -23,6 +23,10 @@ export const BLANK_FACE: AvatarPreset = { id: "blank", label: "Blank", src: "/av
 
 export interface BotAvatar {
   face: string;
+  /** Custom face: data URL (face scan) or hosted URL (Higgsfield). Overrides face. */
+  face_url?: string;
+  /** True when the face was AI-generated — shown as a label, never hidden. */
+  generated?: boolean;
   name: string;
 }
 
@@ -32,7 +36,18 @@ export function isValidFace(face: string): boolean {
   return face === BLANK_FACE.id || AVATAR_PRESETS.some((p) => p.id === face);
 }
 
-export function faceSrc(face: string): string {
+export function isValidFaceUrl(url: string): boolean {
+  if (!url || url.length > 500_000) return false;
+  return (
+    url.startsWith("data:image/jpeg;base64,") ||
+    url.startsWith("data:image/png;base64,") ||
+    url.startsWith("data:image/webp;base64,") ||
+    url.startsWith("https://")
+  );
+}
+
+export function faceSrc(face: string, face_url?: string): string {
+  if (face_url && isValidFaceUrl(face_url)) return face_url;
   if (face === BLANK_FACE.id) return BLANK_FACE.src;
   return AVATAR_PRESETS.find((p) => p.id === face)?.src ?? BLANK_FACE.src;
 }
@@ -49,5 +64,10 @@ export function getBotAvatar(user: { user_metadata?: Record<string, unknown> } |
   const rec = raw as Record<string, unknown>;
   const face = typeof rec.face === "string" && isValidFace(rec.face) ? rec.face : DEFAULT_AVATAR.face;
   const name = typeof rec.name === "string" ? sanitizeBotName(rec.name) : "";
-  return { face, name };
+  const out: BotAvatar = { face, name };
+  if (typeof rec.face_url === "string" && isValidFaceUrl(rec.face_url)) {
+    out.face_url = rec.face_url;
+    out.generated = rec.generated === true;
+  }
+  return out;
 }

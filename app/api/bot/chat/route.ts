@@ -3,6 +3,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getUser } from "@/lib/supabase/server";
 import { loginRequired } from "@/lib/auth/gate";
+import { getBotSoul } from "@/lib/bot/soul";
 import { getKernel } from "@/lib/kernel/server";
 import { classifyTurn, WAY_REQUESTED, talkScope } from "@/lib/bot/intent";
 import { planVenture, type RoutePlan } from "@/lib/world/wayfinder";
@@ -123,10 +124,15 @@ export async function POST(request: Request) {
     }
   }
   try {
+    // The user's soul.md shapes the voice — read fresh each turn.
+    const soul = user ? getBotSoul({ user_metadata: (user as { user_metadata?: Record<string, unknown> }).user_metadata }) : "";
+    const system = soul
+      ? `${buildChatSystemPrompt(chat.botName)}\nThe person's soul.md for you (their words, honor them):\n${soul}`
+      : buildChatSystemPrompt(chat.botName);
     const response = await client.messages.create({
       model,
       max_tokens: 1024,
-      system: buildChatSystemPrompt(chat.botName),
+      system,
       messages: [
         ...chat.history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
         { role: "user" as const, content: chat.message },

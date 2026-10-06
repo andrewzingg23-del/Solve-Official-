@@ -19,6 +19,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
     "@electric-sql/pglite": "^0.5.8",
+    "@higgsfield/client": "^0.2.6",
     "@solana-program/memo": "^0.15.0",
     "@solana-program/system": "^0.15.0",
     "@solana-program/token": "^0.17.0",

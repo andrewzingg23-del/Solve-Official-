@@ -8,6 +8,7 @@ import {
   faceSrc,
   getBotAvatar,
   isValidFace,
+  isValidFaceUrl,
   sanitizeBotName,
 } from "../../lib/bot/avatar";
 
@@ -67,4 +68,21 @@ it("falls back safely on corrupted metadata", () => {
     face: "blank",
     name: "",
   });
+});
+
+it("prefers a custom face_url and labels generated faces", () => {
+  assert.equal(isValidFaceUrl("data:image/jpeg;base64,/9j/"), true);
+  assert.equal(isValidFaceUrl("https://cdn.example.com/face.jpg"), true);
+  assert.equal(isValidFaceUrl("http://evil.example.com/face.jpg"), false);
+  assert.equal(isValidFaceUrl(""), false);
+  assert.equal(faceSrc("blank", "https://cdn.example.com/face.jpg"), "https://cdn.example.com/face.jpg");
+  assert.equal(faceSrc("host"), "/avatars/host.webp");
+  const got = getBotAvatar({
+    user_metadata: { bot_avatar: { face: "blank", face_url: "https://cdn.example.com/face.jpg", generated: true, name: "Nova" } },
+  });
+  assert.deepEqual(got, { face: "blank", face_url: "https://cdn.example.com/face.jpg", generated: true, name: "Nova" });
+  const bad = getBotAvatar({
+    user_metadata: { bot_avatar: { face: "blank", face_url: "javascript:alert(1)", name: "Nova" } },
+  });
+  assert.equal(bad.face_url, undefined);
 });
