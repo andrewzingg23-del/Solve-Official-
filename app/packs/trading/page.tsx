@@ -4,8 +4,11 @@ import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { loadBot } from "@/lib/bot/store";
 import { marketSnapshot, type SymbolId } from "@/lib/packs/trading";
+import { SolanaProviders } from "@/lib/solana/providers";
 import { PriceChart } from "./chart";
 import { BotAnalysis } from "./analysis";
+import { WalletConnect } from "./wallet-connect";
+import { SwapQuotes } from "./swap-quotes";
 
 export const metadata: Metadata = { title: "Trading pack — solve" };
 
@@ -24,13 +27,17 @@ export default async function TradingPackPage() {
   }
 
   return (
+    <SolanaProviders>
     <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-12">
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted">Pack · Trading</p>
-        <h1 className="mt-1 text-2xl font-medium tracking-tight md:text-4xl">You want to trade.</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-          Here&apos;s the live market — and your bot, reading it with you.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted">Pack · Trading</p>
+          <h1 className="mt-1 text-2xl font-medium tracking-tight md:text-4xl">You want to trade.</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+            Here&apos;s the live market — and your bot, reading it with you.
+          </p>
+        </div>
+        <WalletConnect />
       </div>
 
       {snapshot ? (
@@ -48,6 +55,9 @@ export default async function TradingPackPage() {
       )}
 
       <BotAnalysis botName={botName} />
+
+      <SwapQuotes />
     </main>
+    </SolanaProviders>
   );
 }

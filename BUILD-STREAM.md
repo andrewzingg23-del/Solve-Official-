@@ -756,3 +756,8 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - Slice: Apple Card principles — nothing on the card that doesn't need to be there, numbers live behind reveal, chip detail, material gradients. Real 3D flip between faces (tap card or toggle). Business face: public, open. Spend face: private, masked with reveal button. Copy explains the two-face concept in user words.
   - Paths: app/card/card-visual.tsx.
   - Checks: typecheck clean, lint clean. Next: commit + push, CI watch.
+
+- 2026-10-06 02:55Z — Doris, on-chain trading foundation (founder picked stages 3+4: Jupiter + social).
+  - Slice: Solana wallet connect (Phantom/Solflare) on trading pack; Jupiter Ultra API live SOL/USDC quotes (v6 deprecated, Ultra works keyless). Read-only — no swaps execute yet. Devnet before mainnet; crosses old no-real-money line on founder's ruling.
+  - Paths: lib/jupiter/quotes.ts, lib/solana/providers.tsx, app/packs/trading/ (page, wallet-connect, swap-quotes).
+  - Checks: typecheck clean, lint clean. Next: commit + push, CI watch.
