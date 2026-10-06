@@ -1,5 +1,3 @@
-"use server";
-
 import { getKernel } from "@/lib/kernel/server";
 
 export const SWAP_EXECUTED = "trading.swap.executed";
