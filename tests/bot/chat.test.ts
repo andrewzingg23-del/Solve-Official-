@@ -70,3 +70,48 @@ it("rate-limits each person to 30 messages an hour", async () => {
   assert.equal(rateLimited(user), true, "the 31st message in the hour is refused");
   assert.equal(rateLimited("someone-else"), false, "limits are per person");
 });
+
+it("routes simple turns to flash and complex turns to smart", async () => {
+  const { parseTier, pickChatModel } = await import("../../lib/bot/chat");
+  const ids = ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5"];
+
+  const simple = parseTier("hey, what's up");
+  assert.equal(simple.tier, "flash");
+  assert.equal(pickChatModel(ids, simple.tier), "claude-haiku-4-5");
+
+  const forced = parseTier("smart: analyze this quarter for me");
+  assert.equal(forced.tier, "smart");
+  assert.equal(forced.message, "analyze this quarter for me", "prefix is stripped");
+  assert.equal(pickChatModel(ids, forced.tier), "claude-sonnet-4-6");
+
+  const long = parseTier("x".repeat(601));
+  assert.equal(long.tier, "smart");
+
+  const code = parseTier("fix this:\n```js\nconst x = 1;\n```");
+  assert.equal(code.tier, "smart");
+
+  assert.equal(pickChatModel(ids), "claude-haiku-4-5", "default tier stays flash");
+});
+
+it("caps hourly token spend per person", async () => {
+  const { recordSpend, spendBlocked, tokensSpentThisHour, maxTokensPerHour } = await import(
+    "../../lib/bot/chat"
+  );
+  const user = `spend-user-${Date.now()}`;
+  assert.equal(spendBlocked(user), false);
+  assert.equal(tokensSpentThisHour(user), 0);
+  recordSpend(user, 1000);
+  assert.equal(tokensSpentThisHour(user), 1000);
+  assert.equal(spendBlocked(user), false, "well under the cap");
+  recordSpend(user, maxTokensPerHour());
+  assert.equal(spendBlocked(user), true, "at the cap the next turn is refused");
+  assert.equal(spendBlocked(`other-${Date.now()}`), false, "budgets are per person");
+});
+
+it("estimates cost from the model family, labeled as estimate", async () => {
+  const { estimateCostUsd } = await import("../../lib/bot/chat");
+  const haiku = estimateCostUsd("claude-haiku-4-5", 1_000_000, 1_000_000);
+  const sonnet = estimateCostUsd("claude-sonnet-4-6", 1_000_000, 1_000_000);
+  assert.ok(haiku > 0 && sonnet > haiku, "sonnet estimates cost more than haiku");
+  assert.equal(estimateCostUsd("unknown-model-x", 0, 0), 0);
+});

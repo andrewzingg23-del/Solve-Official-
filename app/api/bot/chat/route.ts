@@ -4,9 +4,15 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getUser } from "@/lib/supabase/server";
 import {
   buildChatSystemPrompt,
+  estimateCostUsd,
+  parseTier,
   pickChatModel,
   rateLimited,
+  recordSpend,
+  spendBlocked,
+  tokensSpentThisHour,
   validateChatBody,
+  type ChatTier,
 } from "@/lib/bot/chat";
 
 export const dynamic = "force-dynamic";
@@ -14,12 +20,12 @@ export const dynamic = "force-dynamic";
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
 
-// The account's chat model, resolved once per deployment from the model list.
-let cachedModel: string | null | undefined;
-async function chatModel(apiKey: string): Promise<string | null> {
+// The account's chat models, resolved once per deployment from the model list.
+let cachedIds: string[] | null | undefined;
+async function modelIds(apiKey: string): Promise<string[] | null> {
   const envModel = process.env.CHAT_MODEL?.trim();
-  if (envModel) return envModel;
-  if (cachedModel !== undefined) return cachedModel;
+  if (envModel) return [envModel];
+  if (cachedIds !== undefined) return cachedIds;
   try {
     const res = await fetch("https://api.anthropic.com/v1/models", {
       headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
@@ -27,17 +33,17 @@ async function chatModel(apiKey: string): Promise<string | null> {
       signal: AbortSignal.timeout(15_000),
     });
     if (!res.ok) {
-      cachedModel = null;
+      cachedIds = null;
       return null;
     }
     const data = (await res.json()) as { data?: { id?: string }[] };
     const ids = (data.data ?? [])
       .map((m) => (typeof m.id === "string" ? m.id : ""))
       .filter(Boolean);
-    cachedModel = pickChatModel(ids);
-    return cachedModel;
+    cachedIds = ids.length ? ids : null;
+    return cachedIds;
   } catch {
-    cachedModel = null;
+    cachedIds = null;
     return null;
   }
 }
@@ -54,13 +60,25 @@ export async function POST(request: Request) {
   } catch {
     return json({ error: "Send a valid JSON request." }, 400);
   }
-  const chat = validateChatBody(body);
+  // Tier routing happens before validation so a "smart:" prefix never
+  // reaches the model or counts against the message length limit.
+  const rawMessage =
+    body && typeof body === "object" && !Array.isArray(body)
+      ? (body as Record<string, unknown>).message
+      : undefined;
+  const { tier, message: tieredMessage }: { tier: ChatTier; message: string } =
+    typeof rawMessage === "string" ? parseTier(rawMessage) : { tier: "flash" as ChatTier, message: "" };
+  const chat = validateChatBody({ ...(body as object), message: tieredMessage });
   if (!chat) return json({ error: "Send a message, your bot's name, and up to 20 history items." }, 422);
+
+  if (spendBlocked(user.id))
+    return json({ error: "Hourly token budget spent — back in a bit." }, 429);
 
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
   if (!apiKey) return json({ error: "The chat model is not configured on this deployment." }, 503);
 
-  const model = await chatModel(apiKey);
+  const ids = await modelIds(apiKey);
+  const model = ids ? pickChatModel(ids, tier) : null;
   if (!model) return json({ error: "No chat model is available right now." }, 503);
 
   const client = new Anthropic({ apiKey });
@@ -77,7 +95,20 @@ export async function POST(request: Request) {
     const text = response.content.find((b) => b.type === "text");
     const reply = text?.type === "text" ? text.text.trim() : "";
     if (!reply) return json({ error: "The bot had nothing to say. Try again." }, 502);
-    return json({ reply });
+    const inputTokens = response.usage?.input_tokens ?? 0;
+    const outputTokens = response.usage?.output_tokens ?? 0;
+    recordSpend(user.id, inputTokens + outputTokens);
+    return json({
+      reply,
+      usage: {
+        model,
+        tier,
+        inputTokens,
+        outputTokens,
+        estimatedCostUsd: estimateCostUsd(model, inputTokens, outputTokens),
+        tokensSpentThisHour: tokensSpentThisHour(user.id),
+      },
+    });
   } catch (error) {
     return json(
       { error: error instanceof Error ? error.message.slice(0, 200) : "The chat call failed." },

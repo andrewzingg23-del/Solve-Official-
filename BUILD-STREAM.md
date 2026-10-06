@@ -776,3 +776,11 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - (1) Claim flow: 60-second SOV ID issuance — name → avatar naming → animated ID reveal → pack picker. (2) Pack picker: "what do you want to do?" — Trading live, Build/Create/Gather honest "soon". (3) Social trading: swaps recorded as kernel events, activity feed, tap-to-copy pre-fills SwapBox (manual, never auto-mirror).
   - Paths: app/claim/ (page, claim-flow, actions), app/packs/page.tsx, lib/trading/social.ts, app/packs/trading/ (social, social-client, social-actions, swap updates, page).
   - Checks: typecheck clean, lint clean. Next: commit + push, CI watch.
+
+## 2026-10-06 ~14:35 EDT — Doris: Talk cost controls (AI-news scan #2 + #4)
+Slice: per-turn model tiering + per-user hourly token spend cap on /api/bot/chat. Backend only — no UI (design freeze honored).
+Founder problem it solves: his Anthropic key funds every Talk turn with no cost guard; cheap-model-first existed but never escalated, and nothing capped spend.
+Paths: lib/bot/chat.ts (parseTier, pickChatModel tier, spend window, estimateCostUsd), app/api/bot/chat/route.ts (tier routing pre-validation, spend pre-check, usage in response), tests/bot/chat.test.ts (+3).
+Checks: tsx --test tests/bot/chat.test.ts 9/9 pass; tsc --noEmit clean on touched files; eslint clean.
+Behavior: "smart:" prefix or complex turn (600+ chars, code fences, 120+ words) → Sonnet tier; else Haiku. Spend cap 150k tokens/hr/user (CHAT_MAX_TOKENS_PER_HOUR override); 429 when spent. Response carries usage {model, tier, inputTokens, outputTokens, estimatedCostUsd, tokensSpentThisHour} for the future panel readout.
+Next: push, CI green, merge to trunk.
