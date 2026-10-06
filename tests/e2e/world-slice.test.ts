@@ -108,15 +108,15 @@ describe("the car-company loop", () => {
     assert.equal(nova.name, "Nova");
 
     // Intent → World with a causal route.
-    const intent = await ruleProvider.interpret("Nova, help me build a car company with the least upfront capital possible.", emptyContext(manifest.you.actorId));
+    const intent = await ruleProvider.interpret("Nova, help me launch my insurance agency with the least upfront capital possible.", emptyContext(manifest.you.actorId));
     assert.deepEqual(intent.type === "build_venture" && intent.strategy, "least_capital");
     const { scope, plan } = await engine.buildVenture(intent.type === "build_venture" ? intent.objective : "", true, model);
     model = await engine.load();
     assert.equal(model.venture?.scope, scope);
-    assert.deepEqual(model.venture?.milestones.map((m) => m.title), ["Idea", "Design", "Prototype", "Certification", "Contract manufacturing", "Distribution"]);
-    assert.ok(plan.capitalUsd < plan.alternative.capitalUsd, "least capital beats an own plant");
-    assert.ok(model.venture?.needs.some((n) => n.attributes.capability === "contract_manufacturing"));
-    assert.equal(model.venture?.tasks[0].title, "Find a manufacturing partner");
+    assert.deepEqual(model.venture?.milestones.map((m) => m.title), ["Idea", "Validate", "First customers", "Systematize"]);
+    assert.ok(plan.capitalUsd < plan.alternative.capitalUsd, "least capital beats the funded path");
+    assert.ok(model.venture?.needs.some((n) => n.attributes.capability === "customer_discovery"));
+    assert.equal(model.venture?.tasks[0].title, "First move: Validate");
     // A venture is a World, not a place: no invented coordinates; listed off Earth when it matters.
     const worldRef = model.venture!.worldRef;
     assert.equal(model.nodes.get(worldRef)?.location, null);

@@ -321,7 +321,7 @@ function Self({ model, engine, onRepresent }: { model: WorldModel; engine: World
         </section>
         <section className="flex flex-col gap-2">
           <p className={label}>Worlds</p>
-          {model.venture && <p className="text-sm">◎ Your car company</p>}
+          {model.venture && <p className="text-sm">◎ {model.nodes.get(model.venture.worldRef)?.title ?? "Your venture"}</p>}
           {model.settlement && <p className="text-sm">◎ DEV onboarding (where you earned)</p>}
           <p className="text-sm">◎ Arcadia market (member)</p>
         </section>

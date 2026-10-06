@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import type { HorizonResult, ProposedAction } from "@/lib/world/presentation";
 
 const SUGGESTIONS = [
-  "Help me build a car company with the least upfront capital possible",
+  "Help me launch my insurance agency with the least upfront capital possible",
   "Where did my money go?",
   "Is my DEV-SOLVE real?",
 ];

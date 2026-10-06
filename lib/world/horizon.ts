@@ -46,7 +46,9 @@ export const ruleProvider: ReasoningProvider = {
     const text = raw.trim().replace(/^nova[,:]?\s*/i, "");
     const t = text.toLowerCase();
 
-    if (/(car|vehicle|ev|automotive|auto)\s*(company|brand|business|startup|maker)|build (a |an )?(car|vehicle)/.test(t)) {
+    const ventureRe =
+      /(car|vehicle|ev|automotive|auto)\s*(company|brand|business|startup|maker)|build (a |an )?(car|vehicle)|(build|launch|start)\s+(my|a|an)\s+[\w ]{2,40}?\s*(agency|business|company|startup|venture|brand|practice|firm)/i;
+    if (ventureRe.test(t)) {
       return { type: "build_venture", objective: text, strategy: /least|minim|low|little|cheap|lean|without much|capital/.test(t) ? "least_capital" : "standard" };
     }
     if (/may contact|can contact|allowed to contact|permission to contact|you may (message|reach out|talk)|go ahead and contact/.test(t)) {

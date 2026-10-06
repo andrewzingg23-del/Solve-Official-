@@ -19,7 +19,7 @@ export async function setting() {
   const as = (id: string) => kernelClient(localSupabase(k, service), { actAs: id });
   const engine = new WorldEngine({ manifest, you, as });
   const model = await engine.load();
-  const { scope } = await engine.buildVenture("a car company with the least upfront capital", true, model);
+  const { scope } = await engine.buildVenture("my insurance agency with the least upfront capital", true, model);
   const worldRef = (await engine.load()).venture!.worldRef;
   const orgs = Object.entries(manifest.orgs);
   const org = (key: string) => `entity:${manifest.orgs[key].entityId}`;

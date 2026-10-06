@@ -809,3 +809,14 @@ Next: push, CI green. Still his: design go/no-go, P7/P8/P11, SOV vs SOLVE, "play
 
 ## 2026-10-06 ~16:45 EDT — Doris: everything-else batch CI green on main
 Run success on main at a9c56ec (test, typecheck, lint, build). All four slices live in production: world swap sharing, consent hardening, team agent, Inside-loop first half.
+
+## 2026-10-06 ~16:20 EDT — Doris: car example out (founder: "worst example possible")
+The world builder's example, planner, and strings were all car-specific — a $1.15B plant as the "least upfront capital" demo.
+- lib/world/wayfinder.ts: planVehicleCompany → planVenture. Generic lean milestones (Idea → Validate → First customers → Systematize → Scale), honest numbers (lean under $10k), ventureTitle derived from the objective.
+- lib/world/engine.ts: uses planVenture; world titled from the objective ("Your Insurance Agency"); first task is "First move: Validate".
+- lib/world/horizon.ts: build_venture intent now detects venture-building generally, not just cars.
+- Visible strings: example prompt is now "Help me launch my insurance agency with the least upfront capital possible" (horizon.tsx, shell.tsx, controller label); "already exists" and lens strings generic.
+- Tests: e2e updated (world-slice, loop, pilot, reasoning, causal); new tests/world/wayfinder.test.ts 3/3.
+- Supplier-discovery machinery (contract_manufacturing capabilities) untouched — separate feature, not the example.
+Checks: wayfinder 3/3, world-slice 6/6, loop 10/10, reasoning+pilot 7/7; tsc clean; eslint clean.
+Next: push, CI green.

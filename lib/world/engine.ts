@@ -26,7 +26,7 @@ import { arcadiaProviders, type Providers } from "../causal/providers";
 import type { Fact, Goal, Horizon, StepOutcome } from "../causal/types";
 import { loadWorld, type WorldState } from "../causal/world";
 import type { Edge, Node, ProofState } from "./types";
-import { planVehicleCompany, type RoutePlan } from "./wayfinder";
+import { planVenture, ventureTitle, type RoutePlan } from "./wayfinder";
 
 const CLOSED = new Set(["completed", "failed", "cancelled"]);
 
@@ -263,7 +263,7 @@ export class WorldEngine {
   // kernel event in a scope the person owns.
   async buildVenture(objective: string, leastCapital: boolean, model: WorldModel): Promise<{ scope: string; plan: RoutePlan }> {
     const { you, manifest } = this.sb;
-    const plan = planVehicleCompany(objective, leastCapital);
+    const plan = planVenture(objective, leastCapital);
     const scope = `world:venture-${crypto.randomUUID().slice(0, 8)}`;
     await you.claimScope(scope);
     // From the kernel, not the caller's possibly stale model: the companion may have just been made.
@@ -274,7 +274,7 @@ export class WorldEngine {
     const world = await you.upsertEntity({
       kind: "world",
       scope,
-      title: "Your car company",
+      title: ventureTitle(objective),
       summary: plan.title,
       attributes: {
         objective,
@@ -320,14 +320,14 @@ export class WorldEngine {
     for (const [i, m] of plan.milestones.entries()) {
       for (const key of m.needs) await you.relate({ kind: "needs", fromRef: `entity:${milestoneIds[i]}`, toRef: `entity:${needIds.get(key)}`, scope });
     }
-    const manufacturing = needIds.get("contract_manufacturing") ?? needIds.values().next().value;
-    if (manufacturing) {
+    const firstOpen = plan.milestones.find((m) => m.status !== "done");
+    if (firstOpen) {
       await you.createTask({
         scope,
-        title: "Find a manufacturing partner",
-        objective: "Shortlist partners who can build the first 10,000 vehicles, with proof of capacity.",
+        title: `First move: ${firstOpen.title}`,
+        objective: firstOpen.summary,
         requiredCapability: "task.work.sourcing",
-        causeRef: `entity:${manufacturing}`,
+        causeRef: `entity:${milestoneIds[firstOpen.order]}`,
         evidenceBases: ["artifact"],
         verification: "none",
       });

@@ -34,7 +34,7 @@ const ACT = {
   commitAsYou: { id: "commit-as-you", label: "Accept as you", capability: "commitment.make", consequence: "You accept the quoted terms under your own authority." },
   showProof: { id: "lens:proof", label: "Is this true?", capability: "kernel.read", consequence: "Show the evidence behind this claim." },
   showFlow: { id: "lens:flow", label: "Where did my $10 go?", capability: "kernel.read", consequence: "Trace your payment." },
-  build: { id: "suggest:build", label: "Help me build a car company with the least upfront capital", capability: "world.entity.write", consequence: "Create a World and a route." },
+  build: { id: "suggest:build", label: "Help me launch my insurance agency with the least upfront capital", capability: "world.entity.write", consequence: "Create a World and a route." },
 } satisfies Record<string, ProposedAction>;
 
 function blocker(model: WorldModel, ctx: InteractionContext): Node | null {
@@ -66,7 +66,7 @@ export async function respond(intent: Intent, input: { engine: WorldEngine; mode
         return {
           reload: false,
           patch: { currentLens: "cause", currentWorldId: venture.scope },
-          result: result("route", [{ truth: "fact", text: "Your car company World already exists. Here is its route." }], [{ type: "suggest_lens", lens: "cause" }, { type: "focus", refs: [venture.worldRef] }], [ACT.findThem], model),
+          result: result("route", [{ truth: "fact", text: "Your venture World already exists. Here is its route." }], [{ type: "suggest_lens", lens: "cause" }, { type: "focus", refs: [venture.worldRef] }], [ACT.findThem], model),
         };
       }
       const { scope, plan } = await engine.buildVenture(intent.objective, intent.strategy === "least_capital", model);

@@ -170,7 +170,7 @@ describe("the reasoning boundary", () => {
     const engine = new WorldEngine({ manifest, you, as });
     await engine.createAvatar({ type: "ai_companion", name: "Nova", relationship: "assist", seed: {}, representation: "abstract" });
     let model = await engine.load();
-    await engine.buildVenture("a car company with the least upfront capital", true, model);
+    await engine.buildVenture("my insurance agency with the least upfront capital", true, model);
     model = await engine.load();
     const ctx = emptyContext(manifest.you.actorId);
     const events = async () => Number((await k.owner("select count(*)::int as n from kernel.events"))[0].n);

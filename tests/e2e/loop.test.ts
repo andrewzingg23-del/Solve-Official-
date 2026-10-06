@@ -41,7 +41,7 @@ async function loop() {
   await engine.createAvatar({ type: "ai_companion", name: "Nova", relationship: "assist", seed: {}, representation: "abstract" });
   let model = await engine.load();
   const agentId = avatarAgent(model)!.agent_id;
-  const { scope } = await engine.buildVenture("a car company with the least upfront capital", true, model);
+  const { scope } = await engine.buildVenture("my insurance agency with the least upfront capital", true, model);
   model = await engine.load();
   const worldRef = model.venture!.worldRef;
   const orgs = manifest.orgs;
@@ -381,7 +381,7 @@ describe("the SOLVE loop", () => {
     const L = await loop();
     const agreed = await recordRoute(L.you, (await L.horizonFor(L.youId)).routes[0]);
     assert.deepEqual((await executeRoute(await L.executor(L.youId), agreed)).map((o) => o.status), ["completed", "completed"]);
-    const goal = depositGoal({ worldRef: L.worldRef, scope: L.scope, title: "Your car company" });
+    const goal = depositGoal({ worldRef: L.worldRef, scope: L.scope, title: "Your venture" });
     const youWorld = () => loadWorld(L.you, L.youId);
 
     // Without a chain connected the route is honest about it.

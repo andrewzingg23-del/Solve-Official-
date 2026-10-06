@@ -223,7 +223,7 @@ export function WorldShell() {
       if (!engine || !model) return;
       if (action.id === "find-them") return submit("Find them");
       if (action.id === "allow-contact") return submit("You may contact suppliers but not make purchases", { type: "delegate_contact", allowPurchases: false });
-      if (action.id === "suggest:build") return submit("Help me build a car company with the least upfront capital possible");
+      if (action.id === "suggest:build") return submit("Help me launch my insurance agency with the least upfront capital possible");
       if (action.id.startsWith("lens:")) {
         setCtx((c) => ({ ...c, currentLens: action.id.slice(5) as LensId }));
         return;

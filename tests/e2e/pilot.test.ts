@@ -20,7 +20,7 @@ describe("the narrow pilot", () => {
     await engine.createAvatar({ type: "ai_companion", name: "Nova", relationship: "assist", seed: {}, representation: "abstract" });
     let model = await engine.load();
     const nova = avatarAgent(model)!.agent_id;
-    const { scope } = await engine.buildVenture("a car company with the least upfront capital", true, model);
+    const { scope } = await engine.buildVenture("my insurance agency with the least upfront capital", true, model);
     model = await engine.load();
     const halden = `entity:${manifest.orgs.halden.entityId}`;
     const novaKernel = as(nova);
