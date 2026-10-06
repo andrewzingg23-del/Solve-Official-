@@ -111,7 +111,7 @@ export default async function TradingPackPage() {
   return (
     <SolanaProviders>
     <main className="mx-auto flex min-h-svh w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-12 pb-24">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="eyebrow">Pack · Trading</p>
           <h1 className="mt-3 text-3xl font-medium tracking-tight md:text-4xl">
