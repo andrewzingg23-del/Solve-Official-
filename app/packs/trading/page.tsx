@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { loadBot } from "@/lib/bot/store";
-import { marketSnapshot, candleStats, type SymbolId } from "@/lib/packs/trading";
+import { marketSnapshot, candleStats, type SymbolId, type Candle } from "@/lib/packs/trading";
 import { SolanaProviders } from "@/lib/solana/providers";
 import { PriceChart } from "./chart";
 import { BotAnalysis } from "./analysis";
@@ -14,6 +14,29 @@ import { SwapFeed } from "./social";
 import { loginRequired } from "@/lib/auth/gate";
 
 export const metadata: Metadata = { title: "Trading pack — solve" };
+
+// Glance: the big number first. Derived from the same server-side
+// snapshot candles the charts use — real data, no second fetch.
+function GlanceStrip({ candles }: { candles: Candle[] }) {
+  if (candles.length < 2) return null;
+  const closes = candles.map((c) => c.close);
+  const latest = closes[closes.length - 1];
+  const ref = closes[Math.max(0, closes.length - 25)];
+  const changePct = ((latest - ref) / ref) * 100;
+  const up = changePct >= 0;
+  return (
+    <section aria-label="Bitcoin at a glance" className="rounded-2xl border border-line bg-surface p-5 shadow-[var(--shadow-card)]">
+      <p className="eyebrow">Bitcoin · live</p>
+      <p className="mt-2 text-4xl font-medium tabular-nums tracking-tight md:text-5xl">
+        ${latest.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+      </p>
+      <p className={`mt-1 text-sm font-medium tabular-nums ${up ? "text-positive" : "text-negative"}`}>
+        {up ? "+" : ""}
+        {changePct.toFixed(2)}% past 24h
+      </p>
+    </section>
+  );
+}
 
 export default async function TradingPackPage() {
   const user = await getUser();
@@ -44,6 +67,8 @@ export default async function TradingPackPage() {
         </div>
         <WalletConnect />
       </div>
+
+      {snapshot && snapshot.BTCUSDT.length >= 2 && <GlanceStrip candles={snapshot.BTCUSDT} />}
 
       {snapshot ? (
         <div className="grid gap-4 md:grid-cols-2">

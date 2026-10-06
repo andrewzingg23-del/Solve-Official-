@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getUser } from "@/lib/supabase/server";
 import { loginRequired } from "@/lib/auth/gate";
+import { TradingCardVisual } from "./trading-card-visual";
+import { BotPulse } from "./bot-pulse";
 
 export const metadata: Metadata = { title: "What do you want to do? — solve" };
 
@@ -75,6 +77,12 @@ export default async function PacksPage() {
               </div>
               <h2 className="relative text-2xl font-medium tracking-tight">{p.title}</h2>
               <p className="relative text-sm leading-6 text-muted">{p.desc}</p>
+              {p.id === "trading" && (
+                <div className="relative mt-3 flex flex-col gap-2 border-t border-line-soft pt-3">
+                  <TradingCardVisual />
+                  <BotPulse />
+                </div>
+              )}
               {p.live && (
                 <span className="relative mt-2 text-xs font-medium text-accent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                   Enter →

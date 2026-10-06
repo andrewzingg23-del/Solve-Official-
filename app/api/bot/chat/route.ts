@@ -5,6 +5,7 @@ import { getUser } from "@/lib/supabase/server";
 import { loginRequired } from "@/lib/auth/gate";
 import { getKernel } from "@/lib/kernel/server";
 import { classifyTurn, WAY_REQUESTED, talkScope } from "@/lib/bot/intent";
+import { planVenture, type RoutePlan } from "@/lib/world/wayfinder";
 import {
   buildChatSystemPrompt,
   estimateCostUsd,
@@ -93,8 +94,18 @@ export async function POST(request: Request) {
   // Speech in → kernel gates and records. The world's live update renders
   // off this event (redesign slice); the record is this slice.
   let wayEventId: string | null = null;
+  let wayPlan: RoutePlan | null = null;
   const intent = classifyTurn(chat.message);
   if (intent.kind === "way") {
+    // A way-plan is derived from the planner, not invented prose: every
+    // number it carries is an estimate, labelled as one.
+    try {
+      const leastCapital =
+        /least|minim|low|little|cheap|lean|without much|capital/.test(intent.goal.toLowerCase());
+      wayPlan = planVenture(intent.goal, leastCapital);
+    } catch {
+      wayPlan = null;
+    }
     try {
       const kernel = await getKernel();
       const me = await kernel.whoami().catch(() => null);
@@ -130,6 +141,7 @@ export async function POST(request: Request) {
     return json({
       reply,
       wayEventId,
+      wayPlan,
       usage: {
         model,
         tier,

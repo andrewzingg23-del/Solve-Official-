@@ -25,6 +25,7 @@ import { Horizon } from "./horizon";
 import { LensPlane } from "./lenses";
 import { Onboarding } from "./onboarding";
 import { StewardPanel } from "./steward";
+import { VerbDock } from "./verb-dock";
 
 const MOTION = "(prefers-reduced-motion: reduce)";
 
@@ -353,8 +354,8 @@ export function WorldShell() {
       />
 
       <div className="pointer-events-none absolute inset-0">
-        {/* Identity: You and your avatar, with presence. */}
-        <header className="pointer-events-auto absolute left-3 top-3 z-20 flex items-center gap-3 rounded-md border border-line bg-surface/80 px-3 py-2 backdrop-blur-md md:left-5 md:top-5">
+        {/* Identity: You and your avatar, with presence. Quiet chrome: the ask bar is the move. */}
+        <header className="pointer-events-auto absolute left-3 top-3 z-20 flex items-center gap-3 rounded-md border border-line bg-surface/80 px-3 py-2 opacity-75 backdrop-blur-md transition-opacity hover:opacity-100 md:left-5 md:top-5">
           <button type="button" onClick={() => setCtx((c) => ({ ...c, currentLens: "self" }))} className="flex items-center gap-2" aria-label="You, human present. Open Self">
             <span className="text-accent">{companionActing ? "◎" : "◉"}</span>
             <span className="text-xs font-semibold uppercase tracking-[0.22em]">You</span>
@@ -393,7 +394,7 @@ export function WorldShell() {
         </header>
 
         {/* One World, a few clear ways to work in it; specialist readings stay contextual. */}
-        <nav aria-label="World views" className="pointer-events-auto absolute inset-x-3 top-[3.75rem] z-20 flex items-center justify-between gap-1 rounded-md border border-line bg-surface/80 p-1 backdrop-blur-md md:inset-x-auto md:right-5 md:top-5 md:justify-start">
+        <nav aria-label="World views" className="pointer-events-auto absolute inset-x-3 top-[3.75rem] z-20 flex items-center justify-between gap-1 rounded-md border border-line bg-surface/80 p-1 opacity-75 backdrop-blur-md transition-opacity hover:opacity-100 md:inset-x-auto md:right-5 md:top-5 md:justify-start">
           {PRIMARY_VIEWS.map((l) => (
             <button
               key={l.id}
@@ -489,13 +490,24 @@ export function WorldShell() {
           <button
             type="button"
             onClick={() => setIndexOpen(true)}
-            className="pointer-events-auto absolute right-3 top-[6.75rem] z-10 rounded-md border border-line bg-surface/80 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted backdrop-blur-md hover:text-accent md:right-5 md:top-20"
+            className="pointer-events-auto absolute right-3 top-[6.75rem] z-10 rounded-md border border-line bg-surface/80 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted opacity-75 backdrop-blur-md transition-opacity hover:text-accent hover:opacity-100 md:right-5 md:top-20"
           >
             Index
           </button>
         )}
 
-        {model && <Horizon busy={busy} result={result} provider={providerLabel} onSubmit={(text) => submit(text)} onAction={act} />}
+        {/* One message, one move: the ask bar, with the four verbs docked above it. The Horizon
+            component keeps its own behavior; the wrapper neutralizes its absolute positioning so the
+            whole cluster anchors as one bottom-center column. */}
+        {model && (
+          <div className="pointer-events-auto absolute inset-x-3 bottom-3 z-20 mx-auto flex max-w-2xl flex-col gap-2 md:bottom-6">
+            <p className="text-center text-[11px] uppercase tracking-[0.24em] text-muted">This world grows around you. Ask for a way.</p>
+            <VerbDock />
+            <div className="[&>div]:static">
+              <Horizon busy={busy} result={result} provider={providerLabel} onSubmit={(text) => submit(text)} onAction={act} />
+            </div>
+          </div>
+        )}
 
         {/* Status and sandbox notice. */}
         <footer className="pointer-events-auto absolute bottom-1 left-3 z-20 hidden text-[10px] uppercase tracking-[0.16em] text-muted/70 md:block">

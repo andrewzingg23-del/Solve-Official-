@@ -24,6 +24,7 @@ import { FirstSteps } from "./first-steps";
 import { firstSteps } from "@/lib/bot/first-steps";
 import { waitingOn, type WaitingItem } from "@/lib/bot/waiting";
 import { WaitingOnYou } from "./waiting";
+import { TalkPanel } from "@/app/world/[worldId]/room/talk";
 
 export const metadata: Metadata = { title: "Your bot — solve" };
 
@@ -103,6 +104,7 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
             savedAt={state.kind === "ready" ? state.savedAt : null}
             machine={state.kind === "ready" ? state.machine : undefined}
           />
+          <TalkPanel botName={state.kind === "ready" ? state.persona.name : "Your bot"} />
           {state.kind === "ready" && state.exists ? <AgentContract botName={state.persona.name} connections={state.connections} worlds={state.worlds} /> : null}
           {state.kind === "ready" && state.exists ? <WhileYouWereAway botName={state.persona.name} /> : null}
           {state.kind === "ready" && state.exists ? <BotImport botName={state.persona.name} /> : null}

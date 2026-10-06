@@ -30,22 +30,25 @@ export default async function CardPage() {
         </p>
       </div>
 
-      <SovCard name={name} sovId={sovId} />
-
-      <section aria-labelledby="wallet-heading" className="flex flex-col gap-3 rounded-md border border-line bg-surface/60 p-4 md:p-5">
-        <h2 id="wallet-heading" className="text-lg font-medium">Card status</h2>
+      <section aria-labelledby="wallet-heading" className="flex flex-col gap-3 rounded-2xl border border-line bg-surface/60 p-5 md:p-6">
+        <h2 id="wallet-heading" className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted">Card status</h2>
         {liveCard ? (
-          <div className="flex flex-col gap-1 text-xs leading-5">
-            <p><span className="text-muted">Test card</span> <span className="font-mono">···· {liveCard.last_four}</span></p>
-            <p><span className="text-muted">State</span> {liveCard.state} · <span className="text-muted">Sandbox — no real money moves</span></p>
+          <div>
+            <p className="font-mono text-4xl tracking-tight md:text-5xl">···· {liveCard.last_four}</p>
+            <p className="mt-2 text-sm leading-6 text-muted">{liveCard.state} · Sandbox — no real money moves</p>
           </div>
         ) : (
-          <p className="text-xs leading-5 text-muted">
-            Connect a Solana wallet and your USDC balance shows up here. Spend settles on Solana; the card issuer plugs in next.
-          </p>
+          <div>
+            <p className="text-2xl font-medium tracking-tight">No card issued yet</p>
+            <p className="mt-2 text-sm leading-6 text-muted">
+              Connect a Solana wallet and your USDC balance shows up here. Spend settles on Solana; the card issuer plugs in next.
+            </p>
+          </div>
         )}
         <p className="text-[10px] uppercase tracking-[0.14em] text-muted">Lithic sandbox · Rain/Baanx for production</p>
       </section>
+
+      <SovCard name={name} sovId={sovId} />
 
       <section aria-labelledby="spend-heading" className="flex flex-col gap-3 rounded-md border border-line bg-surface/60 p-4 md:p-5">
         <h2 id="spend-heading" className="text-lg font-medium">Spend history</h2>
