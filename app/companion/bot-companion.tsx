@@ -28,11 +28,11 @@ export function BotCompanion({ portraitUrl, hasUnread }: { portraitUrl: string |
       className={`fixed z-40 ${reduced ? "bottom-6 right-6" : "bot-wander"}`}
       style={{ width: 56, height: 56 }}
     >
-      <span className="relative block h-full w-full">
+      <span className="relative block h-full w-full rounded-full p-[3px] backdrop-blur-xl bg-white/10 border border-white/20 shadow-[var(--shadow-lift)]">
         {portraitUrl ? (
-          <img src={portraitUrl} alt="" className="h-full w-full rounded-full border border-accent/40 object-cover shadow-lg" />
+          <img src={portraitUrl} alt="" className="h-full w-full rounded-full object-cover" />
         ) : (
-          <span className="block h-full w-full rounded-full bg-gradient-to-br from-[#22d3ee]/80 to-[#0a4a5a] shadow-lg shadow-accent/20" aria-hidden="true" />
+          <span className="block h-full w-full rounded-full bg-gradient-to-br from-[#22d3ee]/80 to-[#0a4a5a]" aria-hidden="true" />
         )}
         {/* breathing glow */}
         <span className={`absolute inset-0 rounded-full ${reduced ? "" : "bot-breathe"}`} aria-hidden="true"

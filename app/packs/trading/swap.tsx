@@ -105,7 +105,7 @@ export function SwapBox() {
         </button>
         {quote && (
           <button onClick={execute} disabled={busy}
-            className="rounded-full border border-accent px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-accent disabled:opacity-40">
+            className="rounded-full border border-line px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground disabled:opacity-40">
             Swap for real
           </button>
         )}

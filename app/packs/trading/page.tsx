@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { loadBot } from "@/lib/bot/store";
-import { marketSnapshot, type SymbolId } from "@/lib/packs/trading";
+import { marketSnapshot, candleStats, type SymbolId } from "@/lib/packs/trading";
 import { SolanaProviders } from "@/lib/solana/providers";
 import { PriceChart } from "./chart";
 import { BotAnalysis } from "./analysis";
@@ -45,10 +45,11 @@ export default async function TradingPackPage() {
       </div>
 
       {snapshot ? (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           {(Object.keys(snapshot) as SymbolId[]).map((s) => (
-            <section key={s} aria-label={`${s} chart`} className="rounded-md border border-line bg-surface/60 p-4 md:p-5">
+            <section key={s} aria-label={`${s} chart`} className="rounded-2xl border border-line bg-surface p-5 shadow-[var(--shadow-card)]">
               <PriceChart symbol={s} candles={snapshot[s]} />
+              <p className="mt-3 border-t border-line-soft pt-3 text-xs leading-5 text-faint">{candleStats(snapshot[s])}</p>
             </section>
           ))}
         </div>

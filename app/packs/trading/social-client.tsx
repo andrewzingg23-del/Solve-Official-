@@ -26,7 +26,7 @@ export function SwapFeedClient({ swaps }: { swaps: SwapRecord[] }) {
             <span className="text-muted">{new Date(s.at).toLocaleString()}</span>
           </div>
           <button onClick={() => copyTrade(s)}
-            className="shrink-0 rounded-full border border-accent px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent">
+            className="shrink-0 rounded-full border border-line px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted hover:text-foreground">
             Copy
           </button>
         </li>

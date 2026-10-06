@@ -66,7 +66,7 @@ export default async function PacksPage() {
             }`}>
             <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${p.wash}`} aria-hidden="true" />
             <div className="relative flex items-center justify-between">
-              <p className={`eyebrow ${p.live ? "eyebrow-accent" : ""}`}>{p.verb}</p>
+              <p className="eyebrow">{p.verb}</p>
               {p.live ? (
                 <span className="flex items-center gap-1.5 rounded-full bg-accent-dim px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" aria-hidden="true" />

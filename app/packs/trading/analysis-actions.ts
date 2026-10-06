@@ -4,7 +4,13 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getUser } from "@/lib/supabase/server";
 import { candleStats, marketSnapshot, symbolLabel, type SymbolId } from "@/lib/packs/trading";
 
-export async function analyzeMarket(): Promise<{ ok: boolean; text?: string; error?: string }> {
+export type MarketTicket = {
+  trend: { label: string; detail: string; confidence: string };
+  momentum: { label: string; detail: string; confidence: string };
+  watch: { label: string; detail: string };
+};
+
+export async function analyzeMarket(): Promise<{ ok: boolean; ticket?: MarketTicket; error?: string }> {
   const user = await getUser();
   if (!user) return { ok: false, error: "Sign in first." };
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
@@ -21,9 +27,10 @@ export async function analyzeMarket(): Promise<{ ok: boolean; text?: string; err
     (s) => `${symbolLabel(s)} (${s}): ${candleStats(snapshot[s])}`,
   );
   const prompt = [
-    "You are a market analyst bot. Read these 96-hour hourly stats and give a short, direct read:",
-    "trend, momentum, and one thing to watch. No financial advice, no buy/sell calls —",
-    "observation only. Three short paragraphs max.",
+    "You are a market analyst bot. Read these 96-hour hourly stats.",
+    "Return ONLY valid JSON with this shape:",
+    '{"trend":{"label":"Bullish|Bearish|Neutral","detail":"one sentence","confidence":"High|Medium|Low"},"momentum":{"label":"Accelerating|Fading|Stable","detail":"one sentence","confidence":"High|Medium|Low"},"watch":{"label":"short phrase","detail":"one sentence"}}',
+    "No financial advice, no buy/sell calls — observation only.",
     "",
     ...lines,
   ].join("\n");
@@ -38,7 +45,9 @@ export async function analyzeMarket(): Promise<{ ok: boolean; text?: string; err
     const text = res.content.find((b) => b.type === "text");
     const out = text?.type === "text" ? text.text.trim() : "";
     if (!out) return { ok: false, error: "The bot had nothing to say." };
-    return { ok: true, text: out };
+    const ticket = JSON.parse(out) as MarketTicket;
+    if (!ticket.trend || !ticket.momentum || !ticket.watch) throw new Error("bad shape");
+    return { ok: true, ticket };
   } catch {
     return { ok: false, error: "The analysis failed. Try again." };
   }
