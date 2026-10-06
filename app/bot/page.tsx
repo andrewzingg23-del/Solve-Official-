@@ -13,6 +13,7 @@ import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { Connections } from "./connections";
+import { BotImport } from "./import-panel";
 import { AgentContract } from "./contract";
 import { BotCreator } from "./creator";
 import { BotPortraitCreator } from "./portrait-creator";
@@ -102,6 +103,7 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
             machine={state.kind === "ready" ? state.machine : undefined}
           />
           {state.kind === "ready" && state.exists ? <AgentContract botName={state.persona.name} connections={state.connections} worlds={state.worlds} /> : null}
+          {state.kind === "ready" && state.exists ? <BotImport botName={state.persona.name} /> : null}
           {state.kind === "ready" && state.exists ? (
             <Connections
               botName={state.persona.name}

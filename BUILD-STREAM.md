@@ -719,3 +719,9 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - Paths: lib/world/presence.ts, app/world/[worldId]/presence.tsx, app/world/[worldId]/presence-actions.ts, app/world/[worldId]/page.tsx (wiring only), tests/world/presence.test.ts.
   - Founder problem solved: the family ship gate — opening a World shows who's in it with you.
   - Checks: tests 3/3, typecheck clean, lint clean. Next: commit + push, CI watch.
+
+- 2026-10-06 00:35Z — Doris, bot import v1 (founder: "lets work towards this", S-tier SOV ID + avatar, slice 1).
+  - Slice: "bring your bots with you" — upload a ChatGPT conversations.json export on the bot page, preview the count, confirm, and each conversation becomes a sealed bot memory (source kind "import") the bot can search. Re-imports of the same file are skipped by hash. Cap 100 conversations / 25MB for v1.
+  - Paths: lib/bot/import.ts (parser), app/bot/import-panel.tsx, app/bot/import-actions.ts, app/bot/page.tsx (wiring), lib/bot/memory.ts (source kind "import", additive), tests/bot/import.test.ts.
+  - Founder problem solved: the 60-second SOV ID moment — claim it, your scattered AI history becomes one memory.
+  - Checks: tests 3/3, typecheck clean, lint clean. Next: commit + push, CI watch.

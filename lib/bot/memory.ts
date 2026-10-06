@@ -21,7 +21,7 @@ export const MEMORY_CAPABILITY = "bot.memory.*";
 
 // scanEvents bounds a full read (search, fetch) of one person's memory history.
 export const MEMORY_LIMITS = { text: 2000, title: 120, url: 500, perClientPerHour: 30, read: 200, scanEvents: 10_000 } as const;
-export const SOURCE_KINDS = ["person", "assistant", "document", "email", "web", "note"] as const;
+export const SOURCE_KINDS = ["person", "assistant", "document", "email", "web", "note", "import"] as const;
 export type SourceKind = (typeof SOURCE_KINDS)[number];
 // The same words from the same assistant within this window are one memory (a retried call).
 const SAME_MEMORY_MS = 3_600_000;
