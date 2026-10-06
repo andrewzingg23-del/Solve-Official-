@@ -787,3 +787,12 @@ Next: push, CI green, merge to trunk.
 
 ## 2026-10-06 ~15:05 EDT — Doris: Talk cost controls CI green
 Run 37511808368 success on trunk commit 244af4e (test, typecheck, lint, build). Slice complete: tiered routing + spend cap live.
+
+## 2026-10-06 ~15:20 EDT — Doris: AI-scan backend slices #1/#3/#5 (founder: "implement everything that seems fit")
+No UI — design freeze honored. Pure backend contracts the redesign will build on.
+- Pack panels (lib/packs/panels.ts): Dots-style panel registry; every action open/approval/forbidden; gateAction closed-by-default (unknown pack/action = deny); suggestLevel verb conventions. Tests 5/5.
+- Consent gates (lib/bot/consent.ts): Instinct pattern on kernel grants — request/grant/revoke consent as kernel events + issueGrant/revokeGrant; hasConsent checks the grantee's own active grants. Tests 4/4 (faked kernel).
+- Provenance stamps (lib/kernel/provenance.ts): watermark-detector registry; stampContent runs registered detectors; recordProvenance attaches stamps as evidence. Empty registry = honest no-op until textGrain ships. Tests 5/5.
+Checks: 14/14 new tests pass; tsc clean; eslint clean.
+Founder problem: packs need a safe way to act inside Talk; the team agent needs consent boundaries; AI output needs a provenance hook.
+Next: push, CI green.
