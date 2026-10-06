@@ -1,6 +1,6 @@
 "use client";
 
-// First run: who should represent you in SOV? Three paths, each a real avatar in the kernel —
+// First run: who should represent you in SOV? Two paths, each a real avatar in the kernel —
 // one identity backed by an agent with observe-level authority. Under a minute; fidelity improves
 // later.
 import { useState } from "react";
@@ -20,7 +20,6 @@ const RELATIONSHIPS: { id: AvatarRelationship; title: string; detail: string }[]
 const FAMILIES: { id: RepresentationKind; title: string }[] = [
   { id: "stylized_3d", title: "Stylized" },
   { id: "pixel", title: "Pixel" },
-  { id: "abstract", title: "Abstract" },
 ];
 
 export function Onboarding({ onCreate }: { onCreate: Create }) {
@@ -58,17 +57,12 @@ export function Onboarding({ onCreate }: { onCreate: Create }) {
               {[
                 { id: "me", title: "Be me", detail: "A digital representation that looks like you." },
                 { id: "ai", title: "Create my AI", detail: "A distinct AI assistant, representative or companion." },
-                { id: "abstract", title: "Keep it abstract", detail: "A minimal SOV presence without a humanoid form." },
               ].map((o) => (
                 <button
                   key={o.id}
                   type="button"
                   disabled={busy}
-                  onClick={() =>
-                    o.id === "abstract"
-                      ? create({ type: "abstract", name: "Presence", relationship: "assist", seed: { motif: "point" }, representation: "abstract" })
-                      : setPath(o.id as "me" | "ai")
-                  }
+                  onClick={() => setPath(o.id as "me" | "ai")}
                   className="flex flex-col items-start gap-1 rounded-md border border-line p-4 text-left transition-colors duration-300 ease-calm hover:border-accent focus-visible:border-accent"
                 >
                   <span className="text-xs font-semibold uppercase tracking-[0.22em]">{o.title}</span>
