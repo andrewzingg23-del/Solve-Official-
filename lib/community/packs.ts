@@ -2,7 +2,7 @@
 // it on, so a venture is never a separate app: Zest Solar is a community with the solar pack, an
 // insurance agency is a community with the dialer, and the next person who starts one gets the same
 // tools. Safe to import from client components (no kernel, no secrets).
-export type PackId = "build" | "solar" | "dialer" | "risk";
+export type PackId = "build" | "solar" | "dialer" | "risk" | "trading";
 
 export type Pack = {
   id: PackId;
@@ -42,6 +42,13 @@ export const PACKS: Record<PackId, Pack> = {
     what: "Size every position to its stop before the trade.",
     href: "/trading",
     practice: false,
+  },
+  trading: {
+    id: "trading",
+    name: "Trading",
+    what: "Live market charts with your bot reading the trend, the momentum, and the one thing to watch.",
+    href: "/packs/trading",
+    practice: true,
   },
 };
 

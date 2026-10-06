@@ -730,3 +730,8 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - Slice: the avatar doing work unprompted. Opening /bot shows a brief the avatar wrote from real records — waiting items, World activity — via Anthropic Haiku, cached 1h as a kernel event (bot.brief.written) so it feels like it was already working. Grounded prompt: never invents, says one line when nothing needs attention.
   - Paths: lib/bot/brief.ts, app/bot/brief.tsx, app/bot/brief-actions.ts, app/bot/page.tsx (wiring), tests/bot/brief.test.ts.
   - Checks: tests 4/4, typecheck clean, lint clean. Next: commit + push, CI watch.
+
+- 2026-10-06 01:35Z — Doris, trading pack v1 (founder: "lets go!", launch sequence, trading first).
+  - Slice: "you want to trade, here's a live chart and your bot analyses market." /packs/trading: live BTC+SOL hourly candlesticks (Binance public API, server-side, 5-min revalidate), code-drawn SVG charts with hover, and "Ask your bot" — Haiku reads 96h of stats and gives trend/momentum/one-thing-to-watch. Practice-labeled; observation only, no buy/sell calls, no fake trading.
+  - Paths: lib/packs/trading.ts, app/packs/trading/ (page, chart, analysis, analysis-actions), lib/community/packs.ts (trading pack id, additive), tests/packs/trading.test.ts.
+  - Checks: tests 3/3, typecheck clean, lint clean. Next: commit + push, CI watch.
