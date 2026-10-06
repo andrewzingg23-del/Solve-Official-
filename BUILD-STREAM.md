@@ -766,3 +766,8 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - Slice: ambient floating companion mounted in root layout (logged-in only). Wanders viewport edge on a 36s loop, breathing glow, pulses when an unread brief exists, tap navigates to /bot. Respects prefers-reduced-motion. Portrait wiring deferred (no persisted URL on Avatar type yet).
   - Paths: app/companion/ (bot-companion.tsx, mount.tsx), app/layout.tsx.
   - Checks: typecheck clean, lint clean (1 warning). Next: commit + push, CI watch.
+
+- 2026-10-06 03:45Z — Doris, real swaps (founder: "I want real trading").
+  - Slice: Jupiter Ultra execute flow. SwapBox: amount input, SOL/USDC flip, live quote, wallet signs, on-chain execution. Real money on mainnet, self-custodial — user signs every tx in their wallet, we never hold funds. Fixed browser Buffer → btoa.
+  - Paths: lib/jupiter/swap.ts, app/packs/trading/swap.tsx, app/packs/trading/page.tsx.
+  - Checks: typecheck clean, lint clean. Next: commit + push, CI watch.

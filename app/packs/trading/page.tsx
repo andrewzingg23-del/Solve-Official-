@@ -9,6 +9,7 @@ import { PriceChart } from "./chart";
 import { BotAnalysis } from "./analysis";
 import { WalletConnect } from "./wallet-connect";
 import { SwapQuotes } from "./swap-quotes";
+import { SwapBox } from "./swap";
 
 export const metadata: Metadata = { title: "Trading pack — solve" };
 
@@ -57,6 +58,11 @@ export default async function TradingPackPage() {
       <BotAnalysis botName={botName} />
 
       <SwapQuotes />
+
+      <section aria-labelledby="swap-heading" className="rounded-md border border-line bg-surface/60 p-4 md:p-5">
+        <h2 id="swap-heading" className="text-sm font-medium">Trade for real</h2>
+        <div className="mt-3"><SwapBox /></div>
+      </section>
     </main>
     </SolanaProviders>
   );
