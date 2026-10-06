@@ -746,3 +746,8 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - Slice: the card experience before the issuer. /card shows one card with two faces (toggle): business face (public — name, verified, SOV ID) and spend face (private — masked, Solana settlement note). Wallet section honest about what's next; spend history with honest empty state. No real money movement.
   - Paths: app/card/page.tsx, app/card/card-visual.tsx.
   - Checks: typecheck clean, lint clean. Next: commit + push, CI watch.
+
+- 2026-10-06 02:15Z — Doris, Lithic sandbox wired (founder: "compress time frames", Lithic now / Rain later).
+  - Slice: server-side Lithic sandbox client (lib/lithic/sandbox.ts), key in Vercel env as LITHIC_SANDBOX_API_KEY. Issued a live virtual test card (···· 1777, OPEN). /card now shows real card status instead of placeholder. Sandbox money only.
+  - Paths: lib/lithic/sandbox.ts, app/card/page.tsx.
+  - Checks: typecheck clean, lint clean. Next: commit + push, CI watch.
