@@ -735,3 +735,9 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - Slice: "you want to trade, here's a live chart and your bot analyses market." /packs/trading: live BTC+SOL hourly candlesticks (Binance public API, server-side, 5-min revalidate), code-drawn SVG charts with hover, and "Ask your bot" — Haiku reads 96h of stats and gives trend/momentum/one-thing-to-watch. Practice-labeled; observation only, no buy/sell calls, no fake trading.
   - Paths: lib/packs/trading.ts, app/packs/trading/ (page, chart, analysis, analysis-actions), lib/community/packs.ts (trading pack id, additive), tests/packs/trading.test.ts.
   - Checks: tests 3/3, typecheck clean, lint clean. Next: commit + push, CI watch.
+
+- 2026-10-06 02:10Z — Doris, avatar creator one-tap (founder: "both" — avatar creator + card research).
+  - Slice: the portrait creator no longer asks for an API key when a server key exists. GET /api/bot/avatar reports serverKey; route prefers HIGGSFIELD_API_KEY env, falls back to user key. UI hides the key field, button reads "Create my avatar". Taste: the tech disappears.
+  - Paths: app/api/bot/avatar/route.ts, app/bot/portrait-creator.tsx, lib/bot/higgsfield.ts (validatePortraitPrompt, additive).
+  - Needs: HIGGSFIELD_API_KEY in Vercel env to make it one-tap (founder step).
+  - Checks: existing higgsfield tests 5/5, typecheck clean, lint clean. Next: commit + push, CI watch.

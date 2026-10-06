@@ -9,6 +9,13 @@ const isRecord = (value: unknown): value is RecordValue => Boolean(value && type
 
 // The provider key is user supplied and transient. Accept the whole copied key without assuming
 // its internal format; never normalize, store, or return it.
+export function validatePortraitPrompt(input: unknown): string | null {
+  if (!isRecord(input)) return null;
+  const prompt = typeof input.prompt === "string" ? input.prompt.trim() : "";
+  if (!prompt || prompt.length > 1000) return null;
+  return prompt;
+}
+
 export function validatePortraitRequest(input: unknown): PortraitInput | null {
   if (!isRecord(input)) return null;
   const apiKey = input.apiKey;
