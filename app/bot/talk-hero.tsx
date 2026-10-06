@@ -8,7 +8,7 @@ import type { MachineData } from "@/lib/bot/machine";
 import type { Persona } from "@/lib/bot/persona";
 import type { Pulse } from "@/lib/bot/pulse";
 import { eyebrowAccent, glassCard, statNumber } from "@/app/ui";
-import { BotCharacter, STATE_LABELS, type BotState } from "./character";
+import { STATE_LABELS, type BotState } from "./character";
 import { MachineView } from "./machine-view";
 
 const HERO_CSS = `
@@ -91,12 +91,14 @@ const ACTIVITY_DAYS = 14;
 export function TalkHero({
   persona,
   name,
+  face,
   state,
   machine,
   pulse,
 }: {
   persona: Persona;
   name: string;
+  face: string;
   state: BotState;
   machine: MachineData;
   pulse: Pulse | null;
@@ -112,7 +114,11 @@ export function TalkHero({
           <ReachCard persona={persona} state={state} machine={machine} />
         </div>
         <div className="flex min-w-0 flex-col items-center text-center">
-          <BotCharacter persona={persona} state={state} size={216} className="h-auto w-44 md:w-52" />
+          <img
+            src={face}
+            alt={`${name}'s face`}
+            className="h-44 w-44 rounded-full object-cover ring-2 ring-accent shadow-[0_0_48px_rgb(34_211_238/0.35)] md:h-52 md:w-52"
+          />
           <h1 className="mt-2 text-xl font-semibold tracking-tight">{name}</h1>
           <p className="mt-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted">
             <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-accent" />

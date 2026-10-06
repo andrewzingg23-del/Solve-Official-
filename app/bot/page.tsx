@@ -27,6 +27,7 @@ import { WaitingOnYou } from "./waiting";
 import { TalkHero } from "./talk-hero";
 import { TalkCinema } from "./talk-cinema";
 import { TalkPanel } from "@/app/world/[worldId]/room/talk";
+import { getBotAvatar, faceSrc } from "@/lib/bot/avatar";
 
 export const metadata: Metadata = { title: "Your bot — solve" };
 
@@ -66,6 +67,12 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
   const state = await load();
   const params = searchParams ? await searchParams : {};
   const worldError = typeof params.world_error === "string" ? params.world_error : null;
+  const avatar = getBotAvatar(await getUser());
+  const face = faceSrc(avatar.face);
+  const botName =
+    state.kind === "ready"
+      ? avatar.name || state.persona.name
+      : avatar.name || "Your bot";
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-6 pb-24 md:px-8 md:py-10">
       <header className="flex flex-wrap items-center justify-between gap-5 border-b border-line pb-5">
@@ -101,13 +108,14 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
           {state.kind === "ready" ? <WaitingOnYou items={state.waiting} /> : null}
           <TalkHero
             persona={state.kind === "ready" ? state.persona : DEFAULT_PERSONA}
-            name={state.kind === "ready" ? state.persona.name : "Your bot"}
+            name={botName}
+            face={face}
             state={state.kind === "ready" && state.pulse ? state.pulse.mood : "idle"}
             machine={state.kind === "ready" ? state.machine : EMPTY_MACHINE}
             pulse={state.kind === "ready" ? state.pulse : null}
           />
           <TalkCinema>
-            <TalkPanel botName={state.kind === "ready" ? state.persona.name : "Your bot"} />
+            <TalkPanel botName={botName} />
           </TalkCinema>
           <BotCreator
             initial={state.kind === "ready" ? state.persona : DEFAULT_PERSONA}

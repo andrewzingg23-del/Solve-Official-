@@ -8,6 +8,7 @@ const TABS = [
   { href: "/packs/trading", label: "Trade" },
   { href: "/bot", label: "Bot" },
   { href: "/card", label: "Card" },
+  { href: "/avatar", label: "Avatar" },
 ];
 
 export function TabBar() {
