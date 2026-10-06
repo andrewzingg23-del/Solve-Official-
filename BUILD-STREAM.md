@@ -865,3 +865,9 @@ Talk stops being a chatbot beside the product — cost is visible, consequential
 - Status: UNCOMMITTED on main by design (orchestrator task: coordinator commits once at the end).
 Founder problem: "They ask for a way" now visibly runs permission → policy → approval → capability → provider → verification → event — the money and the authority are on the surface, not in the dark.
 Next: coordinator commit + CI; screenshot/30s recording per build-visibility law still owed before this ships.
+
+## 2026-10-06 ~17:55 EDT — Design rebuild shipped (coordinator close-out)
+- Four surface slices (Home, Packs+Trade+Card, Talk, Wayfinder) built by subagents in parallel, verified, committed as 19202c0, plus 2 fix commits: cec8c04 (trading 500 for guests + Coinbase market-data fallback), bbe7777 (home message readability).
+- Fixes found in verification: (1) talk.tsx statically imported a server-actions module → broke room.test.ts's view import in tsx; fixed via new POST /api/worlds/create route (client does fetch, import graph stays server-only-free). (2) /packs/trading 500'd for signed-out guests — loadBot(kernel) threw unauthenticated, exposed by the gate-off; now degrades honestly. (3) Binance geo-blocks Vercel's region — fetchKlines falls back to Coinbase Exchange candles; sparkline route reuses the shared lib.
+- Checks: tsc clean, build clean, full suite 156/156. Screenshots: ~/workspace/your_files/design-rebuild/ (01-home, 02-packs, 03-trading, 04-card, 05-bot).
+- OPEN: /api/bot/chat returns 503 "chat model is not configured" — ANTHROPIC_API_KEY missing on the Vercel deployment; needs Drew/Vercel env check. Talk's trust layer (cost meter, way cards, approval) is code-complete but unverified live until the key is present.
