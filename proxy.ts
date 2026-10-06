@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
+import { loginRequired } from "@/lib/auth/gate";
 
 // Paths that send signed-out visitors to /login.
 const protectedPaths = ["/account"];
@@ -11,7 +12,7 @@ export async function proxy(request: NextRequest) {
   const isProtected = protectedPaths.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
-  if (isProtected && !signedIn) {
+  if (isProtected && !signedIn && loginRequired()) {
     const login = request.nextUrl.clone();
     login.pathname = "/login";
     login.search = new URLSearchParams({ next: pathname + search }).toString();
