@@ -751,3 +751,8 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - Slice: server-side Lithic sandbox client (lib/lithic/sandbox.ts), key in Vercel env as LITHIC_SANDBOX_API_KEY. Issued a live virtual test card (···· 1777, OPEN). /card now shows real card status instead of placeholder. Sandbox money only.
   - Paths: lib/lithic/sandbox.ts, app/card/page.tsx.
   - Checks: typecheck clean, lint clean. Next: commit + push, CI watch.
+
+- 2026-10-06 02:30Z — Doris, card visual redesign (founder: "spruce it up", best-in-game insight).
+  - Slice: Apple Card principles — nothing on the card that doesn't need to be there, numbers live behind reveal, chip detail, material gradients. Real 3D flip between faces (tap card or toggle). Business face: public, open. Spend face: private, masked with reveal button. Copy explains the two-face concept in user words.
+  - Paths: app/card/card-visual.tsx.
+  - Checks: typecheck clean, lint clean. Next: commit + push, CI watch.
