@@ -1,8 +1,9 @@
 "use client";
 
-// The agent's dialer, in Practice: a queue of sample leads, the call, the script with the family's
+// The agent's dialer, in Practice: a queue of leads, the call, the script with the family's
 // number worked out live, and the outcome buttons that schedule every next step by the rules in
 // lib/insurance/dialer.ts. Nothing is dialed, texted or sent from this page.
+// Leads come from the connected CRM (GoHighLevel). No sample data — an empty queue is honest.
 import { useEffect, useMemo, useState } from "react";
 import { callableNow, DISPOSITIONS, inCallingHours, nextSteps, type Action, type Disposition } from "@/lib/insurance/dialer";
 import { coverageNeed } from "@/lib/ventures/tools";
@@ -10,14 +11,7 @@ import { accent, field, label, line, muted, panel, primary } from "../venture-st
 
 type Lead = { id: string; name: string; city: string; timeZone: string; zone: string; source: string; want: string; phoneEnd: string; textConsent: boolean; attempts: number; last: Disposition | null; nextCall?: string | null };
 
-const SAMPLE: Lead[] = [
-  { id: "1", name: "Maria Lopez", city: "Tampa, FL", timeZone: "America/New_York", zone: "Eastern", source: "Facebook lead form", want: "Mortgage protection", phoneEnd: "14", textConsent: true, attempts: 0, last: null },
-  { id: "2", name: "James Carter", city: "Houston, TX", timeZone: "America/Chicago", zone: "Central", source: "Referral", want: "Term life", phoneEnd: "77", textConsent: false, attempts: 0, last: null },
-  { id: "3", name: "Linda Brooks", city: "Phoenix, AZ", timeZone: "America/Phoenix", zone: "Arizona", source: "Final expense mailer", want: "Final expense", phoneEnd: "02", textConsent: true, attempts: 1, last: "no_answer", nextCall: "2000-01-01T00:00:00.000Z" },
-  { id: "4", name: "Derek Wu", city: "Atlanta, GA", timeZone: "America/New_York", zone: "Eastern", source: "Website", want: "Term life", phoneEnd: "58", textConsent: true, attempts: 0, last: null },
-  { id: "5", name: "Rosa Martinez", city: "Denver, CO", timeZone: "America/Denver", zone: "Mountain", source: "Facebook lead form", want: "Final expense", phoneEnd: "31", textConsent: false, attempts: 0, last: null },
-  { id: "6", name: "Tom Becker", city: "Orlando, FL", timeZone: "America/New_York", zone: "Eastern", source: "Referral", want: "Mortgage protection", phoneEnd: "90", textConsent: true, attempts: 2, last: "voicemail", nextCall: "2000-01-01T00:00:00.000Z" },
-];
+const SAMPLE: Lead[] = [];
 
 const SCRIPT = {
   open: "Hi {first}, this is {agent} with Family First Life. You asked about {want}; I'm calling to make sure your family is covered the way you want. Is now a good minute?",
@@ -74,10 +68,20 @@ export function Dialer() {
 
   return (
     <div className="flex flex-col gap-4">
+      {leads.length === 0 ? (
+        <div className="rounded-2xl border border-line bg-surface p-8 text-center">
+          <p className="eyebrow">Dialer</p>
+          <h2 className="mt-2 text-xl font-medium tracking-tight">No leads yet</h2>
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted">
+            Connect your lead source (GoHighLevel) and your real queue shows up here. Nothing fake, nothing sample.
+          </p>
+        </div>
+      ) : (
+      <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className={`inline-flex items-center gap-2 text-xs ${muted}`}>
           <span aria-hidden className="h-2.5 w-2.5 rounded-full border border-dashed border-current" />
-          <span><span className="font-semibold uppercase tracking-[0.2em]">Practice</span> · sample leads; nothing is dialed, texted or sent</span>
+          <span><span className="font-semibold uppercase tracking-[0.2em]">Practice</span> · nothing is dialed, texted or sent</span>
         </span>
         <div className="flex items-center gap-4 text-xs">
           <label className="flex items-center gap-2"><input type="checkbox" checked={power} onChange={() => setPower(!power)} className="accent-[#0891b2]" /> Power dial</label>
@@ -181,6 +185,8 @@ export function Dialer() {
           <p className={`border-t ${line} pt-3 text-[11px] leading-4 ${muted}`}>Calls and texts only 8am–9pm in the lead&apos;s time zone. Texts only with written consent. Three tries, then email. Do-not-call stops everything.</p>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
