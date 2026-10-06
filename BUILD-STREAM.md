@@ -741,3 +741,8 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - Paths: app/api/bot/avatar/route.ts, app/bot/portrait-creator.tsx, lib/bot/higgsfield.ts (validatePortraitPrompt, additive).
   - Needs: HIGGSFIELD_API_KEY in Vercel env to make it one-tap (founder step).
   - Checks: existing higgsfield tests 5/5, typecheck clean, lint clean. Next: commit + push, CI watch.
+
+- 2026-10-06 02:45Z — Doris, SOV ID card screen v1 (founder: card = "business card and private spend card", issuer later).
+  - Slice: the card experience before the issuer. /card shows one card with two faces (toggle): business face (public — name, verified, SOV ID) and spend face (private — masked, Solana settlement note). Wallet section honest about what's next; spend history with honest empty state. No real money movement.
+  - Paths: app/card/page.tsx, app/card/card-visual.tsx.
+  - Checks: typecheck clean, lint clean. Next: commit + push, CI watch.
