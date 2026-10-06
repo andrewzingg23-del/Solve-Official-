@@ -22,7 +22,7 @@ const TIMESTAMP = /^\d{4}-\d{2}-\d{2}[T ]/;
 const isOpaque = (token: string) => TIMESTAMP.test(token) || token.length === 36 || /\d/.test(token);
 
 async function sha256Hex(text: string) {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  const digest = await crypto.subtle.digest("SHA-256", new Uint8Array(new TextEncoder().encode(text)));
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 

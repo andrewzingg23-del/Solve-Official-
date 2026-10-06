@@ -22,7 +22,7 @@ export function isSealed(v: unknown): v is Sealed {
 export async function seal(value: unknown): Promise<{ sealed: Sealed; key: string }> {
   const key = b64(crypto.getRandomValues(new Uint8Array(32)));
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const data = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await aesKey(key, "encrypt"), new TextEncoder().encode(JSON.stringify(value)));
+  const data = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await aesKey(key, "encrypt"), new Uint8Array(new TextEncoder().encode(JSON.stringify(value))));
   return { sealed: { v: 1, alg: SEAL_ALG, iv: b64(iv), data: b64(new Uint8Array(data)) }, key };
 }
 

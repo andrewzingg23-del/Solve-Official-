@@ -23,7 +23,7 @@ export type SettleResult = {
 };
 
 export async function sha256Hex(text: string) {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  const digest = await crypto.subtle.digest("SHA-256", new Uint8Array(new TextEncoder().encode(text)));
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 

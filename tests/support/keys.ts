@@ -11,7 +11,7 @@ export function seedKeys(seed: string | null) {
 
 async function nextBytes(purpose: string) {
   const s = seeded!;
-  return new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${s.seed}:${purpose}:${s.n++}`)));
+  return new Uint8Array(await crypto.subtle.digest("SHA-256", new Uint8Array(new TextEncoder().encode(`${s.seed}:${purpose}:${s.n++}`))));
 }
 
 export async function newSigner(): Promise<KeyPairSigner> {
