@@ -761,3 +761,8 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - Slice: Solana wallet connect (Phantom/Solflare) on trading pack; Jupiter Ultra API live SOL/USDC quotes (v6 deprecated, Ultra works keyless). Read-only — no swaps execute yet. Devnet before mainnet; crosses old no-real-money line on founder's ruling.
   - Paths: lib/jupiter/quotes.ts, lib/solana/providers.tsx, app/packs/trading/ (page, wallet-connect, swap-quotes).
   - Checks: typecheck clean, lint clean. Next: commit + push, CI watch.
+
+- 2026-10-06 03:35Z — Doris, bot companion (founder: animated bot moving through the screen).
+  - Slice: ambient floating companion mounted in root layout (logged-in only). Wanders viewport edge on a 36s loop, breathing glow, pulses when an unread brief exists, tap navigates to /bot. Respects prefers-reduced-motion. Portrait wiring deferred (no persisted URL on Avatar type yet).
+  - Paths: app/companion/ (bot-companion.tsx, mount.tsx), app/layout.tsx.
+  - Checks: typecheck clean, lint clean (1 warning). Next: commit + push, CI watch.
