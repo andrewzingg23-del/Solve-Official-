@@ -725,3 +725,8 @@ Active builder: append an entry whenever a work slice starts, finishes, changes 
   - Paths: lib/bot/import.ts (parser), app/bot/import-panel.tsx, app/bot/import-actions.ts, app/bot/page.tsx (wiring), lib/bot/memory.ts (source kind "import", additive), tests/bot/import.test.ts.
   - Founder problem solved: the 60-second SOV ID moment — claim it, your scattered AI history becomes one memory.
   - Checks: tests 3/3, typecheck clean, lint clean. Next: commit + push, CI watch.
+
+- 2026-10-06 01:05Z — Doris, "while you were away" brief (founder: "lets work towards this", slice 2; family SOV IDs cut).
+  - Slice: the avatar doing work unprompted. Opening /bot shows a brief the avatar wrote from real records — waiting items, World activity — via Anthropic Haiku, cached 1h as a kernel event (bot.brief.written) so it feels like it was already working. Grounded prompt: never invents, says one line when nothing needs attention.
+  - Paths: lib/bot/brief.ts, app/bot/brief.tsx, app/bot/brief-actions.ts, app/bot/page.tsx (wiring), tests/bot/brief.test.ts.
+  - Checks: tests 4/4, typecheck clean, lint clean. Next: commit + push, CI watch.
