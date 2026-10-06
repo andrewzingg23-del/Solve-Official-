@@ -11,9 +11,9 @@ import {
   sanitizeBotName,
 } from "../../lib/bot/avatar";
 
-it("has six presets with the host face as default", () => {
+it("has six presets with the blank mannequin as default", () => {
   assert.equal(AVATAR_PRESETS.length, 6);
-  assert.equal(DEFAULT_AVATAR.face, "host");
+  assert.equal(DEFAULT_AVATAR.face, "blank");
   assert.equal(DEFAULT_AVATAR.name, "");
   assert.ok(AVATAR_PRESETS.every((p) => p.src.startsWith("/avatars/") && p.src.endsWith(".webp")));
 });
@@ -26,9 +26,9 @@ it("validates faces against the preset list only", () => {
   assert.equal(isValidFace("/avatars/host.webp"), false);
 });
 
-it("resolves face ids to preset art, defaulting to host", () => {
+it("resolves face ids to art, defaulting to the blank mannequin", () => {
   assert.equal(faceSrc("ember"), "/avatars/ember.webp");
-  assert.equal(faceSrc("nope"), "/avatars/host.webp");
+  assert.equal(faceSrc("nope"), "/avatars/blank.webp");
 });
 
 it("trims and caps names at 40 chars", () => {
@@ -38,9 +38,9 @@ it("trims and caps names at 40 chars", () => {
 });
 
 it("gives guests the default avatar", () => {
-  assert.deepEqual(getBotAvatar(null), { face: "host", name: "" });
-  assert.deepEqual(getBotAvatar({}), { face: "host", name: "" });
-  assert.deepEqual(getBotAvatar({ user_metadata: {} }), { face: "host", name: "" });
+  assert.deepEqual(getBotAvatar(null), { face: "blank", name: "" });
+  assert.deepEqual(getBotAvatar({}), { face: "blank", name: "" });
+  assert.deepEqual(getBotAvatar({ user_metadata: {} }), { face: "blank", name: "" });
 });
 
 it("reads a saved avatar from user_metadata", () => {
@@ -52,7 +52,7 @@ it("reads a saved avatar from user_metadata", () => {
 
 it("falls back safely on corrupted metadata", () => {
   assert.deepEqual(getBotAvatar({ user_metadata: { bot_avatar: "ember" } }), {
-    face: "host",
+    face: "blank",
     name: "",
   });
   assert.deepEqual(getBotAvatar({ user_metadata: { bot_avatar: ["ember"] } }), {

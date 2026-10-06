@@ -21,8 +21,10 @@ export default async function AvatarPage() {
         </h1>
         <p className="mt-2 text-sm leading-6 text-muted">
           {user
-            ? "Pick a face, give it a name. It keeps them everywhere you go."
-            : "This is the default face. Sign in and it becomes yours to shape."}
+            ? avatar.face === "blank"
+              ? "A blank slate. Pick a face, give it a name — it keeps them everywhere you go."
+              : "Pick a face, give it a name. It keeps them everywhere you go."
+            : "Every bot starts blank. Sign in and shape yours."}
         </p>
       </div>
       <AvatarForm initial={avatar} signedIn={Boolean(user)} />

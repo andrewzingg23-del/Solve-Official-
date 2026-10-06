@@ -17,19 +17,24 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
   { id: "monk", label: "Monk", src: "/avatars/monk.webp" },
 ];
 
+// The blank slate: every bot starts as a mannequin (NBA 2K style). Not in the
+// gallery grid — it's the starting state you customize away from.
+export const BLANK_FACE: AvatarPreset = { id: "blank", label: "Blank", src: "/avatars/blank.webp" };
+
 export interface BotAvatar {
   face: string;
   name: string;
 }
 
-export const DEFAULT_AVATAR: BotAvatar = { face: "host", name: "" };
+export const DEFAULT_AVATAR: BotAvatar = { face: BLANK_FACE.id, name: "" };
 
 export function isValidFace(face: string): boolean {
-  return AVATAR_PRESETS.some((p) => p.id === face);
+  return face === BLANK_FACE.id || AVATAR_PRESETS.some((p) => p.id === face);
 }
 
 export function faceSrc(face: string): string {
-  return AVATAR_PRESETS.find((p) => p.id === face)?.src ?? AVATAR_PRESETS[0].src;
+  if (face === BLANK_FACE.id) return BLANK_FACE.src;
+  return AVATAR_PRESETS.find((p) => p.id === face)?.src ?? BLANK_FACE.src;
 }
 
 export function sanitizeBotName(name: string): string {
