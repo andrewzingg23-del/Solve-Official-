@@ -806,3 +806,6 @@ Three backend slices, no UI (design freeze honored).
 Checks: 34/34 across touched suites; tsc clean; eslint clean.
 Founder problems: social trading extends to the world; the team selling hook gets its consent-checked brain; Talk starts the Inside loop for real.
 Next: push, CI green. Still his: design go/no-go, P7/P8/P11, SOV vs SOLVE, "play", mainnet, copy-trading legal, real-wallet test, HeyGen spend, kernel store, Rain outreach (he sends).
+
+## 2026-10-06 ~16:45 EDT — Doris: everything-else batch CI green on main
+Run success on main at a9c56ec (test, typecheck, lint, build). All four slices live in production: world swap sharing, consent hardening, team agent, Inside-loop first half.
