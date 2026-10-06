@@ -46,6 +46,7 @@ export function Dialer() {
   }, []);
 
   const now = practiceClock ? new Date(practiceClock.getTime() + (tick % 1000)) : new Date(tick);
+  const number = useMemo(() => coverageNeed({ income: 60000, years: 10, mortgage: 220000, debts: 15000, education: 0, existing: 0 }).need, []);
 
   // Honest empty state: no fake leads. The queue fills from the connected CRM.
   if (leads.length === 0) {
@@ -66,7 +67,6 @@ export function Dialer() {
   const open = leads.filter((l) => !isDone(l));
   const anyCallable = open.some((l) => callableNow(l.timeZone, now));
   const callable = callableNow(lead.timeZone, now);
-  const number = useMemo(() => coverageNeed({ ...need, education: 0, existing: 0 }).need, [need]);
   const first = lead.name.split(" ")[0];
 
   function dispose(d: Disposition) {
