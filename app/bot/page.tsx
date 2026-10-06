@@ -4,7 +4,7 @@ import Link from "next/link";
 import { quietLink } from "@/app/ui";
 import { DEFAULT_PERSONA, type Persona } from "@/lib/bot/persona";
 import { readConnections, readMemories, type Connection, type Memory } from "@/lib/bot/memory";
-import { machineData, type MachineData } from "@/lib/bot/machine";
+import { machineData, EMPTY_MACHINE, type MachineData } from "@/lib/bot/machine";
 import { botPulse, type Pulse } from "@/lib/bot/pulse";
 import { loadBot } from "@/lib/bot/store";
 import { worldsForBot, type WorldWithAccess } from "@/lib/bot/worlds";
@@ -24,6 +24,8 @@ import { FirstSteps } from "./first-steps";
 import { firstSteps } from "@/lib/bot/first-steps";
 import { waitingOn, type WaitingItem } from "@/lib/bot/waiting";
 import { WaitingOnYou } from "./waiting";
+import { TalkHero } from "./talk-hero";
+import { TalkCinema } from "./talk-cinema";
 import { TalkPanel } from "@/app/world/[worldId]/room/talk";
 
 export const metadata: Metadata = { title: "Your bot — solve" };
@@ -97,6 +99,16 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
             />
           ) : null}
           {state.kind === "ready" ? <WaitingOnYou items={state.waiting} /> : null}
+          <TalkHero
+            persona={state.kind === "ready" ? state.persona : DEFAULT_PERSONA}
+            name={state.kind === "ready" ? state.persona.name : "Your bot"}
+            state={state.kind === "ready" && state.pulse ? state.pulse.mood : "idle"}
+            machine={state.kind === "ready" ? state.machine : EMPTY_MACHINE}
+            pulse={state.kind === "ready" ? state.pulse : null}
+          />
+          <TalkCinema>
+            <TalkPanel botName={state.kind === "ready" ? state.persona.name : "Your bot"} />
+          </TalkCinema>
           <BotCreator
             initial={state.kind === "ready" ? state.persona : DEFAULT_PERSONA}
             signedIn={state.kind === "ready"}
@@ -104,7 +116,6 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
             savedAt={state.kind === "ready" ? state.savedAt : null}
             machine={state.kind === "ready" ? state.machine : undefined}
           />
-          <TalkPanel botName={state.kind === "ready" ? state.persona.name : "Your bot"} />
           {state.kind === "ready" && state.exists ? <AgentContract botName={state.persona.name} connections={state.connections} worlds={state.worlds} /> : null}
           {state.kind === "ready" && state.exists ? <WhileYouWereAway botName={state.persona.name} /> : null}
           {state.kind === "ready" && state.exists ? <BotImport botName={state.persona.name} /> : null}

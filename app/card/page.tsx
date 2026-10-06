@@ -20,43 +20,38 @@ export default async function CardPage() {
   const liveCard = cards[0];
 
   return (
-    <div data-theme="dark" className="min-h-svh bg-background text-foreground">
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-4 py-12 pb-24">
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted">Your ID</p>
-        <h1 className="mt-1 text-2xl font-medium tracking-tight md:text-4xl">One card, two faces.</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-          Your business card and your private spend card — same identity, showing the right face to the right person.
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center gap-10 px-4 py-14 pb-24 text-center">
+      <header className="flex max-w-xl flex-col gap-4">
+        <p className="eyebrow">SOV-ID card</p>
+        <h1 className="text-4xl font-medium tracking-tight md:text-5xl">
+          One card, <span className="serif-accent">two</span> faces.
+        </h1>
+        <p className="text-sm leading-6 text-muted">
+          Your business card and your private spend card — same identity, the right face for the right person.
         </p>
-      </div>
+      </header>
 
-      <section aria-labelledby="wallet-heading" className="flex flex-col gap-3 rounded-2xl border border-line bg-surface/60 p-5 md:p-6">
-        <h2 id="wallet-heading" className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted">Card status</h2>
+      <SovCard name={name} sovId={sovId} lastFour={liveCard?.last_four ?? null} />
+
+      {/* Ambient proof — glanceable card status */}
+      <section aria-label="Card status" className="proof-strip w-full max-w-md py-4">
         {liveCard ? (
-          <div>
-            <p className="font-mono text-4xl tracking-tight md:text-5xl">···· {liveCard.last_four}</p>
-            <p className="mt-2 text-sm leading-6 text-muted">{liveCard.state} · Sandbox — no real money moves</p>
+          <div className="flex items-center justify-center gap-5">
+            <p className="stat-number text-2xl text-foreground">···· {liveCard.last_four}</p>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-accent">{liveCard.state}</p>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-faint">Sandbox</p>
           </div>
         ) : (
-          <div>
-            <p className="text-2xl font-medium tracking-tight">No card issued yet</p>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              Connect a Solana wallet and your USDC balance shows up here. Spend settles on Solana; the card issuer plugs in next.
-            </p>
-          </div>
+          <p className="text-xs leading-5 text-muted">No card issued yet — no real money moves.</p>
         )}
-        <p className="text-[10px] uppercase tracking-[0.14em] text-muted">Lithic sandbox · Rain/Baanx for production</p>
       </section>
 
-      <SovCard name={name} sovId={sovId} />
-
-      <section aria-labelledby="spend-heading" className="flex flex-col gap-3 rounded-md border border-line bg-surface/60 p-4 md:p-5">
-        <h2 id="spend-heading" className="text-lg font-medium">Spend history</h2>
-        <p className="text-xs leading-5 text-muted">
+      <section aria-labelledby="spend-heading" className="glass w-full max-w-md p-5 text-left">
+        <h2 id="spend-heading" className="eyebrow">Spend history</h2>
+        <p className="mt-3 text-xs leading-5 text-muted">
           Nothing spent yet. When the card goes live, every transaction lands here — verifiably yours, visible only to you.
         </p>
       </section>
     </main>
-    </div>
   );
 }

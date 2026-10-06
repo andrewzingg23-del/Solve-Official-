@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { KernelError, type Actor, type KernelEvent } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
-import { label, quietLink, secondaryAction } from "@/app/ui";
+import { primaryAction, quietLink, secondaryAction } from "@/app/ui";
 import { registerActor, signOut } from "./actions";
 import { loginRequired } from "@/lib/auth/gate";
 
@@ -44,37 +44,50 @@ export default async function AccountPage() {
   const record = await loadRecord();
 
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center gap-10 px-4 py-16">
-      <div className="flex flex-col gap-2">
-        <p className="text-sm font-semibold tracking-[0.3em] text-accent">solve</p>
-        <h1 className="text-2xl font-semibold tracking-tight">Your record</h1>
+    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-10 px-4 py-16">
+      <div className="flex flex-col gap-4">
+        <p className="eyebrow">Your record</p>
+        <h1 className="text-5xl font-medium tracking-tight md:text-6xl">
+          Your <span className="serif-accent">ID</span>.
+        </h1>
       </div>
 
-      <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
-        <dt className={label}>SOV ID</dt>
-        <dd className="truncate font-mono text-xs leading-5 text-accent">
-          {record.state === "ready" ? record.actor.actor_id : "Not issued"}
-        </dd>
-        <dt className={label}>Email</dt>
-        <dd className="truncate">{user?.email ?? "Not signed in"}</dd>
-        <dt className={label}>Joined</dt>
-        <dd>
-          {user ? new Date(user.created_at).toLocaleDateString("en-US", { dateStyle: "medium" }) : "—"}
-        </dd>
-      </dl>
+      {/* Dossier hero — the ID is the monument */}
+      <section aria-label="Your identity" className="glass p-6 md:p-8">
+        <div className="flex flex-col gap-5">
+          <div>
+            <p className="eyebrow">SOV ID</p>
+            <p className="mt-3 break-all font-mono text-base leading-relaxed text-accent md:text-lg">
+              {record.state === "ready" ? record.actor.actor_id : "Not issued"}
+            </p>
+          </div>
+          <div className="proof-strip flex gap-8 py-4">
+            <div className="min-w-0">
+              <p className="eyebrow">Email</p>
+              <p className="mt-1 truncate text-sm text-foreground">{user?.email ?? "Not signed in"}</p>
+            </div>
+            <div>
+              <p className="eyebrow">Joined</p>
+              <p className="mt-1 text-sm text-foreground">
+                {user ? new Date(user.created_at).toLocaleDateString("en-US", { dateStyle: "medium" }) : "—"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {record.state === "ready" && (
-        <section className="flex flex-col gap-3">
+        <section aria-labelledby="history-heading" className="flex flex-col gap-4">
           <div className="flex items-baseline justify-between gap-4">
-            <h2 className={label}>History</h2>
-            <p className="text-xs text-muted">Append-only. Each entry seals the one before it.</p>
+            <h2 id="history-heading" className="eyebrow">History</h2>
+            <p className="text-xs text-faint">Append-only — each entry seals the one before it.</p>
           </div>
-          <ol className="flex flex-col divide-y divide-line rounded-md border border-line bg-surface">
+          <ol className="glass flex flex-col divide-y divide-line-soft p-2">
             {record.events.map((event) => (
-              <li key={event.id} className="flex items-center justify-between gap-4 px-4 py-3 text-sm">
-                <div className="flex min-w-0 flex-col">
-                  <span>{eventNames[event.type] ?? event.type}</span>
-                  <span className="truncate text-xs text-muted">
+              <li key={event.id} className="flex items-center justify-between gap-4 px-4 py-3.5">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="text-sm text-foreground">{eventNames[event.type] ?? event.type}</span>
+                  <span className="truncate font-mono text-xs text-faint">
                     #{event.seq} ·{" "}
                     {new Date(event.occurred_at).toLocaleString("en-US", {
                       dateStyle: "medium",
@@ -82,8 +95,8 @@ export default async function AccountPage() {
                     })}
                   </span>
                 </div>
-                <span className="shrink-0 font-mono text-xs text-muted" title={event.hash}>
-                  {event.hash.slice(0, 12)}
+                <span className="shrink-0 rounded-full border border-line-soft px-2.5 py-1 font-mono text-[10px] text-faint" title={event.hash}>
+                  {event.hash.slice(0, 8)}
                 </span>
               </li>
             ))}
@@ -92,18 +105,18 @@ export default async function AccountPage() {
       )}
 
       {record.state === "unregistered" && (
-        <form action={registerActor} className="flex flex-col gap-3 rounded-md border border-line bg-surface p-4">
+        <form action={registerActor} className="glass flex flex-col gap-4 p-6">
           <p className="text-sm text-muted">Your SOV ID hasn&apos;t been issued yet.</p>
-          <button type="submit" className={`${secondaryAction} w-fit`}>
+          <button type="submit" className={`${primaryAction} w-fit`}>
             Issue my SOV ID
           </button>
         </form>
       )}
 
       {record.state === "unavailable" && (
-        <div className="flex flex-col gap-2 rounded-md border border-negative/30 bg-negative/10 p-4 text-sm">
-          <p className={label}>Kernel unreachable</p>
-          <p className="text-muted">
+        <div className="alert-pin flex flex-col gap-2 rounded-xl p-5 text-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em]">Kernel unreachable</p>
+          <p>
             Apply <code className="font-mono text-foreground">supabase/migrations</code> and expose the{" "}
             <code className="font-mono text-foreground">kernel_api</code> schema. ({record.message})
           </p>

@@ -24,6 +24,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       className={`${archivo.variable} ${geistMono.variable} h-full antialiased`}
+      style={{ backgroundColor: "#04070d" }}
     >
       <body className="min-h-full flex flex-col font-sans">
         {children}

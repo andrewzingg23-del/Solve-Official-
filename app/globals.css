@@ -1,29 +1,12 @@
 @import "tailwindcss";
 
-/* Brand lock (BUILD-BOOK.md §2): abyssal blue-black, ice white, one cyan accent. No gold.
-   Taste layers: brand LOUD (dark cinematic moments — card, claim reveal, marketing),
-   product QUIET (light surfaces for clarity and balance), personal YOURS (avatar, content).
-   Light is the product default; dark is reserved for brand moments via [data-theme="dark"]. */
+/* SOLVE cinematic system — unified dark on EVERY surface.
+   Founder law (2026-10-06): one dark cinematic color system app-wide.
+   Supersedes the old light-default product law.
+   Palette (brand book §14.2): abyssal blue-black #04070d–#0a1220,
+   ice white #f2f7fb, hologram cyan #22d3ee single accent.
+   Emerald #00e5a0 = win, red #ff4d5e = loss. NO gold. One accent, never two. */
 :root {
-  --background: #f7f6f3;
-  --surface: #ffffff;
-  --surface-raise: #ffffff;
-  --surface-sunken: #efeeea;
-  --foreground: #1a1a18;
-  --muted: rgb(26 26 24 / 0.62);
-  --faint: rgb(26 26 24 / 0.42);
-  --line: rgb(26 26 24 / 0.1);
-  --line-soft: rgb(26 26 24 / 0.05);
-  --accent: #0e7490;
-  --accent-dim: rgb(14 116 144 / 0.1);
-  --positive: #059669;
-  --negative: #dc2626;
-  --shadow-card: 0 1px 2px rgb(26 26 24 / 0.04), 0 8px 24px rgb(26 26 24 / 0.06);
-  --shadow-lift: 0 2px 4px rgb(26 26 24 / 0.05), 0 16px 40px rgb(26 26 24 / 0.1);
-}
-
-/* Dark brand moments: card, claim reveal, marketing. Abyssal blue-black, hologram cyan. */
-[data-theme="dark"] {
   --background: #04070d;
   --surface: #0a1220;
   --surface-raise: #0e1728;
@@ -34,11 +17,14 @@
   --line: rgb(242 247 251 / 0.1);
   --line-soft: rgb(242 247 251 / 0.06);
   --accent: #22d3ee;
+  --accent-ink: #04070d;
   --accent-dim: rgb(34 211 238 / 0.14);
+  --accent-glow: rgb(34 211 238 / 0.28);
   --positive: #00e5a0;
   --negative: #ff4d5e;
   --shadow-card: 0 8px 30px rgb(0 0 0 / 0.35);
   --shadow-lift: 0 16px 48px rgb(0 0 0 / 0.45);
+  --ease-calm: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @theme inline {
@@ -52,19 +38,16 @@
   --color-line: var(--line);
   --color-line-soft: var(--line-soft);
   --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
   --color-accent-dim: var(--accent-dim);
   --color-positive: var(--positive);
   --color-negative: var(--negative);
   --font-sans: var(--font-archivo);
   --font-mono: var(--font-geist-mono);
-  --ease-calm: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-calm: var(--ease-calm);
 }
 
 html {
-  color-scheme: light;
-}
-
-[data-theme="dark"] {
   color-scheme: dark;
 }
 
@@ -73,18 +56,19 @@ body {
   color: var(--foreground);
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
+  /* Abyssal atmosphere: cyan aura bleeding from the top, vignette at the edges. */
+  background-image:
+    radial-gradient(120% 60% at 50% -10%, rgb(34 211 238 / 0.09) 0%, transparent 60%),
+    radial-gradient(90% 50% at 50% 110%, rgb(10 18 32 / 0.9) 0%, transparent 70%);
+  background-attachment: fixed;
+  min-height: 100svh;
 }
 
-[data-theme="dark"] body {
-  background:
-    radial-gradient(120% 80% at 50% 0%, var(--surface) 0%, var(--background) 70%) fixed;
-}
-
-/* Quiet product layer: calm labels, reserved accent. */
+/* Engraved uppercase labels — the brand's quiet voice. */
 .eyebrow {
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--faint);
 }
@@ -92,13 +76,56 @@ body {
   color: var(--accent);
 }
 
+/* Serif-italic accent word — the seductive word inside a massive headline. */
+.serif-accent {
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--accent);
+}
+
+/* Glass card — frosted, hairline border, inner top light. Depth = importance. */
+.glass {
+  background: linear-gradient(165deg, rgb(14 23 40 / 0.78), rgb(6 11 20 / 0.62));
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgb(242 247 251 / 0.09);
+  box-shadow: var(--shadow-card), inset 0 1px 0 rgb(242 247 251 / 0.07);
+  border-radius: 1.25rem;
+}
+
+/* Ambient proof strip — stats bar, no paragraphs. */
+.proof-strip {
+  border-top: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+/* Big tabular stat number. */
+.stat-number {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Alert pinned to the thing it describes. */
+.alert-pin {
+  border: 1px solid rgb(255 77 94 / 0.4);
+  background: rgb(255 77 94 / 0.1);
+  color: var(--negative);
+}
+.ok-pin {
+  border: 1px solid rgb(0 229 160 / 0.35);
+  background: rgb(0 229 160 / 0.08);
+  color: var(--positive);
+}
+
 /* Flow: pages enter with a calm rise. */
 @keyframes page-enter {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 main {
-  animation: page-enter 0.4s var(--ease-calm);
+  animation: page-enter 0.45s var(--ease-calm);
 }
 @media (prefers-reduced-motion: reduce) {
   main { animation: none; }
@@ -107,7 +134,9 @@ main {
 /* Refined interactive states. */
 button, a {
   transition: color 0.18s var(--ease-calm), border-color 0.18s var(--ease-calm),
-    background-color 0.18s var(--ease-calm), transform 0.18s var(--ease-calm);
+    background-color 0.18s var(--ease-calm), transform 0.18s var(--ease-calm),
+    box-shadow 0.18s var(--ease-calm);
+  -webkit-tap-highlight-color: transparent;
 }
 button:active {
   transform: scale(0.98);
@@ -115,4 +144,9 @@ button:active {
 input:focus-visible, button:focus-visible, a:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* Inputs on dark. */
+input, textarea, select {
+  color-scheme: dark;
 }

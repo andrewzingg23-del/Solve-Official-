@@ -7,12 +7,14 @@ export function Sparkline({
   height = 36,
   stroke = "var(--accent)",
   label,
+  className,
 }: {
   points: number[];
   width?: number;
   height?: number;
   stroke?: string;
   label?: string;
+  className?: string;
 }) {
   if (points.length < 2) return null;
   const min = Math.min(...points);
@@ -34,7 +36,7 @@ export function Sparkline({
       viewBox={`0 0 ${width} ${height}`}
       role="img"
       aria-label={label ?? `Trend, ${up ? "up" : "down"} over the shown period`}
-      className="block"
+      className={className ?? "block"}
     >
       <path d={d} fill="none" stroke={stroke} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
       <circle

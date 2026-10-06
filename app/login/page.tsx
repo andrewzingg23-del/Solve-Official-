@@ -4,7 +4,7 @@ import { safeNextPath } from "@/lib/safe-next-path";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getUser } from "@/lib/supabase/server";
 import { SetupNotice } from "@/app/setup-notice";
-import { label, primaryAction, quietLink } from "@/app/ui";
+import { field, primaryAction, quietLink } from "@/app/ui";
 import { sendMagicLink } from "./actions";
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
@@ -15,22 +15,27 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
 
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-8 px-4 py-16">
-      <div className="flex flex-col gap-2">
-        <p className="text-sm font-semibold tracking-[0.3em] text-accent">solve</p>
-        <h1 className="text-2xl font-semibold tracking-tight">Enter</h1>
-        <p className="text-sm text-muted">We email you a link. No password.</p>
+      <div className="flex flex-col gap-4">
+        <p className="eyebrow">solve</p>
+        <h1 className="text-6xl font-medium tracking-tight md:text-7xl">
+          Enter<span className="text-accent">.</span>
+        </h1>
+        <p className="text-sm leading-6 text-muted">We email you a link. No password.</p>
       </div>
 
       {!isSupabaseConfigured ? (
         <SetupNotice />
       ) : typeof sent === "string" ? (
-        <p className="rounded-md border border-positive/30 bg-positive/10 p-4 text-sm">
-          Link sent to <strong>{sent}</strong>.
-        </p>
+        <div className="glass p-5">
+          <p className="text-sm">
+            Link sent to <strong className="text-foreground">{sent}</strong>.
+          </p>
+          <p className="mt-1.5 text-xs leading-5 text-muted">Tap the link in that email to enter.</p>
+        </div>
       ) : (
-        <form action={sendMagicLink} className="flex flex-col gap-3">
+        <form action={sendMagicLink} className="flex flex-col gap-4">
           <input type="hidden" name="next" value={nextPath} />
-          <label htmlFor="email" className={label}>
+          <label htmlFor="email" className="eyebrow">
             Email
           </label>
           <input
@@ -40,13 +45,13 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
             required
             autoComplete="email"
             placeholder="you@example.com"
-            className="h-11 rounded-md border border-line bg-surface px-3 outline-none transition-colors duration-300 ease-calm placeholder:text-muted/60 focus:border-accent"
+            className={field}
           />
           <button type="submit" className={primaryAction}>
             Email me a link
           </button>
           {typeof error === "string" && (
-            <p role="alert" className="text-sm text-negative">
+            <p role="alert" className="alert-pin rounded-xl px-4 py-3 text-sm">
               {error}
             </p>
           )}

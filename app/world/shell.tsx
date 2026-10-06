@@ -25,7 +25,7 @@ import { Horizon } from "./horizon";
 import { LensPlane } from "./lenses";
 import { Onboarding } from "./onboarding";
 import { StewardPanel } from "./steward";
-import { VerbDock } from "./verb-dock";
+import { SoonCard, TradeCard, VerbDock } from "./verb-dock";
 
 const MOTION = "(prefers-reduced-motion: reduce)";
 
@@ -43,6 +43,12 @@ const MORE_VIEWS: { id: LensId; label: string; question: string }[] = [
   { id: "proof", label: "Proof", question: "What evidence supports this?" },
   { id: "self", label: "You", question: "What does this mean for me?" },
 ];
+
+const VERB_NOTES = {
+  Build: "Rooms, packs, and tools that compound.",
+  Create: "Your avatar, your content, your worlds.",
+  Gather: "Communities with portable identity.",
+} as const;
 
 function useReducedMotion() {
   return useSyncExternalStore(
@@ -329,6 +335,66 @@ export function WorldShell() {
   const selected = ctx.currentSelectionIds[0] ?? null;
   const lens = ctx.currentLens;
 
+  // The hero composition (headline, verb cards) shows only on the living World itself —
+  // lens panels, the steward view, and entering a World take the room instead.
+  const heroOpen = Boolean(model && lens === "space" && !ctx.insideWorldRef && !stewardOpen);
+  const drawerOpen = Boolean(model && lens === "space" && (selected || indexOpen));
+
+  const lensNav = (className: string) => (
+    <nav aria-label="World views" className={className}>
+      {PRIMARY_VIEWS.map((l) => (
+        <button
+          key={l.id}
+          type="button"
+          aria-pressed={lens === l.id}
+          title={l.question}
+          onClick={() => {
+            setCtx((c) => ({ ...c, currentLens: l.id }));
+            setMoreViewsOpen(false);
+          }}
+          className={`flex-1 rounded-full px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] transition-colors md:flex-none md:px-3.5 md:tracking-[0.18em] ${lens === l.id ? "bg-accent/15 text-accent" : "text-muted hover:text-foreground"}`}
+        >
+          {l.label}
+        </button>
+      ))}
+      <div className="relative shrink-0">
+        <button
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={moreViewsOpen}
+          aria-label={`More World views${MORE_VIEWS.some((l) => l.id === lens) ? `, current view ${MORE_VIEWS.find((l) => l.id === lens)?.label}` : ""}`}
+          title="Specialist views"
+          onClick={() => setMoreViewsOpen((open) => !open)}
+          className={`flex items-center gap-1.5 rounded-full px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] transition-colors md:tracking-[0.18em] ${MORE_VIEWS.some((l) => l.id === lens) || moreViewsOpen ? "bg-accent/15 text-accent" : "text-muted hover:text-foreground"}`}
+        >
+          More
+          {MORE_VIEWS.some((l) => l.id === lens) && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-accent" />}
+          <span aria-hidden="true" className="text-[9px]">▾</span>
+        </button>
+        {moreViewsOpen && (
+          <div role="menu" aria-label="Specialist World views" className="absolute right-0 top-full z-30 mt-2 flex min-w-44 flex-col gap-1 rounded-2xl border border-line bg-surface/95 p-1.5 shadow-xl backdrop-blur-md">
+            {MORE_VIEWS.map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                role="menuitemradio"
+                aria-checked={lens === l.id}
+                title={l.question}
+                onClick={() => {
+                  setCtx((c) => ({ ...c, currentLens: l.id }));
+                  setMoreViewsOpen(false);
+                }}
+                className={`rounded-xl px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.16em] transition-colors ${lens === l.id ? "bg-accent/15 text-accent" : "text-muted hover:bg-foreground/5 hover:text-foreground"}`}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </nav>
+  );
+
   if (bootError) {
     return (
       <main className="flex flex-1 items-center justify-center p-6">
@@ -353,180 +419,175 @@ export function WorldShell() {
         onMetrics={(m) => (metrics.current.scene = m)}
       />
 
-      <div className="pointer-events-none absolute inset-0">
-        {/* Identity: You and your avatar, with presence. Quiet chrome: the ask bar is the move. */}
-        <header className="pointer-events-auto absolute left-3 top-3 z-20 flex items-center gap-3 rounded-md border border-line bg-surface/80 px-3 py-2 opacity-75 backdrop-blur-md transition-opacity hover:opacity-100 md:left-5 md:top-5">
-          <button type="button" onClick={() => setCtx((c) => ({ ...c, currentLens: "self" }))} className="flex items-center gap-2" aria-label="You, human present. Open Self">
-            <span className="text-accent">{companionActing ? "◎" : "◉"}</span>
-            <span className="text-xs font-semibold uppercase tracking-[0.22em]">You</span>
-          </button>
-          {sandbox && (
-            <button
-              type="button"
-              aria-pressed={stewardOpen}
-              onClick={() => setStewardOpen((o) => !o)}
-              className={`border-l border-line pl-3 text-[10px] font-semibold uppercase tracking-[0.18em] ${stewardOpen ? "text-accent" : "text-muted hover:text-foreground"}`}
-            >
-              Steward
+      {/* The chrome column: identity, views, hero, verbs, the one action, proof. Earth shows through. */}
+      <div className="pointer-events-none absolute inset-0 z-10 flex flex-col">
+        <header className="pointer-events-auto flex items-start justify-between gap-2 px-3 pt-3 md:px-5 md:pt-5">
+          <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface/80 px-3 py-2 backdrop-blur-md">
+            <button type="button" onClick={() => setCtx((c) => ({ ...c, currentLens: "self" }))} className="flex items-center gap-2" aria-label="You, human present. Open Self">
+              <span className="text-accent">{companionActing ? "◎" : "◉"}</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.22em]">You</span>
             </button>
-          )}
-          {companion && (
-            <span className="flex items-center gap-2 border-l border-line pl-3" aria-label={`${companion.name}, ${companionActing ? "acting" : "present"}`}>
-              <AvatarArt kind={companion.representation} seed={companion.seed as Seed} size={22} />
-              <span className="text-xs uppercase tracking-[0.18em] text-muted">
-                {companionActing ? "◌ " : "• "}
-                {companion.name}
-              </span>
-            </span>
-          )}
-          {sandbox && (
-            <span
-              title="Arcadia uses fictional data and test assets; it is not shared live work."
-              aria-label="Sandbox: fictional data and test assets"
-              className="rounded border border-line px-1.5 py-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted md:hidden"
-            >
-              Sandbox
-            </span>
-          )}
-          <Link href="/worlds" aria-label="Your Worlds" className="border-l border-line pl-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted hover:text-accent">
-            Worlds
-          </Link>
-        </header>
-
-        {/* One World, a few clear ways to work in it; specialist readings stay contextual. */}
-        <nav aria-label="World views" className="pointer-events-auto absolute inset-x-3 top-[3.75rem] z-20 flex items-center justify-between gap-1 rounded-md border border-line bg-surface/80 p-1 opacity-75 backdrop-blur-md transition-opacity hover:opacity-100 md:inset-x-auto md:right-5 md:top-5 md:justify-start">
-          {PRIMARY_VIEWS.map((l) => (
-            <button
-              key={l.id}
-              type="button"
-              aria-pressed={lens === l.id}
-              title={l.question}
-              onClick={() => {
-                setCtx((c) => ({ ...c, currentLens: l.id }));
-                setMoreViewsOpen(false);
-              }}
-              className={`flex-1 rounded px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] transition-colors md:flex-none md:px-2.5 md:tracking-[0.18em] ${lens === l.id ? "bg-accent/15 text-accent" : "text-muted hover:text-foreground"}`}
-            >
-              {l.label}
-            </button>
-          ))}
-          <div className="relative shrink-0">
-            <button
-              type="button"
-              aria-haspopup="menu"
-              aria-expanded={moreViewsOpen}
-              aria-label={`More World views${MORE_VIEWS.some((l) => l.id === lens) ? `, current view ${MORE_VIEWS.find((l) => l.id === lens)?.label}` : ""}`}
-              title="Specialist views"
-              onClick={() => setMoreViewsOpen((open) => !open)}
-              className={`flex items-center gap-1.5 rounded px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] transition-colors md:px-2.5 md:tracking-[0.18em] ${MORE_VIEWS.some((l) => l.id === lens) || moreViewsOpen ? "bg-accent/15 text-accent" : "text-muted hover:text-foreground"}`}
-            >
-              More
-              {MORE_VIEWS.some((l) => l.id === lens) && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-accent" />}
-              <span aria-hidden="true" className="text-[9px]">▾</span>
-            </button>
-            {moreViewsOpen && (
-              <div role="menu" aria-label="Specialist World views" className="absolute right-0 top-full z-30 mt-2 flex min-w-40 flex-col gap-1 rounded-md border border-line bg-surface/95 p-1.5 shadow-xl backdrop-blur-md">
-                {MORE_VIEWS.map((l) => (
-                  <button
-                    key={l.id}
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={lens === l.id}
-                    title={l.question}
-                    onClick={() => {
-                      setCtx((c) => ({ ...c, currentLens: l.id }));
-                      setMoreViewsOpen(false);
-                    }}
-                    className={`rounded px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.16em] transition-colors ${lens === l.id ? "bg-accent/15 text-accent" : "text-muted hover:bg-foreground/5 hover:text-foreground"}`}
-                  >
-                    {l.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </nav>
-
-        {/* What matters now but has no place on Earth: listed, never given convenient coordinates. */}
-        {model && lens === "space" && !ctx.insideWorldRef && view.offEarth.length > 0 && (
-          <div aria-label="Not on Earth" className="pointer-events-auto absolute left-3 top-[6.75rem] z-10 flex max-w-[calc(100vw-7rem)] flex-wrap items-center gap-1.5 md:left-5 md:top-20">
-            <span className="text-[10px] uppercase tracking-[0.18em] text-muted">Not on Earth</span>
-            {view.offEarth.map((o) => (
-              <button key={o.ref} type="button" title={o.why} onClick={() => select(o.ref)} className="rounded-full border border-line bg-surface/80 px-2.5 py-1 text-xs backdrop-blur-md hover:border-accent hover:text-accent">
-                {o.title}
+            {sandbox && (
+              <button
+                type="button"
+                aria-pressed={stewardOpen}
+                onClick={() => setStewardOpen((o) => !o)}
+                className={`border-l border-line pl-3 text-[10px] font-semibold uppercase tracking-[0.18em] ${stewardOpen ? "text-accent" : "text-muted hover:text-foreground"}`}
+              >
+                Steward
               </button>
-            ))}
+            )}
+            {companion && (
+              <span className="flex items-center gap-2 border-l border-line pl-3" aria-label={`${companion.name}, ${companionActing ? "acting" : "present"}`}>
+                <AvatarArt kind={companion.representation} seed={companion.seed as Seed} size={22} />
+                <span className="text-xs uppercase tracking-[0.18em] text-muted">
+                  {companionActing ? "◌ " : "• "}
+                  {companion.name}
+                </span>
+              </span>
+            )}
+            {sandbox && (
+              <span
+                title="Arcadia uses fictional data and test assets; it is not shared live work."
+                aria-label="Sandbox: fictional data and test assets"
+                className="rounded-full border border-line px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted md:hidden"
+              >
+                Sandbox
+              </span>
+            )}
+            <Link href="/worlds" aria-label="Your Worlds" className="border-l border-line pl-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted hover:text-accent">
+              Worlds
+            </Link>
+          </div>
+          {lensNav("hidden items-center gap-1 rounded-2xl border border-line bg-surface/80 p-1 backdrop-blur-md md:flex")}
+        </header>
+        {lensNav("pointer-events-auto mx-3 mt-2 flex items-center gap-1 rounded-2xl border border-line bg-surface/80 p-1 backdrop-blur-md md:hidden")}
+
+        {/* One message: the hero. The living object sits behind and below it. */}
+        {heroOpen && (
+          <div className="px-6 pt-5 text-center md:pt-8">
+            <p className="eyebrow eyebrow-accent">The living world</p>
+            <h1 className="mx-auto mt-2 max-w-3xl text-5xl font-bold leading-[1.02] tracking-tight text-foreground md:text-7xl">
+              Ask for a <span className="serif-accent">way</span>.
+            </h1>
+            <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-muted">This world grows around you</p>
+            <p className="mt-3 hidden text-[10px] uppercase tracking-[0.22em] text-faint md:block" aria-label="The Wayfinder loop: ask, route, room, act, consequence, expand">
+              ask <span aria-hidden="true" className="text-accent">→</span> route <span aria-hidden="true" className="text-accent">→</span> room{" "}
+              <span aria-hidden="true" className="text-accent">→</span> act <span aria-hidden="true" className="text-accent">→</span> consequence{" "}
+              <span aria-hidden="true" className="text-accent">→</span> expand
+            </p>
           </div>
         )}
-        {ctx.insideWorldRef && (
-          <button type="button" onClick={exitWorld} className="pointer-events-auto absolute left-3 top-[6.75rem] z-20 rounded-full border border-accent bg-surface/90 px-3 py-1 text-xs text-accent md:left-5 md:top-20">
-            ← Back to Earth · inside {model?.nodes.get(ctx.insideWorldRef)?.title ?? "World"}
-          </button>
-        )}
 
-        {stewardOpen && engine && <StewardPanel load={loadOperations} onClose={() => setStewardOpen(false)} />}
-        {!stewardOpen && model && engine && <LensPlane lens={lens} engine={engine} model={model} ctx={ctx} onSelect={(r) => select(r)} onRepresent={represent} onChanged={reload} />}
+        <div className="min-h-0 flex-1" />
 
-        {/* Context drawer (Space lens): the selection, or the World index on request. */}
-        {model && lens === "space" && (selected || indexOpen) && (
-          <aside
-            aria-label="Context"
-            className="pointer-events-auto absolute bottom-40 right-3 z-10 max-h-[38vh] w-[min(420px,calc(100vw-1.5rem))] overflow-y-auto rounded-md border border-line bg-surface/85 p-4 backdrop-blur-md md:bottom-auto md:right-5 md:top-20 md:max-h-[calc(100vh-14rem)]"
-          >
-            <ContextDrawer
-              model={model}
-              selected={selected}
-              selection={ctx.currentSelectionIds}
-              onEnterWorld={enterWorld}
-              onSelect={(r) => {
-                select(r);
-                if (!r) setIndexOpen(false);
-              }}
-              onAsk={submit}
-            />
-          </aside>
-        )}
-        {model && lens === "space" && !selected && !indexOpen && (
-          <button
-            type="button"
-            onClick={() => setIndexOpen(true)}
-            className="pointer-events-auto absolute right-3 top-[6.75rem] z-10 rounded-md border border-line bg-surface/80 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted opacity-75 backdrop-blur-md transition-opacity hover:text-accent hover:opacity-100 md:right-5 md:top-20"
-          >
-            Index
-          </button>
-        )}
-
-        {/* One message, one move: the ask bar, with the four verbs docked above it. The Horizon
-            component keeps its own behavior; the wrapper neutralizes its absolute positioning so the
-            whole cluster anchors as one bottom-center column. */}
-        {model && (
-          <div className="pointer-events-auto absolute inset-x-3 bottom-3 z-20 mx-auto flex max-w-2xl flex-col gap-2 md:bottom-6">
-            <p className="mx-auto w-fit rounded-full border border-line bg-surface/85 px-4 py-1.5 text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-foreground backdrop-blur-md">This world grows around you. Ask for a way.</p>
+        {/* Verb orbit: a swipeable card row on the phone. */}
+        {heroOpen && (
+          <div className="pb-3 md:hidden">
             <VerbDock />
-            <div className="[&>div]:static">
+          </div>
+        )}
+
+        {/* One action: the ask pill. */}
+        {model && (
+          <div className="px-3 pb-2 md:px-0 md:pb-3">
+            <div className="mx-auto flex w-full max-w-2xl flex-col gap-2">
               <Horizon busy={busy} result={result} provider={providerLabel} onSubmit={(text) => submit(text)} onAction={act} />
             </div>
           </div>
         )}
 
-        {/* Status and sandbox notice. */}
-        <footer className="pointer-events-auto absolute bottom-1 left-3 z-20 hidden text-[10px] uppercase tracking-[0.16em] text-muted/70 md:block">
-          Arcadia sandbox · runs in your browser · fictional data, test assets{" "}
-          {sandbox && (
-            <button
-              type="button"
-              className="underline-offset-2 hover:text-accent hover:underline"
-              onClick={async () => {
-                await resetSandbox(sandbox.manifest);
-                window.location.reload();
-              }}
-            >
-              reset
-            </button>
-          )}
-          {earthStatus.status === "failed" && <span className="ml-2 text-negative">3D Earth unavailable ({earthStatus.detail}); the index and Horizon still work</span>}
+        {/* Ambient proof: real counts, no paragraphs. */}
+        <footer className="pointer-events-auto border-t border-line-soft px-4 py-2">
+          <p className="text-center text-[10px] uppercase tracking-[0.2em] text-faint">
+            {model && <>{model.events.length} events on record · </>}
+            private by default · kernel recorded
+            <span className="hidden md:inline"> · runs in your browser</span>
+            {sandbox && (
+              <button
+                type="button"
+                className="ml-2 underline-offset-2 hover:text-accent hover:underline"
+                onClick={async () => {
+                  await resetSandbox(sandbox.manifest);
+                  window.location.reload();
+                }}
+              >
+                reset
+              </button>
+            )}
+          </p>
         </footer>
       </div>
+
+      {/* Desktop: data docked beside the living object (Alibaba pattern). */}
+      {heroOpen && !drawerOpen && (
+        <>
+          <div className="pointer-events-auto absolute left-5 top-1/2 z-10 hidden w-60 -translate-y-1/2 flex-col gap-4 md:flex">
+            <TradeCard />
+            <SoonCard verb="Build" note={VERB_NOTES.Build} />
+          </div>
+          <div className="pointer-events-auto absolute right-5 top-1/2 z-10 hidden w-60 -translate-y-1/2 flex-col gap-4 md:flex">
+            <SoonCard verb="Create" note={VERB_NOTES.Create} />
+            <SoonCard verb="Gather" note={VERB_NOTES.Gather} />
+          </div>
+        </>
+      )}
+
+      {/* Alert pinned to the thing it describes. */}
+      {earthStatus.status === "failed" && (
+        <div role="alert" className="alert-pin pointer-events-auto absolute left-1/2 top-1/2 z-20 max-w-[calc(100vw-3rem)] -translate-x-1/2 -translate-y-1/2 rounded-full px-4 py-2 text-center text-xs font-semibold">
+          3D Earth unavailable — the index and Horizon still work
+        </div>
+      )}
+
+      {/* What matters now but has no place on Earth: listed, never given convenient coordinates. */}
+      {model && lens === "space" && !ctx.insideWorldRef && view.offEarth.length > 0 && (
+        <div aria-label="Not on Earth" className="pointer-events-auto absolute left-3 top-32 z-10 flex max-w-[calc(100vw-7rem)] flex-wrap items-center gap-1.5 md:left-5 md:top-20">
+          <span className="text-[10px] uppercase tracking-[0.18em] text-muted">Not on Earth</span>
+          {view.offEarth.map((o) => (
+            <button key={o.ref} type="button" title={o.why} onClick={() => select(o.ref)} className="rounded-full border border-line bg-surface/80 px-2.5 py-1 text-xs backdrop-blur-md hover:border-accent hover:text-accent">
+              {o.title}
+            </button>
+          ))}
+        </div>
+      )}
+      {ctx.insideWorldRef && (
+        <button type="button" onClick={exitWorld} className="pointer-events-auto absolute left-3 top-32 z-20 rounded-full border border-accent bg-surface/90 px-3 py-1 text-xs text-accent md:left-5 md:top-20">
+          ← Back to Earth · inside {model?.nodes.get(ctx.insideWorldRef)?.title ?? "World"}
+        </button>
+      )}
+
+      {stewardOpen && engine && <StewardPanel load={loadOperations} onClose={() => setStewardOpen(false)} />}
+      {!stewardOpen && model && engine && <LensPlane lens={lens} engine={engine} model={model} ctx={ctx} onSelect={(r) => select(r)} onRepresent={represent} onChanged={reload} />}
+
+      {/* Context drawer (Space lens): the selection, or the World index on request. */}
+      {model && drawerOpen && (
+        <aside
+          aria-label="Context"
+          className="glass pointer-events-auto absolute bottom-48 right-3 z-10 max-h-[36vh] w-[min(420px,calc(100vw-1.5rem))] overflow-y-auto p-5 md:bottom-auto md:right-5 md:top-24 md:max-h-[calc(100dvh-16rem)]"
+        >
+          <ContextDrawer
+            model={model}
+            selected={selected}
+            selection={ctx.currentSelectionIds}
+            onEnterWorld={enterWorld}
+            onSelect={(r) => {
+              select(r);
+              if (!r) setIndexOpen(false);
+            }}
+            onAsk={submit}
+          />
+        </aside>
+      )}
+      {model && lens === "space" && !selected && !indexOpen && (
+        <button
+          type="button"
+          onClick={() => setIndexOpen(true)}
+          className="pointer-events-auto absolute right-3 top-32 z-10 rounded-full border border-line bg-surface/80 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted backdrop-blur-md transition-colors hover:border-accent hover:text-accent md:right-5 md:top-20"
+        >
+          Index
+        </button>
+      )}
 
       {!model && (
         <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-4 bg-background">

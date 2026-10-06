@@ -15,6 +15,32 @@ function Confidence({ level }: { level: string }) {
   );
 }
 
+function ReadCard({
+  eyebrow,
+  title,
+  detail,
+  confidence,
+}: {
+  eyebrow: string;
+  title: string;
+  detail: string;
+  confidence?: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-line-soft bg-surface-sunken/50 p-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="eyebrow">{eyebrow}</p>
+        {confidence && <Confidence level={confidence} />}
+      </div>
+      <p className="mt-2 text-base font-medium">{title}</p>
+      <p className="mt-1 text-sm leading-6 text-muted">{detail}</p>
+    </div>
+  );
+}
+
+// The bot's market read: Trend / Momentum / Watch — the lime-ref card row,
+// bound to the real analysis backend. Honest states only: idle, working,
+// error, or the ticket itself.
 export function BotAnalysis({ botName }: { botName: string }) {
   const [ticket, setTicket] = useState<MarketTicket | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -33,46 +59,59 @@ export function BotAnalysis({ botName }: { botName: string }) {
   }
 
   return (
-    <section aria-labelledby="analysis-heading" className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5 shadow-[var(--shadow-card)] md:p-6">
+    <section
+      aria-labelledby="analysis-heading"
+      id="analysis"
+      className="glass flex scroll-mt-24 flex-col gap-4 p-5 md:p-6"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="eyebrow">Your bot reads the market</p>
-          <h2 id="analysis-heading" className="mt-2 text-xl font-medium tracking-tight">What {botName} sees</h2>
+          <p className="eyebrow eyebrow-accent">Your bot reads the market</p>
+          <h2 id="analysis-heading" className="mt-2 text-xl font-medium tracking-tight">
+            What {botName} sees
+          </h2>
         </div>
-        <button type="button" onClick={run} disabled={busy}
-          className="rounded-full bg-accent px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-background disabled:opacity-50">
+        <button
+          type="button"
+          onClick={run}
+          disabled={busy}
+          className="inline-flex h-11 items-center justify-center rounded-full bg-accent px-6 text-[11px] font-bold uppercase tracking-[0.16em] text-accent-ink transition-all duration-300 ease-calm hover:brightness-110 active:scale-[0.98] disabled:opacity-50"
+        >
           {busy ? "Reading…" : ticket ? "Refresh read" : "Ask your bot"}
         </button>
       </div>
-      {error && <p role="alert" className="text-sm text-negative">{error}</p>}
+      {error && (
+        <p role="alert" className="alert-pin rounded-xl px-4 py-3 text-sm">
+          {error}
+        </p>
+      )}
       {ticket ? (
         <div className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-xl border border-line-soft bg-surface-sunken/50 p-4">
-            <div className="flex items-center justify-between">
-              <p className="eyebrow">Trend</p>
-              <Confidence level={ticket.trend.confidence} />
-            </div>
-            <p className="mt-2 text-base font-medium">{ticket.trend.label}</p>
-            <p className="mt-1 text-sm leading-6 text-muted">{ticket.trend.detail}</p>
-          </div>
-          <div className="rounded-xl border border-line-soft bg-surface-sunken/50 p-4">
-            <div className="flex items-center justify-between">
-              <p className="eyebrow">Momentum</p>
-              <Confidence level={ticket.momentum.confidence} />
-            </div>
-            <p className="mt-2 text-base font-medium">{ticket.momentum.label}</p>
-            <p className="mt-1 text-sm leading-6 text-muted">{ticket.momentum.detail}</p>
-          </div>
-          <div className="rounded-xl border border-line-soft bg-surface-sunken/50 p-4">
-            <p className="eyebrow">Watch</p>
-            <p className="mt-2 text-base font-medium">{ticket.watch.label}</p>
-            <p className="mt-1 text-sm leading-6 text-muted">{ticket.watch.detail}</p>
-          </div>
+          <ReadCard
+            eyebrow="Trend"
+            title={ticket.trend.label}
+            detail={ticket.trend.detail}
+            confidence={ticket.trend.confidence}
+          />
+          <ReadCard
+            eyebrow="Momentum"
+            title={ticket.momentum.label}
+            detail={ticket.momentum.detail}
+            confidence={ticket.momentum.confidence}
+          />
+          <ReadCard eyebrow="Watch" title={ticket.watch.label} detail={ticket.watch.detail} />
         </div>
       ) : (
-        !error && <p className="text-sm leading-6 text-muted">Live prices above. Ask and {botName} will read the last 96 hours — trend, momentum, and the one thing to watch, each with a confidence read.</p>
+        !error && (
+          <p className="text-sm leading-6 text-muted">
+            Live prices above. Ask and {botName} will read the last 96 hours — trend,
+            momentum, and the one thing to watch, each with a confidence read.
+          </p>
+        )
       )}
-      <p className="text-[10px] uppercase tracking-[0.14em] text-faint">Practice — observation only, not financial advice</p>
+      <p className="text-[10px] uppercase tracking-[0.14em] text-faint">
+        Practice — observation only, not financial advice
+      </p>
     </section>
   );
 }

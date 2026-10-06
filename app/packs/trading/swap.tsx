@@ -3,12 +3,16 @@
 import { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { MINTS, getSwapOrder, deserializeTx, executeSwap } from "@/lib/jupiter/swap";
+import { field } from "@/app/ui";
 import { logSwap } from "./social-actions";
 
 type Token = "SOL" | "USDC";
 
 const DECIMALS: Record<Token, number> = { SOL: 9, USDC: 6 };
 
+// Real swap interface. Quotes and execution go through Jupiter from the
+// connected wallet — no fake fills, no invented balances. Every status line
+// tells the truth about where the trade stands.
 export function SwapBox() {
   const { publicKey, signTransaction, connected } = useWallet();
   const [from, setFrom] = useState<Token>("SOL");
@@ -80,38 +84,66 @@ export function SwapBox() {
 
   if (!connected) {
     return (
-      <p className="text-xs text-muted">Connect your wallet above to trade for real.</p>
+      <p className="text-xs leading-5 text-muted">Connect your wallet above to trade for real.</p>
     );
   }
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
+      <div className="flex items-stretch gap-2">
         <input
           value={amount} onChange={(e) => setAmount(e.target.value)}
           placeholder="0.00" inputMode="decimal" aria-label={`Amount of ${from}`}
-          className="w-full rounded-md border border-line bg-background px-3 py-2 font-mono text-sm tabular-nums"
+          className={`${field} font-mono tabular-nums`}
         />
-        <span className="shrink-0 rounded-full border border-line px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em]">{from}</span>
-        <button onClick={flip} aria-label="Flip direction"
-          className="shrink-0 rounded-full border border-line px-3 py-2 text-xs text-muted hover:text-foreground">⇅</button>
-        <span className="shrink-0 text-[10px] uppercase tracking-[0.14em] text-muted">→ {to}</span>
+        <span className="flex shrink-0 items-center rounded-xl border border-line bg-surface-sunken px-4 text-[11px] font-bold uppercase tracking-[0.14em] text-foreground">
+          {from}
+        </span>
       </div>
-      {quote && <p className="font-mono text-sm text-accent">{quote}</p>}
-      <div className="flex gap-2">
-        <button onClick={getQuote} disabled={busy || !amount}
-          className="rounded-full bg-accent px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-background disabled:opacity-40">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={flip}
+          aria-label={`Flip direction, currently swapping to ${to}`}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line text-base text-muted transition-colors duration-300 ease-calm hover:border-accent hover:text-accent active:scale-95"
+        >
+          ⇅
+        </button>
+        <p className="text-xs text-muted">
+          Swapping to <span className="font-semibold text-foreground">{to}</span>
+          <span className="text-faint"> · priced live by Jupiter</span>
+        </p>
+      </div>
+      {quote && (
+        <p className="rounded-xl border border-line-soft bg-surface-sunken/60 px-4 py-3 font-mono text-lg text-accent tabular-nums">
+          {quote}
+        </p>
+      )}
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <button
+          onClick={getQuote}
+          disabled={busy || !amount}
+          className="inline-flex h-12 flex-1 items-center justify-center rounded-full bg-accent px-6 text-[11px] font-bold uppercase tracking-[0.16em] text-accent-ink transition-all duration-300 ease-calm hover:brightness-110 active:scale-[0.98] disabled:opacity-40"
+        >
           {busy ? "Working…" : "Get quote"}
         </button>
         {quote && (
-          <button onClick={execute} disabled={busy}
-            className="rounded-full border border-line px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground disabled:opacity-40">
+          <button
+            onClick={execute}
+            disabled={busy}
+            className="inline-flex h-12 flex-1 items-center justify-center rounded-full border border-line bg-surface/60 px-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-foreground backdrop-blur-md transition-all duration-300 ease-calm hover:border-accent hover:text-accent active:scale-[0.98] disabled:opacity-40"
+          >
             Swap for real
           </button>
         )}
       </div>
-      {status && <p role="status" className="text-xs text-muted">{status}</p>}
-      <p className="text-[10px] uppercase tracking-[0.14em] text-muted">Real money · you sign · we never hold funds</p>
+      {status && (
+        <p role="status" className="text-xs leading-5 text-muted">
+          {status}
+        </p>
+      )}
+      <p className="text-[10px] uppercase tracking-[0.14em] text-faint">
+        Real money · you sign · we never hold funds
+      </p>
     </div>
   );
 }
