@@ -64,7 +64,7 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
   const params = searchParams ? await searchParams : {};
   const worldError = typeof params.world_error === "string" ? params.world_error : null;
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-6 md:px-8 md:py-10">
+    <main className="mx-auto flex min-h-svh w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-6 pb-24 md:px-8 md:py-10">
       <header className="flex flex-wrap items-center justify-between gap-5 border-b border-line pb-5">
         <div className="flex items-center gap-4">
           <Link href="/" className="text-sm font-semibold uppercase tracking-[0.3em] text-accent">solve</Link>

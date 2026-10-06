@@ -20,9 +20,9 @@ export default async function CardPage() {
 
   return (
     <div data-theme="dark" className="min-h-svh bg-background text-foreground">
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-4 py-12">
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-4 py-12 pb-24">
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted">SOV ID</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted">Your ID</p>
         <h1 className="mt-1 text-2xl font-medium tracking-tight md:text-4xl">One card, two faces.</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
           Your business card and your private spend card — same identity, showing the right face to the right person.

@@ -32,7 +32,7 @@ export default async function TradingPackPage() {
 
   return (
     <SolanaProviders>
-    <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-12">
+    <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-12 pb-24">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="eyebrow">Pack · Trading</p>

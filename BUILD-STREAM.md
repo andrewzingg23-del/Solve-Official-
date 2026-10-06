@@ -820,3 +820,15 @@ The world builder's example, planner, and strings were all car-specific — a $1
 - Supplier-discovery machinery (contract_manufacturing capabilities) untouched — separate feature, not the example.
 Checks: wayfinder 3/3, world-slice 6/6, loop 10/10, reasoning+pilot 7/7; tsc clean; eslint clean.
 Next: push, CI green.
+
+## 2026-10-06 ~16:35 EDT — Doris: intuitiveness pass (founder: "doesn't feel intuitive and useable")
+Audit found: no navigation (every page an island), two homes (/worlds vs /packs), 3 of 4 pack cards dead (self-reloading links), Talk buried 3 deep, jargon-first copy.
+- app/nav.tsx (new): bottom tab bar — Home, Trade, Bot, Card. Hidden on /login. Safe-area aware.
+- app/layout.tsx: mounts TabBar.
+- app/page.tsx: signed-in / → /packs (one home; worlds reachable from the Bot tab).
+- app/packs/page.tsx: soon-cards are no longer links (aria-disabled divs); "SOV ID" → "Your ID"; "One ID, four verbs" → "Pick one to start. The rest are coming."
+- app/card/page.tsx: "SOV ID" → "Your ID"; bottom padding for the tab bar.
+- Bottom padding (pb-24) added on packs, trading, bot, card pages.
+- Visual rethink untouched — still the founder's call.
+Checks: tsc clean; eslint clean.
+Next: push, CI green.
