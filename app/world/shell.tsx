@@ -501,7 +501,7 @@ export function WorldShell() {
             whole cluster anchors as one bottom-center column. */}
         {model && (
           <div className="pointer-events-auto absolute inset-x-3 bottom-3 z-20 mx-auto flex max-w-2xl flex-col gap-2 md:bottom-6">
-            <p className="text-center text-[11px] uppercase tracking-[0.24em] text-muted">This world grows around you. Ask for a way.</p>
+            <p className="mx-auto w-fit rounded-full border border-line bg-surface/85 px-4 py-1.5 text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-foreground backdrop-blur-md">This world grows around you. Ask for a way.</p>
             <VerbDock />
             <div className="[&>div]:static">
               <Horizon busy={busy} result={result} provider={providerLabel} onSubmit={(text) => submit(text)} onAction={act} />
