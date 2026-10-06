@@ -46,26 +46,30 @@ export default async function PacksPage() {
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-1 flex-col gap-8 px-4 py-12">
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted">SOV ID</p>
-        <h1 className="mt-1 text-2xl font-medium tracking-tight md:text-4xl">What do you want to do?</h1>
+        <p className="eyebrow">SOV ID</p>
+        <h1 className="mt-3 text-3xl font-medium tracking-tight md:text-4xl">What do you want to do?</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
           One ID, four verbs. Pick one — the rest are here when you are ready.
         </p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2">
         {PACKS.map((p) => (
           <Link key={p.id} href={p.href}
-            className={`group flex flex-col gap-2 rounded-md border border-line bg-surface/60 p-5 transition-colors ${p.live ? "hover:border-accent/50" : "opacity-60"}`}>
+            className={`group flex flex-col gap-2 rounded-lg border p-6 transition-all ${
+              p.live
+                ? "border-line bg-surface/60 hover:border-accent/40 hover:bg-surface-raise"
+                : "border-line-soft bg-transparent opacity-50"
+            }`}>
             <div className="flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">{p.verb}</p>
+              <p className={`eyebrow ${p.live ? "eyebrow-accent" : ""}`}>{p.verb}</p>
               {p.live ? (
-                <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent">Live</span>
+                <span className="rounded-full bg-accent-dim px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent">Live</span>
               ) : (
-                <span className="rounded-full border border-line px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-muted">Soon</span>
+                <span className="rounded-full border border-line px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] text-faint">Soon</span>
               )}
             </div>
-            <h2 className="text-lg font-medium">{p.title}</h2>
-            <p className="text-sm text-muted">{p.desc}</p>
+            <h2 className="text-xl font-medium tracking-tight">{p.title}</h2>
+            <p className="text-sm leading-6 text-muted">{p.desc}</p>
           </Link>
         ))}
       </div>

@@ -1,13 +1,19 @@
 @import "tailwindcss";
 
-/* Brand lock (BUILD-BOOK.md §2): abyssal blue-black, ice white, one cyan accent. No gold. */
+/* Brand lock (BUILD-BOOK.md §2): abyssal blue-black, ice white, one cyan accent. No gold.
+   Taste layers: brand LOUD (moments, card, marketing), product QUIET (surfaces recede,
+   cyan reserved for the one primary action per screen), personal YOURS (avatar, content). */
 :root {
   --background: #04070d;
   --surface: #0a1220;
+  --surface-raise: #0e1728;
   --foreground: #f2f7fb;
-  --muted: rgb(242 247 251 / 0.62);
-  --line: rgb(242 247 251 / 0.12);
+  --muted: rgb(242 247 251 / 0.58);
+  --faint: rgb(242 247 251 / 0.38);
+  --line: rgb(242 247 251 / 0.1);
+  --line-soft: rgb(242 247 251 / 0.06);
   --accent: #22d3ee;
+  --accent-dim: rgb(34 211 238 / 0.14);
   --positive: #00e5a0;
   --negative: #ff4d5e;
 }
@@ -15,10 +21,14 @@
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-raise: var(--surface-raise);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
+  --color-faint: var(--faint);
   --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
   --color-accent: var(--accent);
+  --color-accent-dim: var(--accent-dim);
   --color-positive: var(--positive);
   --color-negative: var(--negative);
   --font-sans: var(--font-archivo);
@@ -35,4 +45,30 @@ body {
     radial-gradient(120% 80% at 50% 0%, var(--surface) 0%, var(--background) 70%) fixed;
   color: var(--foreground);
   font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Quiet product layer: calm labels, reserved accent. */
+.eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.eyebrow-accent {
+  color: var(--accent);
+}
+
+/* Refined interactive states. */
+button, a {
+  transition: color 0.18s var(--ease-calm), border-color 0.18s var(--ease-calm),
+    background-color 0.18s var(--ease-calm), transform 0.18s var(--ease-calm);
+}
+button:active {
+  transform: scale(0.98);
+}
+input:focus-visible, button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

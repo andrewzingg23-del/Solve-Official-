@@ -35,7 +35,7 @@ export default async function TradingPackPage() {
     <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-12">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted">Pack · Trading</p>
+          <p className="eyebrow">Pack · Trading</p>
           <h1 className="mt-1 text-2xl font-medium tracking-tight md:text-4xl">You want to trade.</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
             Here&apos;s the live market — and your bot, reading it with you.
@@ -62,15 +62,15 @@ export default async function TradingPackPage() {
 
       <SwapQuotes />
 
-      <section id="swap-box" aria-labelledby="swap-heading" className="rounded-md border border-line bg-surface/60 p-4 md:p-5">
-        <h2 id="swap-heading" className="text-sm font-medium">Trade for real</h2>
-        <div className="mt-3"><SwapBox /></div>
+      <section aria-labelledby="swap-heading" id="swap-box" className="rounded-lg border border-line bg-surface/60 p-5 md:p-6">
+        <h2 id="swap-heading" className="text-base font-medium tracking-tight">Trade for real</h2>
+        <div className="mt-4"><SwapBox /></div>
       </section>
 
-      <section aria-labelledby="activity-heading" className="rounded-md border border-line bg-surface/60 p-4 md:p-5">
-        <h2 id="activity-heading" className="text-sm font-medium">Your activity</h2>
-        <p className="mt-1 text-xs text-muted">Every swap, recorded. Tap copy on any trade to run it again.</p>
-        <div className="mt-3"><SwapFeed ownerId={ownerId} /></div>
+      <section aria-labelledby="activity-heading" className="rounded-lg border border-line-soft p-5 md:p-6">
+        <h2 id="activity-heading" className="text-base font-medium tracking-tight">Your activity</h2>
+        <p className="mt-1 text-xs leading-5 text-faint">Every swap, recorded. Tap copy on any trade to run it again.</p>
+        <div className="mt-4"><SwapFeed ownerId={ownerId} /></div>
       </section>
     </main>
     </SolanaProviders>
