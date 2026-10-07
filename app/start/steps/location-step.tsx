@@ -10,7 +10,7 @@ export function LocationStep({ signedIn, onNext }: { signedIn: boolean; onNext: 
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [locating, setLocating] = useState(false);
-  const [busy, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const locate = () => {
     setError(null);

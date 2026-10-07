@@ -25,8 +25,9 @@ export async function POST(request: Request) {
   } catch {
     return json({ error: "Send a valid JSON request." }, 400);
   }
-  const title = typeof (body as any)?.title === "string" ? (body as any).title.trim().slice(0, 160) : "";
-  const goal = typeof (body as any)?.goal === "string" ? (body as any).goal.trim().slice(0, 7000) : "";
+  const payload = body as { title?: unknown; goal?: unknown };
+  const title = typeof payload?.title === "string" ? payload.title.trim().slice(0, 160) : "";
+  const goal = typeof payload?.goal === "string" ? payload.goal.trim().slice(0, 7000) : "";
   if (!title || !goal) return json({ error: "A title and a goal are required." }, 422);
   try {
     const kernel = await getKernel();
