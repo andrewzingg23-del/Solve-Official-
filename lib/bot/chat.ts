@@ -1,8 +1,11 @@
 // The room's talking bot: validation and prompt building for the chat endpoint.
-// Pure functions only — the network call lives in app/api/bot/chat/route.ts.
+// Pure functions only — the network call lives in app/api/bot/chat/route.ts
+// (via lib/bot/openrouter.ts).
 // This endpoint only talks. It never acts: anything real goes through the
 // Horizon and the kernel, which decide and record. The bot never claims
 // authority it does not hold, and never invents records.
+
+import { OPENROUTER_DEFAULT_MODEL, OPENROUTER_DEFAULT_MODEL_FLASH } from "./openrouter";
 
 export const CHAT_LIMITS = {
   message: 2000,
@@ -57,22 +60,17 @@ export function buildChatSystemPrompt(botName: string): string {
   ].join("\n");
 }
 
-// Pick a chat model from the account's model list: cheapest capable first.
+// Pick the OpenRouter chat model for the tier: cheapest capable first.
 // Tier "smart" reaches for the stronger model when the turn warrants it.
+// Env OPENROUTER_MODEL (flash/default) and OPENROUTER_MODEL_SMART override;
+// the defaults are verified current Claude IDs on OpenRouter (2026-10-06).
 export type ChatTier = "flash" | "smart";
 
-export function pickChatModel(ids: string[], tier: ChatTier = "flash"): string | null {
-  if (!ids.length) return null;
-  const lower = ids.map((id) => id.toLowerCase());
-  const find = (want: string[]) => {
-    for (const w of want) {
-      const i = lower.findIndex((id) => id.includes(w));
-      if (i >= 0) return ids[i];
-    }
-    return null;
-  };
-  if (tier === "smart") return find(["sonnet"]) ?? find(["opus"]) ?? find(["haiku"]) ?? ids[0];
-  return find(["haiku"]) ?? find(["sonnet"]) ?? find(["opus"]) ?? ids[0];
+export function resolveChatModel(tier: ChatTier = "flash"): string {
+  const env = tier === "smart" ? process.env.OPENROUTER_MODEL_SMART : process.env.OPENROUTER_MODEL;
+  const override = env?.trim();
+  if (override) return override;
+  return tier === "smart" ? OPENROUTER_DEFAULT_MODEL : OPENROUTER_DEFAULT_MODEL_FLASH;
 }
 
 // Tier routing: most turns ride the cheap model; complex turns escalate.
@@ -87,7 +85,7 @@ export function parseTier(message: string): { tier: ChatTier; message: string } 
   return { tier: complex ? "smart" : "flash", message: stripped };
 }
 
-// Cost guard: every message spends Anthropic money, so each signed-in person
+// Cost guard: every message spends OpenRouter money, so each signed-in person
 // gets a sliding window. In-memory per instance (v1) — stops casual overuse;
 // a kernel-backed limiter across instances is the follow-up.
 const WINDOW_MS = 60 * 60 * 1000;
@@ -140,11 +138,13 @@ export function tokensSpentThisHour(userId: string, now = Date.now()): number {
   return spendWindow(userId, now).reduce((sum, h) => sum + h.tokens, 0);
 }
 
-// Estimated USD per 1M tokens. Estimates only — Anthropic reprices without
-// telling us; the token cap above is the enforcement, this is the readout.
+// Estimated USD per 1M tokens, from openrouter.ai/models (2026-10-06):
+// claude-haiku-4.5 $1 in / $5 out; claude-sonnet-5.5 $2 in / $10 out.
+// Estimates only — providers reprice without telling us; the token cap
+// above is the enforcement, this is the readout.
 const PRICE_PER_MTOK = {
-  haiku: { input: 0.25, output: 1.25 },
-  sonnet: { input: 3.0, output: 15.0 },
+  haiku: { input: 1.0, output: 5.0 },
+  sonnet: { input: 2.0, output: 10.0 },
   opus: { input: 15.0, output: 75.0 },
 } as const;
 

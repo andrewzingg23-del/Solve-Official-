@@ -1,6 +1,8 @@
 // The room's talking bot, server side. Signed-in people only (it costs money);
 // the key never reaches a browser. Conversational only — it never acts.
-import Anthropic from "@anthropic-ai/sdk";
+// Chat pipe: plain fetch to OpenRouter (Drew's order 2026-10-06:
+// "switch anthropic with open router"). Response contract is full JSON —
+// the Talk panel reads data.reply via res.json(); keep it that way.
 import { getUser } from "@/lib/supabase/server";
 import { loginRequired } from "@/lib/auth/gate";
 import { getBotSoul } from "@/lib/bot/soul";
@@ -8,12 +10,17 @@ import { getKernel } from "@/lib/kernel/server";
 import { classifyTurn, WAY_REQUESTED, talkScope } from "@/lib/bot/intent";
 import { planVenture, type RoutePlan } from "@/lib/world/wayfinder";
 import {
+  OPENROUTER_MISSING_KEY_ERROR,
+  buildChatCompletionBody,
+  completeChat,
+} from "@/lib/bot/openrouter";
+import {
   buildChatSystemPrompt,
   estimateCostUsd,
   parseTier,
-  pickChatModel,
   rateLimited,
   recordSpend,
+  resolveChatModel,
   spendBlocked,
   tokensSpentThisHour,
   validateChatBody,
@@ -24,34 +31,6 @@ export const dynamic = "force-dynamic";
 
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
-
-// The account's chat models, resolved once per deployment from the model list.
-let cachedIds: string[] | null | undefined;
-async function modelIds(apiKey: string): Promise<string[] | null> {
-  const envModel = process.env.CHAT_MODEL?.trim();
-  if (envModel) return [envModel];
-  if (cachedIds !== undefined) return cachedIds;
-  try {
-    const res = await fetch("https://api.anthropic.com/v1/models", {
-      headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
-      cache: "no-store",
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (!res.ok) {
-      cachedIds = null;
-      return null;
-    }
-    const data = (await res.json()) as { data?: { id?: string }[] };
-    const ids = (data.data ?? [])
-      .map((m) => (typeof m.id === "string" ? m.id : ""))
-      .filter(Boolean);
-    cachedIds = ids.length ? ids : null;
-    return cachedIds;
-  } catch {
-    cachedIds = null;
-    return null;
-  }
-}
 
 export async function POST(request: Request) {
   const user = await getUser().catch(() => null);
@@ -82,14 +61,11 @@ export async function POST(request: Request) {
   if (spendBlocked(limiterKey))
     return json({ error: "Hourly token budget spent — back in a bit." }, 429);
 
-  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
-  if (!apiKey) return json({ error: "The chat model is not configured on this deployment." }, 503);
+  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+  if (!apiKey) return json({ error: OPENROUTER_MISSING_KEY_ERROR }, 503);
 
-  const ids = await modelIds(apiKey);
-  const model = ids ? pickChatModel(ids, tier) : null;
-  if (!model) return json({ error: "No chat model is available right now." }, 503);
+  const model = resolveChatModel(tier);
 
-  const client = new Anthropic({ apiKey });
   // The Inside loop, first half: when the person asks for a way (not small
   // talk), their ask goes on the kernel record before the bot answers.
   // Speech in → kernel gates and records. The world's live update renders
@@ -129,31 +105,21 @@ export async function POST(request: Request) {
     const system = soul
       ? `${buildChatSystemPrompt(chat.botName)}\nThe person's soul.md for you (their words, honor them):\n${soul}`
       : buildChatSystemPrompt(chat.botName);
-    const response = await client.messages.create({
-      model,
-      max_tokens: 1024,
-      system,
-      messages: [
-        ...chat.history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
-        { role: "user" as const, content: chat.message },
-      ],
-    });
-    const text = response.content.find((b) => b.type === "text");
-    const reply = text?.type === "text" ? text.text.trim() : "";
-    if (!reply) return json({ error: "The bot had nothing to say. Try again." }, 502);
-    const inputTokens = response.usage?.input_tokens ?? 0;
-    const outputTokens = response.usage?.output_tokens ?? 0;
-    recordSpend(limiterKey, inputTokens + outputTokens);
+    const completion = await completeChat(
+      apiKey,
+      buildChatCompletionBody({ model, system, history: chat.history, message: chat.message }),
+    );
+    recordSpend(limiterKey, completion.inputTokens + completion.outputTokens);
     return json({
-      reply,
+      reply: completion.reply,
       wayEventId,
       wayPlan,
       usage: {
         model,
         tier,
-        inputTokens,
-        outputTokens,
-        estimatedCostUsd: estimateCostUsd(model, inputTokens, outputTokens),
+        inputTokens: completion.inputTokens,
+        outputTokens: completion.outputTokens,
+        estimatedCostUsd: estimateCostUsd(model, completion.inputTokens, completion.outputTokens),
         tokensSpentThisHour: tokensSpentThisHour(limiterKey),
       },
     });

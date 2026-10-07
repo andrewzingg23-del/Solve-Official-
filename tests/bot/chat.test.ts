@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { it } from "node:test";
 import {
   buildChatSystemPrompt,
-  pickChatModel,
+  resolveChatModel,
   validateChatBody,
 } from "../../lib/bot/chat";
 
@@ -53,14 +53,27 @@ it("the system prompt speaks as the bot and sets its bounds", () => {
   assert.ok(prompt.toLowerCase().includes("kernel"));
 });
 
-it("picks the cheapest capable model", () => {
-  assert.equal(pickChatModel([]), null);
-  assert.equal(
-    pickChatModel(["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5"]),
-    "claude-haiku-4-5",
-  );
-  assert.equal(pickChatModel(["claude-opus-4-6", "claude-sonnet-4-6"]), "claude-sonnet-4-6");
-  assert.equal(pickChatModel(["claude-opus-4-6"]), "claude-opus-4-6");
+it("resolves OpenRouter models per tier, cheapest capable first", () => {
+  // Defaults are verified current Claude IDs on OpenRouter (2026-10-06).
+  assert.equal(resolveChatModel("flash"), "anthropic/claude-haiku-4.5");
+  assert.equal(resolveChatModel("smart"), "anthropic/claude-sonnet-5.5");
+  assert.equal(resolveChatModel(), "anthropic/claude-haiku-4.5", "default tier stays flash");
+});
+
+it("lets the environment override the OpenRouter model", () => {
+  const prev = process.env.OPENROUTER_MODEL;
+  const prevSmart = process.env.OPENROUTER_MODEL_SMART;
+  try {
+    process.env.OPENROUTER_MODEL = "anthropic/claude-opus-4.8";
+    process.env.OPENROUTER_MODEL_SMART = "anthropic/claude-opus-4.8";
+    assert.equal(resolveChatModel("flash"), "anthropic/claude-opus-4.8");
+    assert.equal(resolveChatModel("smart"), "anthropic/claude-opus-4.8");
+  } finally {
+    if (prev === undefined) delete process.env.OPENROUTER_MODEL;
+    else process.env.OPENROUTER_MODEL = prev;
+    if (prevSmart === undefined) delete process.env.OPENROUTER_MODEL_SMART;
+    else process.env.OPENROUTER_MODEL_SMART = prevSmart;
+  }
 });
 
 it("rate-limits each person to 30 messages an hour", async () => {
@@ -72,25 +85,22 @@ it("rate-limits each person to 30 messages an hour", async () => {
 });
 
 it("routes simple turns to flash and complex turns to smart", async () => {
-  const { parseTier, pickChatModel } = await import("../../lib/bot/chat");
-  const ids = ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5"];
+  const { parseTier, resolveChatModel } = await import("../../lib/bot/chat");
 
   const simple = parseTier("hey, what's up");
   assert.equal(simple.tier, "flash");
-  assert.equal(pickChatModel(ids, simple.tier), "claude-haiku-4-5");
+  assert.equal(resolveChatModel(simple.tier), "anthropic/claude-haiku-4.5");
 
   const forced = parseTier("smart: analyze this quarter for me");
   assert.equal(forced.tier, "smart");
   assert.equal(forced.message, "analyze this quarter for me", "prefix is stripped");
-  assert.equal(pickChatModel(ids, forced.tier), "claude-sonnet-4-6");
+  assert.equal(resolveChatModel(forced.tier), "anthropic/claude-sonnet-5.5");
 
   const long = parseTier("x".repeat(601));
   assert.equal(long.tier, "smart");
 
   const code = parseTier("fix this:\n```js\nconst x = 1;\n```");
   assert.equal(code.tier, "smart");
-
-  assert.equal(pickChatModel(ids), "claude-haiku-4-5", "default tier stays flash");
 });
 
 it("caps hourly token spend per person", async () => {
@@ -108,10 +118,11 @@ it("caps hourly token spend per person", async () => {
   assert.equal(spendBlocked(`other-${Date.now()}`), false, "budgets are per person");
 });
 
-it("estimates cost from the model family, labeled as estimate", async () => {
+it("estimates cost from the OpenRouter model family, labeled as estimate", async () => {
   const { estimateCostUsd } = await import("../../lib/bot/chat");
-  const haiku = estimateCostUsd("claude-haiku-4-5", 1_000_000, 1_000_000);
-  const sonnet = estimateCostUsd("claude-sonnet-4-6", 1_000_000, 1_000_000);
+  const haiku = estimateCostUsd("anthropic/claude-haiku-4.5", 1_000_000, 1_000_000);
+  const sonnet = estimateCostUsd("anthropic/claude-sonnet-5.5", 1_000_000, 1_000_000);
   assert.ok(haiku > 0 && sonnet > haiku, "sonnet estimates cost more than haiku");
+  assert.equal(haiku, 1.0 + 5.0, "haiku-4.5 priced at $1/M in, $5/M out (2026-10-06)");
   assert.equal(estimateCostUsd("unknown-model-x", 0, 0), 0);
 });
