@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ONBOARDING_STEPS, type OnboardingStep } from "@/lib/bot/soul";
 import type { BotAvatar } from "@/lib/bot/avatar";
 import type { SocialConnection } from "@/lib/social";
-import { SigninStep } from "./steps/signin-step";
+import { ProfileStep } from "./steps/profile-step";
 import { SovidStep } from "./steps/sovid-step";
 import { AvatarStep } from "./steps/avatar-step";
 import { SoulStep } from "./steps/soul-step";
@@ -17,7 +17,6 @@ import { primaryAction, quietLink } from "@/app/ui";
 export interface FlowProps {
   initialStep: OnboardingStep;
   signedIn: boolean;
-  email: string | null;
   avatar: BotAvatar;
   soul: string;
   sovLabel: string;
@@ -29,7 +28,7 @@ export interface FlowProps {
 }
 
 const TITLES: Record<OnboardingStep, string> = {
-  signin: "First, you're you.",
+  profile: "First, you're you.",
   sovid: "Claim your SOV ID.",
   avatar: "Meet your bot.",
   soul: "Give it a soul.",
@@ -78,7 +77,7 @@ export function OnboardingFlow(props: FlowProps) {
             <span className="serif-accent">{TITLES[step].split(" ").slice(-1)}</span>
           </h1>
 
-          {step === "signin" && <SigninStep signedIn={props.signedIn} email={props.email} onNext={next} />}
+          {step === "profile" && <ProfileStep signedIn={props.signedIn} onNext={next} />}
           {step === "sovid" && (
             <SovidStep
               signedIn={props.signedIn}

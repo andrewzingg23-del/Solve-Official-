@@ -23,7 +23,7 @@ export function getBotSoul(user: { user_metadata?: Record<string, unknown> } | n
 
 // Steps of the guided onboarding flow. Order is the product.
 export const ONBOARDING_STEPS = [
-  "signin",
+  "profile",
   "sovid",
   "avatar",
   "soul",

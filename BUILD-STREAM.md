@@ -930,11 +930,22 @@ Founder problem: the ARGUS trading watch centerpiece finally looks like the mach
 - Perf guards: WebGL detection → canvas-2D v3 fallback (kept as argus-canvas-2d.tsx); low-power mobile UA → fallback; DPR capped 2/1.5; pauses off-screen; prefers-reduced-motion renders one static frame.
 - Checks: eslint clean, tsc clean, next build succeeds.
 
+<<<<<<< HEAD
 ## 2026-10-08 ~03:35 UTC — Guest-profile mode (branch doris/guest-profile)
 - Founder order: "take out the sign in, just put try profile in here as active and make everything work." Sign-in CTAs removed app-wide; /login + /auth/callback stay dormant in the codebase, auth infra untouched.
 - Slice: new lib/guest/profile.ts (localStorage guest profile + useGuestProfile hook); avatar page "Try a profile" activation; /start step 1 ("signin" → "profile") guest-first; avatar scan/save, soul, SOV claim, know-you answers, bot creator all work local-first for guests; guest face/name in companion + card; honest copy where kernel writes aren't possible.
 - Constraint: branch doris/guest-profile, do NOT merge — ARGUS three.js rebuild in flight on main. Do NOT touch app/packs/trading/.
 - Next: implement, then eslint + tsc + build on the branch, push branch, report.
+
+## 2026-10-08 ~04:10 UTC — Guest-profile mode done (branch doris/guest-profile)
+- Founder order: "take out the sign in, just put try profile in here as active and make everything work."
+- New: lib/guest/profile.ts — GuestProfile type + localStorage persistence with sanitization + useGuestProfile() via useSyncExternalStore (SSR-safe, cross-component sync).
+- /start: step "signin" → "profile" (lib/bot/soul.ts ONBOARDING_STEPS); new profile-step.tsx (name yourself + your bot → activate → continue); sovid/avatar/soul/location/knowyou steps all work for guests, saving to the device with honest "on this device" copy where the kernel isn't reachable.
+- /avatar: "Try a profile" CTA replaces sign-in; name/face/soul editing + scan/save fully local-first for guests. Signed-in path unchanged (dormant).
+- Surfaces: bot creator saves persona locally ("Keep it on this device"); GuestCompanion floats with the guest face; card shows profile name; nav Avatar tab shows bot name; /account shows the on-device profile card for guests.
+- Untouched: app/packs/trading/**, /login + /auth/callback (dormant), solar lead flow, MCP connections copy.
+- Checks: tsc clean, eslint 0 errors (3 pre-existing-pattern img warnings), next build succeeds, tests/guest/profile.test.ts 5/5, tests/bot/soul.test.ts 4/4 (step rename).
+- Branch pushed; merged to main by parent after ARGUS v4.
 
 ## 2026-10-08 ~04:25 UTC — ARGUS v4 verified live
 - CI green on main (7e48454): full suite success. Vercel deployment READY. https://solve-sovigrn.vercel.app/packs/trading/argus returns 200.
@@ -943,3 +954,8 @@ Founder problem: the ARGUS trading watch centerpiece finally looks like the mach
 ## 2026-10-08 ~04:35 UTC — Incident: stray deletion swept into docs commit
 - My docs commit c6e4911 accidentally included the deletion of app/start/steps/signin-step.tsx — concurrent guest-profile work (other builder, dirty in the same tree) had staged/removed it, and it rode along. The committed flow.tsx imports it, so main was briefly inconsistent.
 - Fixed: restored the file in 12c4a5b (main consistent again). Lesson: always `git status` + review the staged diff before committing in this shared tree; never assume the index only holds your work.
+
+## 2026-10-08 ~04:50 UTC — Guest-profile merged to main
+- Merged doris/guest-profile (ffa363d): sign-in out, guest profile in. The 12c4a5b signin-step.tsx restore is superseded — the merged branch intentionally deletes signin-step.tsx (profile-step.tsx replaces it); flow.tsx on the branch references the profile step, main is consistent.
+- Resolved duplicate ACTIVE-WORK row 93 (ARGUS docs collision).
+

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useGuestProfile } from "@/lib/guest/profile";
 import { saveKnowYou } from "../actions";
 import { Reveal } from "../fx";
 import { primaryAction, glassCard } from "@/app/ui";
@@ -20,6 +21,8 @@ export function KnowYouStep({ signedIn, chatReady }: { signedIn: boolean; chatRe
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, startTransition] = useTransition();
+  const guest = useGuestProfile();
+  const active = signedIn || guest.active;
 
   if (!chatReady) {
     return (
@@ -42,6 +45,12 @@ export function KnowYouStep({ signedIn, chatReady }: { signedIn: boolean; chatRe
 
   const finish = () => {
     setError(null);
+    if (!signedIn) {
+      // Guest: the answers live on this device with the profile.
+      guest.save({ knowYou: answers });
+      setDone(true);
+      return;
+    }
     startTransition(async () => {
       const result = await saveKnowYou(answers);
       if (result.ok) setDone(true);
@@ -75,7 +84,7 @@ export function KnowYouStep({ signedIn, chatReady }: { signedIn: boolean; chatRe
               type="text"
               value={answers[q.id] ?? ""}
               onChange={(e) => set(q.id, e.target.value)}
-              disabled={!signedIn}
+              disabled={!active}
               maxLength={500}
               className="fx-field h-12 rounded-2xl border border-line bg-surface px-4 text-sm outline-none transition-colors placeholder:text-faint focus:border-accent disabled:opacity-60"
             />
@@ -87,9 +96,9 @@ export function KnowYouStep({ signedIn, chatReady }: { signedIn: boolean; chatRe
           {error}
         </p>
       ) : null}
-      {!signedIn ? (
+      {!active ? (
         <Reveal delay={360}>
-          <p className="text-xs text-faint">Sign in to let your bot remember your answers.</p>
+          <p className="text-xs text-faint">Try a profile first — step 1 — and your bot will remember your answers.</p>
         </Reveal>
       ) : (
         <Reveal delay={360}>

@@ -5,6 +5,7 @@
 // previews only: on the live bot, states come from real activity.
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
+import { useGuestProfile } from "@/lib/guest/profile";
 import { label, primaryAction, secondaryAction } from "@/app/ui";
 import {
   ACCESSORIES,
@@ -88,7 +89,7 @@ const TRAIT_ENDS: Record<Trait, [string, string]> = {
 };
 
 const ERRORS: Record<string, string> = {
-  "signed-out": "Sign in to keep your bot.",
+  "signed-out": "Your profile isn't active — try a profile first.",
   identity: "Finish setting up your SOV ID first (open You).",
   forbidden: "The kernel refused this save.",
   conflict: "This save was already used for a different draft. Reload the bot before trying again.",
@@ -105,6 +106,8 @@ export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPT
   const [valuesText, setValuesText] = useState(initial.values.join(", "));
   const [pending, startTransition] = useTransition();
   const dirty = useMemo(() => JSON.stringify(persona) !== JSON.stringify(saved), [persona, saved]);
+  const guest = useGuestProfile();
+  const active = signedIn || guest.active;
 
   const update = (patch: Partial<Persona>) => setPersona((p) => validatePersona({ ...p, ...patch }, p));
   const setTrait = (t: Trait, v: number) => setPersona((p) => validatePersona({ ...p, traits: { ...p.traits, [t]: v } }, p));
@@ -129,6 +132,14 @@ export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPT
     setPersona(draft);
     setValuesText(draft.values.join(", "));
     setMessage(null);
+    if (!signedIn) {
+      // Guest: the persona is kept on this device with the profile.
+      guest.save({ botPersona: draft });
+      setSaved(draft);
+      setMessage({ tone: "ok", text: `${draft.name} kept on this device.` });
+      setMood("happy");
+      return;
+    }
     const requestId = crypto.randomUUID();
     startTransition(async () => {
       const result = await saveBotAction(requestId, draft);
@@ -356,12 +367,12 @@ export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPT
         <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
           <button type="button" onClick={roll} className={secondaryAction} aria-label="Roll a random look">Roll the dice</button>
           <button type="button" onClick={() => { setPersona(saved); setValuesText(saved.values.join(", ")); setMood("idle"); }} disabled={!dirty} className={`${secondaryAction} disabled:opacity-40`}>Undo changes</button>
-          {signedIn ? (
+          {active ? (
             <button type="button" onClick={save} disabled={pending || !dirty} className={`${primaryAction} disabled:opacity-40`}>
-              {pending ? "Saving" : saveInfo.version ? "Save changes" : "Bring it to life"}
+              {pending ? "Saving" : saveInfo.version ? "Save changes" : signedIn ? "Bring it to life" : "Keep it on this device"}
             </button>
           ) : (
-            <Link href="/login?next=%2Fbot" className={primaryAction}>Sign in to keep it</Link>
+            <Link href="/avatar" className={primaryAction}>Try a profile to keep it</Link>
           )}
         </div>
         <p role="status" className={`min-h-5 text-sm ${message?.tone === "error" ? "text-negative" : "text-positive"}`}>
@@ -372,7 +383,7 @@ export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPT
                 : ""
               : "")}
         </p>
-        {!signedIn ? <p className="text-xs leading-5 text-muted">You are trying the creator. Nothing is saved until you sign in.</p> : null}
+        {!active ? <p className="text-xs leading-5 text-muted">You are trying the creator. Try a profile and your bot is kept on this device.</p> : null}
       </div>
     </section>
   );

@@ -8,8 +8,8 @@ import { OnboardingFlow } from "./flow";
 
 export const metadata: Metadata = { title: "Start — solve" };
 
-// The guided beginning: one step per screen. Guests may look ahead;
-// saving anything real needs sign-in.
+// The guided beginning: one step per screen. Guests are first-class —
+// the profile is the way in, everything saves to this device.
 export default async function StartPage({
   searchParams,
 }: {
@@ -17,7 +17,7 @@ export default async function StartPage({
 }) {
   const params = await searchParams;
   const rawStep = Array.isArray(params.step) ? params.step[0] : params.step;
-  const step = rawStep && isValidStep(rawStep) ? rawStep : "signin";
+  const step = rawStep && isValidStep(rawStep) ? rawStep : "profile";
   const social = Array.isArray(params.social) ? params.social[0] : params.social;
 
   const user = await getUser();
@@ -33,7 +33,6 @@ export default async function StartPage({
     <OnboardingFlow
       initialStep={step}
       signedIn={Boolean(user)}
-      email={user?.email ?? null}
       avatar={avatar}
       soul={soul}
       sovLabel={sovLabel}

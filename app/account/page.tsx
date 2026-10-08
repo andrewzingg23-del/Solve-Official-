@@ -5,6 +5,7 @@ import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { primaryAction, quietLink, secondaryAction } from "@/app/ui";
 import { registerActor, signOut } from "./actions";
+import { GuestRecord } from "./guest-record";
 import { loginRequired } from "@/lib/auth/gate";
 
 const eventNames: Record<string, string> = {
@@ -38,8 +39,28 @@ async function loadRecord(): Promise<AccountRecord> {
 
 export default async function AccountPage() {
   // proxy.ts already redirects signed-out visitors; this is the real check.
+  // Auth is dormant — guests get their on-device profile, stated plainly.
   const user = await getUser();
   if (!user && loginRequired()) redirect("/login?next=/account");
+
+  if (!user) {
+    return (
+      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-10 px-4 py-16">
+        <div className="flex flex-col gap-4">
+          <p className="eyebrow">Your record</p>
+          <h1 className="text-5xl font-medium tracking-tight md:text-6xl">
+            Your <span className="serif-accent">ID</span>.
+          </h1>
+        </div>
+        <GuestRecord />
+        <div className="flex items-center justify-between gap-4">
+          <Link href="/" className={quietLink}>
+            Back
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   const record = await loadRecord();
 
@@ -117,9 +138,7 @@ export default async function AccountPage() {
         <div className="glass flex flex-col gap-2 rounded-xl p-5 text-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted">Record unavailable</p>
           <p className="text-muted">
-            {user
-              ? "Your record can't be reached right now. Check back in a bit."
-              : "Sign in and claim your ID and your record will live here."}
+            Your record can&apos;t be reached right now. Check back in a bit.
           </p>
         </div>
       )}

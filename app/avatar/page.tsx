@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
 import { getUser } from "@/lib/supabase/server";
-import { loginRequired } from "@/lib/auth/gate";
 import { getBotAvatar } from "@/lib/bot/avatar";
 import { getBotSoul } from "@/lib/bot/soul";
-import { redirect } from "next/navigation";
 import { AvatarForm } from "./avatar-form";
 
 export const metadata: Metadata = { title: "Avatar — solve" };
 
 export default async function AvatarPage() {
+  // Auth is dormant — everyone arrives as a guest. The form activates a
+  // guest profile on this device; a signed-in user still gets their saved bot.
   const user = await getUser();
-  if (!user && loginRequired()) redirect("/login?next=/avatar");
   const avatar = getBotAvatar(user);
   const soul = getBotSoul(user);
 
@@ -45,7 +44,7 @@ export default async function AvatarPage() {
             ? avatar.face === "blank"
               ? "A blank slate. Pick a face, give it a name — it keeps them everywhere you go."
               : "Pick a face, give it a name. It keeps them everywhere you go."
-            : "Every bot starts blank. Sign in and shape yours."}
+            : "Every bot starts blank. Try a profile and shape yours."}
         </p>
       </div>
       <AvatarForm initial={avatar} soul={soul} signedIn={Boolean(user)} />

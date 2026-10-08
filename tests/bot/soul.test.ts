@@ -32,7 +32,7 @@ it("reads the soul from user_metadata with safe fallbacks", () => {
 });
 
 it("defines the onboarding step order", () => {
-  assert.deepEqual([...ONBOARDING_STEPS], ["signin", "sovid", "avatar", "soul", "location", "knowyou"]);
+  assert.deepEqual([...ONBOARDING_STEPS], ["profile", "sovid", "avatar", "soul", "location", "knowyou"]);
   assert.equal(isValidStep("sovid"), true);
   assert.equal(isValidStep("nope"), false);
 });
