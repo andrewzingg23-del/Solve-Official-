@@ -1,0 +1,48 @@
+// Actual desktop/mobile interactions. No injected app state or internal API shortcuts.
+import assert from "node:assert/strict";
+import {spawn} from "node:child_process";
+import {existsSync,mkdirSync,readdirSync,readFileSync} from "node:fs";
+import {homedir} from "node:os";
+import {join} from "node:path";
+import {chromium} from "playwright-core";
+const root=process.cwd(),out=join(root,"test-results");mkdirSync(out,{recursive:true});
+const cache=process.env.PLAYWRIGHT_BROWSERS_PATH||join(homedir(),".cache/ms-playwright");
+const candidates=existsSync(cache)?readdirSync(cache).filter(d=>/^chromium(?:_headless_shell)?-\d+$/.test(d)).sort().reverse().flatMap(d=>["chrome-linux/chrome","chrome-linux64/chrome","chrome-linux/headless_shell","chrome-linux64/headless_shell"].map(p=>join(cache,d,p))):[];
+const executablePath=process.env.CHROMIUM_PATH||candidates.find(existsSync);if(!executablePath)throw new Error("Install Chromium with npx playwright-core@1.56.1 install chromium, or set CHROMIUM_PATH.");
+const server=spawn(process.execPath,["node_modules/next/dist/bin/next","start","--port","3004"],{cwd:root,stdio:["ignore","pipe","pipe"]});
+let serverLog="";server.stdout.on("data",d=>{serverLog=(serverLog+d).slice(-8000);});server.stderr.on("data",d=>{serverLog=(serverLog+d).slice(-8000);});
+const url="http://127.0.0.1:3004";let browser;
+try{
+ let ready=false;for(let i=0;i<90;i++){try{const r=await fetch(url);if(r.ok){ready=true;break;}}catch{}await new Promise(r=>setTimeout(r,1000));}if(!ready)throw new Error("App did not start: "+serverLog);
+ browser=await chromium.launch({executablePath,args:["--no-sandbox","--enable-unsafe-swiftshader"]});
+ const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on("pageerror",e=>errors.push(e.message));
+ await page.goto(url);await page.getByRole("heading",{name:"A space for what’s next."}).waitFor();
+ await page.getByRole("button",{name:"New creation",exact:true}).click();
+ const dialog=page.getByRole("dialog");await dialog.getByRole("textbox",{name:"Creation name"}).fill("Test workbench");
+ await dialog.getByRole("button",{name:"Everyday objects"}).click();await dialog.getByRole("button",{name:"Create editable concept"}).click();
+ await page.getByRole("button",{name:"Desktop",exact:true}).click();
+ await page.getByRole("spinbutton",{name:"Width",exact:true}).fill("2");await page.getByRole("spinbutton",{name:"Width",exact:true}).press("Tab");
+ await page.getByRole("button",{name:"Undo edit"}).click();assert.equal(await page.getByRole("spinbutton",{name:"Width",exact:true}).inputValue(),"1.6");
+ await page.getByRole("button",{name:"Redo edit"}).click();assert.equal(await page.getByRole("spinbutton",{name:"Width",exact:true}).inputValue(),"2");
+ await page.getByRole("tab",{name:"Materials",exact:true}).click();await page.getByRole("cell",{name:"Desktop",exact:true}).waitFor();
+ await page.getByRole("tab",{name:"Build path",exact:true}).click();const status=page.getByRole("combobox",{name:"Refine dimensions and materials status"});await status.selectOption("done");
+ await page.getByRole("tab",{name:"Design",exact:true}).click();await page.getByRole("button",{name:"Run drop experiment",exact:true}).click();
+ await page.getByRole("slider",{name:"Physics timeline"}).waitFor({timeout:30000});await page.getByRole("slider",{name:"Physics timeline"}).press("End");
+ await page.getByRole("button",{name:"Close experiment"}).click();
+ await page.getByRole("spinbutton",{name:"Height",exact:true}).fill("0.06");await page.getByRole("spinbutton",{name:"Height",exact:true}).press("Tab");
+ await page.getByRole("tab",{name:"Build path",exact:true}).click();assert.equal(await status.inputValue(),"needs_review");await page.getByRole("tab",{name:"Design",exact:true}).click();
+ await page.getByRole("button",{name:"Export",exact:true}).click();const download=page.waitForEvent("download");await page.getByRole("dialog").getByRole("button",{name:/SOLVE source/}).click();const file=await(await download).path(),source=JSON.parse(readFileSync(file,"utf8"));assert.equal(source.title,"Test workbench");assert.equal(source.nodes[0].size[0],2);
+ await page.getByRole("button",{name:"Close dialog"}).click();await page.reload();await page.getByRole("button",{name:"Desktop",exact:true}).click();assert.equal(await page.getByRole("spinbutton",{name:"Width",exact:true}).inputValue(),"2");await page.screenshot({path:join(out,"studio-desktop.png"),fullPage:true});
+ await page.goto(url+"/sov-id");await page.getByRole("textbox",{name:"Your name",exact:true}).fill("Avery");await page.getByRole("textbox",{name:"Your name",exact:true}).press("Tab");await page.getByRole("textbox",{name:"SOV handle",exact:true}).fill("avery");await page.getByRole("textbox",{name:"SOV handle",exact:true}).press("Tab");
+ await page.getByRole("button",{name:"Choose Host identity portrait"}).click();await page.getByRole("button",{name:"Goal tracker",exact:true}).click();await page.getByRole("spinbutton",{name:"Progress",exact:true}).fill("4");await page.getByRole("spinbutton",{name:"Progress",exact:true}).press("Tab");
+ const privateExport=page.waitForEvent("download");await page.getByRole("button",{name:"Export card",exact:true}).click();const privateFile=await(await privateExport).path();assert.equal(JSON.parse(readFileSync(privateFile,"utf8")).modules.length,0);await page.getByRole("checkbox",{name:"Include in exported card"}).check();
+ const exported=page.waitForEvent("download");await page.getByRole("button",{name:"Export card",exact:true}).click();const sharedFile=await(await exported).path();assert.equal(JSON.parse(readFileSync(sharedFile,"utf8")).modules[0].value,4);
+ await page.reload();await page.getByRole("heading",{name:"Avery",exact:true}).waitFor();await page.screenshot({path:join(out,"sov-id-desktop.png"),fullPage:true});
+ await page.setViewportSize({width:390,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1));await page.screenshot({path:join(out,"sov-id-mobile.png"),fullPage:true});
+ await page.goto(url);await page.getByRole("button",{name:"Desktop",exact:true}).click();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1));await page.screenshot({path:join(out,"studio-mobile.png"),fullPage:true});
+ await page.goto(url+"/start?step=avatar");await page.getByText("Identity · 3 of 3").waitFor();await page.getByRole("button",{name:"Enter your studio",exact:true}).click();await page.getByRole("heading",{name:"A space for what’s next."}).waitFor();assert.deepEqual(errors,[]);
+ const fallback=await chromium.launch({executablePath,args:["--no-sandbox","--disable-webgl"]}),flat=await fallback.newPage({viewport:{width:390,height:844}});
+ await flat.goto(url);await flat.getByLabel("Editable three dimensional projection").waitFor();await flat.getByRole("button",{name:"Oak floor",exact:true}).click();await flat.getByRole("spinbutton",{name:"Width",exact:true}).waitFor();await flat.screenshot({path:join(out,"studio-projection-mobile.png"),fullPage:true});
+ await flat.goto(url+"/map");await flat.getByRole("img",{name:"Flat map of authorized World places"}).waitFor({timeout:60000});await flat.getByRole("button",{name:"Zoom map in"}).click();await flat.screenshot({path:join(out,"flat-map.png"),fullPage:true});await fallback.close();
+ console.log("Studio browser checks passed: editing/history, quantities, stale plan checks, real physics, export/reload, identity privacy, mobile, onboarding and no-WebGL views.");
+}catch(e){console.error(serverLog);throw e;}finally{await browser?.close();server.kill("SIGTERM");}

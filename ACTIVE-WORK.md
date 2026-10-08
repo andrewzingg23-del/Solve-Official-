@@ -4,6 +4,11 @@ One writer per architectural surface. Update this file when work starts, changes
 
 ## Now (read first)
 
+| Owner | Task | Branch | Owned paths | Protected paths | Done when |
+|---|---|---|---|---|---|
+| Codex (founder-directed, 2026-10-08) | Immersive studio, customizable SOV ID, flat map and governed shared revisions. | codex/immersive-world-studio from current main | app/studio/, app/sov-id/, app/map/, new flat adapter/shared studio route, lib/studio/, lib/world/studio.ts, additive connector tools, entry/navigation/onboarding, focused tests and evidence docs | Canon/directives, applied migrations, production data, money constitution, existing trading tools | Real editing/persistence/export/physics; kernel authority/history/branches; desktop/mobile/no-GPU verification; reviewable preview. |
+
+
 Updated 2026-10-05 by Claude. The founder overrides anything here.
 
 **The priority: solve is built for the founder first** (`docs/plans/2026-10-05-founder-first.md`). The first user is the founder; the first project is building solve with its AI builders. Each slice should solve a problem the founder actually has. Name it in your stream entry.

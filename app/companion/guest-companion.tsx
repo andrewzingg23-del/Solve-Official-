@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useGuestProfile } from "@/lib/guest/profile";
 import { faceSrc } from "@/lib/bot/avatar";
 import { BotCompanion } from "./bot-companion";
@@ -8,7 +9,8 @@ import { BotCompanion } from "./bot-companion";
 // floats with its face. Signed-in users keep the server-mounted companion.
 export function GuestCompanion() {
   const { profile } = useGuestProfile();
-  if (!profile) return null;
+  const pathname = usePathname();
+  if (!profile || pathname === "/" || pathname.startsWith("/studio") || pathname.startsWith("/sov-id") || pathname.endsWith("/studio")) return null;
   return (
     <BotCompanion
       portraitUrl={faceSrc(profile.face, profile.face_url)}

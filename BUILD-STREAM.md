@@ -979,3 +979,10 @@ Founder problem: the ARGUS trading watch centerpiece finally looks like the mach
 - CI (Build #37728215591): FAILED on lint — but the 2 errors are pre-existing in tests/guest/profile.test.ts (no-explicit-any at 49:43, 55:43, from the ffa363d guest-profile merge; the prior main run 37724612819 failed on the same file). Zero lint errors from the ARGUS v5 files. Fix is trivial (Record<string, any> → Record<string, unknown>) but that file is the parent's slice — left for the parent to rule on.
 - Ship-clean for this slice: tsc clean, eslint clean (local), npm run build ok, 7/7 focused tests pass, Vercel READY.
 - OPEN: visual verification needs a browser task on the live URL (subagents can't run them) — parent to delegate; up to 3 generate→fix iterations per mission spec.
+
+## 2026-10-08 — Immersive creation (Codex)
+- Founder asks for a built immersive, interactive and responsive canon.
+- Extends Worlds, existing identity/profile, connector and kernel. Private editable drafts, Three.js/projection, Rapier drop, material assumptions, execution checklist, exports, SOV ID modules and flat map.
+- Six local model/physics/kernel checks passed before runtime disconnection. Recovered source is being verified through CI and preview; browser workflow captures real desktop/mobile/no-WebGL interactions.
+- Snapshots use immutable creation events and explicit parents because upsert lacks atomic expected-version guards. Competing edits remain heads.
+- Current main 6b0a663; concurrent ARGUS work retained. No production database/migration changes. CAD/engineering/real-world provider adapters remain follow-ups.

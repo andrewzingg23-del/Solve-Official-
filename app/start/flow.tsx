@@ -48,6 +48,7 @@ export function OnboardingFlow(props: FlowProps) {
     window.scrollTo(0, 0);
   };
   const next = () => {
+    if (step === "avatar") { router.push("/"); return; }
     if (!last) go(ONBOARDING_STEPS[idx + 1]);
   };
   const back = () => {
@@ -60,7 +61,7 @@ export function OnboardingFlow(props: FlowProps) {
       <div className="relative z-10 flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <p className="eyebrow">
-            Step {idx + 1} of {ONBOARDING_STEPS.length}
+            {idx < 3 ? "Identity · " + (idx + 1) + " of 3" : "Optional personalization"}
           </p>
           {!last ? (
             <button type="button" onClick={next} className={quietLink}>
@@ -69,7 +70,7 @@ export function OnboardingFlow(props: FlowProps) {
           ) : null}
         </div>
 
-        <TraceBeam step={idx} total={ONBOARDING_STEPS.length} />
+        <TraceBeam step={Math.min(idx, 2)} total={3} />
 
         <StepPanel key={step}>
           <h1 className="text-3xl font-medium tracking-tight">
@@ -96,6 +97,7 @@ export function OnboardingFlow(props: FlowProps) {
           {step === "knowyou" && <KnowYouStep signedIn={props.signedIn} chatReady={props.chatReady} />}
         </StepPanel>
 
+        {step === "avatar" ? <button type="button" onClick={() => go("soul")} className={quietLink}>Add personality and deeper context (optional) →</button> : null}
         <div className="mt-2 flex items-center justify-between">
           {idx > 0 ? (
             <button type="button" onClick={back} className={quietLink}>
@@ -106,11 +108,11 @@ export function OnboardingFlow(props: FlowProps) {
           )}
           {!last ? (
             <button type="button" onClick={next} className={primaryAction}>
-              Continue
+              {step === "avatar" ? "Enter your studio" : "Continue"}
             </button>
           ) : (
-            <a href="/avatar" className={primaryAction}>
-              Meet your bot
+            <a href="/" className={primaryAction}>
+              Enter your studio
             </a>
           )}
         </div>

@@ -14,7 +14,8 @@
     "test:browser": "node scripts/test-browser.mjs",
     "arcadia": "tsx scripts/build-arcadia.ts",
     "test:world": "node scripts/test-world.mjs",
-    "test:postgres": "node scripts/test-postgres.mjs"
+    "test:postgres": "node scripts/test-postgres.mjs",
+    "test:studio": "node scripts/test-studio.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
@@ -37,7 +38,8 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
-    "three": "^0.186.1"
+    "three": "^0.186.1",
+    "@dimforge/rapier3d-compat": "^0.21.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

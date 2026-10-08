@@ -202,6 +202,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
         <h1 className="text-2xl font-medium">This World could not be loaded.</h1>
         <p className="max-w-xl text-sm leading-6 text-muted">The saved work is unchanged. Check the staging connection, then return and try again.</p>
         <Link href="/worlds" className={secondaryAction}>Your Worlds</Link>
+        <Link href={"/world/" + worldId + "/studio"} className={secondaryAction}>Open creation studio</Link>
       </main>
     );
   }
@@ -333,6 +334,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
 
       <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-4">
         <Link href="/worlds" className={quietLink}>Your Worlds</Link>
+        <Link href={"/world/" + worldId + "/studio"} className={quietLink}>Creation studio</Link>
         <span className="text-[10px] uppercase tracking-[0.16em] text-muted">One workspace · mobile and laptop</span>
       </footer>
     </main>

@@ -536,3 +536,9 @@ The founder's words are in `DECISIONS.md`. Nothing here needed a migration.
   - the connector's tool list.
 - **Checks:** full suite 311/311 before merging the trunk. After the merge: affected tests 34/34, typecheck, lint and build ok. The panel was rendered in Chromium with no page errors.
 
+
+## 2026-10-08 — Immersive creation preview (Codex)
+
+Branch codex/immersive-world-studio: creation studio, Three.js and interactive projection, real local persistence/history, materials/build path, Rapier drop, JSON/GLB/STL/SVG export, shared revisions, MCP studio tools, on-device SOV ID modules, shortened identity onboarding and flat authorized map.
+
+Verification in progress through CI/preview after local runtime disconnection. Six initial checks passed locally; further regression and browser gates are required before completion. No production data changes. CAD, engineering approval and real-world provider execution are not claimed.
