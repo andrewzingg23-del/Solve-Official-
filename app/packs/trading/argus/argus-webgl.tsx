@@ -662,7 +662,7 @@ export function ArgusWebGL() {
     // ---- post: real bloom ----
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
-    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 1.05, 0.75, 0.5);
+    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.7, 0.6, 0.65);
     composer.addPass(bloom);
     composer.addPass(new OutputPass());
 
