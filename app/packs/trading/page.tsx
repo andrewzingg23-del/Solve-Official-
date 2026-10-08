@@ -35,7 +35,6 @@ function HeroStrip({ candles }: { candles: Candle[] }) {
   const high = Math.max(...window.map((c) => c.high));
   const low = Math.min(...window.map((c) => c.low));
   const vol = window.reduce((a, c) => a + (c.volume || 0), 0);
-  const money = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 
   return (
     <section aria-label="Bitcoin at a glance" className="glass relative overflow-hidden p-6 md:p-8">
@@ -60,7 +59,7 @@ function HeroStrip({ candles }: { candles: Candle[] }) {
             className="stat-number text-5xl text-foreground md:text-6xl"
             style={{ textShadow: "0 0 36px rgb(34 211 238 / 0.35)" }}
           >
-            <CountUp value={latest} from={ref} format={money} />
+            <CountUp value={latest} from={ref} format="usd" />
           </p>
           <p className={`mb-1.5 rounded-full px-3 py-1.5 text-sm font-semibold tabular-nums ${up ? "ok-pin" : "alert-pin"}`}>
             {up ? "+" : ""}

@@ -9,13 +9,19 @@ export function CountUp({
   value,
   from,
   duration = 1400,
-  format,
+  format = "usd",
 }: {
   value: number;
   from?: number;
   duration?: number;
-  format: (n: number) => string;
+  // Serializable format key — never a function: server components cannot pass
+  // functions to client components.
+  format?: "usd" | "int";
 }) {
+  const fmt = (n: number) =>
+    format === "int"
+      ? Math.round(n).toLocaleString("en-US")
+      : `$${Math.round(n).toLocaleString("en-US")}`;
   const [display, setDisplay] = useState(from ?? value);
   const raf = useRef(0);
 
@@ -37,5 +43,5 @@ export function CountUp({
     return () => cancelAnimationFrame(raf.current);
   }, [value, from, duration]);
 
-  return <>{format(display)}</>;
+  return <>{fmt(display)}</>;
 }

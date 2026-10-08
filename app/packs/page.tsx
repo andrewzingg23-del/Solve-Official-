@@ -165,7 +165,7 @@ export default async function PacksPage() {
                         value={price}
                         from={from}
                         duration={1200}
-                        format={(n) => `$${Math.round(n).toLocaleString("en-US")}`}
+                        format="usd"
                       />
                     </p>
                     {chg !== null && (

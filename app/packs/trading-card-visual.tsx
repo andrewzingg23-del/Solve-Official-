@@ -58,7 +58,7 @@ export function TradingCardVisual() {
             value={state.price}
             from={state.price / (1 + state.changePct24h / 100)}
             duration={1200}
-            format={(n) => `$${Math.round(n).toLocaleString("en-US")}`}
+            format="usd"
           />
         </p>
         <p className={`text-[11px] font-medium tabular-nums ${up ? "text-positive" : "text-negative"}`}>
