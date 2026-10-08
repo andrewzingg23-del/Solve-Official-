@@ -909,3 +909,23 @@ Founder problem: the ARGUS trading watch centerpiece finally looks like the mach
 - CI red on first push (7631e47): tests/bot/receipt.test.ts asserted the old white-floor class `bg-[#f2f7fb]`; page now follows the dark-cinematic theme law (founder 2026-10-06: dark supersedes light app-wide). Updated the test to assert the dark wordmark + absence of the white floor.
 - Checks: eslint 0 errors, tsc clean, next build ok, focused tests 8/8 + receipt 4/4 pass. Full-suite batch run shows pre-existing parallel-runner flakes (world/venture files pass in isolation; e2e/reasoning-oidc hang predates this work).
 - Next: push fix, confirm CI green + Vercel READY.
+
+## 2026-10-08 ~02:35 UTC — BLOCKER: /packs/trading 500 on production
+- Founder screenshot pass caught it: /packs/trading returns 500 (Next.js error page, fast — a real thrown error, not a timeout). Other upgraded routes (/, /start, /avatar, /card) render fine.
+- Ruled out so far: data path identical pre/post upgrade (same awaits, same .catch()); all new components SSR-safe ("use client" where needed); Vercel build events clean; local dev renders 200.
+- Diagnosing via fresh local production build of current source to capture the real thrown error. Fix + verify before any push.
+
+## 2026-10-08 ~02:50 UTC — FIXED: /packs/trading 500 (commit 6018f5d)
+- Root cause: the upgrade passed a formatter arrow function as the `format` prop to the client component `CountUp` (`format={money}` in HeroStrip). Server components cannot pass functions to client components — React Flight serialization throws during SSR. It only fired when market data loaded (HeroStrip rendered); with no market data the page degraded to MarketDown and looked fine, which is why dev/CI/build all passed.
+- Same bug in /packs (server page, same function-prop pattern). Fixed both by changing CountUp's `format` to a serializable "usd"|"int" key implemented inside the client component; the type now prevents recurrence.
+- Checks: tsc clean, eslint clean. Pushed to main; verifying Vercel deploy + live route next.
+
+## 2026-10-08 ~03:30 UTC — ARGUS canvas v4 (three.js + GLSL rebuild)
+- Founder verdict on v3: "getting better but not at the level of the reference sites" (the three.js/WebGL + custom GLSL builds: sky-reach, earth.ethanplus.ai, zenith). Rebuilding the canvas as a real WebGL scene: GPU particle vortex, fbm-noise plasma, volumetric core + UnrealBloom postprocessing, shader-ribbon beams, comet pulses, HTML clouds projected from 3D anchors.
+- v3 canvas-2D moved to argus-canvas-2d.tsx as the WebGL-unavailable/low-power fallback (not deleted). page.tsx untouched (data tables intact).
+
+## 2026-10-08 ~04:10 UTC — ARGUS canvas v4 shipped (three.js + GLSL)
+- Slice: full WebGL rebuild of the ARGUS machine. three.js scene: fbm domain-warped plasma background shader, fresnel-shader volumetric core + 4 glow sprites + chromatic fringe + 5 energy blades, 5,200 GPU particles in 4 vortex bands (vertex-shader animated, zero CPU), 9 energy beams as shader ribbons (bezier evaluated in vertex shader from uniforms) with 3 comet sprites each, 3 dashed orbital rings, perspective grid floor with scanline sweep, ghost ARGUS typography, twinkling starfield, UnrealBloom postprocessing.
+- 9 info clouds stay identical (same Oct 7 FOMO snapshot data/labels/footer) — now HTML overlays projected from 3D orbit anchors each frame, with depth-based scale/opacity and staggered fly-in intro. page.tsx untouched.
+- Perf guards: WebGL detection → canvas-2D v3 fallback (kept as argus-canvas-2d.tsx); low-power mobile UA → fallback; DPR capped 2/1.5; pauses off-screen; prefers-reduced-motion renders one static frame.
+- Checks: eslint clean, tsc clean, next build succeeds.
