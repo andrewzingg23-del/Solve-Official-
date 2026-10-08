@@ -939,3 +939,7 @@ Founder problem: the ARGUS trading watch centerpiece finally looks like the mach
 ## 2026-10-08 ~04:25 UTC — ARGUS v4 verified live
 - CI green on main (7e48454): full suite success. Vercel deployment READY. https://solve-sovigrn.vercel.app/packs/trading/argus returns 200.
 - Caveat: no visual verification possible from here — the founder's eyes are the gate (parent to screenshot).
+
+## 2026-10-08 ~04:35 UTC — Incident: stray deletion swept into docs commit
+- My docs commit c6e4911 accidentally included the deletion of app/start/steps/signin-step.tsx — concurrent guest-profile work (other builder, dirty in the same tree) had staged/removed it, and it rode along. The committed flow.tsx imports it, so main was briefly inconsistent.
+- Fixed: restored the file in 12c4a5b (main consistent again). Lesson: always `git status` + review the staged diff before committing in this shared tree; never assume the index only holds your work.
