@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useGuestProfile } from "@/lib/guest/profile";
 
 type Face = "business" | "spend";
 
@@ -33,6 +34,9 @@ export function SovCard({
 }) {
   const [face, setFace] = useState<Face>("business");
   const [revealed, setRevealed] = useState(false);
+  // Guests have no kernel identity — the card carries the profile's name.
+  const { profile } = useGuestProfile();
+  const displayName = name !== "Your name" ? name : profile?.yourName || name;
   const mountRef = useRef<HTMLDivElement>(null);
   const tiltRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
@@ -198,7 +202,7 @@ export function SovCard({
                         <Chip />
                       </div>
                       <div>
-                        <p className="text-2xl font-medium tracking-tight [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">{name}</p>
+                        <p className="text-2xl font-medium tracking-tight [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">{displayName}</p>
                         <p className="mt-1.5 font-mono text-[11px] tracking-[0.08em] text-white/60">{shortId}</p>
                         <p className="mt-3 text-[10px] uppercase tracking-[0.18em] text-white/40">Verified human · hand it out</p>
                       </div>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Archivo, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CompanionMount } from "./companion/mount";
+import { GuestCompanion } from "./companion/guest-companion";
 import { TabBar } from "./nav";
 
 const archivo = Archivo({
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col font-sans">
         {children}
         <CompanionMount />
+        <GuestCompanion />
         <TabBar />
       </body>
     </html>

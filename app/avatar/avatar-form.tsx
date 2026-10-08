@@ -4,13 +4,15 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { faceSrc, type BotAvatar } from "@/lib/bot/avatar";
+import { useGuestProfile } from "@/lib/guest/profile";
 import { saveBotAvatar } from "./actions";
 import { primaryAction } from "@/app/ui";
 import { SoulForm } from "./soul-form";
 import { AvatarPresence } from "./avatar-presence";
 
-// Management home for the user's bot: face, name, soul.
-// Face shaping (scan / generate) lives in the onboarding flow at /start.
+// Management home for the bot: face, name, soul.
+// Guests tap "Try a profile" — the profile activates on this device and every
+// control below works, saved locally. Signed-in users keep server saves.
 export function AvatarForm({
   initial,
   soul,
@@ -20,19 +22,29 @@ export function AvatarForm({
   soul: string;
   signedIn: boolean;
 }) {
-  const [name, setName] = useState(initial.name);
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
-  const face = initial.face;
-  const face_url = initial.face_url;
+  const guest = useGuestProfile();
+  const active = signedIn || guest.active;
+  // Guests keep their bot name on this device — the input shows it until edited.
+  const name = nameDraft ?? (!signedIn ? guest.profile?.botName : undefined) ?? initial.name;
+  const face = guest.profile?.face ?? initial.face;
+  const face_url = guest.profile?.face_url ?? initial.face_url;
 
   const save = () => {
     setError(null);
     setSaved(false);
+    const clean = name.trim().slice(0, 40);
+    if (!signedIn) {
+      guest.save({ botName: clean, face, face_url, generated: guest.profile?.generated });
+      setSaved(true);
+      return;
+    }
     startTransition(async () => {
-      const result = await saveBotAvatar(face, name, face_url, initial.generated);
+      const result = await saveBotAvatar(face, clean, face_url, initial.generated);
       if (result.ok) {
         setSaved(true);
         router.refresh();
@@ -40,6 +52,11 @@ export function AvatarForm({
         setError(result.error ?? "Couldn't save. Try again.");
       }
     });
+  };
+
+  const tryProfile = () => {
+    setError(null);
+    guest.activate({ botName: name.trim().slice(0, 40) });
   };
 
   return (
@@ -83,15 +100,15 @@ export function AvatarForm({
           id="bot-name"
           type="text"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => setNameDraft(e.target.value)}
           placeholder="Name your bot"
           maxLength={40}
-          disabled={!signedIn}
+          disabled={!active}
           className="mt-3 h-12 w-full rounded-full border border-line bg-surface px-5 text-center text-lg font-medium outline-none transition-all duration-300 placeholder:text-faint focus:border-accent focus:shadow-[0_0_24px_rgb(34_211_238/0.25)] disabled:opacity-60"
         />
       </div>
 
-      {signedIn ? (
+      {active ? (
         <Link
           href="/start?step=avatar"
           className="av-reveal text-xs font-semibold uppercase tracking-[0.2em] text-accent transition-all duration-300 hover:text-foreground hover:[text-shadow:0_0_16px_rgb(34_211_238/0.6)]"
@@ -112,7 +129,7 @@ export function AvatarForm({
         </p>
       ) : null}
 
-      {signedIn ? (
+      {active ? (
         <button
           type="button"
           onClick={save}
@@ -120,20 +137,32 @@ export function AvatarForm({
           className={`${primaryAction} av-reveal w-full max-w-sm disabled:opacity-60`}
           style={{ animationDelay: "340ms" }}
         >
-          {pending ? "Saving…" : "Save my bot"}
+          {pending ? "Saving…" : signedIn ? "Save my bot" : "Save my bot — on this device"}
         </button>
       ) : (
-        <a
-          href="/login?next=/avatar"
-          className={`${primaryAction} av-reveal w-full max-w-sm text-center`}
-          style={{ animationDelay: "340ms" }}
-        >
-          Sign in to make this bot yours
-        </a>
+        <>
+          <button
+            type="button"
+            onClick={tryProfile}
+            className={`${primaryAction} av-reveal w-full max-w-sm`}
+            style={{ animationDelay: "340ms" }}
+          >
+            Try a profile
+          </button>
+          <p className="av-reveal -mt-4 text-center text-xs leading-5 text-faint" style={{ animationDelay: "380ms" }}>
+            No account, no email. Your bot lives on this device.
+          </p>
+        </>
       )}
 
       <div className="av-reveal w-full border-t border-line pt-8" style={{ animationDelay: "420ms" }}>
-        <SoulForm initial={soul} signedIn={signedIn} />
+        {active ? (
+          <SoulForm initial={soul} signedIn={signedIn} />
+        ) : (
+          <p className="text-center text-xs leading-5 text-faint">
+            Your bot&apos;s soul — unlocks with your profile.
+          </p>
+        )}
       </div>
     </div>
   );

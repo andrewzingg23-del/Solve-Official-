@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import type { BotAvatar } from "@/lib/bot/avatar";
 import { faceSrc } from "@/lib/bot/avatar";
+import { useGuestProfile } from "@/lib/guest/profile";
 import { saveBotAvatar, saveFacePhoto } from "@/app/avatar/actions";
 import { Reveal } from "../fx";
 import { label, primaryAction, secondaryAction, glassCard } from "@/app/ui";
@@ -24,7 +25,7 @@ export function AvatarStep({
   faceGenReady: boolean;
   onNext: () => void;
 }) {
-  const [name, setName] = useState(avatar.name);
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("idle");
   const [preview, setPreview] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
@@ -35,6 +36,10 @@ export function AvatarStep({
   const [busy, startTransition] = useTransition();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const guest = useGuestProfile();
+  const active = signedIn || guest.active;
+  // Guests keep their bot name on this device — the input shows it until edited.
+  const name = nameDraft ?? (!signedIn ? guest.profile?.botName : undefined) ?? avatar.name;
 
   const stopStream = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -135,11 +140,24 @@ export function AvatarStep({
   const confirmFace = () => {
     if (!preview) return;
     setError(null);
+    const botName = name || guest.profile?.botName || "My bot";
+    if (!signedIn) {
+      // Guest: the face lives on this device with the profile.
+      guest.save({
+        face: "blank",
+        face_url: preview,
+        generated: mode === "gen-preview",
+        botName,
+      });
+      setSaved(true);
+      setMode("idle");
+      return;
+    }
     startTransition(async () => {
       const generated = mode === "gen-preview";
       const result = generated
-        ? await saveBotAvatar("blank", name || "My bot", preview, true)
-        : await saveFacePhoto(preview, name || "My bot");
+        ? await saveBotAvatar("blank", botName, preview, true)
+        : await saveFacePhoto(preview, botName);
       if (result.ok) {
         setSaved(true);
         setMode("idle");
@@ -204,13 +222,13 @@ export function AvatarStep({
 
           {mode === "idle" && (
             <div className="flex w-full max-w-sm flex-col gap-3">
-              <button type="button" onClick={startScan} disabled={!signedIn} className={`${secondaryAction} w-full disabled:opacity-60`}>
+              <button type="button" onClick={startScan} disabled={!active} className={`${secondaryAction} w-full disabled:opacity-60`}>
                 Scan my face
               </button>
-              <button type="button" onClick={() => setMode("prompt")} disabled={!signedIn} className={`${secondaryAction} w-full disabled:opacity-60`}>
+              <button type="button" onClick={() => setMode("prompt")} disabled={!active} className={`${secondaryAction} w-full disabled:opacity-60`}>
                 Describe it instead
               </button>
-              {!signedIn ? <p className="text-center text-xs text-faint">Sign in to shape your face.</p> : null}
+              {!active ? <p className="text-center text-xs text-faint">Try a profile first — step 1.</p> : null}
             </div>
           )}
 
@@ -239,7 +257,7 @@ export function AvatarStep({
                   id="av-name"
                   type="text"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => setNameDraft(e.target.value)}
                   placeholder="Name your bot"
                   maxLength={40}
                   className="fx-field mt-2 h-12 w-full rounded-full border border-line bg-surface px-5 text-center text-lg font-medium outline-none transition-colors placeholder:text-faint focus:border-accent"

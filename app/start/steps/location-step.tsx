@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useGuestProfile } from "@/lib/guest/profile";
 import { saveHomeNode } from "@/app/avatar/actions";
 import { Reveal } from "../fx";
 import { primaryAction, secondaryAction, glassCard } from "@/app/ui";
@@ -12,6 +13,7 @@ export function LocationStep({ signedIn, onNext }: { signedIn: boolean; onNext: 
   const [saved, setSaved] = useState(false);
   const [locating, setLocating] = useState(false);
   const [, startTransition] = useTransition();
+  const guest = useGuestProfile();
 
   const locate = () => {
     setError(null);
@@ -26,7 +28,12 @@ export function LocationStep({ signedIn, onNext }: { signedIn: boolean; onNext: 
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         setCoords({ lat, lng });
-        if (!signedIn) return;
+        if (!signedIn) {
+          // Guest: the node is placed on this device.
+          guest.save({ homeNode: { lat, lng } });
+          setSaved(true);
+          return;
+        }
         startTransition(async () => {
           const result = await saveHomeNode(lat, lng);
           if (result.ok) setSaved(true);
@@ -78,7 +85,7 @@ export function LocationStep({ signedIn, onNext }: { signedIn: boolean; onNext: 
             <p className="relative font-mono text-xs text-muted tabular-nums">
               {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
             </p>
-            {saved ? <p className="relative text-xs text-positive">Placed.</p> : null}
+            {saved ? <p className="relative text-xs text-positive">{signedIn ? "Placed." : "Placed on this device."}</p> : null}
           </div>
         </Reveal>
       )}

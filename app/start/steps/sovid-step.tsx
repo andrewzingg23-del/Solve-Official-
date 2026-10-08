@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import type { SocialConnection } from "@/lib/social";
+import { useGuestProfile } from "@/lib/guest/profile";
 import { claimSovId } from "../actions";
 import { Reveal } from "../fx";
 import { label, primaryAction, glassCard } from "@/app/ui";
@@ -31,19 +32,37 @@ export function SovidStep({
   metaReady: boolean;
   onNext: () => void;
 }) {
-  const [name, setName] = useState(sovLabel);
-  const [claimed, setClaimed] = useState<string | null>(sovLabel || null);
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
+  const [claimedDraft, setClaimedDraft] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, startTransition] = useTransition();
+  const guest = useGuestProfile();
+  const active = signedIn || guest.active;
+  // Guests keep their SOV name on this device — shown until edited.
+  const claimed = claimedDraft ?? (!signedIn ? guest.profile?.sovName || null : null) ?? (sovLabel || null);
+  const name = nameDraft ?? claimed ?? "";
 
   const claim = () => {
     setError(null);
+    const clean = name.trim().slice(0, 60);
+    if (!clean) {
+      setError("Give your SOV ID a name.");
+      return;
+    }
+    if (!signedIn) {
+      // Guest: the name is held on this device. The on-chain identity issues
+      // when the ledger is live — never a fake ID.
+      guest.save({ sovName: clean, yourName: guest.profile?.yourName || clean });
+      setClaimedDraft(clean);
+      setPending(true);
+      return;
+    }
     setPending(false);
     startTransition(async () => {
       const result = await claimSovId(name);
       if (result.ok) {
-        setClaimed(name.trim());
+        setClaimedDraft(name.trim());
         setPending(result.pending === true);
       } else {
         setError(result.error ?? "Couldn't claim. Try again.");
@@ -63,9 +82,11 @@ export function SovidStep({
               <p className="text-2xl font-medium tracking-tight">
                 {claimed} <span className="serif-accent">· claimed</span>
               </p>
-              {pending ? (
+              {pending || (!signedIn && claimed && !claimedDraft) ? (
                 <p className="text-xs leading-5 text-muted">
-                  The identity ledger isn&apos;t provisioned yet — your name is held and will issue when it is.
+                  {signedIn
+                    ? "The identity ledger isn't provisioned yet — your name is held and will issue when it is."
+                    : "Held on this device — your SOV ID issues when the identity ledger is live."}
                 </p>
               ) : null}
             </div>
@@ -75,18 +96,18 @@ export function SovidStep({
                 id="sov-name"
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => setNameDraft(e.target.value)}
                 placeholder="What should the world call you?"
                 maxLength={60}
-                disabled={!signedIn}
+                disabled={!active}
                 className="fx-field h-12 rounded-full border border-line bg-background px-5 text-center text-lg font-medium outline-none transition-colors placeholder:text-faint focus:border-accent disabled:opacity-60"
               />
-              {signedIn ? (
+              {active ? (
                 <button type="button" onClick={claim} disabled={busy || !name.trim()} className={`${primaryAction} disabled:opacity-60`}>
                   {busy ? "Claiming…" : "Claim my SOV ID"}
                 </button>
               ) : (
-                <p className="text-sm text-muted">Sign in to claim yours.</p>
+                <p className="text-sm text-muted">Try a profile first — step 1.</p>
               )}
               {error ? (
                 <p role="alert" className="text-sm text-negative">
@@ -134,8 +155,8 @@ export function SovidStep({
                     <p className="text-xs leading-5 text-faint">Not connected yet — needs the Meta app credentials.</p>
                   ) : p.needs ? (
                     <p className="text-xs leading-5 text-faint">Not connected yet — needs {p.needs}.</p>
-                  ) : !signedIn ? (
-                    <p className="text-xs leading-5 text-faint">Sign in to connect.</p>
+                  ) : !active ? (
+                    <p className="text-xs leading-5 text-faint">Try a profile first — step 1.</p>
                   ) : (
                     <a href="/api/auth/meta/start" className="text-xs font-semibold uppercase tracking-[0.16em] text-accent">
                       Connect

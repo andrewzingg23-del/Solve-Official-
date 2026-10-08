@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useGuestProfile } from "@/lib/guest/profile";
 
 const TABS = [
   { href: "/packs", label: "Home" },
@@ -13,7 +14,9 @@ const TABS = [
 
 export function TabBar() {
   const pathname = usePathname();
+  const { profile } = useGuestProfile();
   if (pathname.startsWith("/login")) return null;
+  const botName = profile?.botName?.trim().slice(0, 10);
   return (
     <nav
       aria-label="Primary"
@@ -23,6 +26,7 @@ export function TabBar() {
       <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-line bg-[linear-gradient(165deg,rgb(14_23_40/0.85),rgb(6_11_20/0.7))] p-1.5 shadow-[0_16px_48px_rgb(0_0_0/0.45),inset_0_1px_0_rgb(242_247_251/0.07)] backdrop-blur-xl">
         {TABS.map((t) => {
           const active = pathname === t.href || (t.href !== "/packs" && pathname.startsWith(t.href));
+          const label = t.href === "/avatar" && botName ? botName : t.label;
           return (
             <Link
               key={t.href}
@@ -32,7 +36,7 @@ export function TabBar() {
                 active ? "text-accent" : "text-faint"
               }`}
             >
-              {t.label}
+              {label}
               <span
                 aria-hidden
                 className={`h-1 w-1 rounded-full transition-opacity ${

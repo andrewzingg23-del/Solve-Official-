@@ -929,3 +929,13 @@ Founder problem: the ARGUS trading watch centerpiece finally looks like the mach
 - 9 info clouds stay identical (same Oct 7 FOMO snapshot data/labels/footer) — now HTML overlays projected from 3D orbit anchors each frame, with depth-based scale/opacity and staggered fly-in intro. page.tsx untouched.
 - Perf guards: WebGL detection → canvas-2D v3 fallback (kept as argus-canvas-2d.tsx); low-power mobile UA → fallback; DPR capped 2/1.5; pauses off-screen; prefers-reduced-motion renders one static frame.
 - Checks: eslint clean, tsc clean, next build succeeds.
+
+## 2026-10-08 ~04:10 UTC — Guest-profile mode done (branch doris/guest-profile)
+- Founder order: "take out the sign in, just put try profile in here as active and make everything work."
+- New: lib/guest/profile.ts — GuestProfile type + localStorage persistence with sanitization + useGuestProfile() via useSyncExternalStore (SSR-safe, cross-component sync).
+- /start: step "signin" → "profile" (lib/bot/soul.ts ONBOARDING_STEPS); new profile-step.tsx (name yourself + your bot → activate → continue); sovid/avatar/soul/location/knowyou steps all work for guests, saving to the device with honest "on this device" copy where the kernel isn't reachable.
+- /avatar: "Try a profile" CTA replaces sign-in; name/face/soul editing + scan/save fully local-first for guests. Signed-in path unchanged (dormant).
+- Surfaces: bot creator saves persona locally ("Keep it on this device"); GuestCompanion floats with the guest face; card shows profile name; nav Avatar tab shows bot name; /account shows the on-device profile card for guests.
+- Untouched: app/packs/trading/**, /login + /auth/callback (dormant), solar lead flow, MCP connections copy.
+- Checks: tsc clean, eslint 0 errors (3 pre-existing-pattern img warnings), next build succeeds, tests/guest/profile.test.ts 5/5, tests/bot/soul.test.ts 4/4 (step rename).
+- Branch pushed; NOT merged — parent sequences the merge after ARGUS v4.
