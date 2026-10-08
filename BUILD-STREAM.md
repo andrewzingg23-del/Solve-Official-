@@ -979,3 +979,8 @@ Founder problem: the ARGUS trading watch centerpiece finally looks like the mach
 - CI (Build #37728215591): FAILED on lint — but the 2 errors are pre-existing in tests/guest/profile.test.ts (no-explicit-any at 49:43, 55:43, from the ffa363d guest-profile merge; the prior main run 37724612819 failed on the same file). Zero lint errors from the ARGUS v5 files. Fix is trivial (Record<string, any> → Record<string, unknown>) but that file is the parent's slice — left for the parent to rule on.
 - Ship-clean for this slice: tsc clean, eslint clean (local), npm run build ok, 7/7 focused tests pass, Vercel READY.
 - OPEN: visual verification needs a browser task on the live URL (subagents can't run them) — parent to delegate; up to 3 generate→fix iterations per mission spec.
+
+## 2026-10-08 ~05:00 UTC — AI-community first slice started (branch doris/ai-community)
+- Founder greenlit the AI-community vision ("that's it, based on my whole app"). First slice: room briefs + ask-the-room, the two foundations.
+- Plan: lib/community/room-ai.ts (brief cache as kernel events, grounded prompts, room corpus gathering); room-ai-actions.ts (server actions via OpenRouter, the working model path); room-brief.tsx + ask-room.tsx client components wired into community view for members; honest guest degradation.
+- Constraint: do NOT touch app/packs/trading/**; branch only, no merge (parent sequences).
