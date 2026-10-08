@@ -929,3 +929,13 @@ Founder problem: the ARGUS trading watch centerpiece finally looks like the mach
 - 9 info clouds stay identical (same Oct 7 FOMO snapshot data/labels/footer) — now HTML overlays projected from 3D orbit anchors each frame, with depth-based scale/opacity and staggered fly-in intro. page.tsx untouched.
 - Perf guards: WebGL detection → canvas-2D v3 fallback (kept as argus-canvas-2d.tsx); low-power mobile UA → fallback; DPR capped 2/1.5; pauses off-screen; prefers-reduced-motion renders one static frame.
 - Checks: eslint clean, tsc clean, next build succeeds.
+
+## 2026-10-08 ~03:35 UTC — Guest-profile mode (branch doris/guest-profile)
+- Founder order: "take out the sign in, just put try profile in here as active and make everything work." Sign-in CTAs removed app-wide; /login + /auth/callback stay dormant in the codebase, auth infra untouched.
+- Slice: new lib/guest/profile.ts (localStorage guest profile + useGuestProfile hook); avatar page "Try a profile" activation; /start step 1 ("signin" → "profile") guest-first; avatar scan/save, soul, SOV claim, know-you answers, bot creator all work local-first for guests; guest face/name in companion + card; honest copy where kernel writes aren't possible.
+- Constraint: branch doris/guest-profile, do NOT merge — ARGUS three.js rebuild in flight on main. Do NOT touch app/packs/trading/.
+- Next: implement, then eslint + tsc + build on the branch, push branch, report.
+
+## 2026-10-08 ~04:25 UTC — ARGUS v4 verified live
+- CI green on main (7e48454): full suite success. Vercel deployment READY. https://solve-sovigrn.vercel.app/packs/trading/argus returns 200.
+- Caveat: no visual verification possible from here — the founder's eyes are the gate (parent to screenshot).

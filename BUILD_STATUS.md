@@ -1,6 +1,12 @@
 # BUILD_STATUS
 
-## Current checkpoint — 2026-10-08 (whole-site quality upgrade, main @ 394dcfd)
+## Current checkpoint — 2026-10-08 (ARGUS canvas v4, main @ 7e48454)
+
+- ARGUS canvas rebuilt as three.js + custom GLSL (commit 7e48454): fbm domain-warped plasma background, fresnel volumetric core + UnrealBloom, 5,200 GPU particles in 4 vortex bands, 9 energy beams as shader ribbons with comet pulses, dashed orbital rings, grid floor, ghost typography, starfield. 9 info clouds unchanged (Oct 7 FOMO snapshot) as HTML overlays projected from 3D anchors. Canvas-2D v3 kept as WebGL fallback (argus-canvas-2d.tsx). page.tsx untouched.
+- Checks: eslint clean, tsc clean, next build ok. CI + Vercel status verified after push (see stream).
+- Also fixed this session: /packs/trading 500 (commit 6018f5d — CountUp format prop was a function passed server→client; now a serializable key).
+
+## Previous checkpoint — 2026-10-08 (whole-site quality upgrade, main @ 394dcfd)
 
 - Whole-site award-level pass across all routes (commits 7631e47 + 394dcfd): /start full step choreography (ambient canvas, TraceBeam progress, staggered entrances, radar pings, scan sweeps); trading pack aurora hero, real-value count-ups, animated sparkline draw-in, border-beam Intel cards; avatar presence canvas + premium card reveal (3D tilt, tracing beam, holographic glint); 21 long-tail surfaces converted to dark cinematic law; deleted dead app/claim/claim-flow.tsx.
 - Theme law enforced app-wide: abyssal blue-black, cyan #22d3ee single accent, ice-white text. The saved-receipt "white floor" was retired — tests/bot/receipt.test.ts updated to assert the dark floor (BRAND.md still documents the white floor; needs Drew's ruling).
