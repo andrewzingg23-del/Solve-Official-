@@ -16,6 +16,20 @@ The experience should be calm enough to trust and rich enough to make complex wo
 
 The adaptive home should open onto the surface most useful for the person’s current intent. It may be their map, a World, a project, a conversation, or an active workflow. There is no single mandatory home screen for every person and every moment.
 
+## Visual references and spatial feel
+
+The founder's visual references point toward three connected qualities:
+
+- **An AI avatar that feels present.** The assistant can appear as an expressive, recognizable presence with a luminous or dimensional treatment. It should feel like a capable participant in the user's World, not a floating text box. Keep the avatar's identity, activity, and permissions clear; it should never impersonate the user.
+- **A workspace that understands its surroundings.** Useful surfaces—tasks, schedules, files, project status, and 3D models—can appear as spatial layers connected to the room or object the person is working with. These layers should stay readable, dismissible, and relevant to the current task.
+- **A creative studio that bridges digital and physical making.** A 3D design should sit naturally beside sketches, materials, swatches, tools, measurements, and reference objects. People should be able to inspect and manipulate a design, then connect it to real materials and a path to production.
+
+The intended feeling is ambient, hands-on, and futuristic while remaining grounded in recognizable places and objects. Spatial overlays and immersive modes are optional views of useful work, not the only way to use SOLVE. A person should be able to create and collaborate from a phone or computer, then enter a richer 3D or augmented-reality view when that adds value.
+
+Keep one recognizable SOLVE design language while allowing a World to express its own atmosphere. Avoid treating neon effects, translucent panels, or photorealistic avatars as quality by themselves. Use depth, motion, light, and visual effects to communicate identity, presence, state, relationships, and change. Make the underlying controls and information legible, accessible, and consistent.
+
+These references express an experience direction, not a claim that SOLVE already supports holographic interfaces, mixed reality, or production-ready spatial computing.
+
 ## Identity comes early
 
 After account access, the first meaningful product moment should be creating a SOV ID and an avatar—not an extended onboarding sequence. The experience should be relatively deep and realistic while remaining optional about sensitive disclosures.
