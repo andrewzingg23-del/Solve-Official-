@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 
 const House3D = dynamic(() => import("../house-3d").then((m) => m.House3D), {
   ssr: false,
-  loading: () => <div className="grid h-full place-items-center text-sm text-[#4d5b6c]">Loading the model…</div>,
+  loading: () => <div className="grid h-full place-items-center text-sm text-muted">Loading the model…</div>,
 });
 
 export function ProposalModel({ panels }: { panels: number }) {

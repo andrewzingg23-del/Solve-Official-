@@ -24,7 +24,8 @@ export function SwapFeedClient({ swaps }: { swaps: SwapRecord[] }) {
       {swaps.map((s, i) => (
         <li
           key={`${s.signature}-${i}`}
-          className="glass flex items-center justify-between gap-3 !rounded-xl px-4 py-3 text-xs"
+          style={{ animationDelay: `${Math.min(i, 8) * 70}ms` }}
+          className="glass animate-[page-enter_0.5s_var(--ease-calm)_backwards] flex items-center justify-between gap-3 !rounded-xl px-4 py-3 text-xs"
         >
           <div className="flex min-w-0 flex-col gap-0.5">
             <span className="truncate font-mono tabular-nums text-foreground">
@@ -34,7 +35,7 @@ export function SwapFeedClient({ swaps }: { swaps: SwapRecord[] }) {
           </div>
           <button
             onClick={() => copyTrade(s)}
-            className="inline-flex h-11 shrink-0 items-center rounded-full border border-line px-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted transition-colors duration-300 ease-calm hover:border-accent hover:text-accent active:scale-95"
+            className="inline-flex h-11 shrink-0 items-center rounded-full border border-line px-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted transition-all duration-300 ease-calm hover:border-accent hover:text-accent hover:shadow-[0_0_18px_rgb(34_211_238/0.25)] active:scale-95"
           >
             Copy
           </button>

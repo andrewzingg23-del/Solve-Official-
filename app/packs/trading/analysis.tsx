@@ -1,14 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { analyzeMarket, type MarketTicket } from "./analysis-actions";
+import { Reveal } from "../reveal";
 
 function Confidence({ level }: { level: string }) {
   const n = level === "High" ? 3 : level === "Medium" ? 2 : 1;
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setOn(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
   return (
     <span className="flex items-center gap-1" aria-label={`Confidence: ${level}`}>
       {[1, 2, 3].map((i) => (
-        <span key={i} className={`h-1 w-4 rounded-full ${i <= n ? "bg-accent" : "bg-line"}`} />
+        <span
+          key={i}
+          className={`h-1 w-4 rounded-full transition-all duration-700 ease-calm ${
+            i <= n ? "bg-accent shadow-[0_0_10px_rgb(34_211_238/0.7)]" : "bg-line"
+          }`}
+          style={{
+            transitionDelay: `${i * 110}ms`,
+            transform: on || i > n ? "scaleX(1)" : "scaleX(0.2)",
+            transformOrigin: "left center",
+            opacity: on || i > n ? 1 : 0.25,
+          }}
+        />
       ))}
       <span className="ml-1 text-[10px] uppercase tracking-[0.12em] text-faint">{level}</span>
     </span>
@@ -27,7 +44,7 @@ function ReadCard({
   confidence?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-line-soft bg-surface-sunken/50 p-4">
+    <div className="fx-trace h-full rounded-2xl border border-line-soft bg-surface-sunken/50 p-4 transition-shadow duration-300 ease-calm hover:shadow-[0_0_32px_rgb(34_211_238/0.12)]">
       <div className="flex items-center justify-between gap-2">
         <p className="eyebrow">{eyebrow}</p>
         {confidence && <Confidence level={confidence} />}
@@ -87,19 +104,25 @@ export function BotAnalysis({ botName }: { botName: string }) {
       )}
       {ticket ? (
         <div className="grid gap-3 md:grid-cols-3">
-          <ReadCard
-            eyebrow="Trend"
-            title={ticket.trend.label}
-            detail={ticket.trend.detail}
-            confidence={ticket.trend.confidence}
-          />
-          <ReadCard
-            eyebrow="Momentum"
-            title={ticket.momentum.label}
-            detail={ticket.momentum.detail}
-            confidence={ticket.momentum.confidence}
-          />
-          <ReadCard eyebrow="Watch" title={ticket.watch.label} detail={ticket.watch.detail} />
+          <Reveal delay={0}>
+            <ReadCard
+              eyebrow="Trend"
+              title={ticket.trend.label}
+              detail={ticket.trend.detail}
+              confidence={ticket.trend.confidence}
+            />
+          </Reveal>
+          <Reveal delay={90}>
+            <ReadCard
+              eyebrow="Momentum"
+              title={ticket.momentum.label}
+              detail={ticket.momentum.detail}
+              confidence={ticket.momentum.confidence}
+            />
+          </Reveal>
+          <Reveal delay={180}>
+            <ReadCard eyebrow="Watch" title={ticket.watch.label} detail={ticket.watch.detail} />
+          </Reveal>
         </div>
       ) : (
         !error && (

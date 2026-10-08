@@ -17,7 +17,8 @@ function Panel<T>({
 }) {
   const [outcome, run, pending] = useActionState(action, null);
   return (
-    <section className="flex flex-col gap-5 rounded-md border border-line bg-surface/60 p-5">
+    <section className="glass relative flex flex-col gap-5 overflow-hidden p-5 md:p-6">
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/40 to-transparent" />
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex max-w-md flex-col gap-1">
           <h2 className="text-lg font-semibold tracking-tight">{title}</h2>

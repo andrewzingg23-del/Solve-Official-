@@ -27,7 +27,13 @@ function Result({ big, caption, rows }: { big: string; caption: string; rows: [s
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <span className="font-mono text-5xl font-semibold tabular-nums md:text-6xl">{big}</span>
+        {/* The number is the living object: it glows faintly as it recalculates. */}
+        <span
+          className="font-mono text-5xl font-semibold tabular-nums transition-all duration-300 md:text-6xl"
+          style={{ textShadow: "0 0 32px rgb(34 211 238 / 0.22)" }}
+        >
+          {big}
+        </span>
         <span className={`text-sm ${muted}`}>{caption}</span>
       </div>
       <dl className="flex flex-col">
@@ -44,7 +50,8 @@ function Result({ big, caption, rows }: { big: string; caption: string; rows: [s
 
 function Tool({ title, inputs, result, note }: { title: string; inputs: React.ReactNode; result: React.ReactNode; note: string }) {
   return (
-    <div className={`${panel} grid gap-8 p-6 md:grid-cols-2 md:p-8`}>
+    <div className={`${panel} relative grid gap-8 overflow-hidden p-6 md:grid-cols-2 md:p-8`}>
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/40 to-transparent" />
       <div className="flex flex-col gap-4">
         <p className={label}>{title}</p>
         {inputs}
@@ -102,23 +109,53 @@ const OATH = [
 
 export function Oath() {
   const [held, setHeld] = useState<boolean[]>(OATH.map(() => false));
-  const all = held.every(Boolean);
+  const heldCount = held.filter(Boolean).length;
+  const all = heldCount === OATH.length;
   return (
-    <div className={`${panel} flex flex-col gap-6 p-6 md:p-8`}>
-      <p className={label}>The oath</p>
+    <div className={`${panel} relative flex flex-col gap-6 overflow-hidden p-6 md:p-8`}>
+      {/* The beam fills as each line is held. */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/40 to-transparent" />
+      <div className="flex items-center justify-between gap-4">
+        <p className={label}>The oath</p>
+        <div className="flex items-center gap-2" aria-hidden>
+          {OATH.map((_, i) => (
+            <span
+              key={i}
+              className={`h-1 w-8 rounded-full transition-all duration-500 ease-calm ${held[i] ? "bg-accent shadow-[0_0_12px_rgb(34_211_238/0.7)]" : "bg-line"}`}
+            />
+          ))}
+        </div>
+      </div>
       <ol className="flex flex-col">
         {OATH.map((line_, i) => (
           <li key={i} className={`border-t ${line}`}>
-            <label className="flex cursor-pointer items-start gap-4 py-4">
-              <input type="checkbox" checked={held[i]} onChange={() => setHeld(held.map((h, j) => (j === i ? !h : h)))} className="mt-2 accent-[#0891b2]" />
-              <span className={`text-xl font-medium leading-8 md:text-2xl ${held[i] ? "" : muted}`}>{line_}</span>
+            <label className="group flex cursor-pointer items-start gap-4 py-4">
+              <input
+                type="checkbox"
+                checked={held[i]}
+                onChange={() => setHeld(held.map((h, j) => (j === i ? !h : h)))}
+                className="mt-2 accent-[var(--accent)]"
+              />
+              <span
+                className={`text-xl font-medium leading-8 transition-all duration-300 ease-calm group-hover:translate-x-0.5 md:text-2xl ${
+                  held[i] ? "text-accent" : muted
+                }`}
+              >
+                {line_}
+              </span>
             </label>
           </li>
         ))}
       </ol>
       <div className="flex flex-wrap items-center gap-4">
-        {all ? <Link href="/start" className={primary}>Apply for a seat</Link> : <span className={`text-sm ${muted}`}>Hold every line to apply. Then a member vouches for you.</span>}
-        {all ? <span className={`text-sm ${accent}`}>You hold the oath. Applying starts with your SOV ID.</span> : null}
+        {all ? (
+          <>
+            <Link href="/start" className={primary}>Apply for a seat</Link>
+            <span className={`text-sm ${accent}`}>You hold the oath. Applying starts with your SOV ID.</span>
+          </>
+        ) : (
+          <span className={`text-sm ${muted}`}>Hold every line to apply ({heldCount} of {OATH.length}). Then a member vouches for you.</span>
+        )}
       </div>
     </div>
   );

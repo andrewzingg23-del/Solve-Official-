@@ -34,7 +34,7 @@ export type CommandData = {
 function Communities({ list }: { list: MyCommunity[] }) {
   const waiting = (c: MyCommunity) => [c.asking ? plural(c.asking, "person asking to join", "people asking to join") : "", c.requests ? plural(c.requests, "request", "requests") : ""].filter(Boolean).join(" · ");
   return (
-    <Section id="communities" title="Communities" aside={<Link href="/communities" className={quietLink}>{list.length ? "All" : "Start or join one"}</Link>}>
+    <Section id="communities" title="Communities" delay={0.08} aside={<Link href="/communities" className={quietLink}>{list.length ? "All" : "Start or join one"}</Link>}>
       {list.length ? (
         <ul className="flex flex-col divide-y divide-line">
           {list.map((c) => (
@@ -51,9 +51,13 @@ function Communities({ list }: { list: MyCommunity[] }) {
   );
 }
 
-function Section({ id, title, children, aside }: { id: string; title: string; children: ReactNode; aside?: ReactNode }) {
+function Section({ id, title, children, aside, delay = 0 }: { id: string; title: string; children: ReactNode; aside?: ReactNode; delay?: number }) {
   return (
-    <section aria-labelledby={id} className="flex flex-col gap-3 rounded-md border border-line bg-surface/45 p-5">
+    <section
+      aria-labelledby={id}
+      className="flex flex-col gap-3 rounded-md border border-line bg-surface/45 p-5"
+      style={delay ? { animation: "page-enter 0.5s var(--ease-calm) both", animationDelay: `${delay}s` } : undefined}
+    >
       <div className="flex items-baseline justify-between gap-4">
         <h2 id={id} className={label}>{title}</h2>
         {aside}
@@ -80,7 +84,7 @@ export function CommandView({ data }: { data: CommandData }) {
   return (
     <div className="flex flex-col gap-6">
       {data.repoRoom}
-      <Section id="where-you-are" title="Where you are">
+      <Section id="where-you-are" title="Where you are" delay={0.02}>
         <p className="text-sm leading-6">
           {data.worlds.length
             ? `${plural(data.worlds.length, "World", "Worlds")} · ${plural(underway, "route", "routes")} underway · ${plural(data.saves.length, "recent save", "recent saves")} on the record`
@@ -110,7 +114,7 @@ export function CommandView({ data }: { data: CommandData }) {
       <WaitingOnYou items={waiting} />
 
       {seen.length ? (
-        <Section id="noticed" title="Noticed">
+        <Section id="noticed" title="Noticed" delay={0.2}>
           <ul className="flex flex-col divide-y divide-line">
             {seen.map((n) => (
               <li key={n.pieceId} className="py-2 text-sm leading-6">
@@ -122,7 +126,7 @@ export function CommandView({ data }: { data: CommandData }) {
         </Section>
       ) : null}
 
-      <Section id="where-going" title="Where you're going">
+      <Section id="where-going" title="Where you're going" delay={0.14}>
         {data.journeys.length ? (
           <ol className="flex flex-col divide-y divide-line">
             {data.journeys.map((j) => (
@@ -137,7 +141,7 @@ export function CommandView({ data }: { data: CommandData }) {
         )}
       </Section>
 
-      <Section id="party" title="With you">
+      <Section id="party" title="With you" delay={0.2}>
         {data.botName ? (
           <>
             <p className="text-sm leading-6">
@@ -163,7 +167,7 @@ export function CommandView({ data }: { data: CommandData }) {
         {data.wallet}
       </Section>
 
-      <Section id="happened" title="What actually happened">
+      <Section id="happened" title="What actually happened" delay={0.26}>
         {data.results?.length ? (
           <ul className="flex flex-col divide-y divide-line">
             {data.results.map((r) => (
@@ -194,7 +198,7 @@ export function CommandView({ data }: { data: CommandData }) {
       </Section>
 
       {data.gaps?.length ? (
-        <Section id="gaps" title="What solve can't do yet">
+        <Section id="gaps" title="What solve can't do yet" delay={0.32}>
           <ul className="flex flex-col divide-y divide-line">
             {groupGaps(data.gaps).map((g) => (
               <li key={g.latest.pieceId} className="flex flex-col gap-1 py-3 text-sm">
@@ -210,7 +214,7 @@ export function CommandView({ data }: { data: CommandData }) {
         </Section>
       ) : null}
 
-      <Section id="next" title="What's next">
+      <Section id="next" title="What's next" delay={0.38}>
         <p className="text-sm leading-6 text-muted">
           {waiting.length
             ? "Start with what's waiting on you."

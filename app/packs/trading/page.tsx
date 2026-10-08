@@ -13,13 +13,18 @@ import { WalletConnect } from "./wallet-connect";
 import { SwapQuotes } from "./swap-quotes";
 import { SwapBox } from "./swap";
 import { SwapFeed } from "./social";
+import { IntelCard } from "./intel-card";
+import { Reveal } from "../reveal";
+import { CountUp } from "../count-up";
+import { MarketAurora } from "../market-aurora";
 import { loginRequired } from "@/lib/auth/gate";
 
 export const metadata: Metadata = { title: "Trading pack — solve" };
 
 // Glance: the big number first, then trend, then detail — the Channel
 // Analytics pattern. Derived from the same server-side snapshot candles the
-// charts use: real data, one fetch, no second source of truth.
+// charts use: real data, one fetch, no second source of truth. The price
+// counts up from the 24h-ago reference to the live value — both real numbers.
 function HeroStrip({ candles }: { candles: Candle[] }) {
   const closes = candles.map((c) => c.close);
   const latest = closes[closes.length - 1];
@@ -30,18 +35,32 @@ function HeroStrip({ candles }: { candles: Candle[] }) {
   const high = Math.max(...window.map((c) => c.high));
   const low = Math.min(...window.map((c) => c.low));
   const vol = window.reduce((a, c) => a + (c.volume || 0), 0);
+  const money = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 
   return (
     <section aria-label="Bitcoin at a glance" className="glass relative overflow-hidden p-6 md:p-8">
+      <MarketAurora
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-70"
+        density={1.1}
+      />
       <div
-        className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent-dim via-transparent to-transparent"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[rgb(4_7_13/0.6)]"
         aria-hidden="true"
       />
       <div className="relative">
-        <p className="eyebrow eyebrow-accent">Bitcoin · live</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="eyebrow eyebrow-accent">Bitcoin · live</p>
+          <span className="flex items-center gap-1.5 rounded-full bg-accent-dim px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent">
+            <span className="fx-live-dot h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
+            Live
+          </span>
+        </div>
         <div className="mt-3 flex flex-wrap items-end gap-x-5 gap-y-3">
-          <p className="stat-number text-5xl text-foreground md:text-6xl">
-            ${latest.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+          <p
+            className="stat-number text-5xl text-foreground md:text-6xl"
+            style={{ textShadow: "0 0 36px rgb(34 211 238 / 0.35)" }}
+          >
+            <CountUp value={latest} from={ref} format={money} />
           </p>
           <p className={`mb-1.5 rounded-full px-3 py-1.5 text-sm font-semibold tabular-nums ${up ? "ok-pin" : "alert-pin"}`}>
             {up ? "+" : ""}
@@ -52,8 +71,11 @@ function HeroStrip({ candles }: { candles: Candle[] }) {
           <Sparkline
             points={closes}
             width={640}
-            height={72}
-            className="block h-[72px] w-full"
+            height={88}
+            animated
+            glow
+            fill
+            className="block h-[88px] w-full"
             label={`Bitcoin hourly closes, ${up ? "up" : "down"} over the shown period`}
           />
         </div>
@@ -62,11 +84,11 @@ function HeroStrip({ candles }: { candles: Candle[] }) {
             { label: "24h high", value: `$${high.toLocaleString("en-US", { maximumFractionDigits: 0 })}` },
             { label: "24h low", value: `$${low.toLocaleString("en-US", { maximumFractionDigits: 0 })}` },
             { label: "24h volume", value: `${vol.toLocaleString("en-US", { maximumFractionDigits: 0 })} BTC` },
-          ].map((s) => (
-            <div key={s.label}>
+          ].map((s, i) => (
+            <Reveal key={s.label} delay={i * 90}>
               <p className="text-[10px] uppercase tracking-[0.14em] text-faint">{s.label}</p>
               <p className="mt-1 text-sm font-semibold tabular-nums text-foreground md:text-base">{s.value}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
         <a href="#analysis" className={`${primaryAction} mt-6`}>
@@ -126,39 +148,37 @@ export default async function TradingPackPage() {
 
       {hasMarket ? <HeroStrip candles={btc} /> : <MarketDown />}
 
-      <section aria-labelledby="intel-heading" className="grid gap-4 lg:grid-cols-2">
-        <a href="/packs/trading/argus" className="glass group block p-5 transition-colors hover:border-[rgb(34_211_238/0.4)] md:p-6">
-          <p className="eyebrow eyebrow-accent">Intel · Machine</p>
-          <h2 id="intel-heading" className="mt-2 text-xl font-medium tracking-tight text-foreground">
-            ARGUS trading watch
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-muted">
-            The watcher that never blinks — signal clouds orbiting the machine.
-          </p>
-          <p className="mt-3 text-sm font-medium text-accent">Open ARGUS →</p>
-        </a>
-        <a href="/packs/trading/watchlist" className="glass group block p-5 transition-colors hover:border-[rgb(34_211_238/0.4)] md:p-6">
-          <p className="eyebrow eyebrow-accent">Intel · Signals</p>
-          <h2 className="mt-2 text-xl font-medium tracking-tight text-foreground">
-            The watchlist
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-muted">
-            16 researched memecoin accounts, ranked by evidence. Caveats included,
-            shills excluded.
-          </p>
-          <p className="mt-3 text-sm font-medium text-accent">Open watchlist →</p>
-        </a>
-      </section>
+      <Reveal>
+        <section aria-labelledby="intel-heading" className="grid gap-4 lg:grid-cols-2">
+          <IntelCard
+            href="/packs/trading/argus"
+            kicker="Intel · Machine"
+            title="ARGUS trading watch"
+            desc="The watcher that never blinks — signal clouds orbiting the machine."
+            cta="Open ARGUS"
+            headingId="intel-heading"
+          />
+          <IntelCard
+            href="/packs/trading/watchlist"
+            kicker="Intel · Signals"
+            title="The watchlist"
+            desc="16 researched memecoin accounts, ranked by evidence. Caveats included, shills excluded."
+            cta="Open watchlist"
+          />
+        </section>
+      </Reveal>
 
       {snapshot ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          {(Object.keys(snapshot) as SymbolId[]).map((s) => (
-            <section key={s} aria-label={`${symbolLabel(s)} chart`} className="glass p-5 md:p-6">
-              <PriceChart symbol={s} candles={snapshot[s]} />
-              <p className="mt-3 border-t border-line-soft pt-3 text-xs leading-5 text-faint tabular-nums">
-                {candleStats(snapshot[s])}
-              </p>
-            </section>
+          {(Object.keys(snapshot) as SymbolId[]).map((s, i) => (
+            <Reveal key={s} delay={i * 90}>
+              <section aria-label={`${symbolLabel(s)} chart`} className="glass h-full p-5 md:p-6">
+                <PriceChart symbol={s} candles={snapshot[s]} />
+                <p className="mt-3 border-t border-line-soft pt-3 text-xs leading-5 text-faint tabular-nums">
+                  {candleStats(snapshot[s])}
+                </p>
+              </section>
+            </Reveal>
           ))}
         </div>
       ) : (
@@ -167,30 +187,36 @@ export default async function TradingPackPage() {
         </p>
       )}
 
-      <BotAnalysis botName={botName} />
+      <Reveal>
+        <BotAnalysis botName={botName} />
+      </Reveal>
 
-      <section aria-labelledby="swap-heading" id="swap-box" className="glass scroll-mt-24 p-5 md:p-6">
-        <p className="eyebrow eyebrow-accent">On-chain · Jupiter</p>
-        <h2 id="swap-heading" className="mt-2 text-xl font-medium tracking-tight">Trade for real</h2>
-        <div className="mt-5 grid gap-5 lg:grid-cols-2 lg:items-start">
-          <SwapQuotes />
-          <div>
-            <p className="eyebrow">Your swap</p>
-            <div className="mt-3">
-              <SwapBox />
+      <Reveal>
+        <section aria-labelledby="swap-heading" id="swap-box" className="glass scroll-mt-24 p-5 md:p-6">
+          <p className="eyebrow eyebrow-accent">On-chain · Jupiter</p>
+          <h2 id="swap-heading" className="mt-2 text-xl font-medium tracking-tight">Trade for real</h2>
+          <div className="mt-5 grid gap-5 lg:grid-cols-2 lg:items-start">
+            <SwapQuotes />
+            <div>
+              <p className="eyebrow">Your swap</p>
+              <div className="mt-3">
+                <SwapBox />
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </Reveal>
 
-      <section aria-labelledby="activity-heading" className="glass p-5 md:p-6">
-        <p className="eyebrow">History</p>
-        <h2 id="activity-heading" className="mt-2 text-xl font-medium tracking-tight">Your activity</h2>
-        <p className="mt-1 text-xs leading-5 text-faint">Every swap, recorded. Tap copy on any trade to run it again.</p>
-        <div className="mt-4">
-          <SwapFeed ownerId={ownerId} />
-        </div>
-      </section>
+      <Reveal>
+        <section aria-labelledby="activity-heading" className="glass p-5 md:p-6">
+          <p className="eyebrow">History</p>
+          <h2 id="activity-heading" className="mt-2 text-xl font-medium tracking-tight">Your activity</h2>
+          <p className="mt-1 text-xs leading-5 text-faint">Every swap, recorded. Tap copy on any trade to run it again.</p>
+          <div className="mt-4">
+            <SwapFeed ownerId={ownerId} />
+          </div>
+        </section>
+      </Reveal>
     </main>
     </SolanaProviders>
   );

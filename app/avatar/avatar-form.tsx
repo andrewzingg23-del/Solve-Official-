@@ -7,6 +7,7 @@ import { faceSrc, type BotAvatar } from "@/lib/bot/avatar";
 import { saveBotAvatar } from "./actions";
 import { primaryAction } from "@/app/ui";
 import { SoulForm } from "./soul-form";
+import { AvatarPresence } from "./avatar-presence";
 
 // Management home for the user's bot: face, name, soul.
 // Face shaping (scan / generate) lives in the onboarding flow at /start.
@@ -43,19 +44,38 @@ export function AvatarForm({
 
   return (
     <div className="flex flex-col items-center gap-8">
-      <div className="relative">
-        <img
-          src={faceSrc(face, face_url)}
-          alt="Your bot's face"
-          className="h-44 w-44 rounded-full object-cover ring-2 ring-accent shadow-[0_0_48px_rgb(34_211_238/0.35)]"
-        />
-        <div aria-hidden className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-transparent to-accent/10" />
+      <style>{`
+        @keyframes av-rise {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .av-reveal {
+          opacity: 0;
+          animation: av-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        @keyframes av-pop {
+          0% { opacity: 0; transform: scale(0.92); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        .av-pop {
+          opacity: 0;
+          animation: av-pop 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .av-reveal, .av-pop { animation: none; opacity: 1; }
+        }
+      `}</style>
+
+      <div className="av-pop">
+        <AvatarPresence src={faceSrc(face, face_url)} alt="Your bot's face" />
       </div>
       {initial.generated ? (
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-faint">AI-generated face</p>
+        <p className="av-reveal -mt-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-faint" style={{ animationDelay: "120ms" }}>
+          AI-generated face
+        </p>
       ) : null}
 
-      <div className="w-full max-w-sm">
+      <div className="av-reveal w-full max-w-sm" style={{ animationDelay: "200ms" }}>
         <label htmlFor="bot-name" className="eyebrow block">
           Name
         </label>
@@ -67,12 +87,16 @@ export function AvatarForm({
           placeholder="Name your bot"
           maxLength={40}
           disabled={!signedIn}
-          className="mt-3 h-12 w-full rounded-full border border-line bg-surface px-5 text-center text-lg font-medium outline-none transition-colors placeholder:text-faint focus:border-accent disabled:opacity-60"
+          className="mt-3 h-12 w-full rounded-full border border-line bg-surface px-5 text-center text-lg font-medium outline-none transition-all duration-300 placeholder:text-faint focus:border-accent focus:shadow-[0_0_24px_rgb(34_211_238/0.25)] disabled:opacity-60"
         />
       </div>
 
       {signedIn ? (
-        <Link href="/start?step=avatar" className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+        <Link
+          href="/start?step=avatar"
+          className="av-reveal text-xs font-semibold uppercase tracking-[0.2em] text-accent transition-all duration-300 hover:text-foreground hover:[text-shadow:0_0_16px_rgb(34_211_238/0.6)]"
+          style={{ animationDelay: "280ms" }}
+        >
           Reshape face — scan or generate
         </Link>
       ) : null}
@@ -83,22 +107,32 @@ export function AvatarForm({
         </p>
       ) : null}
       {saved ? (
-        <p role="status" className="text-sm text-positive">
+        <p role="status" className="av-pop text-sm text-positive">
           Saved. This is your bot now.
         </p>
       ) : null}
 
       {signedIn ? (
-        <button type="button" onClick={save} disabled={pending} className={`${primaryAction} w-full max-w-sm disabled:opacity-60`}>
+        <button
+          type="button"
+          onClick={save}
+          disabled={pending}
+          className={`${primaryAction} av-reveal w-full max-w-sm disabled:opacity-60`}
+          style={{ animationDelay: "340ms" }}
+        >
           {pending ? "Saving…" : "Save my bot"}
         </button>
       ) : (
-        <a href="/login?next=/avatar" className={`${primaryAction} w-full max-w-sm text-center`}>
+        <a
+          href="/login?next=/avatar"
+          className={`${primaryAction} av-reveal w-full max-w-sm text-center`}
+          style={{ animationDelay: "340ms" }}
+        >
           Sign in to make this bot yours
         </a>
       )}
 
-      <div className="w-full border-t border-line pt-8">
+      <div className="av-reveal w-full border-t border-line pt-8" style={{ animationDelay: "420ms" }}>
         <SoulForm initial={soul} signedIn={signedIn} />
       </div>
     </div>

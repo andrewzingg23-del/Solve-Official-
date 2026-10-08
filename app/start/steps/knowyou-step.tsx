@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { saveKnowYou } from "../actions";
+import { Reveal } from "../fx";
 import { primaryAction, glassCard } from "@/app/ui";
 
 // Step 6: the assistant gets to know you. Scripted questions in a
@@ -22,16 +23,18 @@ export function KnowYouStep({ signedIn, chatReady }: { signedIn: boolean; chatRe
 
   if (!chatReady) {
     return (
-      <div className={`${glassCard} flex flex-col items-center gap-4 p-8 text-center`}>
-        <div aria-hidden className="h-8 w-8 animate-pulse rounded-full bg-accent/30" />
-        <p className="text-lg font-medium tracking-tight">Your assistant is still waking up.</p>
-        <p className="text-sm leading-6 text-muted">
-          This conversation unlocks when it does. Everything else you shaped is saved.
-        </p>
-        <a href="/avatar" className={primaryAction}>
-          Meet your bot
-        </a>
-      </div>
+      <Reveal>
+        <div className={`${glassCard} fx-stamp fx-card flex flex-col items-center gap-4 p-8 text-center`}>
+          <div aria-hidden className="h-8 w-8 animate-pulse rounded-full bg-accent/30" />
+          <p className="text-lg font-medium tracking-tight">Your assistant is still waking up.</p>
+          <p className="text-sm leading-6 text-muted">
+            This conversation unlocks when it does. Everything else you shaped is saved.
+          </p>
+          <a href="/avatar" className={primaryAction}>
+            Meet your bot
+          </a>
+        </div>
+      </Reveal>
     );
   }
 
@@ -48,32 +51,36 @@ export function KnowYouStep({ signedIn, chatReady }: { signedIn: boolean; chatRe
 
   if (done) {
     return (
-      <div className={`${glassCard} flex flex-col items-center gap-4 p-8 text-center`}>
-        <p className="text-lg font-medium tracking-tight">Noted. I&apos;ll remember this.</p>
-        <a href="/avatar" className={primaryAction}>
-          Meet your bot
-        </a>
-      </div>
+      <Reveal>
+        <div className={`${glassCard} fx-card flex flex-col items-center gap-4 p-8 text-center`}>
+          <p className="text-lg font-medium tracking-tight">Noted. I&apos;ll remember this.</p>
+          <a href="/avatar" className={primaryAction}>
+            Meet your bot
+          </a>
+        </div>
+      </Reveal>
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
       {QUESTIONS.map((q, i) => (
-        <div key={q.id} className="flex flex-col gap-2">
-          <p className="text-sm leading-6">
-            <span className="text-faint tabular-nums">{i + 1}. </span>
-            {q.ask}
-          </p>
-          <input
-            type="text"
-            value={answers[q.id] ?? ""}
-            onChange={(e) => set(q.id, e.target.value)}
-            disabled={!signedIn}
-            maxLength={500}
-            className="h-12 rounded-2xl border border-line bg-surface px-4 text-sm outline-none transition-colors placeholder:text-faint focus:border-accent disabled:opacity-60"
-          />
-        </div>
+        <Reveal key={q.id} delay={40 + i * 80}>
+          <div className="flex flex-col gap-2">
+            <p className="text-sm leading-6">
+              <span className="text-faint tabular-nums">{i + 1}. </span>
+              {q.ask}
+            </p>
+            <input
+              type="text"
+              value={answers[q.id] ?? ""}
+              onChange={(e) => set(q.id, e.target.value)}
+              disabled={!signedIn}
+              maxLength={500}
+              className="fx-field h-12 rounded-2xl border border-line bg-surface px-4 text-sm outline-none transition-colors placeholder:text-faint focus:border-accent disabled:opacity-60"
+            />
+          </div>
+        </Reveal>
       ))}
       {error ? (
         <p role="alert" className="text-sm text-negative">
@@ -81,11 +88,15 @@ export function KnowYouStep({ signedIn, chatReady }: { signedIn: boolean; chatRe
         </p>
       ) : null}
       {!signedIn ? (
-        <p className="text-xs text-faint">Sign in to let your bot remember your answers.</p>
+        <Reveal delay={360}>
+          <p className="text-xs text-faint">Sign in to let your bot remember your answers.</p>
+        </Reveal>
       ) : (
-        <button type="button" onClick={finish} disabled={busy} className={`${primaryAction} w-full disabled:opacity-60`}>
-          {busy ? "Saving…" : "That's me"}
-        </button>
+        <Reveal delay={360}>
+          <button type="button" onClick={finish} disabled={busy} className={`${primaryAction} w-full disabled:opacity-60`}>
+            {busy ? "Saving…" : "That's me"}
+          </button>
+        </Reveal>
       )}
     </div>
   );

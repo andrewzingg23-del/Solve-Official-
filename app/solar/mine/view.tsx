@@ -97,7 +97,7 @@ export function Erase({ id, big = false }: { id: string; big?: boolean }) {
   return (
     <form action={eraseDesignAction}>
       <input type="hidden" name="askId" value={id} />
-      <button type="submit" className={big ? secondary : `text-xs uppercase tracking-[0.2em] ${muted} hover:text-[#b42318]`}>Erase my request</button>
+      <button type="submit" className={big ? secondary : `text-xs uppercase tracking-[0.2em] ${muted} transition-colors duration-300 hover:text-negative`}>Erase my request</button>
     </form>
   );
 }

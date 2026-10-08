@@ -90,7 +90,7 @@ export function Dialer() {
           <span><span className="font-semibold uppercase tracking-[0.2em]">Practice</span> · nothing is dialed, texted or sent</span>
         </span>
         <div className="flex items-center gap-4 text-xs">
-          <label className="flex items-center gap-2"><input type="checkbox" checked={power} onChange={() => setPower(!power)} className="accent-[#0891b2]" /> Power dial</label>
+          <label className="flex items-center gap-2"><input type="checkbox" checked={power} onChange={() => setPower(!power)} className="accent-[var(--accent)]" /> Power dial</label>
           {!anyCallable && !practiceClock ? (
             <button type="button" onClick={() => setPracticeClock(inCallingHours("America/New_York", new Date(new Date().setUTCHours(18, 0, 0, 0))))} className={`underline ${accent}`}>
               It&apos;s outside calling hours everywhere. Practice as if it&apos;s 2pm Eastern
@@ -100,13 +100,13 @@ export function Dialer() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)_18rem]">
-        <ol aria-label="Lead queue" className={`${panel} flex flex-col divide-y divide-[#d3dde6] overflow-hidden`}>
+        <ol aria-label="Lead queue" className={`${panel} flex flex-col divide-y divide-line overflow-hidden`}>
           {leads.map((l) => {
             const done = isDone(l);
             const ready = isReady(l, now);
             return (
               <li key={l.id}>
-                <button type="button" onClick={() => setCurrent(l.id)} className={`flex w-full flex-col items-start gap-0.5 px-4 py-3 text-left ${l.id === lead.id ? "bg-white" : "hover:bg-white/60"}`}>
+                <button type="button" onClick={() => setCurrent(l.id)} className={`flex w-full flex-col items-start gap-0.5 border-l-2 px-4 py-3 text-left ${l.id === lead.id ? "border-accent" : "border-transparent"} ${l.id === lead.id ? "bg-accent/[0.07]" : "hover:bg-surface-raise/60"}`}>
                   <span className={`text-sm font-medium ${done ? muted : ""}`}>{l.name}</span>
                   <span className={`text-[11px] ${muted}`}>{l.city} · {l.want}</span>
                   <span className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${ready ? accent : muted}`}>
@@ -136,14 +136,14 @@ export function Dialer() {
             {onCall === null ? (
               <button type="button" disabled={!callable || isDone(lead)} onClick={() => setOnCall(Date.now())} className={primary}>Call</button>
             ) : (
-              <span className="rounded-md border border-[#04070d] px-4 py-3 font-mono text-sm tabular-nums">On call · {Math.floor((tick - onCall) / 60000)}:{String(Math.floor(((tick - onCall) / 1000) % 60)).padStart(2, "0")}</span>
+              <span className="rounded-md border border-accent/50 bg-accent/[0.06] px-4 py-3 font-mono text-sm tabular-nums shadow-[0_0_24px_rgb(34_211_238/0.15)]">On call · {Math.floor((tick - onCall) / 60000)}:{String(Math.floor(((tick - onCall) / 1000) % 60)).padStart(2, "0")}</span>
             )}
           </div>
 
           <div className="flex flex-col gap-3">
             <div role="tablist" aria-label="Script" className="flex gap-1">
               {(["open", "discover", "close"] as const).map((k) => (
-                <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`rounded px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] ${tab === k ? "bg-[#04070d] text-[#f2f7fb]" : muted}`}>{k}</button>
+                <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`rounded px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] ${tab === k ? "bg-accent text-accent-ink" : muted}`}>{k}</button>
               ))}
             </div>
             <p className="text-lg leading-8">{SCRIPT[tab].replace("{first}", first).replace("{agent}", "your agent").replace("{want}", lead.want.toLowerCase()).replace("{need}", usd(number))}</p>
@@ -164,7 +164,7 @@ export function Dialer() {
             <div className="flex flex-wrap gap-2">
               {DISPOSITIONS.map((d) => (
                 <button key={d.id} type="button" disabled={onCall === null && d.id !== "do_not_call"} onClick={() => dispose(d.id)}
-                  className={`rounded-md border px-3 py-2 text-sm transition-colors disabled:opacity-40 ${d.id === "do_not_call" ? "border-[#b42318]/40 text-[#b42318]" : `${line} bg-white hover:border-[#0891b2]`}`}>
+                  className={`rounded-md border px-3 py-2 text-sm transition-colors disabled:opacity-40 ${d.id === "do_not_call" ? "border-negative/40 text-negative" : `${line} bg-surface-sunken hover:border-accent`}`}>
                   {d.label}
                 </button>
               ))}
@@ -176,10 +176,10 @@ export function Dialer() {
         <div className={`${panel} flex flex-col gap-3 p-5`}>
           <p className={label}>Automations</p>
           {scheduled.length ? (
-            <ol className="flex flex-col divide-y divide-[#d3dde6]">
+            <ol className="flex flex-col divide-y divide-line">
               {scheduled.slice(0, 12).map((a, i) => (
                 <li key={i} className="flex flex-col gap-0.5 py-2.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.16em]"><span className={a.kind === "stop" ? "text-[#b42318]" : accent}>{KIND[a.kind]}</span> · {a.who}</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.16em]"><span className={a.kind === "stop" ? "text-negative" : accent}>{KIND[a.kind]}</span> · {a.who}</span>
                   <span className="text-sm leading-5">{a.what}</span>
                   <span className={`text-[11px] ${muted}`}>{when(a.at, a.tz)} their time</span>
                 </li>

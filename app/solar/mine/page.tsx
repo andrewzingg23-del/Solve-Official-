@@ -35,7 +35,7 @@ export default async function MySolar({ searchParams }: PageProps<"/solar/mine">
   const [current, ...earlier] = live;
 
   return (
-    <div className="min-h-svh w-full bg-[#f2f7fb] text-[#04070d] [color-scheme:light]">
+    <div className="min-h-svh w-full text-foreground">
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 md:px-8 md:py-12">
         <header className={`flex items-center justify-between gap-4 border-b ${line} pb-5`}>
           <Link href="/solar" className={`text-xs font-semibold uppercase tracking-[0.3em] ${accent}`}>Zest Solar</Link>
@@ -44,7 +44,7 @@ export default async function MySolar({ searchParams }: PageProps<"/solar/mine">
 
         {sent ? <p role="status" className={`${panel} p-4 text-sm`}>Sent to Zest Solar. Your design comes back to this page; it usually takes a day or two.</p> : null}
         {erased ? <p role="status" className={`${panel} p-4 text-sm`}>Erased. Your address and contact are gone for good, and Zest Solar can no longer see that request.</p> : null}
-        {error ? <p role="alert" className={`${panel} p-4 text-sm text-[#b42318]`}>That didn&apos;t go through. Nothing was changed; try again in a moment.</p> : null}
+        {error ? <p role="alert" className={`${panel} p-4 text-sm text-negative`}>That didn&apos;t go through. Nothing was changed; try again in a moment.</p> : null}
 
         {data === "offline" ? (
           <Empty text="Zest Solar's design desk isn't open yet." />

@@ -48,12 +48,12 @@ export function House3D({ panels, label }: { panels: number; label: string }) {
     el.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#f2f7fb");
-    scene.fog = new THREE.Fog("#f2f7fb", 40, 90);
+    scene.background = null; // transparent: the dark panel shows through
+    scene.fog = new THREE.Fog("#0a1220", 40, 90);
     const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
     camera.position.set(-18, 13, 22);
 
-    scene.add(new THREE.HemisphereLight("#ffffff", "#c9d6e2", 1.1));
+    scene.add(new THREE.HemisphereLight("#ffffff", "#1a2b45", 1.1));
     const sun = new THREE.DirectionalLight("#fff6e5", 2.2);
     sun.position.set(-12, 22, 18); // from the south, early afternoon
     sun.castShadow = true;
@@ -64,10 +64,13 @@ export function House3D({ panels, label }: { panels: number; label: string }) {
     sun.shadow.camera.bottom = -25;
     scene.add(sun);
 
-    const ground = new THREE.Mesh(new THREE.CircleGeometry(60, 64), new THREE.MeshStandardMaterial({ color: "#e4ece9", roughness: 1 }));
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(60, 64), new THREE.MeshStandardMaterial({ color: "#101c30", roughness: 1 }));
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
+    const rim = new THREE.DirectionalLight("#22d3ee", 0.5);
+    rim.position.set(18, 8, -14);
+    scene.add(rim);
 
     const home = new THREE.Group();
     scene.add(home);
@@ -75,7 +78,7 @@ export function House3D({ panels, label }: { panels: number; label: string }) {
     const shingles = new THREE.MeshStandardMaterial({ color: "#5b6673", roughness: 0.85 });
     const glass = new THREE.MeshStandardMaterial({ color: "#9fb6c8", roughness: 0.2, metalness: 0.3 });
     const cell = new THREE.MeshStandardMaterial({ color: "#0b1a2e", roughness: 0.25, metalness: 0.55 });
-    const frame = new THREE.LineBasicMaterial({ color: "#0891b2", transparent: true, opacity: 0.55 });
+    const frame = new THREE.LineBasicMaterial({ color: "#22d3ee", transparent: true, opacity: 0.55 });
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;

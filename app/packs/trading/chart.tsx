@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Candle, SymbolId } from "@/lib/packs/trading";
 import { symbolLabel } from "@/lib/packs/trading";
+import "../fx.css"; // pack motion layer (keyframes used below)
 
 const W = 720;
 const H = 280;
@@ -26,6 +27,7 @@ function geometry(candles: Candle[]) {
 // price, change, and range are always visible, nothing depends on it.
 export function PriceChart({ symbol, candles }: { symbol: SymbolId; candles: Candle[] }) {
   const [hover, setHover] = useState<number | null>(null);
+  const lineRef = useRef<SVGPathElement>(null);
   const g = useMemo(() => geometry(candles), [candles]);
   if (candles.length === 0) return <p className="text-xs text-muted">No market data right now.</p>;
 
@@ -35,6 +37,8 @@ export function PriceChart({ symbol, candles }: { symbol: SymbolId; candles: Can
   const hovered = hover !== null ? candles[hover] : null;
   const gradId = `area-${symbol}`;
   const hx = hover !== null ? g.x(hover) : 0;
+  const hoverPrice = hovered ? `$${hovered.close.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "";
+  const tagW = hoverPrice.length * 7.2 + 18;
 
   const pick = (clientX: number, el: SVGSVGElement) => {
     const rect = el.getBoundingClientRect();
@@ -72,42 +76,76 @@ export function PriceChart({ symbol, candles }: { symbol: SymbolId; candles: Can
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.28" />
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.3" />
             <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
           </linearGradient>
         </defs>
-        <path d={g.area} fill={`url(#${gradId})`} />
+        {/* Procedural depth: faint horizontal grid, dissolving at the edges. */}
+        {[0.25, 0.5, 0.75].map((f) => (
+          <line
+            key={f}
+            x1={PAD}
+            y1={PAD + f * (H - PAD * 2)}
+            x2={W - PAD}
+            y2={PAD + f * (H - PAD * 2)}
+            stroke="var(--foreground)"
+            strokeOpacity={0.05}
+            strokeWidth={1}
+          />
+        ))}
         <path
+          d={g.area}
+          fill={`url(#${gradId})`}
+          className="chart-area"
+          style={{ opacity: 0, transition: "opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1)" }}
+        />
+        <path
+          ref={lineRef}
           d={g.line}
           fill="none"
           stroke="var(--accent)"
           strokeWidth={1.75}
           strokeLinecap="round"
           strokeLinejoin="round"
+          style={{ filter: "drop-shadow(0 0 6px rgb(34 211 238 / 0.55))" }}
         />
         {hover !== null && hovered && (
-          <g>
+          <g style={{ opacity: 0, animation: "chart-hover-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) forwards" }}>
             <line
               x1={hx}
               y1={PAD}
               x2={hx}
               y2={H - PAD}
-              stroke="var(--foreground)"
+              stroke="var(--accent)"
               strokeWidth={1}
               strokeDasharray="3 3"
-              opacity={0.6}
+              opacity={0.7}
             />
-            <circle cx={hx} cy={g.y(hovered.close)} r={4} fill="var(--accent)" stroke="var(--background)" strokeWidth={2} />
+            <rect
+              x={Math.min(W - PAD - tagW, Math.max(PAD, hx - tagW / 2))}
+              y={PAD}
+              width={tagW}
+              height={22}
+              rx={11}
+              fill="var(--surface-raise)"
+              stroke="var(--accent)"
+              strokeOpacity={0.5}
+            />
             <text
-              x={W - PAD}
-              y={PAD + 12}
-              textAnchor="end"
+              x={Math.min(W - PAD - tagW / 2, Math.max(PAD + tagW / 2, hx))}
+              y={PAD + 15}
+              textAnchor="middle"
               fontSize={12}
               fill="var(--foreground)"
               fontFamily="monospace"
             >
-              ${hovered.close.toLocaleString("en-US", { maximumFractionDigits: 2 })}
+              {hoverPrice}
             </text>
+            <circle cx={hx} cy={g.y(hovered.close)} r={4.5} fill="var(--accent)" stroke="var(--background)" strokeWidth={2} />
+            <circle cx={hx} cy={g.y(hovered.close)} r={4.5} fill="none" stroke="var(--accent)" strokeOpacity={0.6}>
+              <animate attributeName="r" values="4.5;11" dur="1.4s" repeatCount="indefinite" />
+              <animate attributeName="stroke-opacity" values="0.6;0" dur="1.4s" repeatCount="indefinite" />
+            </circle>
           </g>
         )}
       </svg>
@@ -116,6 +154,43 @@ export function PriceChart({ symbol, candles }: { symbol: SymbolId; candles: Can
         <span>hourly</span>
         <span>${g.max.toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
       </div>
+      <ChartDrawIn lineRef={lineRef} />
     </div>
   );
+}
+
+// Draws the instrument line in on mount (animejs-grade easeOutExpo,
+// hand-rolled). Decoration only — the values are already on screen.
+function ChartDrawIn({ lineRef }: { lineRef: React.RefObject<SVGPathElement | null> }) {
+  useEffect(() => {
+    const p = lineRef.current;
+    if (!p) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const len = p.getTotalLength();
+    p.style.strokeDasharray = `${len}`;
+    p.style.strokeDashoffset = `${len}`;
+    p.getBoundingClientRect();
+    p.style.transition = "stroke-dashoffset 1.3s cubic-bezier(0.16, 1, 0.3, 1)";
+    p.style.strokeDashoffset = "0";
+    const area = p.parentElement?.querySelector(".chart-area") as SVGPathElement | null;
+    if (area) {
+      const t = setTimeout(() => {
+        area.style.opacity = "1";
+      }, 350);
+      const done = setTimeout(() => {
+        p.style.strokeDasharray = "";
+        p.style.transition = "";
+      }, 1400);
+      return () => {
+        clearTimeout(t);
+        clearTimeout(done);
+      };
+    }
+    const done = setTimeout(() => {
+      p.style.strokeDasharray = "";
+      p.style.transition = "";
+    }, 1400);
+    return () => clearTimeout(done);
+  }, [lineRef]);
+  return null;
 }

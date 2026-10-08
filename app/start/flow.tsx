@@ -11,6 +11,7 @@ import { AvatarStep } from "./steps/avatar-step";
 import { SoulStep } from "./steps/soul-step";
 import { LocationStep } from "./steps/location-step";
 import { KnowYouStep } from "./steps/knowyou-step";
+import { Ambient, StepPanel, TraceBeam } from "./fx";
 import { primaryAction, quietLink } from "@/app/ui";
 
 export interface FlowProps {
@@ -55,64 +56,65 @@ export function OnboardingFlow(props: FlowProps) {
   };
 
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-xl flex-1 flex-col gap-6 px-4 py-8 pb-32">
-      <div className="flex items-center justify-between">
-        <p className="eyebrow">
-          Step {idx + 1} of {ONBOARDING_STEPS.length}
-        </p>
-        {!last ? (
-          <button type="button" onClick={next} className={quietLink}>
-            Skip
-          </button>
-        ) : null}
-      </div>
-      <div aria-hidden className="h-1 overflow-hidden rounded-full bg-line">
-        <div
-          className="h-full rounded-full bg-accent transition-all duration-500"
-          style={{ width: `${((idx + 1) / ONBOARDING_STEPS.length) * 100}%` }}
-        />
-      </div>
+    <main className="relative mx-auto flex min-h-svh w-full max-w-xl flex-1 flex-col px-4 py-8 pb-32">
+      <Ambient />
+      <div className="relative z-10 flex flex-col gap-6">
+        <div className="flex items-center justify-between">
+          <p className="eyebrow">
+            Step {idx + 1} of {ONBOARDING_STEPS.length}
+          </p>
+          {!last ? (
+            <button type="button" onClick={next} className={quietLink}>
+              Skip
+            </button>
+          ) : null}
+        </div>
 
-      <h1 className="text-3xl font-medium tracking-tight">
-        {TITLES[step].split(" ").slice(0, -1).join(" ")}{" "}
-        <span className="serif-accent">{TITLES[step].split(" ").slice(-1)}</span>
-      </h1>
+        <TraceBeam step={idx} total={ONBOARDING_STEPS.length} />
 
-      {step === "signin" && <SigninStep signedIn={props.signedIn} email={props.email} onNext={next} />}
-      {step === "sovid" && (
-        <SovidStep
-          signedIn={props.signedIn}
-          sovLabel={props.sovLabel}
-          socials={props.socials}
-          socialNotice={props.socialNotice}
-          metaReady={props.metaReady}
-          onNext={next}
-        />
-      )}
-      {step === "avatar" && (
-        <AvatarStep signedIn={props.signedIn} avatar={props.avatar} faceGenReady={props.faceGenReady} onNext={next} />
-      )}
-      {step === "soul" && <SoulStep signedIn={props.signedIn} soul={props.soul} onNext={next} />}
-      {step === "location" && <LocationStep signedIn={props.signedIn} onNext={next} />}
-      {step === "knowyou" && <KnowYouStep signedIn={props.signedIn} chatReady={props.chatReady} />}
+        <StepPanel key={step}>
+          <h1 className="text-3xl font-medium tracking-tight">
+            {TITLES[step].split(" ").slice(0, -1).join(" ")}{" "}
+            <span className="serif-accent">{TITLES[step].split(" ").slice(-1)}</span>
+          </h1>
 
-      <div className="mt-2 flex items-center justify-between">
-        {idx > 0 ? (
-          <button type="button" onClick={back} className={quietLink}>
-            ← Back
-          </button>
-        ) : (
-          <span />
-        )}
-        {!last ? (
-          <button type="button" onClick={next} className={primaryAction}>
-            Continue
-          </button>
-        ) : (
-          <a href="/avatar" className={primaryAction}>
-            Meet your bot
-          </a>
-        )}
+          {step === "signin" && <SigninStep signedIn={props.signedIn} email={props.email} onNext={next} />}
+          {step === "sovid" && (
+            <SovidStep
+              signedIn={props.signedIn}
+              sovLabel={props.sovLabel}
+              socials={props.socials}
+              socialNotice={props.socialNotice}
+              metaReady={props.metaReady}
+              onNext={next}
+            />
+          )}
+          {step === "avatar" && (
+            <AvatarStep signedIn={props.signedIn} avatar={props.avatar} faceGenReady={props.faceGenReady} onNext={next} />
+          )}
+          {step === "soul" && <SoulStep signedIn={props.signedIn} soul={props.soul} onNext={next} />}
+          {step === "location" && <LocationStep signedIn={props.signedIn} onNext={next} />}
+          {step === "knowyou" && <KnowYouStep signedIn={props.signedIn} chatReady={props.chatReady} />}
+        </StepPanel>
+
+        <div className="mt-2 flex items-center justify-between">
+          {idx > 0 ? (
+            <button type="button" onClick={back} className={quietLink}>
+              ← Back
+            </button>
+          ) : (
+            <span />
+          )}
+          {!last ? (
+            <button type="button" onClick={next} className={primaryAction}>
+              Continue
+            </button>
+          ) : (
+            <a href="/avatar" className={primaryAction}>
+              Meet your bot
+            </a>
+          )}
+        </div>
       </div>
     </main>
   );

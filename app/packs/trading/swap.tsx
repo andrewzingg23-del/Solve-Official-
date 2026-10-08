@@ -20,9 +20,10 @@ export function SwapBox() {
   const [quote, setQuote] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [spun, setSpun] = useState(false);
 
   const to: Token = from === "SOL" ? "USDC" : "SOL";
-  const flip = () => { setFrom(to); setAmount(""); setQuote(null); setStatus(null); };
+  const flip = () => { setFrom(to); setAmount(""); setQuote(null); setStatus(null); setSpun((s) => !s); };
 
   // Listen for copy-trade events from the activity feed.
   useEffect(() => {
@@ -104,7 +105,8 @@ export function SwapBox() {
         <button
           onClick={flip}
           aria-label={`Flip direction, currently swapping to ${to}`}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line text-base text-muted transition-colors duration-300 ease-calm hover:border-accent hover:text-accent active:scale-95"
+          style={{ transform: spun ? "rotate(180deg)" : "rotate(0deg)" }}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line text-base text-muted transition-all duration-500 ease-calm hover:border-accent hover:text-accent hover:shadow-[0_0_20px_rgb(34_211_238/0.3)] active:scale-95"
         >
           ⇅
         </button>
@@ -114,7 +116,11 @@ export function SwapBox() {
         </p>
       </div>
       {quote && (
-        <p className="rounded-xl border border-line-soft bg-surface-sunken/60 px-4 py-3 font-mono text-lg text-accent tabular-nums">
+        <p
+          key={quote}
+          className="animate-[page-enter_0.45s_var(--ease-calm)] rounded-xl border border-line-soft bg-surface-sunken/60 px-4 py-3 font-mono text-lg text-accent tabular-nums"
+          style={{ textShadow: "0 0 24px rgb(34 211 238 / 0.4)" }}
+        >
           {quote}
         </p>
       )}
@@ -137,7 +143,11 @@ export function SwapBox() {
         )}
       </div>
       {status && (
-        <p role="status" className="text-xs leading-5 text-muted">
+        <p
+          key={status}
+          role="status"
+          className="animate-[page-enter_0.3s_var(--ease-calm)] text-xs leading-5 text-muted"
+        >
           {status}
         </p>
       )}

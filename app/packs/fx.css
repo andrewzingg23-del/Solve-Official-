@@ -1,0 +1,165 @@
+/* TRADING PACK motion layer — local to these routes, never global.
+   Animejs-grade easings ride on --ease-calm. Every effect is decorative and
+   stands down under prefers-reduced-motion. Cyan is the only accent. */
+
+@property --fx-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes fx-spin-angle {
+  to { --fx-angle: 360deg; }
+}
+
+/* Scroll reveal: calm rise, stagger via inline transition-delay. */
+.fx-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s var(--ease-calm),
+    transform 0.7s var(--ease-calm);
+  will-change: opacity, transform;
+}
+.fx-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Tracing border beam (magicui-style border beam), cyan only. */
+.fx-trace {
+  position: relative;
+}
+.fx-borderbeam {
+  pointer-events: none;
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--fx-angle),
+    transparent 0deg,
+    transparent 248deg,
+    rgb(34 211 238 / 0.95) 298deg,
+    rgb(242 247 251 / 0.9) 318deg,
+    transparent 338deg
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s var(--ease-calm);
+}
+.fx-trace:hover .fx-borderbeam,
+.fx-trace:focus-visible .fx-borderbeam {
+  opacity: 1;
+  animation: fx-spin-angle 3.4s linear infinite;
+}
+
+/* Sweep sheen across a card on hover. */
+.fx-sheen {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+}
+.fx-sheen::after {
+  content: "";
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: 0;
+  width: 34%;
+  transform: translateX(-160%) skewX(-14deg);
+  background: linear-gradient(90deg, transparent, rgb(34 211 238 / 0.13), transparent);
+}
+.fx-trace:hover .fx-sheen::after {
+  animation: fx-sheen-slide 1.4s var(--ease-calm);
+}
+@keyframes fx-sheen-slide {
+  to {
+    transform: translateX(420%) skewX(-14deg);
+  }
+}
+
+/* Live dot: soft ping. Only rendered next to real live data. */
+.fx-live-dot {
+  position: relative;
+}
+.fx-live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: var(--accent);
+  animation: fx-ping-soft 2.2s var(--ease-calm) infinite;
+}
+@keyframes fx-ping-soft {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+/* Chart hover inspection fades in. */
+@keyframes chart-hover-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Gentle float for hero instruments. */
+.fx-float {
+  animation: fx-float-slow 7s ease-in-out infinite;
+}
+@keyframes fx-float-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .fx-borderbeam {
+    display: none;
+  }
+  .fx-trace:hover .fx-sheen::after {
+    animation: none;
+  }
+  .fx-live-dot::after {
+    animation: none;
+    display: none;
+  }
+  .fx-float {
+    animation: none;
+  }
+  /* Mount-rise utilities used on these routes stand down too. */
+  [class*="page-enter"] {
+    animation: none !important;
+  }
+  @keyframes chart-hover-in {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}

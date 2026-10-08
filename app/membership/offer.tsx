@@ -45,10 +45,14 @@ export function MembershipOffer() {
     <div className="flex flex-col gap-12">
       <div className="flex flex-col gap-4">
         <p className={label}>What makes us different</p>
-        <div className="grid gap-px overflow-hidden rounded-xl border border-[#d3dde6] bg-[#d3dde6] md:grid-cols-2">
-          {DIFFERENT.map(([title, body]) => (
-            <div key={title} className="flex flex-col gap-2 bg-[#f7fafc] p-6">
-              <p className="text-xl font-semibold tracking-tight">{title}</p>
+        <div className="grid gap-4 md:grid-cols-2">
+          {DIFFERENT.map(([title, body], i) => (
+            <div
+              key={title}
+              className={`${panel} group flex flex-col gap-2 p-6 transition-all duration-300 ease-calm hover:-translate-y-0.5 hover:border-accent/40`}
+              style={{ animation: "page-enter 0.5s var(--ease-calm) both", animationDelay: `${i * 0.07}s` }}
+            >
+              <p className="text-xl font-semibold tracking-tight transition-colors duration-300 group-hover:text-accent">{title}</p>
               <p className={`text-sm leading-6 ${muted}`}>{body}</p>
             </div>
           ))}
@@ -56,18 +60,27 @@ export function MembershipOffer() {
       </div>
       <div className="flex flex-col gap-4">
         <p className={label}>What it costs, and what you get</p>
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid items-stretch gap-6 md:grid-cols-2">
           {TIERS.map((t, i) => (
-            <div key={t.name} className={`${panel} flex flex-col gap-5 p-6 md:p-8 ${i === 1 ? "border-[#04070d]" : ""}`}>
+            <div
+              key={t.name}
+              className={`${panel} relative flex flex-col gap-5 overflow-hidden p-6 transition-all duration-300 ease-calm hover:-translate-y-1 md:p-8 ${
+                i === 1 ? "border-accent/40 shadow-[0_0_48px_rgb(34_211_238/0.12)]" : "hover:border-accent/30"
+              }`}
+              style={{ animation: "page-enter 0.5s var(--ease-calm) both", animationDelay: `${0.1 + i * 0.1}s` }}
+            >
+              {i === 1 ? (
+                <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
+              ) : null}
               <div className="flex flex-col gap-1">
                 <p className={`text-xs font-semibold uppercase tracking-[0.24em] ${accent}`}>{t.name}</p>
-                <p className="font-mono text-5xl font-semibold tabular-nums">{t.price}</p>
+                <p className="font-mono text-5xl font-semibold tabular-nums" style={{ textShadow: "0 0 32px rgb(34 211 238 / 0.18)" }}>{t.price}</p>
                 <p className={`text-sm ${muted}`}>{t.per} · {t.note}</p>
               </div>
               <ul className="flex flex-col">
                 {t.gets.map((g) => <li key={g} className={`border-t ${line} py-3 text-sm leading-6`}>{g}</li>)}
               </ul>
-              <Link href="/start" className={i === 1 ? primary : secondary}>Apply for {t.name === "Inner Circle" ? "the Inner Circle" : "a founding seat"}</Link>
+              <Link href="/start" className={`${i === 1 ? primary : secondary} mt-auto`}>Apply for {t.name === "Inner Circle" ? "the Inner Circle" : "a founding seat"}</Link>
             </div>
           ))}
         </div>

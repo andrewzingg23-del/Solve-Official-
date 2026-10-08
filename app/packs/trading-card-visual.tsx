@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Sparkline } from "./sparkline";
+import { CountUp } from "./count-up";
 
 type State =
   | { kind: "loading" }
@@ -49,8 +50,16 @@ export function TradingCardVisual() {
   return (
     <div className="flex items-end justify-between gap-3" aria-label="Live Bitcoin price and trend">
       <div>
-        <p className="text-xl font-medium tabular-nums tracking-tight">
-          ${state.price.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+        <p
+          className="text-xl font-medium tabular-nums tracking-tight"
+          style={{ textShadow: "0 0 22px rgb(34 211 238 / 0.3)" }}
+        >
+          <CountUp
+            value={state.price}
+            from={state.price / (1 + state.changePct24h / 100)}
+            duration={1200}
+            format={(n) => `$${Math.round(n).toLocaleString("en-US")}`}
+          />
         </p>
         <p className={`text-[11px] font-medium tabular-nums ${up ? "text-positive" : "text-negative"}`}>
           {up ? "+" : ""}
@@ -61,6 +70,9 @@ export function TradingCardVisual() {
         points={state.closes}
         width={110}
         height={34}
+        animated
+        glow
+        fill
         label={`Bitcoin hourly closes, ${up ? "up" : "down"} over the shown period`}
       />
     </div>

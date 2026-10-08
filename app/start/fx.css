@@ -1,0 +1,252 @@
+/* Motion + atmosphere utilities for the /start route.
+   Dark cinematic only: abyssal blue-black, hologram cyan #22d3ee, ice white.
+   Never purple. Respects prefers-reduced-motion. */
+
+/* ---------- Ambient background ---------- */
+.fx-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background: #04070d;
+}
+.fx-ambient .fx-core {
+  position: absolute;
+  left: 50%;
+  top: -14rem;
+  width: 46rem;
+  height: 26rem;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgb(34 211 238 / 0.1), transparent 70%);
+  filter: blur(40px);
+}
+.fx-ambient .fx-sheen {
+  position: absolute;
+  inset: -40%;
+  background: conic-gradient(
+    from 180deg at 50% 50%,
+    transparent 0deg,
+    rgb(34 211 238 / 0.05) 40deg,
+    transparent 90deg,
+    transparent 180deg,
+    rgb(34 211 238 / 0.04) 225deg,
+    transparent 275deg
+  );
+  filter: blur(60px);
+  animation: fx-drift 70s linear infinite;
+}
+.fx-ambient .fx-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgb(34 211 238 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(34 211 238 / 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 28%, black 0%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 28%, black 0%, transparent 70%);
+}
+.fx-ambient .fx-floor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 34vh;
+  background: radial-gradient(ellipse 80% 100% at 50% 115%, rgb(34 211 238 / 0.07), transparent 70%);
+}
+.fx-ambient .fx-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 120% 90% at 50% 10%, transparent 40%, rgb(2 4 8 / 0.8) 100%);
+}
+.fx-ambient canvas {
+  position: absolute;
+  inset: 0;
+}
+@keyframes fx-drift {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- Entrance: animejs-grade easing (easeOutExpo) ---------- */
+.fx-reveal {
+  opacity: 0;
+  animation: fx-reveal-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes fx-reveal-in {
+  from { opacity: 0; transform: translateY(14px); filter: blur(6px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+/* ---------- Step transition: cross-slide ---------- */
+.fx-step-in {
+  animation: fx-step-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes fx-step-in {
+  from { opacity: 0; transform: translateX(26px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ---------- Tracing beam progress ---------- */
+.fx-beam {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: rgb(148 163 184 / 0.12);
+}
+.fx-beam-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(34 211 238 / 0.2), rgb(34 211 238 / 0.95));
+  box-shadow:
+    0 0 18px rgb(34 211 238 / 0.55),
+    0 0 4px rgb(34 211 238 / 0.9);
+  transition: width 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.fx-beam-head {
+  position: absolute;
+  right: -4px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: #a5f3fc;
+  box-shadow:
+    0 0 12px rgb(34 211 238 / 1),
+    0 0 32px rgb(34 211 238 / 0.6);
+  animation: fx-head-pulse 2.4s ease-in-out infinite;
+}
+@keyframes fx-head-pulse {
+  0%, 100% { transform: translateY(-50%) scale(1); opacity: 1; }
+  50% { transform: translateY(-50%) scale(0.72); opacity: 0.75; }
+}
+.fx-tick {
+  position: absolute;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  background: rgb(148 163 184 / 0.35);
+  transition: background 0.5s, box-shadow 0.5s;
+}
+.fx-tick.lit {
+  background: #22d3ee;
+  box-shadow: 0 0 10px rgb(34 211 238 / 0.9);
+}
+
+/* ---------- Interactive cards: lift + cyan edge ---------- */
+.fx-card {
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s,
+    box-shadow 0.35s;
+}
+.fx-card:hover {
+  transform: translateY(-3px);
+  border-color: rgb(34 211 238 / 0.45);
+  box-shadow: 0 14px 44px -14px rgb(34 211 238 / 0.28);
+}
+
+/* ---------- Field focus glow ---------- */
+.fx-field:focus {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 3px rgb(34 211 238 / 0.15),
+    0 0 26px rgb(34 211 238 / 0.12);
+}
+
+/* ---------- Expanding ping rings (location node) ---------- */
+.fx-ping {
+  position: relative;
+}
+.fx-ping::before,
+.fx-ping::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 1px solid rgb(34 211 238 / 0.6);
+  animation: fx-ping 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.fx-ping::after {
+  animation-delay: 1.2s;
+}
+@keyframes fx-ping {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(3.4); opacity: 0; }
+}
+
+/* ---------- Scan sweep line (camera / generation) ---------- */
+.fx-scanwrap {
+  position: relative;
+  overflow: hidden;
+}
+.fx-scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 4%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgb(34 211 238 / 0.95), transparent);
+  box-shadow: 0 0 18px rgb(34 211 238 / 0.85);
+  animation: fx-scan 2.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes fx-scan {
+  0% { top: 4%; }
+  50% { top: 96%; }
+  100% { top: 4%; }
+}
+
+/* ---------- Sheen sweep for the claimed stamp ---------- */
+.fx-stamp {
+  position: relative;
+  overflow: hidden;
+}
+.fx-stamp::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 40%, rgb(34 211 238 / 0.16) 50%, transparent 60%);
+  animation: fx-sheen 3.6s ease-in-out infinite;
+}
+@keyframes fx-sheen {
+  0% { transform: translateX(-100%); }
+  60%, 100% { transform: translateX(100%); }
+}
+
+/* ---------- Breathing glow for the face ring ---------- */
+.fx-face-glow {
+  animation: fx-face-glow 3.2s ease-in-out infinite;
+}
+@keyframes fx-face-glow {
+  0%, 100% { box-shadow: 0 0 48px rgb(34 211 238 / 0.35); }
+  50% { box-shadow: 0 0 84px rgb(34 211 238 / 0.55); }
+}
+
+/* ---------- Reduced motion: everything still ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .fx-reveal,
+  .fx-step-in {
+    animation: none;
+    opacity: 1;
+  }
+  .fx-ambient .fx-sheen,
+  .fx-beam-head,
+  .fx-ping::before,
+  .fx-ping::after,
+  .fx-scanline,
+  .fx-stamp::after,
+  .fx-face-glow {
+    animation: none !important;
+  }
+  .fx-ambient canvas {
+    display: none;
+  }
+  .fx-card:hover {
+    transform: none;
+  }
+}

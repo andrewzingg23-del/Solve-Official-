@@ -133,8 +133,8 @@ function List({ title, rows }: { title: string; rows: Row[] }) {
     <div className="flex flex-col gap-3">
       <p className={label}>{title}</p>
       <ul className="flex flex-col divide-y divide-line border-y border-line">
-        {rows.map((c) => (
-          <li key={c.communityId}>
+        {rows.map((c, i) => (
+          <li key={c.communityId} style={{ animation: "page-enter 0.5s var(--ease-calm) both", animationDelay: `${0.06 + i * 0.05}s` }}>
             <Link href={`/community/${c.communityId}`} className="group flex items-center justify-between gap-6 py-5 transition-colors hover:text-accent">
               <div className="flex min-w-0 flex-col gap-1.5">
                 <span className="truncate text-lg font-medium tracking-tight">{c.name}</span>

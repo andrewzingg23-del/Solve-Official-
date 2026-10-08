@@ -96,8 +96,8 @@ export default async function WorldsPage({ searchParams }: PageProps<"/worlds">)
       ) : worlds?.length ? (
         /* The gallery: glance → detail. Each World carries its own visual identity. */
         <ul aria-label="Your Worlds" className="grid gap-4 md:grid-cols-2">
-          {worlds.map((world) => (
-            <li key={world.worldId}>
+          {worlds.map((world, i) => (
+            <li key={world.worldId} style={{ animation: "page-enter 0.5s var(--ease-calm) both", animationDelay: `${0.06 + i * 0.06}s` }}>
               <Link
                 href={`/world/${world.worldId}/room`}
                 className={`${glassCard} group flex items-center gap-5 p-5 transition-all duration-300 ease-calm hover:-translate-y-0.5 hover:border-accent/40 md:p-6`}

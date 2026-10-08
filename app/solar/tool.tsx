@@ -12,13 +12,18 @@ import { accent, field, label, line, muted, panel, primary, secondary } from "..
 
 const House3D = dynamic(() => import("./house-3d").then((m) => m.House3D), {
   ssr: false,
-  loading: () => <div className="grid h-full place-items-center text-sm text-[#4d5b6c]">Loading the model…</div>,
+  loading: () => <div className="grid h-full place-items-center text-sm text-muted">Loading the model…</div>,
 });
 
 function Figure({ value, caption, strong = false }: { value: string; caption: string; strong?: boolean }) {
   return (
     <div className={`flex flex-col gap-1 border-t ${line} pt-3`}>
-      <span className={`font-mono tabular-nums ${strong ? "text-3xl font-semibold sm:text-4xl" : "text-xl sm:text-2xl"}`}>{value}</span>
+      <span
+        className={`font-mono tabular-nums ${strong ? "text-3xl font-semibold sm:text-4xl" : "text-xl sm:text-2xl"}`}
+        style={strong ? { textShadow: "0 0 28px rgb(34 211 238 / 0.2)" } : undefined}
+      >
+        {value}
+      </span>
       <span className={`text-xs leading-5 ${muted}`}>{caption}</span>
     </div>
   );
@@ -89,7 +94,7 @@ export function SolarTool({ desk, signedIn, request, requestId, start, error }: 
                 <span className="text-sm font-medium">Average monthly electric bill</span>
                 <span className="font-mono text-2xl font-semibold tabular-nums">{money(bill)}</span>
               </span>
-              <input type="range" min={SOLAR_LIMITS.bill[0]} max={800} step={5} value={bill} onChange={(ev) => setBill(Number(ev.target.value))} className="accent-[#0891b2]" aria-label="Average monthly electric bill" />
+              <input type="range" min={SOLAR_LIMITS.bill[0]} max={800} step={5} value={bill} onChange={(ev) => setBill(Number(ev.target.value))} className="accent-[var(--accent)]" aria-label="Average monthly electric bill" />
             </label>
             <label className="flex flex-col gap-2">
               <span className="text-sm font-medium">Monthly kWh <span className={`font-normal ${muted}`}>(optional, from your bill)</span></span>
@@ -100,7 +105,7 @@ export function SolarTool({ desk, signedIn, request, requestId, start, error }: 
                 <span className="text-sm font-medium">How much of your use to cover</span>
                 <span className="font-mono text-lg tabular-nums">{offset}%</span>
               </span>
-              <input type="range" min={50} max={110} step={5} value={offset} onChange={(ev) => setOffset(Number(ev.target.value))} className="accent-[#0891b2]" aria-label="Share of your use to cover" />
+              <input type="range" min={50} max={110} step={5} value={offset} onChange={(ev) => setOffset(Number(ev.target.value))} className="accent-[var(--accent)]" aria-label="Share of your use to cover" />
             </label>
             <div className="grid grid-cols-2 gap-4">
               <Figure value={`${e.systemKw} kW`} caption={`${e.panels} panels`} strong />
@@ -109,7 +114,7 @@ export function SolarTool({ desk, signedIn, request, requestId, start, error }: 
           </div>
           <div className={`${panel} relative min-h-[380px] overflow-hidden lg:min-h-0`}>
             <House3D panels={e.panels} label={`A home with ${e.panels} solar panels on the roof. Drag to turn it.`} />
-            <p className={`pointer-events-none absolute left-4 top-4 rounded-full border ${line} bg-white/85 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${accent}`}>{e.panels} panels · drag to turn</p>
+            <p className={`pointer-events-none absolute left-4 top-4 rounded-full border ${line} bg-surface-sunken/85 px-3 backdrop-blur-md py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${accent}`}>{e.panels} panels · drag to turn</p>
             <p className={`pointer-events-none absolute bottom-3 left-4 right-4 text-[11px] leading-4 ${muted}`}>An illustration of the panel count on a typical home. Your real layout is designed for your roof.</p>
           </div>
         </div>
@@ -117,10 +122,10 @@ export function SolarTool({ desk, signedIn, request, requestId, start, error }: 
 
       <Step n="02" title="Your price" id="price">
         <div className={`${panel} flex flex-col gap-6 p-6 md:p-8`}>
-          <div role="tablist" aria-label="How you pay" className={`inline-flex w-fit gap-1 rounded-md border ${line} bg-white p-1`}>
+          <div role="tablist" aria-label="How you pay" className={`inline-flex w-fit gap-1 rounded-md border ${line} bg-surface-sunken p-1`}>
             {(["cash", "loan", "lease"] as const).map((k) => (
               <button key={k} type="button" role="tab" aria-selected={pay === k} onClick={() => setPay(k)}
-                className={`rounded px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] ${pay === k ? "bg-[#04070d] text-[#f2f7fb]" : muted}`}>
+                className={`rounded px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] ${pay === k ? "bg-accent text-accent-ink" : muted}`}>
                 {k === "cash" ? "Cash" : k === "loan" ? "Loan" : "Lease"}
               </button>
             ))}
@@ -172,7 +177,7 @@ export function SolarTool({ desk, signedIn, request, requestId, start, error }: 
                 <div className="flex flex-wrap gap-2">
                   {q.options.map(([value, text]) => (
                     <button key={value} type="button" aria-pressed={answers[q.key] === value} onClick={() => setAnswers({ ...answers, [q.key]: value })}
-                      className={`rounded-md border px-3 py-2 text-sm transition-colors ${answers[q.key] === value ? "border-[#04070d] bg-[#04070d] text-[#f2f7fb]" : `${line} bg-white hover:border-[#0891b2]`}`}>
+                      className={`rounded-md border px-3 py-2 text-sm transition-colors ${answers[q.key] === value ? "border-accent bg-accent text-accent-ink" : `${line} bg-surface-sunken hover:border-accent`}`}>
                       {text}
                     </button>
                   ))}
@@ -233,7 +238,7 @@ export function SolarTool({ desk, signedIn, request, requestId, start, error }: 
                 <input name="email" type="email" maxLength={120} autoComplete="email" placeholder="Email (optional)" className={field} />
               </div>
               <label className={`flex items-start gap-3 text-sm leading-6 ${muted}`}>
-                <input type="checkbox" name="consent" required className="mt-1 accent-[#0891b2]" />
+                <input type="checkbox" name="consent" required className="mt-1 accent-[var(--accent)]" />
                 <span>Send my name, address, contact and answers to Zest Solar so they can design my system and contact me about it. They&apos;re sealed for Zest Solar alone, and I can erase them any time. Nothing is signed and nothing is owed.</span>
               </label>
               <div className="flex flex-wrap items-center gap-4">
@@ -242,7 +247,7 @@ export function SolarTool({ desk, signedIn, request, requestId, start, error }: 
               </div>
             </form>
           )}
-          {error ? <p role="alert" className="text-sm text-[#b42318]">{error}</p> : null}
+          {error ? <p role="alert" className="text-sm text-negative">{error}</p> : null}
         </div>
       </Step>
 

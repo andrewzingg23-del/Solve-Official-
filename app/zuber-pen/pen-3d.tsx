@@ -32,7 +32,7 @@ export function Pen3D() {
     const pen = new THREE.Group();
     const body = new THREE.MeshStandardMaterial({ color: "#04070d", metalness: 0.65, roughness: 0.28 });
     const steel = new THREE.MeshStandardMaterial({ color: "#c9d3dc", metalness: 1, roughness: 0.22 });
-    const glow = new THREE.MeshStandardMaterial({ color: "#0891b2", emissive: "#22d3ee", emissiveIntensity: 0.15 });
+    const glow = new THREE.MeshStandardMaterial({ color: "#22d3ee", emissive: "#22d3ee", emissiveIntensity: 0.15 });
     const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 4.2, 48), body);
     const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.2, 1.1, 48), steel);
     grip.position.y = -2.65;
@@ -114,12 +114,13 @@ export function Pen3D() {
   }, []);
 
   return (
-    <div className="relative h-[460px] overflow-hidden rounded-xl border border-[#d3dde6] bg-[radial-gradient(70%_70%_at_50%_45%,#ffffff_0%,#e8eff5_100%)]">
+    <div className="glass relative h-[460px] overflow-hidden">
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-gradient-to-r from-transparent via-accent/40 to-transparent" />
       <div ref={host} role="img" aria-label="The Zuber pen and its key finder, turning. Drag to turn them." className="h-full w-full cursor-grab touch-none active:cursor-grabbing" />
-      <button type="button" onClick={() => ring.current()} className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-md bg-[#04070d] px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#f2f7fb] hover:opacity-85">
+      <button type="button" onClick={() => ring.current()} className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-accent px-6 py-2.5 text-[11px] font-bold uppercase tracking-[0.22em] text-accent-ink transition-all duration-300 ease-calm hover:brightness-110 hover:shadow-[0_0_28px_rgb(34_211_238/0.4)] active:scale-[0.98]">
         Ring it
       </button>
-      <span className="absolute left-4 top-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#4d5b6c]">A render of the design · pen and key finder</span>
+      <span className="absolute left-4 top-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">A render of the design · pen and key finder</span>
     </div>
   );
 }
