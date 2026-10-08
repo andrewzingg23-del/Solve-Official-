@@ -33,7 +33,6 @@ interface VortexParticle {
   band: number;
   angle: number;
   radiusJitter: number;
-  z: number;
   size: number;
   speed: number;
   seed: number;
@@ -55,6 +54,35 @@ interface Packet {
   t: number;
   speed: number;
   prevT: number;
+}
+
+interface Bokeh {
+  x: number;
+  y: number;
+  r: number;
+  speed: number;
+  seed: number;
+  a: number;
+}
+
+interface Comet {
+  cloud: number;
+  t: number;
+  speed: number;
+}
+
+/** animejs-grade easings */
+function easeOutExpo(x: number): number {
+  return x >= 1 ? 1 : 1 - Math.pow(2, -10 * x);
+}
+function easeOutBack(x: number): number {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  const u = x - 1;
+  return 1 + c3 * u * u * u + c1 * u * u;
+}
+function clamp01(x: number): number {
+  return x < 0 ? 0 : x > 1 ? 1 : x;
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -104,9 +132,18 @@ export function ArgusCanvas() {
     let h = 0;
     let dpr = 1;
 
-    // Quarter-res bloom buffer (bright pass + blur, composited additively).
+    // Adaptive density: smaller screens get fewer particles.
+    let vortexN = 240;
+
+    // Quarter-res bloom buffer.
     let bloomC: HTMLCanvasElement | null = null;
     let bloomX: CanvasRenderingContext2D | null = null;
+
+    // Shader-style plasma flow field at 1/8 res (shadertoy fbm feel, cheap).
+    const PLASMA_DIV = 8;
+    let plasmaC: HTMLCanvasElement | null = null;
+    let plasmaX: CanvasRenderingContext2D | null = null;
+    let plasmaImg: ImageData | null = null;
 
     const stars: Star[] = Array.from({ length: 70 }, () => ({
       x: Math.random(),
@@ -118,16 +155,30 @@ export function ArgusCanvas() {
     }));
 
     const BANDS = [1.85, 2.45, 3.1, 3.85];
-    const vortex: VortexParticle[] = Array.from({ length: 240 }, (_, i) => ({
-      band: i % BANDS.length,
-      angle: Math.random() * Math.PI * 2,
-      radiusJitter: 0.86 + Math.random() * 0.28,
-      z: Math.random() * 2 - 1,
-      size: 0.5 + Math.random() * 1.5 + (Math.random() < 0.04 ? 2.2 : 0),
-      speed: (0.12 + Math.random() * 0.22) * (Math.random() < 0.5 ? 1 : -1),
+    const vortex: VortexParticle[] = [];
+    function seedVortex() {
+      vortex.length = 0;
+      for (let i = 0; i < vortexN; i++) {
+        vortex.push({
+          band: i % BANDS.length,
+          angle: Math.random() * Math.PI * 2,
+          radiusJitter: 0.86 + Math.random() * 0.28,
+          size: 0.5 + Math.random() * 1.5 + (Math.random() < 0.04 ? 2.2 : 0),
+          speed: (0.12 + Math.random() * 0.22) * (Math.random() < 0.5 ? 1 : -1),
+          seed: Math.random() * 10,
+          warm: Math.random() < 0.06,
+          bright: Math.random() < 0.05,
+        });
+      }
+    }
+
+    const bokeh: Bokeh[] = Array.from({ length: 14 }, () => ({
+      x: Math.random(),
+      y: Math.random(),
+      r: 18 + Math.random() * 42,
+      speed: 0.004 + Math.random() * 0.01,
       seed: Math.random() * 10,
-      warm: Math.random() < 0.06,
-      bright: Math.random() < 0.05,
+      a: 0.03 + Math.random() * 0.06,
     }));
 
     const packets: Packet[] = [];
@@ -136,9 +187,18 @@ export function ArgusCanvas() {
       packets.push({ cloud: ci, t: Math.random(), speed: 0.1 + Math.random() * 0.08, prevT: 0 });
     });
 
+    const comets: Comet[] = CLOUDS.map((_, ci) => ({
+      cloud: ci,
+      t: Math.random(),
+      speed: 0.32 + Math.random() * 0.22,
+    }));
+
     // Spring state for the core flash (overshoot, never dead linear decay).
     let flash = 0;
     let flashV = 0;
+    // Per-cloud arrival pop springs.
+    const pops = new Array<number>(CLOUDS.length).fill(0);
+    const popsV = new Array<number>(CLOUDS.length).fill(0);
 
     function resize() {
       const rect = wrap!.getBoundingClientRect();
@@ -149,6 +209,8 @@ export function ArgusCanvas() {
       canvas!.height = Math.round(h * dpr);
       canvas!.style.width = `${w}px`;
       canvas!.style.height = `${h}px`;
+      vortexN = Math.min(w, h) < 420 ? 140 : 240;
+      seedVortex();
     }
     resize();
     const ro = new ResizeObserver(resize);
@@ -157,16 +219,26 @@ export function ArgusCanvas() {
     const labelFont = "600 11px ui-sans-serif, system-ui, sans-serif";
     const valueFont = "500 11px ui-sans-serif, system-ui, sans-serif";
 
-    function cloudPoint(c: Cloud, t: number): [number, number] {
+    /** Intro choreography: clouds fly in from the core, staggered, expo easing. */
+    function introProgress(t: number, i: number): { p: number; s: number } {
+      const delay = 0.25 + i * 0.09;
+      const dur = 1.1;
+      const p = easeOutExpo(clamp01((t - delay) / dur));
+      const s = easeOutBack(clamp01((t - delay) / (dur * 0.9)));
+      return { p, s };
+    }
+
+    function cloudPoint(c: Cloud, t: number, introP: number): [number, number] {
       const cx = w / 2;
       const cy = h * 0.44;
       const baseR = Math.min(w, h) * 0.34;
       const rx = baseR * c.orbit;
       const ry = baseR * c.orbit * 0.52;
       const ang = c.phase + t * c.speed;
-      const px = cx + Math.cos(ang) * rx;
-      const py = cy + Math.sin(ang) * ry + snoise(t * 0.9, c.phase * 2.3) * 7;
-      return [px, py];
+      const tx = cx + Math.cos(ang) * rx;
+      const ty = cy + Math.sin(ang) * ry + snoise(t * 0.9, c.phase * 2.3) * 7;
+      // fly in from the core
+      return [cx + (tx - cx) * introP, cy + (ty - cy) * introP];
     }
 
     function tentacleControl(cx: number, cy: number, px: number, py: number, t: number, phase: number): [number, number] {
@@ -179,32 +251,116 @@ export function ArgusCanvas() {
       return [mx + (-dy / len) * curve, my + (dx / len) * curve];
     }
 
+    /** Shader-style plasma: fbm-ish sine interference at 1/8 res, additive energy field. */
+    function drawPlasma(t: number) {
+      const pw = Math.max(2, Math.ceil(w / PLASMA_DIV));
+      const ph = Math.max(2, Math.ceil(h / PLASMA_DIV));
+      if (!plasmaC) {
+        plasmaC = document.createElement("canvas");
+        plasmaX = plasmaC.getContext("2d");
+      }
+      if (!plasmaX) return;
+      if (plasmaC.width !== pw || plasmaC.height !== ph) {
+        plasmaC.width = pw;
+        plasmaC.height = ph;
+        plasmaImg = plasmaX.createImageData(pw, ph);
+      }
+      if (!plasmaImg) return;
+      const data = plasmaImg.data;
+      const tt = t * 0.35;
+      let k = 0;
+      for (let y = 0; y < ph; y++) {
+        const ny = y / ph;
+        for (let x = 0; x < pw; x++, k += 4) {
+          const nx = x / pw;
+          // layered interference — veins of energy drifting upward
+          let v =
+            Math.sin(nx * 9 + tt * 1.3 + Math.sin(ny * 7 - tt) * 1.6) * 0.5 +
+            Math.sin(ny * 11 - tt * 1.7 + Math.sin(nx * 5 + tt * 0.8) * 1.2) * 0.35 +
+            Math.sin((nx + ny) * 6 + tt * 0.6) * 0.15;
+          v = Math.pow(Math.max(0, v * 0.5 + 0.5), 2.2); // sharpen into veins
+          // radial falloff from the core so the field breathes around the machine
+          const dx = nx - 0.5;
+          const dy = ny - 0.44;
+          const fall = Math.max(0, 1 - Math.hypot(dx, dy) * 1.5);
+          const e = v * (0.25 + fall * 0.75);
+          data[k] = 10 + e * 34; // deep blue
+          data[k + 1] = 40 + e * 150; // cyan channel
+          data[k + 2] = 60 + e * 190;
+          data[k + 3] = 255;
+        }
+      }
+      plasmaX.putImageData(plasmaImg, 0, 0);
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = 0.5;
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(plasmaC, 0, 0, w, h);
+      ctx.restore();
+    }
+
+    /** Aceternity-style tracing beams: wide soft pass, mid pass, bright narrow core. */
     function drawTentacles(t: number, pts: [number, number][]) {
       const cx = w / 2;
       const cy = h * 0.44;
       CLOUDS.forEach((c, i) => {
         const [px, py] = pts[i];
         const [qx, qy] = tentacleControl(cx, cy, px, py, t, c.phase);
-        // faint structural curve
-        ctx.strokeStyle = "rgba(34,211,238,0.13)";
-        ctx.lineWidth = 1;
-        ctx.setLineDash([]);
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.quadraticCurveTo(qx, qy, px, py);
-        ctx.stroke();
-        // animated flow dashes riding the same curve
-        ctx.strokeStyle = "rgba(34,211,238,0.4)";
-        ctx.setLineDash([5, 11]);
-        ctx.lineDashOffset = -t * 34;
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.quadraticCurveTo(qx, qy, px, py);
-        ctx.stroke();
+        const trace = (lw: number, style: string, dash: number[], offset: number) => {
+          ctx.strokeStyle = style;
+          ctx.lineWidth = lw;
+          ctx.setLineDash(dash);
+          ctx.lineDashOffset = offset;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.quadraticCurveTo(qx, qy, px, py);
+          ctx.stroke();
+        };
+        // structural ghost
+        trace(1, "rgba(34,211,238,0.10)", [], 0);
+        // wide soft energy pass
+        trace(6, "rgba(34,211,238,0.07)", [], 0);
+        // animated flow dashes
+        trace(2.5, "rgba(34,211,238,0.28)", [4, 12], -t * 46);
+        // bright tracing core
+        trace(1.1, "rgba(190,245,255,0.55)", [14, 26], -t * 60);
         ctx.setLineDash([]);
       });
     }
 
+    /** Comet pulses riding the tentacles — bright head, fading trail. */
+    function drawComets(t: number, dt: number, pts: [number, number][]) {
+      const cx = w / 2;
+      const cy = h * 0.44;
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      comets.forEach((cm) => {
+        const c = CLOUDS[cm.cloud];
+        const [px, py] = pts[cm.cloud];
+        const [qx, qy] = tentacleControl(cx, cy, px, py, t, c.phase);
+        cm.t = (cm.t + cm.speed * dt) % 1;
+        if (cm.t < 0.02 && Math.random() < 0.5) flashV += 2.5; // soft arrival kick
+        // trail: sample the bezier behind the head
+        for (let s = 0; s < 7; s++) {
+          const bt = cm.t - s * 0.018;
+          if (bt < 0) break;
+          const [bx, by] = bezierPoint(cx, cy, qx, qy, px, py, bt);
+          const fade = 1 - s / 7;
+          ctx.fillStyle = `rgba(160,240,255,${0.5 * fade * fade})`;
+          ctx.beginPath();
+          ctx.arc(bx, by, 2.6 * fade + 0.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        const [hx, hy] = bezierPoint(cx, cy, qx, qy, px, py, cm.t);
+        ctx.fillStyle = "rgba(230,252,255,0.95)";
+        ctx.beginPath();
+        ctx.arc(hx, hy, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+
+    /** Small data-packet streaks along the tentacles. */
     function drawPackets(t: number, dt: number, pts: [number, number][]) {
       const cx = w / 2;
       const cy = h * 0.44;
@@ -216,13 +372,19 @@ export function ArgusCanvas() {
         const [qx, qy] = tentacleControl(cx, cy, px, py, t, c.phase);
         p.prevT = p.t;
         p.t = (p.t + p.speed * dt) % 1;
-        if (p.t < p.prevT) flashV += 5; // arrival impulse → spring overshoot
+        if (p.t < p.prevT) {
+          flashV += 5; // arrival impulse → spring overshoot
+          popsV[p.cloud] += 3.2; // cloud pop
+        }
         const [bx, by] = bezierPoint(cx, cy, qx, qy, px, py, p.t);
+        const [tx2, ty2] = bezierPoint(cx, cy, qx, qy, px, py, Math.max(0, p.t - 0.035));
         const fade = Math.sin(p.t * Math.PI);
-        ctx.fillStyle = `rgba(150,235,255,${0.25 + fade * 0.65})`;
+        ctx.strokeStyle = `rgba(150,235,255,${0.2 + fade * 0.6})`;
+        ctx.lineWidth = 1.6;
         ctx.beginPath();
-        ctx.arc(bx, by, 1.6 + fade * 1.4, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(tx2, ty2);
+        ctx.lineTo(bx, by);
+        ctx.stroke();
       });
       ctx.restore();
     }
@@ -241,7 +403,7 @@ export function ArgusCanvas() {
         const scale = 1 / (1 + z * 0.5);
         const px = cx + Math.cos(p.angle) * (bandR + wob);
         const py = cy + Math.sin(p.angle) * (bandR + wob) * 0.52;
-        const alpha = Math.max(0.04, Math.min(0.75, 0.3 * scale + (p.bright ? 0.35 : 0)));
+        const alpha = Math.max(0.04, Math.min(0.8, 0.32 * scale + (p.bright ? 0.38 : 0)));
         ctx.fillStyle = p.warm
           ? `rgba(255,217,160,${alpha})`
           : `rgba(120,225,250,${alpha})`;
@@ -263,6 +425,68 @@ export function ArgusCanvas() {
       }
     }
 
+    /** Foreground bokeh — depth in front of the clouds. */
+    function drawBokeh(t: number, dt: number) {
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      for (const b of bokeh) {
+        b.x = (b.x + b.speed * dt + 1) % 1;
+        const bx = b.x * w + snoise(t * 0.4, b.seed) * 20;
+        const by = b.y * h + snoise(t * 0.3, b.seed * 1.7) * 24;
+        const g = ctx.createRadialGradient(bx, by, 0, bx, by, b.r);
+        g.addColorStop(0, `rgba(120,220,245,${b.a})`);
+        g.addColorStop(1, "rgba(120,220,245,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(bx, by, b.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    /** hoverstat.es experimental layer: perspective grid floor + scanline sweep + ghost type. */
+    function drawExperimental(t: number) {
+      const cx = w / 2;
+      // ghost typography — landing.love bar
+      ctx.save();
+      ctx.font = `900 ${Math.min(w, 560) * 0.22}px ui-sans-serif, system-ui, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.strokeStyle = "rgba(34,211,238,0.07)";
+      ctx.lineWidth = 1;
+      ctx.strokeText("ARGUS", cx, h * 0.44);
+      ctx.restore();
+
+      // perspective grid floor
+      const horizon = h * 0.86;
+      ctx.save();
+      ctx.strokeStyle = "rgba(34,211,238,0.06)";
+      ctx.lineWidth = 1;
+      for (let i = -8; i <= 8; i++) {
+        ctx.beginPath();
+        ctx.moveTo(cx + i * 14, horizon);
+        ctx.lineTo(cx + i * w * 0.09, h);
+        ctx.stroke();
+      }
+      for (let i = 0; i < 4; i++) {
+        const yy = horizon + ((h - horizon) * i) / 3;
+        ctx.beginPath();
+        ctx.moveTo(0, yy);
+        ctx.lineTo(w, yy);
+        ctx.stroke();
+      }
+      // slow scanline sweep
+      const sy = (t * 28) % (h * 1.2) - h * 0.1;
+      const sg = ctx.createLinearGradient(0, sy - 26, 0, sy + 26);
+      sg.addColorStop(0, "rgba(34,211,238,0)");
+      sg.addColorStop(0.5, "rgba(34,211,238,0.05)");
+      sg.addColorStop(1, "rgba(34,211,238,0)");
+      ctx.fillStyle = sg;
+      ctx.fillRect(0, sy - 26, w, 52);
+      ctx.restore();
+    }
+
+    /** Volumetric core: stacked glow layers, chromatic fringe, rotating energy blades. */
     function drawCore(t: number, dt: number) {
       const cx = w / 2;
       const cy = h * 0.44;
@@ -277,14 +501,22 @@ export function ArgusCanvas() {
       const glowBoost = 1 + Math.max(0, flash) * 0.45;
       const breathe = 1 + Math.sin(t * 2.2) * 0.045;
 
-      // deep halo
-      const halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 3.4);
-      halo.addColorStop(0, `rgba(34,211,238,${0.24 * glowBoost})`);
-      halo.addColorStop(1, "rgba(34,211,238,0)");
-      ctx.fillStyle = halo;
-      ctx.beginPath();
-      ctx.arc(cx, cy, R * 3.4, 0, Math.PI * 2);
-      ctx.fill();
+      // volumetric halo — stacked layers, additive feel
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      const layers: Array<[number, number]> = [
+        [3.6, 0.05], [2.8, 0.08], [2.1, 0.13], [1.5, 0.2], [1.05, 0.3],
+      ];
+      for (const [mult, a] of layers) {
+        const halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * mult);
+        halo.addColorStop(0, `rgba(34,211,238,${a * glowBoost})`);
+        halo.addColorStop(1, "rgba(34,211,238,0)");
+        ctx.fillStyle = halo;
+        ctx.beginPath();
+        ctx.arc(cx, cy, R * mult, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
 
       // structural orbit rings (faint ellipses the clouds ride)
       ctx.strokeStyle = "rgba(34,211,238,0.1)";
@@ -294,6 +526,26 @@ export function ArgusCanvas() {
         ctx.ellipse(cx, cy, Math.min(w, h) * 0.34 * f, Math.min(w, h) * 0.34 * f * 0.52, 0, 0, Math.PI * 2);
         ctx.stroke();
       }
+
+      // rotating energy blades — conic wedges, additive
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.translate(cx, cy);
+      for (let i = 0; i < 5; i++) {
+        ctx.save();
+        ctx.rotate(t * 0.9 + (i * Math.PI * 2) / 5);
+        const blade = ctx.createLinearGradient(0, 0, R * 2.3, 0);
+        blade.addColorStop(0, `rgba(34,211,238,${0.22 * glowBoost})`);
+        blade.addColorStop(1, "rgba(34,211,238,0)");
+        ctx.fillStyle = blade;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, R * 2.3, -0.16, 0.16);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.restore();
 
       // outer dashed ring — slow rotation
       ctx.save();
@@ -321,6 +573,21 @@ export function ArgusCanvas() {
       }
       ctx.restore();
 
+      // chromatic fringe ring — cyan + faint warm edge split
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.strokeStyle = "rgba(34,211,238,0.55)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0.8, 0, R * 0.86, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255,140,200,0.16)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(-0.8, 0.6, R * 0.86, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
       // tick ring
       ctx.save();
       ctx.translate(cx, cy);
@@ -335,12 +602,12 @@ export function ArgusCanvas() {
       }
       ctx.restore();
 
-      // core orb — brightest point in the scene
+      // core orb — white-hot center
       const orbR = R * breathe * (1 + Math.max(0, flash) * 0.18);
       const orb = ctx.createRadialGradient(cx, cy, 0, cx, cy, orbR);
-      orb.addColorStop(0, "rgba(190,245,255,0.98)");
-      orb.addColorStop(0.4, `rgba(34,211,238,${0.6 * glowBoost})`);
-      orb.addColorStop(1, "rgba(34,211,238,0.06)");
+      orb.addColorStop(0, "rgba(220,252,255,0.99)");
+      orb.addColorStop(0.35, `rgba(34,211,238,${0.75 * glowBoost})`);
+      orb.addColorStop(1, "rgba(34,211,238,0.05)");
       ctx.fillStyle = orb;
       ctx.beginPath();
       ctx.arc(cx, cy, orbR, 0, Math.PI * 2);
@@ -352,8 +619,21 @@ export function ArgusCanvas() {
       ctx.fillText("ARGUS", cx, cy + 3.5);
     }
 
-    function drawCloud(c: Cloud, px: number, py: number, t: number) {
+    /** Cloud chip with depth-of-field dimming and arrival pop spring. */
+    function drawCloud(c: Cloud, i: number, px: number, py: number, t: number, scaleIntro: number) {
+      // arrival pop spring
+      const stiffness = 140;
+      const damping = 12;
+      const acc = -stiffness * pops[i] - damping * popsV[i];
+      popsV[i] += acc * 0.016;
+      pops[i] += popsV[i] * 0.016;
+      const pop = 1 + Math.max(-0.25, Math.min(0.25, pops[i])) * 0.12;
+
       const pulse = 1 + snoise(t * 1.4, c.phase * 3.1) * 0.03;
+      const scale = Math.max(0.001, scaleIntro) * pulse * pop;
+      // depth of field: outer orbits sit slightly dimmer
+      const depthDim = c.orbit > 1.1 ? 0.82 : 1;
+
       const changeText = c.change;
       ctx.font = labelFont;
       const lw = ctx.measureText(c.label).width;
@@ -365,14 +645,19 @@ export function ArgusCanvas() {
       const by = py - bh / 2;
 
       ctx.save();
+      ctx.globalAlpha = depthDim * Math.min(1, scaleIntro * 1.5);
       ctx.translate(px, py);
-      ctx.scale(pulse, pulse);
+      ctx.scale(scale, scale);
       ctx.translate(-px, -by - bh / 2);
 
+      // chip glow shadow
+      ctx.shadowColor = c.up ? "rgba(0,229,160,0.35)" : "rgba(34,211,238,0.3)";
+      ctx.shadowBlur = 14;
       roundRect(ctx, bx, by, bw, bh, 10);
-      ctx.fillStyle = "rgba(8,15,26,0.85)";
+      ctx.fillStyle = "rgba(8,15,26,0.88)";
       ctx.fill();
-      ctx.strokeStyle = c.up ? "rgba(0,229,160,0.4)" : "rgba(34,211,238,0.35)";
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = c.up ? "rgba(0,229,160,0.45)" : "rgba(34,211,238,0.4)";
       ctx.lineWidth = 1;
       ctx.stroke();
 
@@ -388,7 +673,7 @@ export function ArgusCanvas() {
       const gap = 8;
       const lineW = valueW + gap + changeW;
       const lx = px - lineW / 2;
-      ctx.fillStyle = "rgba(242,247,251,0.75)";
+      ctx.fillStyle = "rgba(242,247,251,0.78)";
       ctx.fillText(c.value, lx, by + 35);
       ctx.fillStyle = c.up ? WIN : LOSS;
       ctx.fillText(changeText, lx + valueW + gap, by + 35);
@@ -407,12 +692,10 @@ export function ArgusCanvas() {
         bloomC.width = bw;
         bloomC.height = bh;
       }
-      // bright pass + blur in one go, at quarter resolution
       bloomX.globalCompositeOperation = "copy";
       bloomX.filter = "brightness(0.75) contrast(2.6) blur(3px)";
       bloomX.drawImage(canvas!, 0, 0, bw, bh);
       bloomX.filter = "none";
-      // additive composite back over the frame
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalCompositeOperation = "lighter";
@@ -430,18 +713,27 @@ export function ArgusCanvas() {
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, w, h);
 
+      // shader-style plasma energy field
+      drawPlasma(t);
+
       // near-imperceptible slow camera drift
       ctx.save();
       ctx.translate(Math.sin(t * 0.05) * 6, Math.cos(t * 0.04) * 6);
 
+      drawExperimental(t);
       drawStarfield(t, dt);
       drawVortex(t, dt);
 
-      const pts = CLOUDS.map((c) => cloudPoint(c, t));
+      const intros = CLOUDS.map((_, i) => introProgress(t, i));
+      const pts = CLOUDS.map((c, i) => cloudPoint(c, t, intros[i].p));
       drawTentacles(t, pts);
+      drawComets(t, dt, pts);
       drawPackets(t, dt, pts);
       drawCore(t, dt);
-      for (let i = 0; i < CLOUDS.length; i++) drawCloud(CLOUDS[i], pts[i][0], pts[i][1], t);
+      for (let i = 0; i < CLOUDS.length; i++) {
+        drawCloud(CLOUDS[i], i, pts[i][0], pts[i][1], t, intros[i].s);
+      }
+      drawBokeh(t, dt);
 
       ctx.restore();
 
@@ -456,7 +748,7 @@ export function ArgusCanvas() {
     }
 
     if (reduced) {
-      draw(0.6, 0.016);
+      draw(8, 0.016); // intro complete, static frame
     } else {
       let last = performance.now();
       const start = last;

@@ -895,3 +895,11 @@ Founder problem: the ARGUS trading watch centerpiece finally looks like the mach
 - Rebuilt `app/packs/trading/argus/argus-canvas.tsx` (~480 lines): bloom via quarter-res bright-pass + blur composited additively; 240-particle additive vortex in 4 irregular orbital bands with pseudo-depth scaling; 70-star parallax field with twinkle; quadratic-bezier tentacles with animated flow dashes; 18 data packets riding the beziers into the core, arrivals firing a spring-overshoot core flash; sum-of-sines organic noise everywhere (no frame jitter); slow camera drift; vignette. Same 9 clouds, same snapshot labels, same perf constraints.
 - Checks: eslint clean (2 unused-var warnings fixed), `tsc --noEmit` clean (explicit CanvasRenderingContext2D annotation for closure narrowing), `npm run build` succeeds, focused `tests/packs/` 8/8 pass. Full suite not run (pre-existing `reasoning-oidc` hang).
 - Committed and pushed to main; Vercel auto-deploy.
+- Verified: GitHub Actions workflow 37711051419 success; Vercel production deployment dpl_GabNfzDgyZKmmprdyNqVdG15969Z READY for 0ee0b30. Ship-clean complete.
+
+## 2026-10-08 ~01:45Z — ARGUS canvas v3 (Doris)
+- Slice: founder judged the ARGUS canvas weak; rebuilt with the AI-frontend arsenal (his list). app/packs/trading/argus/argus-canvas.tsx rewritten.
+- Techniques: shader-style plasma flow field (fbm-ish sine interference at 1/8 res, screen-blended), volumetric core (5 stacked glow layers + chromatic fringe + 5 rotating energy blades, additive), aceternity-style tracing beams (wide soft / mid / bright core passes + moving comet pulses with trails), motion-primitives staggered expo intro (clouds fly in from core, easeOutExpo + easeOutBack), depth-of-field cloud dimming + foreground bokeh, hoverstat.es layer (perspective grid floor, scanline sweep, ghost ARGUS typography).
+- Kept: 9 info clouds identical, Oct 7 FOMO snapshot labels, dark cinematic theme, DPR cap 2, reduced-motion static frame, page.tsx tables untouched.
+- Checks: eslint clean, tsc --noEmit clean, npm run build succeeds, tests/packs/ pass. Full suite skipped (pre-existing tests/e2e/reasoning-oidc.test.ts hang, unrelated).
+- Next: push to main, confirm Vercel READY.
