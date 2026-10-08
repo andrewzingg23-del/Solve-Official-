@@ -692,7 +692,7 @@ export function ArgusWebGL() {
     // ---- post: real bloom ----
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
-    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.7, 0.6, 0.65);
+    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.32, 0.4, 0.85);
     composer.addPass(bloom);
     composer.addPass(new OutputPass());
 
@@ -866,7 +866,7 @@ export function ArgusWebGL() {
         sp.scale.set(sc, sc, 1);
       });
       coreLight.intensity = (55 + Math.sin(t * 1.7) * 10) * (1 + 0.9 * pv);
-      bloom.strength = 0.7 * (1 + 0.5 * pv);
+      bloom.strength = 0.32 * (1 + 0.5 * pv);
 
       px += (tx - px) * 0.04;
       py += (ty - py) * 0.04;

@@ -8,9 +8,16 @@ import {
   clearGuestProfile,
 } from "@/lib/guest/profile";
 
+type TestWindow = {
+  localStorage: Pick<Storage, "getItem" | "setItem" | "removeItem">;
+  dispatchEvent: (event: Event) => boolean;
+  addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => void;
+  removeEventListener: (type: string, listener: EventListenerOrEventListenerObject) => void;
+};
+
 function stubStorage() {
   const store = new Map<string, string>();
-  (globalThis as Record<string, unknown>).window = {
+  (globalThis as { window: TestWindow }).window = {
     localStorage: {
       getItem: (k: string) => (store.has(k) ? store.get(k)! : null),
       setItem: (k: string, v: string) => {
@@ -46,13 +53,13 @@ it("returns null when nothing is stored", () => {
 });
 
 it("returns null on corrupted JSON", () => {
-  const w = (globalThis as Record<string, unknown>).window;
+  const w = (globalThis as { window: TestWindow }).window;
   w.localStorage.setItem("solve.guest-profile.v1", "{not json");
   assert.equal(loadGuestProfile(), null);
 });
 
 it("caps oversized strings and rejects bad shapes", () => {
-  const w = (globalThis as Record<string, unknown>).window;
+  const w = (globalThis as { window: TestWindow }).window;
   w.localStorage.setItem(
     "solve.guest-profile.v1",
     JSON.stringify({
