@@ -126,6 +126,30 @@ export default async function TradingPackPage() {
 
       {hasMarket ? <HeroStrip candles={btc} /> : <MarketDown />}
 
+      <section aria-labelledby="intel-heading" className="grid gap-4 lg:grid-cols-2">
+        <a href="/packs/trading/argus" className="glass group block p-5 transition-colors hover:border-[rgb(34_211_238/0.4)] md:p-6">
+          <p className="eyebrow eyebrow-accent">Intel · Machine</p>
+          <h2 id="intel-heading" className="mt-2 text-xl font-medium tracking-tight text-foreground">
+            ARGUS trading watch
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-muted">
+            The watcher that never blinks — signal clouds orbiting the machine.
+          </p>
+          <p className="mt-3 text-sm font-medium text-accent">Open ARGUS →</p>
+        </a>
+        <a href="/packs/trading/watchlist" className="glass group block p-5 transition-colors hover:border-[rgb(34_211_238/0.4)] md:p-6">
+          <p className="eyebrow eyebrow-accent">Intel · Signals</p>
+          <h2 className="mt-2 text-xl font-medium tracking-tight text-foreground">
+            The watchlist
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-muted">
+            16 researched memecoin accounts, ranked by evidence. Caveats included,
+            shills excluded.
+          </p>
+          <p className="mt-3 text-sm font-medium text-accent">Open watchlist →</p>
+        </a>
+      </section>
+
       {snapshot ? (
         <div className="grid gap-4 lg:grid-cols-2">
           {(Object.keys(snapshot) as SymbolId[]).map((s) => (

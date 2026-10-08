@@ -880,3 +880,9 @@ Founder: "colors need to match through the app, be liberal in your redesign, mak
 - Checks: tsc clean, build clean, full suite 361/361 (57 suites). No mock data anywhere. Gate stays OFF. Talk 503 (Anthropic key) unchanged — Drew's hands.
 - Status: committed + pushed to main; Vercel auto-deploys. Screenshots owed — coordinator cannot run the live browser; capture list for parent: / (home), /packs, /packs/trading, /card, /bot, /claim, /login, /account, /worlds at phone size → ~/workspace/your_files/design-rebuild/v2/.
 Founder problem: the app finally looks like one thing — the refs' dark cinematic language, the brand book's palette, the vision's center-object world.
+
+## 2026-10-07 ~20:55 EDT — Trading intel: watchlist + ARGUS (subagent slice)
+- New pages: `/packs/trading/watchlist` (searchable, 16 researched memecoin accounts in 4 tiers + viral-bot verdicts + 10-entry caution list + 11-point shill checklist; every caveat preserved, no trade recommendations) and `/packs/trading/argus` (animated canvas: Matrix-machine core with rotating rings, cyan glow, 9 orbiting info clouds — 5 trending tokens + 4 market tickers from the Oct 7 FOMO snapshot, labeled as snapshot not live; DPR-capped, reduced-motion safe, HTML data tables for a11y).
+- Linked both from `/packs/trading` via a new Intel section (two cards).
+- Checks: eslint clean, `tsc --noEmit` clean, focused tests 8/8 pass, `npm run build` succeeds (both routes in output). Full suite NOT run: it hangs on tests/e2e/reasoning-oidc.test.ts (pre-existing env issue, unrelated to this slice — no test files touched).
+- Founder problem: founder's memecoin signal setup (X + FOMO + trench.io linked) now has a home in the app — the watchlist he ordered and the ARGUS machine he named.
