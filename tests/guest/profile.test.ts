@@ -46,13 +46,13 @@ it("returns null when nothing is stored", () => {
 });
 
 it("returns null on corrupted JSON", () => {
-  const w = (globalThis as Record<string, any>).window;
+  const w = (globalThis as Record<string, unknown>).window;
   w.localStorage.setItem("solve.guest-profile.v1", "{not json");
   assert.equal(loadGuestProfile(), null);
 });
 
 it("caps oversized strings and rejects bad shapes", () => {
-  const w = (globalThis as Record<string, any>).window;
+  const w = (globalThis as Record<string, unknown>).window;
   w.localStorage.setItem(
     "solve.guest-profile.v1",
     JSON.stringify({
