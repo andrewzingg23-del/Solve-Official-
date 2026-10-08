@@ -211,9 +211,9 @@ void main() {
   float pulse = 0.85 + 0.15 * sin(uTime * 1.7);
   vec3 deep = vec3(0.02, 0.10, 0.16);
   vec3 cyan = vec3(0.13, 0.83, 0.93);
-  vec3 hot  = vec3(0.95, 0.98, 1.0);
+  vec3 hot  = vec3(0.55, 0.86, 0.95);
   vec3 col = mix(deep, cyan, fres * pulse);
-  col = mix(col, hot, pow(fres, 3.0) * 0.9);
+  col = mix(col, hot, pow(fres, 3.0) * 0.55);
   gl_FragColor = vec4(col, 1.0);
 }
 `;
@@ -454,14 +454,14 @@ export function ArgusWebGL() {
     const coreMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1.05, 3), coreMat);
     coreGroup.add(coreMesh);
 
-    const glowTex = makeGlowTexture("rgba(240,252,255,1)", "rgba(34,211,238,0.55)");
-    const glowTexWarm = makeGlowTexture("rgba(255,244,230,0.9)", "rgba(232,163,76,0.35)");
+    const glowTex = makeGlowTexture("rgba(160,230,245,0.85)", "rgba(34,211,238,0.4)");
+    const glowTexWarm = makeGlowTexture("rgba(255,244,230,0.7)", "rgba(232,163,76,0.25)");
     const glowLayers: THREE.Sprite[] = [];
     [
-      { tex: glowTex, s: 4.6, o: 0.5, x: 0 },
-      { tex: glowTex, s: 7.4, o: 0.26, x: 0 },
-      { tex: glowTex, s: 11.5, o: 0.12, x: 0 },
-      { tex: glowTexWarm, s: 5.6, o: 0.10, x: 0.35 },
+      { tex: glowTex, s: 3.4, o: 0.28, x: 0 },
+      { tex: glowTex, s: 5.4, o: 0.14, x: 0 },
+      { tex: glowTex, s: 8.2, o: 0.06, x: 0 },
+      { tex: glowTexWarm, s: 4.2, o: 0.06, x: 0.35 },
     ].forEach((g) => {
       const sp = new THREE.Sprite(
         new THREE.SpriteMaterial({
