@@ -1,4 +1,9 @@
 import {validateStudio,type StudioDocument} from "./document";
+export function proposalMatches(current:StudioDocument,base:StudioDocument){return JSON.stringify(current)===JSON.stringify(base);}
+export function applyStudioProposal(current:StudioDocument,base:StudioDocument,proposal:StudioDocument):StudioDocument{
+ if(!proposalMatches(current,base))throw new Error("Your design changed since this request. Request a fresh proposal; your edits are preserved.");
+ return validateStudio({...current,title:proposal.title,brief:proposal.brief,nodes:proposal.nodes,revision:current.revision+1,steps:current.steps.map(s=>s.dependsOnDesign&&s.status==="done"?{...s,status:"needs_review"}:s)});
+}
 export function studioProposal(base:StudioDocument,reply:string):StudioDocument|null{
  if(reply.length>64000)return null;
  try{

@@ -30,3 +30,9 @@ Full suite/typecheck/lint/build plus browser workflow: editing/history, material
 ## Review focus
 
 Authority bypasses, forged provenance, branch loss, persistence failures, arbitrary generated code, stale calculations, responsive/accessible renderer fallback.
+
+## Final review rulings
+
+All five Important findings were accepted and addressed: ancestry is stored atomically with a draft; private creations have distinct IDs and a reopening picker; proposals require an unchanged exact base; validated scene bytes are bounded below kernel attributes limits; accepted source round trips with formatted exports. Both Minor findings were addressed with a geometry preview and an in-memory identity fallback on storage failure. Unknown legacy ancestry requires loading/reviewing a shared revision before saving.
+
+Reviewer exclusions were accepted only as explicit scope/evidence limits: ARGUS and other-builder files are preserved; production credentials, live multiuser actions and assistive-technology operation are not inferred from local tests. Engineering/CAD/real-world execution remains an adapter. Desktop/mobile browser verification is a required independent gate, not declined.

@@ -542,3 +542,7 @@ The founder's words are in `DECISIONS.md`. Nothing here needed a migration.
 Branch codex/immersive-world-studio: creation studio, Three.js and interactive projection, real local persistence/history, materials/build path, Rapier drop, JSON/GLB/STL/SVG export, shared revisions, MCP studio tools, on-device SOV ID modules, shortened identity onboarding and flat authorized map.
 
 Verification in progress through CI/preview after local runtime disconnection. Six initial checks passed locally; further regression and browser gates are required before completion. No production data changes. CAD, engineering approval and real-world provider execution are not claimed.
+
+## 2026-10-08 — Studio review and verification checkpoint
+
+Important final review findings are fixed: persisted ancestry, independent creations/history, stale AI proposal checks and consistent storage budgets. Identity export retains unsaved customization. New regressions exercise those boundaries and the existing real kernel constraint. Full CI/browser gates remain pending for this checkpoint after a local runtime outage. Production sharing/provider configuration and live multiuser verification remain separate from embedded-kernel tests.

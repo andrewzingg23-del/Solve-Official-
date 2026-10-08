@@ -6,10 +6,11 @@ import type {DropResult} from "@/lib/studio/physics";
 import type {StudioScene} from "./three-scene";
 import {Icon} from "./icons";
 export function StudioCanvas({document,selected,onSelect,onMove,experiment,frame=0}:{document:StudioDocument;selected:string|null;onSelect:(id:string|null)=>void;onMove:(id:string,p:Vec3,r:Vec3)=>void;experiment:DropResult|null;frame?:number}){
- const host=useRef<HTMLDivElement>(null),scene=useRef<StudioScene|null>(null),latest=useRef({document,selected,onSelect,onMove});latest.current={document,selected,onSelect,onMove};
+ const host=useRef<HTMLDivElement>(null),scene=useRef<StudioScene|null>(null),latest=useRef({document,selected,onSelect,onMove});
+ useEffect(()=>{latest.current={document,selected,onSelect,onMove};},[document,selected,onSelect,onMove]);
  const[ready,setReady]=useState(false),[yaw,setYaw]=useState(-0.65),[pitch,setPitch]=useState(0.55),[zoom,setZoom]=useState(1),[mode,setMode]=useState<"translate"|"rotate">("translate"),[view,setView]=useState<"perspective"|"top"|"front">("perspective");
  const pointer=useRef<{x:number;y:number;dragged:boolean}|null>(null);
- useEffect(()=>{let cancelled=false,created:StudioScene|null=null;const target=host.current!,lose=()=>setReady(false);target.addEventListener("studio:renderer-lost",lose);
+ useEffect(()=>{let cancelled=false,created:StudioScene|null=null;const target=host.current!,lose=()=>{scene.current?.destroy();scene.current=null;created=null;setReady(false);};target.addEventListener("studio:renderer-lost",lose);
  const probe=window.document.createElement("canvas"),gl=probe.getContext("webgl2");
  if(gl){gl.getExtension("WEBGL_lose_context")?.loseContext();void import("./three-scene").then(({StudioScene})=>{if(cancelled)return;try{created=new StudioScene(target,id=>latest.current.onSelect(id),(id,p,r)=>latest.current.onMove(id,p,r));scene.current=created;created.render(latest.current.document);created.select(latest.current.selected);setReady(true);}catch{setReady(false);}}).catch(()=>setReady(false));}
  return()=>{cancelled=true;target.removeEventListener("studio:renderer-lost",lose);created?.destroy();scene.current=null;};},[]);
@@ -27,7 +28,7 @@ export function StudioCanvas({document,selected,onSelect,onMove,experiment,frame
  <ellipse cx="500" cy="420" rx="390" ry="190" fill="url(#studio-light)"/>
  {projection.grid.map((g,i)=><line key={i} x1={g.a.split(",")[0]} y1={g.a.split(",")[1]} x2={g.b.split(",")[0]} y2={g.b.split(",")[1]} stroke="#457b87" strokeOpacity="0.15"/>)}
  <ellipse cx="500" cy="490" rx="265" ry="56" fill="#000" opacity="0.35" filter="url(#studio-shadow)"/>
- {projection.polygons.map(p=><polygon key={p.key} data-node-id={p.id} points={p.points} fill={p.fill} opacity={p.opacity} stroke={selected===p.id?"#79f0ed":"#e0ecef"} strokeWidth={selected===p.id?1.8:0.3} strokeOpacity={selected===p.id?0.9:0.12}><title>{document.nodes.find(n=>n.id===p.id)?.label}</title></polygon>)}
+ {projection.polygons.map(p=><polygon aria-hidden="true" key={p.key} data-node-id={p.id} points={p.points} fill={p.fill} opacity={p.opacity} stroke={selected===p.id?"#79f0ed":"#e0ecef"} strokeWidth={selected===p.id?1.8:0.3} strokeOpacity={selected===p.id?0.9:0.12}></polygon>)}
  </svg><div className={"sv-three "+(ready?"":"is-hidden")} ref={host}/>
  <div className="sv-canvas-top"><span className="sv-chip"><span className="sv-dot"/>{experiment?"Rigid-body experiment":"Concept · editable geometry"}</span><span className="sv-coordinate">M / R{String(document.revision).padStart(2,"0")}</span></div>
  <div className="sv-canvas-tools"><button aria-label="Move selected object" aria-pressed={mode==="translate"} onClick={()=>setMode("translate")}><Icon name="move"/></button><button aria-label="Rotate selected object" aria-pressed={mode==="rotate"} onClick={()=>setMode("rotate")}><Icon name="rotate"/></button><span/><button aria-label="Frame design" onClick={()=>orient("perspective")}><Icon name="focus"/></button><button aria-label="Zoom in" onClick={()=>{scene.current?.zoom(0.8);setZoom(z=>Math.min(3,z*1.2));}}>+</button><button aria-label="Zoom out" onClick={()=>{scene.current?.zoom(1.2);setZoom(z=>Math.max(0.3,z/1.2));}}>−</button></div>

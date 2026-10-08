@@ -7,7 +7,9 @@ import { COMMUNITY_LIMITS, type Community, type JoinRequest, type Member, type M
 import { PACK_IDS, PACKS } from "@/lib/community/packs";
 import type { DesignRequest } from "@/lib/solar/desk";
 import { aiNotesAction, answerAskAction, answerDesignAction, askToJoinAction, letMyAiInAction, sendNoteAction, updatePacksAction } from "./actions";
+import { AskRoom } from "./ask-room";
 import { DeskRequest } from "./desk";
+import { RoomBrief } from "./room-brief";
 
 export type Loaded = {
   community: Community;
@@ -58,6 +60,7 @@ export function CommunityView({ data, status }: { data: Loaded; status: { bad: b
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.75fr)] lg:items-start">
         <div className="flex flex-col gap-8">
+          {inside ? <RoomBrief id={id} botName={data.bot?.name ?? "Your bot"} /> : null}
           {standing === "guest" ? (
             <div className={panel}>
               <p className={label}>Join</p>
@@ -74,6 +77,7 @@ export function CommunityView({ data, status }: { data: Loaded; status: { bad: b
           {standing === "owner" ? <Asks id={id} open={data.open} /> : null}
           {data.desk ? <Desk id={id} requests={data.desk} routed={data.routed} /> : null}
           {inside ? <People id={id} me={data.me} people={data.people} guests={data.guests} /> : null}
+          {inside ? <AskRoom id={id} /> : null}
           {inside ? <Notes id={id} notes={data.notes} /> : null}
         </div>
 

@@ -22,12 +22,14 @@ export type TemplateId=typeof STUDIO_TEMPLATES[number]["id"];
 export type StudioStep={id:string;title:string;status:"todo"|"doing"|"done"|"needs_review";note:string;dependsOnDesign:boolean};
 export type StudioDocument={schema:"solve.studio.v1";id:string;title:string;brief:string;template:TemplateId;revision:number;units:"m";nodes:StudioNode[];steps:StudioStep[];rates:Record<MaterialId,{density:number;pricePerKg:number}>;wastePercent:number};
 export class StudioInputError extends Error {}
+// Room for parents/provenance and JSONB formatting within the kernel’s 16,000-character attributes limit.
+export const MAX_STUDIO_BYTES=10_000;
 const invalid=(message:string):never=>{throw new StudioInputError(message);};
 function object(value:unknown):Record<string,unknown>{if(!value||typeof value!=="object"||Array.isArray(value))return invalid("Expected a studio object");return value as Record<string,unknown>;}
 function keys(raw:Record<string,unknown>,allowed:string[]){if(Object.keys(raw).some(k=>!allowed.includes(k)))invalid("Studio contains an unsupported field");}
 function text(value:unknown,max:number,empty=false):string{if(typeof value!=="string"||value.length>max||(!empty&&!value.trim())||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value))return invalid("Invalid studio text");return value.trim();}
 function id(value:unknown){const r=text(value,80);if(!/^[a-zA-Z0-9_-]+$/.test(r))return invalid("Invalid studio id");return r;}
-function num(value:unknown,low:number,high:number,label:string):number{if(typeof value!=="number"||!Number.isFinite(value)||value<low||value>high)return invalid("Invalid "+label);return value;}
+function num(value:unknown,low:number,high:number,label:string):number{if(typeof value!=="number"||!Number.isFinite(value)||value<low||value>high)return invalid("Invalid "+label);return Math.round(value*1e6)/1e6;}
 function vector(value:unknown,low:number,high:number,label:string):Vec3{if(!Array.isArray(value)||value.length!==3)return invalid("Invalid "+label);return value.map(v=>num(v,low,high,label)) as Vec3;}
 export function validateNode(value:unknown):StudioNode{
  const r=object(value);keys(r,["id","label","shape","size","position","rotation","material"]);
@@ -48,8 +50,10 @@ export function validateStudio(value:unknown):StudioDocument{
  if(new Set(steps.map(s=>s.id)).size!==steps.length)return invalid("Plan ids must be unique");
  const ratesRaw=object(r.rates);keys(ratesRaw,Object.keys(MATERIALS));
  const rates=Object.fromEntries(Object.keys(MATERIALS).map(k=>{const rate=object(ratesRaw[k]);keys(rate,["density","pricePerKg"]);return [k,{density:num(rate.density,1,30000,"density"),pricePerKg:num(rate.pricePerKg,0,100000,"price assumption")}];})) as StudioDocument["rates"];
- const revision=num(r.revision,1,1000000,"revision");if(!Number.isInteger(revision))return invalid("Revision must be an integer");
- return {schema:"solve.studio.v1",id:id(r.id),title:text(r.title,160),brief:text(r.brief,2000,true),template:r.template as TemplateId,revision,units:"m",nodes,steps,rates,wastePercent:num(r.wastePercent,0,100,"waste allowance")};
+ const revision=num(r.revision,1,1000000,"revision");if(!Number.isInteger(r.revision))return invalid("Revision must be an integer");
+ const document:StudioDocument={schema:"solve.studio.v1",id:id(r.id),title:text(r.title,160),brief:text(r.brief,2000,true),template:r.template as TemplateId,revision,units:"m",nodes,steps,rates,wastePercent:num(r.wastePercent,0,100,"waste allowance")};
+ if(new TextEncoder().encode(JSON.stringify(document)).length>MAX_STUDIO_BYTES)return invalid("This concept exceeds the 10 KB editable document budget. Shorten notes or split it into separate creations.");
+ return document;
 }
 export function parseStudio(raw:string):StudioDocument|null{if(raw.length>64000)return null;try{return validateStudio(JSON.parse(raw));}catch{return null;}}
 export function assembleStudio(template:TemplateId,title:string,studioId:string):StudioDocument{
@@ -66,13 +70,14 @@ export type StudioOperation=
  |{type:"node";id:string;patch:Partial<Omit<StudioNode,"id">>}
  |{type:"add";node:StudioNode}|{type:"remove";id:string}|{type:"title";title:string}|{type:"brief";brief:string}
  |{type:"rate";material:MaterialId;density:number;pricePerKg:number}
- |{type:"step";id:string;status:StudioStep["status"];note?:string;title?:string};
+ |{type:"step";id:string;status:StudioStep["status"];note?:string;title?:string}|{type:"addStep";step:StudioStep};
 export function editStudio(document:StudioDocument,op:StudioOperation):StudioDocument{
  const next=structuredClone(document);
  if(op.type==="node"||op.type==="remove"){const i=next.nodes.findIndex(n=>n.id===op.id);if(i<0)return invalid("Object not found");if(op.type==="node")next.nodes[i]={...next.nodes[i],...op.patch,id:op.id};else next.nodes.splice(i,1);}
  else if(op.type==="add")next.nodes.push(op.node);else if(op.type==="title")next.title=op.title;else if(op.type==="brief")next.brief=op.brief;
  else if(op.type==="rate")next.rates[op.material]={density:op.density,pricePerKg:op.pricePerKg};
  else if(op.type==="step"){const s=next.steps.find(s=>s.id===op.id);if(!s)return invalid("Plan step not found");s.status=op.status;if(op.note!==undefined)s.note=op.note;if(op.title!==undefined)s.title=op.title;}
+ else if(op.type==="addStep")next.steps.push(op.step);
  if(["node","remove","add","rate"].includes(op.type))next.steps.forEach(s=>{if(s.dependsOnDesign&&s.status==="done")s.status="needs_review";});
  next.revision++;return validateStudio(next);
 }

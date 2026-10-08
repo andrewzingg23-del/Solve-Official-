@@ -19,3 +19,7 @@ Implementation references: official Three.js OrbitControls/TransformControls/exp
 The change detector is noncryptographic. Canonical actor and on-behalf-of records come from immutable kernel events. Recorded client-name attributes are context claims, not verified actor authority.
 
 Future adapters must declare schemas, scope, provider context, effects, budget/timeout, approval, replay/reconciliation and evidence. They cannot grant authority or execute arbitrary model-generated code inside the trusted renderer.
+
+## Current bounded representation
+
+Scenes use metres, dimensions at least 1 mm, and numbers rounded to six decimal places. Up to 64 objects/24 steps fit a total 10 KB UTF-8 document budget. This deliberately leaves room for parents/provenance and JSONB formatting inside the existing 16,000-character kernel attributes constraint. Detailed meshes/CAD assemblies need a governed asset adapter; there is no migration or direct database escape hatch.

@@ -980,9 +980,27 @@ Founder problem: the ARGUS trading watch centerpiece finally looks like the mach
 - Ship-clean for this slice: tsc clean, eslint clean (local), npm run build ok, 7/7 focused tests pass, Vercel READY.
 - OPEN: visual verification needs a browser task on the live URL (subagents can't run them) — parent to delegate; up to 3 generate→fix iterations per mission spec.
 
+## 2026-10-08 ~05:00 UTC — AI-community first slice started (branch doris/ai-community)
+- Founder greenlit the AI-community vision ("that's it, based on my whole app"). First slice: room briefs + ask-the-room, the two foundations.
+- Plan: lib/community/room-ai.ts (brief cache as kernel events, grounded prompts, room corpus gathering); room-ai-actions.ts (server actions via OpenRouter, the working model path); room-brief.tsx + ask-room.tsx client components wired into community view for members; honest guest degradation.
+- Constraint: do NOT touch app/packs/trading/**; branch only, no merge (parent sequences).
+
+## 2026-10-08 ~05:10 UTC — AI-community first slice done (branch doris/ai-community, NOT merged)
+- Commit c7d8921 pushed to origin/doris/ai-community. Parent sequences the merge.
+- Built: lib/community/room-ai.ts (brief cache as kernel events, grounded prompts, lastRoomBriefAt); app/community/[communityId]/room-ai-actions.ts (getRoomBrief/askRoom server actions via OpenRouter flash model); room-brief.tsx + ask-room.tsx client components wired into community view (brief top of member column, ask box above notes); tests/community/room-ai.test.ts 5/5.
+- Checks: eslint 0 errors (fixed 1 unused import), tsc clean on new files (2 pre-existing errors in tests/guest/profile.test.ts untouched), next build succeeds (40/40 static, 0 errors).
+- Note: mid-build the parent's ARGUS v5 work landed on main and my commit initially went to main; moved it to the branch and reset main to origin/main (6b0a663) — main is untouched.
+- Honest degradation: guests see join CTA (room notes aren't visible to guests); missing OpenRouter key / model errors surface plain copy; empty rooms brief honestly.
+
 ## 2026-10-08 — Immersive creation (Codex)
 - Founder asks for a built immersive, interactive and responsive canon.
 - Extends Worlds, existing identity/profile, connector and kernel. Private editable drafts, Three.js/projection, Rapier drop, material assumptions, execution checklist, exports, SOV ID modules and flat map.
 - Six local model/physics/kernel checks passed before runtime disconnection. Recovered source is being verified through CI and preview; browser workflow captures real desktop/mobile/no-WebGL interactions.
 - Snapshots use immutable creation events and explicit parents because upsert lacks atomic expected-version guards. Competing edits remain heads.
 - Current main 6b0a663; concurrent ARGUS work retained. No production database/migration changes. CAD/engineering/real-world provider adapters remain follow-ups.
+
+## 2026-10-08 — Immersive studio review fixes (Codex)
+- Single fresh final reviewer found draft ancestry loss on reload, overwritten private creations, stale AI application and mismatched storage limits. Fixed: persisted document/parents together, distinct private creations with archive picker, eight persisted Undo/Redo states, exact proposal base checks plus geometry preview, 10 KB UTF-8 document budget beneath the kernel’s existing attributes limit. Numerical precision is bounded to micrometres to avoid JSONB exponent expansion.
+- Identity customization stays in memory when browser storage fails, so export retains attempted changes. Unreadable studio originals remain available for recovery download.
+- Local focused model/physics/kernel and delegated MCP checks passed; local typecheck/lint/build passed on the intermediate fixes. Actual desktop/mobile interactions passed through editing, quantities, checklist staleness, physics, source export/reload, identity privacy and no-GPU studio. The map check encountered its existing identity onboarding; final test now enters that sandbox explicitly. Expanded multi-creation/geometry-export checks await CI.
+- Local runtime disconnected a second time during final verification. Recovered source is checkpointed through GitHub; full CI/browser gates and preview must verify this exact commit. Current main community AI work is retained. No production database/schema changes.

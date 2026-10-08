@@ -13,6 +13,9 @@ import { approveConnection, MEMORY_NOTED, memoryScope, noteMemory, readMemories,
 import { protectedResourceMetadata, serveMcp } from "../../lib/bot/mcp-http";
 import { saveBot } from "../../lib/bot/store";
 import { createKernelDb, service, user } from "../kernel/harness";
+import { createCreativeWorld } from "../../lib/world/creative";
+import { assembleStudio } from "../../lib/studio/document";
+import { readStudios, saveStudioRevision } from "../../lib/world/studio";
 
 const CLAUDE = "00000000-0000-4000-8000-0000000c1a0d";
 const OTHER = "00000000-0000-4000-8000-00000000babe";
@@ -46,11 +49,38 @@ it("speaks the protocol: initialize, ping, tools, notifications and errors", asy
   assert.equal(unknownVersion.result.protocolVersion, PROTOCOL_VERSIONS[0], "otherwise the newest version is offered");
   assert.deepEqual(await c.handle({ jsonrpc: "2.0", id: 3, method: "ping" }), { jsonrpc: "2.0", id: 3, result: {} });
   const list = (await c.handle({ jsonrpc: "2.0", id: 4, method: "tools/list" })) as { result: { tools: { name: string }[] } };
-  assert.deepEqual(list.result.tools.map((t) => t.name), ["whoami", "get_context", "search", "fetch", "remember", "learn_business", "list_worlds", "read_world", "start_world", "map_world_resource", "add_to_world", "add_proof", "design_part", "create_pixel_art", "propose_routes", "propose_outreach", "record_outcome", "propose_capability", "list_communities", "read_community", "send_note"]);
+  assert.deepEqual(list.result.tools.map((t) => t.name), ["read_studios", "save_studio", "whoami", "get_context", "search", "fetch", "remember", "learn_business", "list_worlds", "read_world", "start_world", "map_world_resource", "add_to_world", "add_proof", "design_part", "create_pixel_art", "propose_routes", "propose_outreach", "record_outcome", "propose_capability", "list_communities", "read_community", "send_note"]);
   assert.equal(TOOLS.find((t) => t.name === "remember")!.annotations.readOnlyHint, false);
   assert.equal(await c.handle({ jsonrpc: "2.0", method: "notifications/initialized" }), null, "notifications get no response");
   assert.equal((await c.handle({ jsonrpc: "2.0", id: 5, method: "resources/list" }) as { error: { code: number } }).error.code, -32601);
   assert.equal((await c.handle({ jsonrpc: "2.0", id: 6, method: "tools/call", params: { name: "delete_everything" } }) as { error: { code: number } }).error.code, -32602);
+});
+
+it("studio tools use the bot's grants and immutable delegated author, never the owner's broader access", async () => {
+  const {ana, anaId, bot, session, call} = await setting();
+  const world = await createCreativeWorld(ana, {worldId:"00000000-0000-4000-8000-000000005701",title:"Private design"});
+  const document = assembleStudio("object","Desk","delegated-desk");
+  const first = await saveStudioRevision(ana,{worldId:world.worldId,document,parents:[],requestId:"first"});
+  const s = session(ana,CLAUDE),agentId=bot.avatar!.agent_id;
+  await approveConnection(ana,anaId,agentId,{clientId:CLAUDE,clientName:"Claude",mode:"read"},"studio-read");
+  assert.equal((await call(s,"read_studios",{world_id:world.worldId})).isError,true);
+  const readGrant = await ana.issueGrant({grantee:agentId,capability:"kernel.read",scope:world.scope});
+  const read = await call(s,"read_studios",{world_id:world.worldId,studio_id:document.id,revision_id:first});
+  assert.equal(read.isError,undefined,read.content[0].text);
+  assert.equal((read.structuredContent as {revision:{document:{title:string}}}).revision.document.title,"Desk");
+  const args={world_id:world.worldId,document,parents:[first],request_id:"bot-revision"};
+  assert.equal((await call(s,"save_studio",args)).isError,true);
+  await approveConnection(ana,anaId,agentId,{clientId:CLAUDE,clientName:"Claude",mode:"remember"},"studio-remember");
+  assert.equal((await call(s,"save_studio",args)).isError,true,"write permission is independently required");
+  await ana.issueGrant({grantee:agentId,capability:"world.entity.write",scope:world.scope});
+  const saved=await call(s,"save_studio",args);assert.equal(saved.isError,undefined,saved.content[0].text);
+  const revision=(await readStudios(ana,world.worldId))[0].heads[0];
+  assert.equal(revision.authorId,agentId);assert.equal(revision.onBehalfOf,anaId);
+  const replay=await call(s,"save_studio",args);assert.equal(replay.structuredContent?.revision_id,saved.structuredContent?.revision_id);
+  await ana.revokeGrant(readGrant,"Access ended");
+  assert.equal((await call(s,"read_studios",{world_id:world.worldId})).isError,true);
+  await revokeConnection(ana,anaId,CLAUDE,"studio-revoke");
+  assert.equal((await call(s,"save_studio",{...args,request_id:"revoked"})).isError,true);
 });
 
 it("lets an approved assistant read the bot, and remember only when allowed", async () => {

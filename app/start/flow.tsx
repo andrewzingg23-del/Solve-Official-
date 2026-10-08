@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ONBOARDING_STEPS, type OnboardingStep } from "@/lib/bot/soul";
 import type { BotAvatar } from "@/lib/bot/avatar";
@@ -111,9 +112,9 @@ export function OnboardingFlow(props: FlowProps) {
               {step === "avatar" ? "Enter your studio" : "Continue"}
             </button>
           ) : (
-            <a href="/" className={primaryAction}>
+            <Link href="/" className={primaryAction}>
               Enter your studio
-            </a>
+            </Link>
           )}
         </div>
       </div>
