@@ -984,3 +984,10 @@ Founder problem: the ARGUS trading watch centerpiece finally looks like the mach
 - Founder greenlit the AI-community vision ("that's it, based on my whole app"). First slice: room briefs + ask-the-room, the two foundations.
 - Plan: lib/community/room-ai.ts (brief cache as kernel events, grounded prompts, room corpus gathering); room-ai-actions.ts (server actions via OpenRouter, the working model path); room-brief.tsx + ask-room.tsx client components wired into community view for members; honest guest degradation.
 - Constraint: do NOT touch app/packs/trading/**; branch only, no merge (parent sequences).
+
+## 2026-10-08 ~05:10 UTC — AI-community first slice done (branch doris/ai-community, NOT merged)
+- Commit c7d8921 pushed to origin/doris/ai-community. Parent sequences the merge.
+- Built: lib/community/room-ai.ts (brief cache as kernel events, grounded prompts, lastRoomBriefAt); app/community/[communityId]/room-ai-actions.ts (getRoomBrief/askRoom server actions via OpenRouter flash model); room-brief.tsx + ask-room.tsx client components wired into community view (brief top of member column, ask box above notes); tests/community/room-ai.test.ts 5/5.
+- Checks: eslint 0 errors (fixed 1 unused import), tsc clean on new files (2 pre-existing errors in tests/guest/profile.test.ts untouched), next build succeeds (40/40 static, 0 errors).
+- Note: mid-build the parent's ARGUS v5 work landed on main and my commit initially went to main; moved it to the branch and reset main to origin/main (6b0a663) — main is untouched.
+- Honest degradation: guests see join CTA (room notes aren't visible to guests); missing OpenRouter key / model errors surface plain copy; empty rooms brief honestly.
