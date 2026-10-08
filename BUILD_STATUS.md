@@ -1,6 +1,13 @@
 # BUILD_STATUS
 
-## Current checkpoint — 2026-10-07 (ARGUS canvas rebuild, main)
+## Current checkpoint — 2026-10-08 (whole-site quality upgrade, main @ 394dcfd)
+
+- Whole-site award-level pass across all routes (commits 7631e47 + 394dcfd): /start full step choreography (ambient canvas, TraceBeam progress, staggered entrances, radar pings, scan sweeps); trading pack aurora hero, real-value count-ups, animated sparkline draw-in, border-beam Intel cards; avatar presence canvas + premium card reveal (3D tilt, tracing beam, holographic glint); 21 long-tail surfaces converted to dark cinematic law; deleted dead app/claim/claim-flow.tsx.
+- Theme law enforced app-wide: abyssal blue-black, cyan #22d3ee single accent, ice-white text. The saved-receipt "white floor" was retired — tests/bot/receipt.test.ts updated to assert the dark floor (BRAND.md still documents the white floor; needs Drew's ruling).
+- Checks: eslint 0 errors, tsc clean, next build ok, 378/378 tests pass in CI. GitHub Actions 37715641041 success. Vercel dpl_5L3da64RxJmsnBvTaURMLqAWpFHG READY.
+- Known pre-existing: tests/e2e/reasoning-oidc.test.ts hangs locally (excluded from CI too? no — CI ran 378; the hang is local-only parallel-runner flake).
+
+## Previous checkpoint — 2026-10-07 (ARGUS canvas rebuild, main)
 
 - `app/packs/trading/argus/argus-canvas.tsx` rebuilt: quarter-res bloom post-processing, additive particle vortex bands with pseudo-perspective depth, bezier tentacle data packets with spring-overshoot core flash, noise-driven organic motion, parallax starfield + slow camera drift. Same 9 info clouds and snapshot labels; DPR cap 2, reduced-motion static frame, canvas 2D only.
 - Checks: eslint clean, `tsc --noEmit` clean, focused `tests/packs/` 8/8 pass, `npm run build` succeeds (routes `/packs/trading/argus`, `/packs/trading/watchlist` in output). Full suite not run (pre-existing hang on `tests/e2e/reasoning-oidc.test.ts`, unrelated — no test files touched).

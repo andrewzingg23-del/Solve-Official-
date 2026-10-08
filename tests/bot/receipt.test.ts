@@ -61,7 +61,7 @@ it("lets only the person who saved it share it, with the part drawn from the rec
   await assert.rejects(buildReceipt(ana, worldId, "00000000-0000-4000-8000-000000000000"), /isn't in this World/);
 });
 
-it("draws the receipt on the white floor, honest about whose word it is", async () => {
+it("draws the receipt on the dark floor, honest about whose word it is", async () => {
   process.env.SUPABASE_SECRET_KEY = SECRET;
   const { renderToStaticMarkup } = await import("react-dom/server");
   const { default: SavedPage } = await import("../../app/saved/[token]/page");
@@ -72,7 +72,8 @@ it("draws the receipt on the white floor, honest about whose word it is", async 
   assert.match(html, /80 × 70 × 63 mm · PETG/);
   assert.match(html, /Everything here is real\./);
   assert.match(html, /It rests on Ana&#x27;s word, not on an outside check\./);
-  assert.match(html, /bg-\[#f2f7fb\]/);
+  assert.match(html, /solve-wordmark-on-dark\.svg/);
+  assert.equal(html.includes("bg-[#f2f7fb]"), false, "the white floor is gone");
 });
 
 it("renders the link-preview card as a PNG, for a real receipt and for a broken link", async () => {

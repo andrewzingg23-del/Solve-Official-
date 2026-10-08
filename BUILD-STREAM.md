@@ -903,3 +903,9 @@ Founder problem: the ARGUS trading watch centerpiece finally looks like the mach
 - Kept: 9 info clouds identical, Oct 7 FOMO snapshot labels, dark cinematic theme, DPR cap 2, reduced-motion static frame, page.tsx tables untouched.
 - Checks: eslint clean, tsc --noEmit clean, npm run build succeeds, tests/packs/ pass. Full suite skipped (pre-existing tests/e2e/reasoning-oidc.test.ts hang, unrelated).
 - Next: push to main, confirm Vercel READY.
+
+## 2026-10-08 ~02:10 UTC — Whole-site quality upgrade (coordinator integration)
+- Slice: award-level motion/depth across all routes (4 worker groups: home+/start, trading pack, identity, long tail). 43 files changed, +1470/-791. Deleted dead app/claim/claim-flow.tsx (zero importers).
+- CI red on first push (7631e47): tests/bot/receipt.test.ts asserted the old white-floor class `bg-[#f2f7fb]`; page now follows the dark-cinematic theme law (founder 2026-10-06: dark supersedes light app-wide). Updated the test to assert the dark wordmark + absence of the white floor.
+- Checks: eslint 0 errors, tsc clean, next build ok, focused tests 8/8 + receipt 4/4 pass. Full-suite batch run shows pre-existing parallel-runner flakes (world/venture files pass in isolation; e2e/reasoning-oidc hang predates this work).
+- Next: push fix, confirm CI green + Vercel READY.
