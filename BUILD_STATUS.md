@@ -1,5 +1,11 @@
 # BUILD_STATUS
 
+## Current checkpoint — 2026-10-07 (ARGUS canvas rebuild, main)
+
+- `app/packs/trading/argus/argus-canvas.tsx` rebuilt: quarter-res bloom post-processing, additive particle vortex bands with pseudo-perspective depth, bezier tentacle data packets with spring-overshoot core flash, noise-driven organic motion, parallax starfield + slow camera drift. Same 9 info clouds and snapshot labels; DPR cap 2, reduced-motion static frame, canvas 2D only.
+- Checks: eslint clean, `tsc --noEmit` clean, focused `tests/packs/` 8/8 pass, `npm run build` succeeds (routes `/packs/trading/argus`, `/packs/trading/watchlist` in output). Full suite not run (pre-existing hang on `tests/e2e/reasoning-oidc.test.ts`, unrelated — no test files touched).
+- Pushed to `main`; Vercel auto-deploy. CI/deploy status verified after push.
+
 Updated 2026-10-04. Branch `codex/need-to-route-network-state-spec`.
 
 ## Current checkpoint — 2026-10-04

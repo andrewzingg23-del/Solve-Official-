@@ -886,3 +886,12 @@ Founder problem: the app finally looks like one thing — the refs' dark cinemat
 - Linked both from `/packs/trading` via a new Intel section (two cards).
 - Checks: eslint clean, `tsc --noEmit` clean, focused tests 8/8 pass, `npm run build` succeeds (both routes in output). Full suite NOT run: it hangs on tests/e2e/reasoning-oidc.test.ts (pre-existing env issue, unrelated to this slice — no test files touched).
 - Founder problem: founder's memecoin signal setup (X + FOMO + trench.io linked) now has a home in the app — the watchlist he ordered and the ARGUS machine he named.
+
+## 2026-10-07 ~21:05 EDT — ARGUS canvas rebuild (founder: animation "weak")
+Slice: rebuild app/packs/trading/argus/argus-canvas.tsx with Awwwards-level techniques from web research — quarter-res bloom post-processing (bright-pass + blur, additive composite), additive-blend particle vortex in irregular orbital bands with pseudo-perspective depth, bezier tentacle data packets flowing into the core, spring-overshoot core flash on packet arrival, noise-driven organic motion (no frame jitter), parallax starfield + slow camera drift. Same content (9 info clouds, Oct 7 FOMO snapshot labels), same perf constraints (DPR cap 2, reduced-motion static frame, canvas 2D only).
+Founder problem: the ARGUS trading watch centerpiece finally looks like the machine it names.
+
+## 2026-10-07 ~21:20 EDT — ARGUS canvas rebuild shipped
+- Rebuilt `app/packs/trading/argus/argus-canvas.tsx` (~480 lines): bloom via quarter-res bright-pass + blur composited additively; 240-particle additive vortex in 4 irregular orbital bands with pseudo-depth scaling; 70-star parallax field with twinkle; quadratic-bezier tentacles with animated flow dashes; 18 data packets riding the beziers into the core, arrivals firing a spring-overshoot core flash; sum-of-sines organic noise everywhere (no frame jitter); slow camera drift; vignette. Same 9 clouds, same snapshot labels, same perf constraints.
+- Checks: eslint clean (2 unused-var warnings fixed), `tsc --noEmit` clean (explicit CanvasRenderingContext2D annotation for closure narrowing), `npm run build` succeeds, focused `tests/packs/` 8/8 pass. Full suite not run (pre-existing `reasoning-oidc` hang).
+- Committed and pushed to main; Vercel auto-deploy.
