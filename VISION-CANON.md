@@ -1,228 +1,111 @@
-# Sovereign — The Vision (Founder's Canon, 2026-10-02)
+# SOLVE — Vision Canon
 
-Your vision is to build Sovereign as a living operating system for real life.
-Not just an app. Not just AI. Not just crypto. Not just social. Not just a game.
+**Status:** Founder's canonical direction  
+**Last consolidated:** 2026-10-08  
+**Purpose:** Portable source of truth for why SOLVE exists and what must remain true as it grows.
 
-The core idea is:
+## The vision
 
-The player is the center. Sovereign is the world that grows around them.
-Every user has their own world, shaped by their interests, goals, history, location, relationships, projects, skills, assets, and ambitions.
-They don't open Sovereign and browse 500 features.
+SOLVE is a platform for security and privacy in an unsafe world. It strengthens the sovereignty of people and communities through preparation, coordination, and technology.
 
-They ask for a way.
+Sovereignty means having more ability to understand your situation, protect what matters, make informed choices, organize people and resources, and act on a chosen future. SOLVE should give people unusual leverage: help them get ahead of problems, adapt when conditions change, and accomplish together what would be hard alone.
 
-Sovereign interprets what they want, researches what it doesn't know, finds viable routes, and gives them a step-by-step path forward. If needed, it finds current links, providers, APIs, tools, people, services, or information required to make that route real.
+The world SOLVE helps build is grounded in truth. It uses evidence and unbiased reasoning to examine how systems, incentives, and constraints actually work. It makes assumptions, uncertainty, competing explanations, and consequences visible so people can judge a path and improve it.
 
-The loop is:
+SOLVE is not only an app, chatbot, social network, game, or currency. It is a living platform where people and authorized AI agents can understand a goal, prepare a route, build together, act in the real world, and learn from what happened.
 
-Ask → Find a route → Enter a Room → Act → Create consequence → Expand your world
-The world itself
-Sovereign begins spatially.
-The user enters through a living map. Their physical location glows from underneath the world. The camera can zoom toward their node, then into their personal Command Center.
+## The human promise
 
-From there they can move into:
+A person should be able to arrive with a need, an ambition, or an idea and leave more prepared—with a clearer picture of reality, people and resources they can involve, and practical next steps.
 
-physical places
-digital places
-projects
-businesses
-communities
-learning environments
-gaming/streaming environments
-creator spaces
-Network States
-markets
-new Rooms they create
-A node can be physical, digital, or both.
-So someone could move from:
+A household, group, or community should be able to prepare and coordinate without surrendering control of its identity, private information, or decisions.
 
-their physical location → personal node → Command Center → GTA streaming room → audience community
-while another person could move through:
-personal node → insurance business → AI receptionist room → lead-generation room
-Same Sovereign. Different personal world.
-Rooms
-A Room is a usable environment created around a purpose.
-Examples:
+The core loop is:
 
-AI Receptionist Room
-Insurance Agency Room
-Sales Room
-Learning Room
-Car Design Room
-Property Development Room
-Streaming Room
-Founder Room
-Rooms aren't disconnected apps.
-They are assembled from common Sovereign systems.
+**Understand → Prepare → Coordinate → Create → Act → Verify → Learn**
 
-Your clean hierarchy is:
+SOLVE helps people find a way forward, then makes the work and evidence of that progress part of a useful, growing World.
 
-Sector Pack = reusable mechanics
-Room = usable environment
-Node = where it exists in the world
-Route = how the player gets somewhere useful
-Capability = something Sovereign can do
-Provider Adapter = how the outside world performs it
-Automation = when/how it executes
-Event = proof that it happened
-AI is the electricity
-One of the most important parts of your vision is that AI should not just be a chatbot floating beside the product.
-AI runs through Sovereign like electricity through a grid.
-It watches authorized world state, understands changes, researches missing information, finds routes, simulates outcomes, prepares actions, coordinates systems, and surfaces what matters.
-A Business Room might notice untouched leads.
+## A world shaped around people
 
-A Property Room might notice a supplier price changed.
+Each person has a SOV ID and a World that can grow around their interests, goals, relationships, projects, skills, resources, and chosen communities. A World may connect physical places, digital spaces, people, teams, businesses, workflows, learning, and creative work.
 
-A Streaming Room might notice an audience spike.
+A person can move from a map or identity into a project, community, business, or designed environment. These are connected parts of one system rather than disconnected apps.
 
-A Learning Room might recognize that the player has demonstrated a new skill.
+- A **World** is a persistent context for people, plans, resources, knowledge, and work.
+- A **Room** is a usable environment assembled around a purpose.
+- A **Node** locates a person, place, project, organization, or capability in a World.
+- A **Route** is a researched path from a current situation to a desired outcome.
+- A **Capability** is something a person or authorized agent can do.
+- A **Provider Adapter** connects SOLVE to an outside service or tool.
+- An **Event** records an action, its authority, evidence, and outcome.
 
-The user shouldn't need to constantly ask the AI what happened.
+People should be able to create new Rooms and workflows as their needs change. SOLVE supplies reusable foundations; it should not force every ambition into a fixed catalog.
 
-The world itself should react intelligently.
+## Preparation and coordination
 
-But you also have a strict boundary:
+Every meaningful project draws on some combination of time, skill, ideas, information, capital, labor, tools, materials, and relationships. SOLVE helps people discover, organize, and deliver those resources with clear ownership, constraints, dependencies, and outcomes.
 
-AI can flow everywhere the player authorizes. Authority cannot.
-AI can think broadly.
-Consequences still go through:
+When a person asks for a way forward, SOLVE should:
 
-permission → policy → approval → capability → provider → verification → event
-Wayfinder
-The universal interaction is effectively:
-What do you want to do?
-The player might say:
-"I want to make more money."
-"I want to start an agency."
-"I want to stream GTA."
-"I want to design a car."
-"I want to learn sales."
-"I want to build a house."
-Sovereign uses the player's world state plus live research to produce a few viable paths.
-Not a giant search result.
+1. Understand the goal and relevant context they have chosen to share.
+2. Identify missing facts, constraints, and uncertainties.
+3. Research current sources when the answer depends on the outside world.
+4. Present a small set of viable routes with reasoning and tradeoffs.
+5. Assemble the people, resources, tools, and workflows needed.
+6. Carry out only actions within granted authority.
+7. Record evidence and outcomes, then learn from real friction.
 
-Something like:
+The aim is completed user value, not a larger feature count or elaborate simulation without a real use.
 
-I found 3 ways forward.
-Then each route includes actual steps.
-If external information is required, Sovereign goes and figures it out.
+## Reality Builder
 
-It should prefer authoritative sources, follow links, verify current requirements, and attach the useful link to the step where the user needs it.
+SOLVE should help people turn ideas into real things and functioning systems: a bicycle, a house on a specific lot, a product, business, community, organization, workflow, or digital environment.
 
-So Sovereign doesn't just say what is theoretically possible.
+The long-term creation loop is:
 
-It helps someone actually get there.
+**Imagine → Design → Manipulate → Simulate → Estimate → Validate → Coordinate → Build → Verify → Improve**
 
-Reality Builder
-You also want Sovereign to become a system for turning imagination into reality.
-A user can create:
+For physical work, SOLVE should connect editable 3D designs and simulations to real materials, costs, suppliers, timelines, permits, financing choices, plans, skilled people, and execution workflows. For other kinds of work, it should adapt the same pattern to their real constraints.
 
-a house
-car
-product
-business
-restaurant
-community
-campaign
-organization
-workflow
-digital world
-Sovereign helps model the real constraints:
-cost
-materials
-people
-suppliers
-financing
-regulations
-timelines
-skills
-integrations
-execution
-That gives you the larger loop:
-Imagine → Design → Simulate → Price → Validate → Gather people → Fund → Build → Operate → Prove
-Self-creating world
-Eventually Sovereign itself evolves.
-Not uncontrolled AI rewriting production.
+A 3D model or AI suggestion is not proof that something is safe, permitted, affordable, or buildable. SOLVE should distinguish concepts, estimates, simulations, sourced facts, and approved plans, and bring in qualified human review where the real-world work requires it.
 
-Your architecture is:
+## AI as a coordinated capability
 
-Stable Master Code + evolving Sector Code
-The kernel stays stable around:
-identity
-authority
-permissions
-events
-ledger
-provenance
-history
-evidence
-Everything else can expand through Sector Packs.
-Anyone can create one.
+AI should not be a chatbot detached from the product. It should help people understand authorized World state, research unknowns, identify changes, create and revise plans, simulate outcomes, assemble workflows, and coordinate agents and people.
 
-Examples:
+An agent can be owned or delegated to a person, household, community, or organization. Its scope, permissions, data access, activity, and results must be visible and controllable. Agents can prepare and perform authorized work; authority and consequential approval remain explicit.
 
-Insurance Growth
-AI Receptionist
-Automotive
-Property
-Learning
-Creator Business
-Manufacturing
-Travel
-Creation can be open.
-Distribution earns trust.
+**AI can think broadly. Authority cannot.**
 
-And when players repeatedly need something Sovereign cannot express yet, Forge can identify that gap and produce a tested proposal for a new mechanic.
+A consequential action follows a governed path:
 
-So the system eventually becomes:
+**identity → permission → policy → approval when needed → capability → provider → verification → recorded event**
 
-People create new realities → Sovereign discovers what mechanics those realities require → Sovereign evolves to support them.
-SOV
-SOV is not supposed to be a token looking for a reason to exist.
-It becomes the economic language of Sovereign.
+## Security, privacy, and truth
 
-Possible uses:
+Security and privacy are foundational product promises in an unsafe world. Access should be private by default and sharing should be controlled by the person or group with authority over the information.
 
-player payments
-creator payments
-provider payments
-Room fees
-Sector Pack purchases
-Network State treasuries
-revenue sharing
-cross-network settlement
-verified rewards
-Your rule is:
-Reasons to use SOV before reasons to trade SOV.
-And transactions can live on an open, auditable ledger.
-Balances come from proper double-entry accounting.
+People should be able to choose what is shared, with whom, for what purpose, and for how long—and to revoke access. Sensitive identity, location, household, and community information must not be exposed merely to make a map or social feature feel active.
 
-The public can verify economic flows where appropriate without exposing private identity unnecessarily.
+SOLVE should preserve provenance, distinguish claims from verified facts, show sources and uncertainty, and keep corrections in history rather than silently rewriting what happened. It should make it easier to reason together without pretending that every disagreement has a simple answer.
 
-Network States
-Users can also build persistent communities/economic worlds around a purpose.
-These can have:
+## Resilience and evolution
 
-members
-Rooms
-treasury
-rules
-roles
-agents
-marketplace
-reputation
-history
-AI can help operate them.
-SOV can settle value between them.
+SOLVE should make people and communities more resilient by helping them prepare before disruption, coordinate during it, and learn afterward. The platform itself should be adaptable: providers and tools can be replaced, data and work can be inspected, and useful Worlds can grow without depending on one fragile integration.
 
-That creates a larger network of user-created worlds built on the same Sovereign physics.
+The stable kernel protects identity, authority, permissions, events, ledger integrity, provenance, history, and evidence. New capabilities can grow through modular Rooms, Packs, workflows, and provider adapters, while the core trust rules remain consistent.
 
-The end state
-The biggest version of your vision is:
-Sovereign becomes a programmable interface for reality.
-A person brings ambition into it.
-Sovereign helps them understand where they are, decide where they want to go, discover viable routes, assemble the systems and people required, execute in the real world, record what actually happened, and expand what becomes possible next.
+SOLVE should improve from real outcomes and observed friction. Its own agents must use the same identity, authority, evidence, and review rules as everyone else.
 
-The world gets larger as the person gets larger.
+## Economic boundary
 
-That is the vision.
+Economic tools may support useful work, exchange, and verified contribution. They must have explicit funding and accounting, preserve conservation and idempotent settlement, and avoid recruitment-only rewards.
+
+SOV remains an internal economic primitive unless separately approved. Give it real utility before emphasizing trading or speculation. No economic mechanism should weaken the privacy, consent, or trust foundations of SOLVE.
+
+## Long view
+
+The long-term ambition is for SOLVE to become a programmable interface for reality: a place where people can understand where they are, decide where they want to go, discover viable routes, assemble the systems and people required, create digitally and physically, act in the world, and preserve trustworthy evidence of what changed.
+
+**SOLVE helps people and communities become more prepared, more capable, and harder to make powerless.**
