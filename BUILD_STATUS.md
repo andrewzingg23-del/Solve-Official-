@@ -546,3 +546,9 @@ Verification in progress through CI/preview after local runtime disconnection. S
 ## 2026-10-08 — Studio review and verification checkpoint
 
 Important final review findings are fixed: persisted ancestry, independent creations/history, stale AI proposal checks and consistent storage budgets. Identity export retains unsaved customization. New regressions exercise those boundaries and the existing real kernel constraint. Full CI/browser gates remain pending for this checkpoint after a local runtime outage. Production sharing/provider configuration and live multiuser verification remain separate from embedded-kernel tests.
+
+## 2026-10-08 — Immersive studio delivery
+
+Code checkpoint `d7ac9230cc5c0ed9f6ed0bb290b1eac6b598a4bc`: Build run `37831693148` passed 406/406 tests, TypeScript, lint (zero errors, eight warnings) and production build. Studio browser run `37831693140` passed actual desktop/phone/no-WebGL editing, persistence/history, independent creations, four exports, physics, identity privacy, onboarding and phone/desktop map zoom/frame. Seven browser screenshots are attached to that run. READY preview: https://solve-l1jctbfmb-sovigrn.vercel.app/. All five Important and both Minor final review findings are addressed; none are deferred. Current main's ARGUS and community AI work is preserved. No production merge, deployment, schema or data changes.
+
+Handoff: `docs/handoff/2026-10-08-immersive-studio.md`. This is a concept creation studio; live shared/provider sessions, deep avatar generation, specialist CAD and real-world execution remain follow-ups.

@@ -4,6 +4,8 @@ One writer per architectural surface. Update this file when work starts, changes
 
 ## Now (read first)
 
+**Codex checkpoint, 2026-10-08:** Code checkpoint `d7ac9230cc5c0ed9f6ed0bb290b1eac6b598a4bc`: Build run `37831693148` passed 406/406 tests, TypeScript, lint (zero errors, eight warnings) and production build. Studio browser run `37831693140` passed actual desktop/phone/no-WebGL editing, persistence/history, independent creations, four exports, physics, identity privacy, onboarding and phone/desktop map zoom/frame. Seven browser screenshots are attached to that run. READY preview: https://solve-l1jctbfmb-sovigrn.vercel.app/. All five Important and both Minor final review findings are addressed; none are deferred. Current main's ARGUS and community AI work is preserved. No production merge, deployment, schema or data changes. Handoff: `docs/handoff/2026-10-08-immersive-studio.md`.
+
 Updated 2026-10-05 by Claude. The founder overrides anything here.
 
 **The priority: solve is built for the founder first** (`docs/plans/2026-10-05-founder-first.md`). The first user is the founder; the first project is building solve with its AI builders. Each slice should solve a problem the founder actually has. Name it in your stream entry.
