@@ -959,3 +959,17 @@ Founder problem: the ARGUS trading watch centerpiece finally looks like the mach
 - Merged doris/guest-profile (ffa363d): sign-in out, guest profile in. The 12c4a5b signin-step.tsx restore is superseded — the merged branch intentionally deletes signin-step.tsx (profile-step.tsx replaces it); flow.tsx on the branch references the profile step, main is consistent.
 - Resolved duplicate ACTIVE-WORK row 93 (ARGUS docs collision).
 
+
+## 2026-10-08 ~04:30 UTC — ARGUS v5 "holographic command desk" (OpenAI generation mission)
+- Founder verdict on v4: "d- material not even close." Ordered the full mission: OpenAI generates, new files land in GitHub, Vercel deploys.
+- Art direction locked from his 3 reference images: floating frosted-glass hologram panels with cyan glow edges over a dark void, pointer as the hand/instrument, luminous data.
+- Slice: v5 rebuild of the WebGL scene — 9 token clouds become holographic panels (HTML/DOM overlays, varied depths), signature interaction = pointer proximity brighten/tilt + tap-to-focus with core pulse + vet-gate check ticks (liquidity/holders/contract). Everything else restrained.
+- Method: tight brief → gpt-6-astra via OpenAI API (verify response.model) → integrate + code-review fixes → ship-clean → push main → Vercel READY + CI green → parent screenshots (subagents can't run browser tasks).
+
+## 2026-10-08 ~05:10 UTC — ARGUS v5 shipped (holographic command desk)
+- OpenAI API reality check: gpt-6-astra returned 429 insufficient_quota (key valid, 127 models listed, zero credits). Per founder's standing directive, executed the brief directly instead of waiting on billing. Staged loop at /tmp/argus-v5-brief.md + /tmp/argus_v5_gen.py for when credits land. Model that actually served: none (builder-executed); the interaction spec (proximity field, focus machine, pulse) came from the parent agent's research synthesis.
+- New module app/packs/trading/argus/holo-panels.ts: computePanelPose (glow/tilt field), createFocusMachine (380ms staggered liquidity→holders→contract ticks, 2.6s auto-release), createPulse (1s exponential decay), HOLO_CSS (frosted glass, cyan edges, scanlines, corner ticks).
+- argus-webgl.tsx: chips → interactive holo-panels (role=button, keyboard), core pulse on focus (swell/bloom/light), reduced-motion static frame + instant resolve, mobile keeps canvas-2d fallback.
+- Code-review fixes (mine): eslint react-hooks/purity false positive — factory must be called in useMemo, never inside useEffect; checklist sync via polling, never ref access in factory.
+- Checks: tsc clean, eslint clean, npm run build ok, tests/packs/argus-holo-panels.test.ts 7/7 pass.
+- Next: parent runs the browser screenshot check on the live URL (subagents can't); up to 3 generate→fix iterations per mission.

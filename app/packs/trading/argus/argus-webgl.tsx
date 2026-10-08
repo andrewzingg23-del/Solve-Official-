@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
+import {
+  HOLO_CSS,
+  HOLO_FOCUS_SCALE,
+  computePanelPose,
+  createFocusMachine,
+  createPulse,
+} from "./holo-panels";
 
 // Snapshot from the Oct 7, 2026 FOMO feed read — labeled as a snapshot, not live.
 interface Cloud {
@@ -335,6 +342,25 @@ void main() {
 export function ArgusWebGL() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const chipsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const checksRef = useRef<(HTMLUListElement | null)[]>([]);
+  const reducedRef = useRef(false);
+
+  // v5 focus machine: memoized at top level (calling the factory inside
+  // useEffect trips react-hooks/purity's inference — factory stays pure here).
+  // Checklist DOM syncs via polling in updateChips (no ref access in factory).
+  const focusPulse = useMemo(() => createPulse(), []);
+  const machine = useMemo(
+    () =>
+      createFocusMachine({
+        onPulse: () => focusPulse.trigger(),
+      }),
+    [focusPulse]
+  );
+
+  const activate = (i: number) => {
+    machine.focus(i);
+    if (reducedRef.current) machine.resolveInstant();
+  };
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -343,6 +369,10 @@ export function ArgusWebGL() {
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const isMobile = window.matchMedia("(pointer: coarse)").matches || el.clientWidth < 640;
+    reducedRef.current = reduced;
+
+    // v5: focus machine + pulse come from useMemo above (stable)
+
 
     let renderer: THREE.WebGLRenderer;
     try {
@@ -720,9 +750,39 @@ export function ArgusWebGL() {
       });
     }
 
+    // v5: checklist DOM sync — polled from updateChips (no React state,
+    // no ref access inside the memoized factory)
+    let lastCheckSig = "";
+    function syncChecklist(st: { focused: number | null; checks: { status: string }[] }) {
+      if (st.focused === null) {
+        lastCheckSig = "";
+        return;
+      }
+      const sig = st.focused + ":" + st.checks.map((c) => c.status[0]).join("");
+      if (sig === lastCheckSig) return;
+      lastCheckSig = sig;
+      const ul = checksRef.current[st.focused];
+      if (!ul) return;
+      st.checks.forEach((chk, j) => {
+        const li = ul.children[j] as HTMLElement | undefined;
+        if (!li) return;
+        li.style.color =
+          chk.status === "done"
+            ? "#00e5a0"
+            : chk.status === "active"
+              ? "#22d3ee"
+              : "rgba(150,170,190,0.45)";
+        const mark = li.firstElementChild as HTMLElement | null;
+        if (mark) mark.textContent = chk.status === "done" ? "✓" : chk.status === "active" ? "◉" : "○";
+      });
+    }
+
     function updateChips(t: number) {
       const w = el.clientWidth;
       const h = el.clientHeight;
+      const st = machine.state();
+      syncChecklist(st);
+      const focusedNow = st.focused;
       chips.forEach((chip, i) => {
         if (!chip) return;
         const intro = easeOutExpo(Math.min(1, Math.max(0, (t - i * 0.09) / 1.4)));
@@ -731,23 +791,40 @@ export function ArgusWebGL() {
         const y = (-projV.y * 0.5 + 0.5) * h;
         const depth = THREE.MathUtils.clamp((anchors[i].z + 5) / 10, 0, 1);
         const s = 0.68 + 0.32 * depth;
-        chip.style.transform = `translate(-50%,-50%) translate(${x.toFixed(1)}px,${y.toFixed(1)}px) scale(${s.toFixed(3)})`;
+        // v5: pointer-as-hand — panels near the pointer brighten and tilt toward it
+        const isF = focusedNow === i;
+        const pose = isF
+          ? { glow: 1, tiltX: 0, tiltY: 0 }
+          : computePanelPose(x, y, pointerPx);
+        chip.style.setProperty("--holo-glow", pose.glow.toFixed(3));
+        chip.classList.toggle("holo-focus", isF);
+        chip.style.transform =
+          `translate(-50%,-50%) translate(${x.toFixed(1)}px,${y.toFixed(1)}px)` +
+          ` rotateX(${pose.tiltX.toFixed(2)}deg) rotateY(${pose.tiltY.toFixed(2)}deg)` +
+          ` scale(${(s * (isF ? HOLO_FOCUS_SCALE : 1)).toFixed(3)})`;
         chip.style.opacity = (intro * (0.35 + 0.65 * depth)).toFixed(3);
-        chip.style.zIndex = String(100 + Math.round(depth * 40));
+        chip.style.zIndex = String(isF ? 300 : 100 + Math.round(depth * 40));
       });
     }
 
-    // ---- pointer parallax ----
+    // ---- pointer parallax + hologram proximity field ----
     let px = 0, py = 0, tx = 0, ty = 0;
+    let pointerPx: { x: number; y: number } | null = null;
     const onPointer = (e: PointerEvent) => {
       const r = el.getBoundingClientRect();
       tx = ((e.clientX - r.left) / r.width - 0.5) * 2;
       ty = ((e.clientY - r.top) / r.height - 0.5) * 2;
+      pointerPx = { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+    const onLeave = () => {
+      pointerPx = null;
     };
     el.addEventListener("pointermove", onPointer);
+    el.addEventListener("pointerleave", onLeave);
 
     let raf = 0;
     let running = true;
+    let lastT = 0;
     const io = new IntersectionObserver((es) => {
       running = es[0]?.isIntersecting ?? true;
     });
@@ -756,6 +833,16 @@ export function ArgusWebGL() {
     const clock = new THREE.Clock();
 
     function frame(t: number) {
+      // v5: drive the focus machine + core pulse off the same clock (no timers,
+      // so everything pauses with the loop and reduced-motion stays static)
+      const dtMs = reduced ? 0 : Math.min(100, Math.max(0, (t - lastT) * 1000));
+      lastT = t;
+      if (!reduced) {
+        focusPulse.decay(dtMs);
+        machine.tick(dtMs);
+      }
+      const pv = focusPulse.ref.value;
+
       plasmaMat.uniforms.uTime.value = t;
       starMat.uniforms.uTime.value = t;
       pMat.uniforms.uTime.value = t;
@@ -770,12 +857,16 @@ export function ArgusWebGL() {
       fringe.rotation.z = t * 0.4;
       fringeWarm.rotation.z = -t * 0.3;
       const pulse = 1 + Math.sin(t * 1.7) * 0.05;
+      // v5: focus pulse swells the machine — restrained, decays in ~1s
+      const swell = 1 + 0.18 * pv;
+      coreGroup.scale.set(swell, swell, swell);
       glowLayers.forEach((sp, i) => {
         const base = [4.6, 7.4, 11.5, 5.6][i];
-        const sc = base * pulse;
+        const sc = base * pulse * (1 + 0.35 * pv);
         sp.scale.set(sc, sc, 1);
       });
-      coreLight.intensity = 55 + Math.sin(t * 1.7) * 10;
+      coreLight.intensity = (55 + Math.sin(t * 1.7) * 10) * (1 + 0.9 * pv);
+      bloom.strength = 0.7 * (1 + 0.5 * pv);
 
       px += (tx - px) * 0.04;
       py += (ty - py) * 0.04;
@@ -809,6 +900,7 @@ export function ArgusWebGL() {
       ro.disconnect();
       io.disconnect();
       el.removeEventListener("pointermove", onPointer);
+      el.removeEventListener("pointerleave", onLeave);
       scene.traverse((o) => {
         const mesh = o as THREE.Mesh;
         if (mesh.geometry) mesh.geometry.dispose();
@@ -820,34 +912,69 @@ export function ArgusWebGL() {
       renderer.dispose();
       if (renderer.domElement.parentElement === wrap) el.removeChild(renderer.domElement);
     };
-  }, []);
+  }, [focusPulse, machine]);
 
   return (
-    <div ref={wrapRef} className="relative h-[480px] w-full md:h-[600px]">
+    <div ref={wrapRef} className="relative h-[480px] w-full cursor-crosshair md:h-[600px]">
+      <style>{HOLO_CSS}</style>
       {CLOUDS.map((c, i) => (
         <div
           key={c.label}
-          ref={(el) => { chipsRef.current[i] = el; }}
-          className="glass pointer-events-none absolute left-0 top-0 px-3 py-2"
-          style={{ opacity: 0, willChange: "transform" }}
-          aria-hidden="true"
+          ref={(el) => {
+            chipsRef.current[i] = el;
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label={`${c.label}, ${c.value}, ${c.change}. Activate to pull forward and run illustrative vet checks.`}
+          onClick={() => activate(i)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              activate(i);
+            }
+          }}
+          className="holo-panel px-3 py-2"
+          style={{
+            opacity: 0,
+            willChange: "transform",
+            ["--holo-edge" as string]: c.up ? "0,229,160" : "255,77,94",
+          }}
         >
+          <span className="holo-corners" aria-hidden="true" />
           <p className="text-[11px] font-semibold tracking-wide text-foreground">{c.label}</p>
           <p className="text-[10px] tabular-nums text-muted">{c.value}</p>
           <p
             className="mt-0.5 inline-block text-[10px] font-semibold tabular-nums"
             style={{
               color: c.up ? "#00e5a0" : "#ff4d5e",
-              textShadow: c.up ? "0 0 12px rgba(0,229,160,0.8)" : "0 0 12px rgba(255,77,94,0.8)",
+              textShadow: c.up
+                ? "0 0 12px rgba(0,229,160,0.8)"
+                : "0 0 12px rgba(255,77,94,0.8)",
             }}
           >
             {c.change}
           </p>
-          <span
-            className="pointer-events-none absolute inset-0 rounded-[inherit]"
-            style={{ boxShadow: c.up ? "inset 0 0 0 1px rgba(0,229,160,0.35)" : "inset 0 0 0 1px rgba(255,77,94,0.35)" }}
-            aria-hidden="true"
-          />
+          <ul
+            ref={(el) => {
+              checksRef.current[i] = el;
+            }}
+            className="holo-checks mt-1.5 space-y-0.5 border-t border-[rgba(34,211,238,0.25)] pt-1.5"
+            aria-label="Illustrative vet checks"
+          >
+            {(["LIQUIDITY", "HOLDERS", "CONTRACT"] as const).map((label) => (
+              <li
+                key={label}
+                className="flex items-center gap-1.5 text-[9px] font-medium tracking-[0.14em]"
+                style={{ color: "rgba(150,170,190,0.45)" }}
+              >
+                <span aria-hidden="true">○</span>
+                {label}
+              </li>
+            ))}
+          </ul>
+          <p className="holo-note mt-1 text-[8px] leading-3 text-faint">
+            illustrative ticks — verify on-chain
+          </p>
         </div>
       ))}
     </div>
