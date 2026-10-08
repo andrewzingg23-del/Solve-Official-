@@ -1,4 +1,23 @@
 @import "tailwindcss";
+
+/* Keep map navigation clear of the phone's welcome prompts and bottom dock. */
+.solve-flat-map-controls {
+  position: absolute;
+  right: 20px;
+  bottom: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 2;
+}
+@media (max-width: 767px) {
+  .solve-flat-map-controls {
+    right: 12px;
+    top: 45%;
+    bottom: auto;
+    transform: translateY(-50%);
+  }
+}
 @import "./studio/studio.css";
 
 /* SOLVE cinematic system — unified dark on EVERY surface.

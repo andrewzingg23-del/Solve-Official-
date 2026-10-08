@@ -16,7 +16,7 @@ export class FlatScene implements SceneController{
  for(let x=0;x<=1000;x+=1000/12)grid.append(element("line",{x1:String(x),x2:String(x),y1:"0",y2:"500"}));
  for(let y=0;y<=500;y+=500/6)grid.append(element("line",{x1:"0",x2:"1000",y1:String(y),y2:String(y)}));
  this.svg.append(grid,this.land,this.lines,this.marks);host.append(this.svg);
- this.controls=document.createElement("div");this.controls.style.cssText="position:absolute;right:20px;bottom:100px;display:flex;flex-direction:column;gap:6px;z-index:2";
+ this.controls=document.createElement("div");this.controls.className="solve-flat-map-controls";
  [["＋","Zoom map in",()=>this.zoom(0.7)],["−","Zoom map out",()=>this.zoom(1.4)],["⌂","Frame whole map",()=>this.returnHome()]].forEach(([label,aria,action])=>{const button=document.createElement("button");button.textContent=label as string;button.setAttribute("aria-label",aria as string);button.style.cssText="width:40px;height:40px;background:#0c2231cc;color:#8ce5e7;border:1px solid #8ce5e72a;border-radius:8px;font-size:20px;cursor:pointer";button.addEventListener("click",action as ()=>void);this.controls.append(button);});host.append(this.controls);
  this.svg.addEventListener("pointerdown",this.down);this.svg.addEventListener("pointermove",this.move);this.svg.addEventListener("pointerup",this.up);this.svg.addEventListener("pointercancel",this.cancel);this.svg.addEventListener("wheel",this.wheel,{passive:false});
  this.observer=new ResizeObserver(()=>this.notify());this.observer.observe(host);
