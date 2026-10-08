@@ -973,3 +973,9 @@ Founder problem: the ARGUS trading watch centerpiece finally looks like the mach
 - Code-review fixes (mine): eslint react-hooks/purity false positive — factory must be called in useMemo, never inside useEffect; checklist sync via polling, never ref access in factory.
 - Checks: tsc clean, eslint clean, npm run build ok, tests/packs/argus-holo-panels.test.ts 7/7 pass.
 - Next: parent runs the browser screenshot check on the live URL (subagents can't); up to 3 generate→fix iterations per mission.
+
+## 2026-10-08 ~05:25 UTC — ARGUS v5 deploy status
+- Commit 2cb9bc7 pushed to main; Vercel deployment READY (solve-goay680bn-sovigrn.vercel.app).
+- CI (Build #37728215591): FAILED on lint — but the 2 errors are pre-existing in tests/guest/profile.test.ts (no-explicit-any at 49:43, 55:43, from the ffa363d guest-profile merge; the prior main run 37724612819 failed on the same file). Zero lint errors from the ARGUS v5 files. Fix is trivial (Record<string, any> → Record<string, unknown>) but that file is the parent's slice — left for the parent to rule on.
+- Ship-clean for this slice: tsc clean, eslint clean (local), npm run build ok, 7/7 focused tests pass, Vercel READY.
+- OPEN: visual verification needs a browser task on the live URL (subagents can't run them) — parent to delegate; up to 3 generate→fix iterations per mission spec.
