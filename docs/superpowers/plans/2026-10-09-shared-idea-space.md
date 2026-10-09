@@ -31,11 +31,11 @@
 
 **Interfaces:** Produces `kernel.postRoomMessage`, `kernel.readRoomMessages`, `kernel.claimRoomReply`, `kernel.finishRoomReply`, `kernel.failRoomReply`; `readRoomConversation(kernel, worldId, beforeSeq?)`; `loadRoomContext(kernel, worldId)`; `submitRoomTurn(kernel, input, complete?)`.
 
-- [ ] Write real-kernel failing tests for two-user persistence, viewer and outsider denial, pagination, agent attribution and human-only decisions, retry safety, private-context exclusion, inference failure, and revocation while inference runs.
-- [ ] Run `node --import tsx --test --test-force-exit tests/e2e/shared-room.test.ts`; expect missing RPC/module failures before implementation.
-- [ ] Implement typed records, permission checks, bounded shared context and leased inference with partial outcome reporting.
-- [ ] Run the focused test file; expect every test to pass.
-- [ ] Commit the tested coherent slice with a stream checkpoint.
+- [x] Write real-kernel failing tests for two-user persistence, viewer and outsider denial, pagination, agent attribution and human-only decisions, retry safety, private-context exclusion, inference failure, and revocation while inference runs.
+- [x] Run `node --import tsx --test --test-force-exit tests/e2e/shared-room.test.ts`; expect missing RPC/module failures before implementation.
+- [x] Implement typed records, permission checks, bounded shared context and leased inference with partial outcome reporting.
+- [x] Run the focused test file; expect every test to pass.
+- [x] Commit the tested coherent slice with a stream checkpoint.
 
 ### Task 2: Invitations, presence, and document conflicts
 
@@ -43,23 +43,26 @@
 
 **Interfaces:** Produces `createWorldInvitation(kernel, worldId, role, requestId)` returning `{token, invitationId, expiresAt}`; `acceptWorldInvitation(kernel, token)` returning World ID; `cancelWorldInvitation(kernel, invitationId)`; `kernel.updateDocument` with `expectedVersion`; `readPresence` retaining its existing public signature.
 
-- [ ] Write failing tests for single-use, expired/cancelled links, owner-only creation, membership/revocation, spoofed invitation events, stale updates/idempotent retries and presence beyond 200 unrelated events.
-- [ ] Run the three focused test files and existing collaboration tests; verify expected failures.
-- [ ] Implement invitation projection with authenticated acceptance and grant parentage, atomic version checks, and indexed heartbeat retrieval.
-- [ ] Run the focused tests; expect all to pass.
-- [ ] Commit the tested coherent slice with a stream checkpoint.
+- [x] Write failing tests for single-use, expired/cancelled links, owner-only creation, membership/revocation, spoofed invitation events, stale updates/idempotent retries and presence beyond 200 unrelated events.
+- [x] Run the three focused test files and existing collaboration tests; verify expected failures.
+- [x] Implement invitation projection with authenticated acceptance and grant parentage, atomic version checks, and indexed heartbeat retrieval.
+- [x] Run the focused tests; expect all to pass.
+- [x] Commit the tested coherent slice with a stream checkpoint.
 
 ### Task 3: Usable shared room and bounded cost worksheet
 
-**Files:** `app/world/[worldId]/room/{page,view}.tsx`, new conversation component; new `app/api/worlds/[worldId]/conversation/route.ts`; invitation actions/panel and `app/world-invite/[token]/page.tsx`; existing World artifact editor; new `lib/world/cost-model.ts` and worksheet component; relevant tests and browser harness.
+**Files:** `app/world/[worldId]/room/{page,view}.tsx`, new conversation component; new `app/api/worlds/[worldId]/conversation/route.ts`; invitation actions/panel and `app/world-invite/[token]/page.tsx`; existing World artifact editor; new `lib/world/cost-model.ts` and worksheet component; additive room tools in `lib/bot/connector.ts`, `tests/bot/worlds.test.ts`; relevant tests and browser harness.
 
 **Interfaces:** Room conversation API accepts `{requestId, text, intent: message|ask_ai|decision}`; GET accepts `beforeSeq`. UI uses persisted records and cursor, publishes selected knowledge through existing documents, and records decisions explicitly. Worksheet computes per-unit and batch totals from user-entered values; it can save its assumptions/output as a shared document.
 
-- [ ] Write failing input/cost tests for malformed requests, finite bounded amounts, currency/units and rounding; add a browser scenario covering persistence, history, source disclosure, invitations and visible stale-edit retention.
-- [ ] Run the focused tests; verify expected failures.
-- [ ] Implement routes and accessible responsive UI using existing patterns. Preserve personal chat. Bind new accounts to canonical actors before invitation acceptance using authenticated registration.
-- [ ] Run focused tests and browser checks, then full suite, typecheck, lint and build; record actual live-service limitations.
-- [ ] Update build status/stream and commit.
+Existing MCP connections receive `read_room(world_id)` using the same bounded shared context and `post_room_message(world_id, text, request_id)` under their bot's grants. Posting requires the connection's write consent and World write access. Tools cannot author human decisions or request in-app inference as a human. Tests verify shared context excludes personal memory, read-only connections/Worlds refuse writes, revoked bots refuse reads, and retries preserve actual agent attribution.
+
+- [x] Write failing input/cost tests for malformed requests, finite bounded amounts, currency/units and rounding; add a browser scenario covering persistence, history, source disclosure, invitations and visible stale-edit retention.
+- [x] Run the focused tests; verify expected failures.
+- [x] Implement routes and accessible responsive UI using existing patterns. Preserve personal chat. Bind new accounts to canonical actors before invitation acceptance using authenticated registration.
+- [x] Add a regression for private documents inside a shared World: even a private-read owner excludes them from shared inference/context metadata. A document revision preserves existing visibility and requires private-read access when applicable.
+- [x] Run focused tests and browser checks, then full suite, typecheck, lint and build; record actual live-service limitations.
+- [x] Update build status/stream and commit.
 
 ### Task 4: Final review and delivery
 

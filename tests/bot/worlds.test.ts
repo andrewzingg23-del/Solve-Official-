@@ -12,6 +12,7 @@ import { saveBot } from "../../lib/bot/store";
 import { botGrantsIn, setBotAccess, worldsForBot } from "../../lib/bot/worlds";
 import { createCreativeResourceEntry, createCreativeWorld, loadCreativeWorld, updateCreativeResourceEntry } from "../../lib/world/creative";
 import { createKernelDb, service, user } from "../kernel/harness";
+import { readRoomConversation, submitRoomTurn } from "../../lib/world/room";
 
 const CLAUDE = "00000000-0000-4000-8000-0000000c1a0d";
 const WORLD = "6f1d2c3b-4a59-4687-9a0b-1c2d3e4f5a6b";
@@ -36,6 +37,35 @@ async function setting() {
   };
   return { db, ana, ben, anaId, benId, anaBot: anaBot.avatar!.agent_id, benBot: benBot.avatar!.agent_id, botAs, call };
 }
+
+it("connected external assistants share the room context and post as their own bot with scoped consent", async () => {
+  const { ana, ben, anaBot, benBot, botAs, call } = await setting();
+  const world = await createCreativeWorld(ana, { worldId: WORLD, title: "Shared prototype" });
+  await submitRoomTurn(ana, { worldId: WORLD, requestId: "decision", text: "Prototype first", intent: "decision" });
+  await setBotAccess(ana, { scope: world.scope, botAgentId: anaBot, access: "read" }, "room-read");
+  await setBotAccess(ana, { scope: world.scope, botAgentId: benBot, access: "add" }, "room-ben-add");
+  const read = await call(ana, "read_room", { world_id: WORLD });
+  assert.equal(read.isError, undefined, read.content[0].text);
+  assert.ok(read.content[0].text.includes("Prototype first"));
+  const args = { world_id: WORLD, request_id: "external-1", text: "Test the cartridge before the enclosure" };
+  assert.equal((await call(ana, "post_room_message", args)).isError, true, "read-only World access cannot post");
+  const posted = await call(ben, "post_room_message", args);
+  assert.equal(posted.isError, undefined, posted.content[0].text);
+  await call(ben, "post_room_message", args);
+  const messages = (await readRoomConversation(ana, WORLD)).messages;
+  assert.equal(messages.filter(m => m.text === args.text).length, 1);
+  assert.equal(messages.at(-1)!.actor_id, benBot);
+  assert.equal(messages.at(-1)!.actor_kind, "agent");
+  await assert.rejects(botAs(benBot).postRoomMessage({ worldId: WORLD, requestId: "no-human", text: "We accepted", kind: "decision" }));
+  const forged = await call(ben, "post_room_message", { ...args, request_id: "forged-kind", text: "A proposal", kind: "decision" });
+  assert.equal(forged.structuredContent?.kind, "message", "tool arguments cannot turn a bot proposal into human agreement");
+  const benId = (await ben.whoami()).actor_id;
+  await approveConnection(ben, benId, benBot, { clientId: CLAUDE, clientName: "ChatGPT", mode: "read" }, "room-read-only-connection");
+  assert.equal((await call(ben, "post_room_message", { ...args, request_id: "no-write-consent" })).isError, true, "World grants alone do not override connection write consent");
+  assert.equal((await call(ben, "read_room", { world_id: WORLD })).isError, undefined);
+  await setBotAccess(ana, { scope: world.scope, botAgentId: benBot, access: "none" }, "room-ben-out");
+  assert.equal((await call(ben, "read_room", { world_id: WORLD })).isError, true);
+});
 
 it("lets the bot into a World only as far as its owner allows, and out again", async () => {
   const { ana, anaId, anaBot, botAs, call } = await setting();

@@ -19,6 +19,7 @@ export type CreativeArtifact = {
   version: number;
   updatedAt: string;
   via: string | null; // the assistant the latest revision came through, when a bot made it
+  visibility: WorldEntity["visibility"];
 };
 
 export type CreateCreativeWorldInput = { worldId: string; title: string; goal?: string };
@@ -235,6 +236,7 @@ function artifactFromEntity(entity: WorldEntity): CreativeArtifact | null {
     version: entity.version,
     updatedAt: entity.updated_at,
     via: viaOf(entity.attributes),
+    visibility: entity.visibility,
   };
 }
 

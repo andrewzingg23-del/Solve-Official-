@@ -81,6 +81,17 @@ async function exerciseEveryMethod(supabase: SupabaseClient, actAs?: string) {
   await k.readAction(id);
   await k.readActions("world:x", 10);
   await k.inbox();
+  await k.createWorldInvitation({ worldId: id, tokenHash: "0".repeat(64), role: "editor", requestId: "invite" });
+  await k.acceptWorldInvitation("0".repeat(64));
+  await k.cancelWorldInvitation(id);
+  await k.readWorldInvitations(id);
+  await k.readWorldPresence(`world:${id}`);
+  await k.updateDocument({ entityId: id, scope: `world:${id}`, expectedVersion: 1, title: "t", summary: "", attributes: {}, idempotencyKey: "update" });
+  await k.postRoomMessage({ worldId: id, text: "t", requestId: "room", kind: "message", askAi: true });
+  await k.readRoomMessages(id, { beforeSeq: 10, limit: 51, kind: "decision" });
+  await k.claimRoomReply(id);
+  await k.finishRoomReply({ messageId: id, leaseToken: id, text: "t", model: "test", sourceRefs: [] });
+  await k.failRoomReply(id, id);
   await k.upsertEntity({ entityId: id, kind: "place", scope: "world:x", title: "t", summary: "", attributes: {}, latitude: 1, longitude: 2, altitudeM: 3, locationTruth: "declared", visibility: "public", importance: 50, idempotencyKey: "k" });
   await k.relate({ kind: "supplies", fromRef: `entity:${id}`, toRef: `entity:${id}`, scope: "world:x", attributes: {}, idempotencyKey: "k" });
   await k.endRelation(id, "r");

@@ -19,17 +19,14 @@ import { OutreachCard } from "@/app/outreach-card";
 import { anchorsIn, type Checkpoint } from "@/lib/bot/anchor";
 import { RouteCard } from "@/app/route-card";
 import { anchorWorldAction, approveOutreachAction, recordOutcomeAction, stepDoneAction, takeRouteAction } from "@/app/route-actions";
-import { createArtifactAction, updateArtifactAction } from "./actions";
+import { createArtifactAction } from "./actions";
+import { ArtifactEditor } from "./artifact-editor";
 import { WorldBotAccessPanel } from "./bot-access-panel";
 import { WorldAccessPanel } from "./access-panel";
 import { WorldLiveSync } from "./live-sync";
 import { WorldPresence } from "./presence";
 import { ResourceMapPanel } from "./resource-map";
 import { eventTitle } from "../event-title";
-
-function positionFromArtifact(artifact: CreativeArtifact): CreativePosition {
-  return artifact.position;
-}
 
 function canvasColumn(position: CreativePosition) {
   return position.x < 34 ? 1 : position.x < 67 ? 2 : 3;
@@ -57,8 +54,6 @@ function PixelArtPreview({ body, title }: { body: string; title: string }) {
 }
 
 function ArtifactCard({ worldId, artifact, saves = [], taken = null, takenBy = "you", sent, outcomes, anchor = false }: { worldId: string; artifact: CreativeArtifact; saves?: SavedProof[]; taken?: TakenRoute | null; takenBy?: string; sent?: Map<number, Sent>; outcomes?: Map<number, LeadOutcome[]>; anchor?: boolean }) {
-  const position = positionFromArtifact(artifact);
-  const update = updateArtifactAction.bind(null, worldId);
   const isPixelArt = parsePixelArt(artifact.body) !== null;
   const isPart = parsePart(artifact.body) !== null;
   const routes = parseRoutes(artifact.body);
@@ -67,7 +62,7 @@ function ArtifactCard({ worldId, artifact, saves = [], taken = null, takenBy = "
     <article id={anchor ? `piece-${artifact.entityId}` : undefined} className="flex w-full scroll-mt-6 flex-col gap-3 rounded-md border border-line bg-surface/95 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.25)] backdrop-blur-md">
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-accent">Document · v{artifact.version}{artifact.via ? ` · via ${artifact.via}` : ""}</p>
+          <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-accent">{artifact.visibility === "private" ? "Private document" : "Document"} · v{artifact.version}{artifact.via ? ` · via ${artifact.via}` : ""}</p>
           <h3 className="mt-1 break-words text-base font-medium leading-snug">{artifact.title}</h3>
         </div>
       </header>
@@ -93,29 +88,7 @@ function ArtifactCard({ worldId, artifact, saves = [], taken = null, takenBy = "
       ) : null}
       <details className="border-t border-line pt-2">
         <summary className="cursor-pointer list-none text-[10px] font-semibold uppercase tracking-[0.18em] text-muted hover:text-accent">Edit · move</summary>
-        <form action={update} className="mt-3 flex flex-col gap-3">
-          <input type="hidden" name="entityId" value={artifact.entityId} />
-          <input type="hidden" name="requestId" value={randomUUID()} />
-          <label className="flex flex-col gap-1.5 text-xs text-muted">
-            Title
-            <input name="title" required maxLength={160} defaultValue={artifact.title} className="h-10 rounded border border-line bg-background px-3 text-sm text-foreground outline-none focus:border-accent" />
-          </label>
-          <label className="flex flex-col gap-1.5 text-xs text-muted">
-            Text
-            <textarea name="body" maxLength={7000} defaultValue={artifact.body} rows={5} className="resize-y rounded border border-line bg-background p-3 text-sm leading-5 text-foreground outline-none focus:border-accent" />
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="flex flex-col gap-1.5 text-xs text-muted">
-              Canvas X · {position.x}%
-              <input name="x" type="range" min="0" max="100" defaultValue={position.x} className="accent-accent" />
-            </label>
-            <label className="flex flex-col gap-1.5 text-xs text-muted">
-              Canvas Y · {position.y}%
-              <input name="y" type="range" min="0" max="100" defaultValue={position.y} className="accent-accent" />
-            </label>
-          </div>
-          <button type="submit" className={`${secondaryAction} w-full`}>Save revision</button>
-        </form>
+        <ArtifactEditor worldId={worldId} artifact={artifact} />
       </details>
     </article>
   );

@@ -1,5 +1,12 @@
 # BUILD_STATUS
 
+## Branch checkpoint — 2026-10-09 (shared idea space, codex/shared-idea-space)
+
+- First collaboration release: owner-managed expiring invitations, authenticated acceptance, persistent room messages, attributed human decisions, shared AI context with source versions, retries after reload, external MCP room tools, conflict-aware document editing, and a component cost worksheet with saved assumptions.
+- Extends existing Worlds, documents, actors and grants. Private documents are excluded from shared inference even for a private-read owner; revisions preserve disclosure level. Four additive migrations are listed in `docs/handoff/SHARED-IDEA-SPACE.md`.
+- Local checks: 418 tests passed, no failures/skips; typecheck and production build passed. The two-context Chromium journey passed with real SQL persistence/permissions and labelled Auth/inference fixtures. Production HTTP smoke checks confirmed anonymous API denial, room sign-in redirect and private invitation landing.
+- Branch review is pending. No remote migrations, deployment or live Auth/provider test. Supabase/OpenRouter settings remain missing; their requirements were saved in the cloud configuration draft. GitHub Actions status could not be read: GitHub API returned Forbidden. This is local verification, not a CI/deployment success claim.
+
 ## Current checkpoint — 2026-10-08 (ARGUS canvas v4, main @ 7e48454)
 
 - ARGUS canvas rebuilt as three.js + custom GLSL (commit 7e48454): fbm domain-warped plasma background, fresnel volumetric core + UnrealBloom, 5,200 GPU particles in 4 vortex bands, 9 energy beams as shader ribbons with comet pulses, dashed orbital rings, grid floor, ghost typography, starfield. 9 info clouds unchanged (Oct 7 FOMO snapshot) as HTML overlays projected from 3D anchors. Canvas-2D v3 kept as WebGL fallback (argus-canvas-2d.tsx). page.tsx untouched.

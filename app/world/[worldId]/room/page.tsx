@@ -20,6 +20,8 @@ import { KernelError, type ActorProfile } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { loadCreativeWorld, viaOf, type CreativeArtifact } from "@/lib/world/creative";
+import { readWorldMembers } from "@/lib/world/collaboration";
+import { readRoomConversation } from "@/lib/world/room";
 import { eventTitle } from "../../event-title";
 import { WorldLiveSync } from "../live-sync";
 import { addNoteAction, linkRepoAction, saveBuildAction } from "./actions";
@@ -83,15 +85,19 @@ async function load(worldId: string, viewer: { id: string; email?: string | null
     const { world, artifacts, resources } = await loadCreativeWorld(kernel, worldId);
     const links = resources.filter((r) => r.status === "open" && r.sourceUrl).map((r) => r.sourceUrl);
     const repo = repoForWorld({ worldId: world.worldId, viewerEmail: viewer.email, links, rooms: deploymentRooms() });
-    const [ov, saves, events, bot, read] = await Promise.all([
+    const [ov, saves, events, bot, read, conversation, access, membership] = await Promise.all([
       overview(kernel, [{ worldId: world.worldId, title: world.title, scope: world.scope }], me.actor_id),
       proofsIn(kernel, world.scope).catch(() => []),
       kernel.readEvents(world.scope, { newestFirst: true, limit: 14 }).catch(() => []),
       loadBot(kernel).catch(() => null),
       repo ? readRepo(repo.ref, { token: repo.paired ? process.env.GITHUB_TOKEN || null : null }) : Promise.resolve(null),
+      readRoomConversation(kernel, worldId),
+      kernel.authorize({ capability: "world.entity.write", scope: world.scope }),
+      readWorldMembers(kernel, world.scope),
     ]);
     const assistants = bot?.avatar ? await readConnections(kernel, bot.ownerId).catch(() => []) : [];
-    const ids = [...new Set([me.actor_id, ...events.map((e) => e.actor_id)])];
+    const memberIds = [...new Set([membership.ownerActorId, ...membership.members.map(m => m.actorId)])];
+    const ids = [...new Set([...memberIds, ...events.map((e) => e.actor_id)])];
     const profiles: ActorProfile[] = await kernel.readActors(ids).catch(() => []);
     const byId = new Map(profiles.map((p) => [p.actor_id, p]));
     const name = (id: string) => (id === me.actor_id ? "you" : byId.get(id)?.label || "someone");
@@ -106,8 +112,11 @@ async function load(worldId: string, viewer: { id: string; email?: string | null
       title: world.title,
       goal,
       now: new Date().toISOString(),
-      pieces: artifacts.map((a) => pieceOf(a, journeys, saved)),
-      people: ids
+      pieces: artifacts.filter(a => a.visibility !== "private").map((a) => pieceOf(a, journeys, saved)),
+      conversation,
+      currentActorId: me.actor_id,
+      canWrite: access.decision === "ALLOW",
+      people: memberIds
         .map((id) => ({ id, label: id === me.actor_id ? me.label || "You" : byId.get(id)?.label || "Someone", kind: (byId.get(id)?.kind ?? "human") as "human" | "agent" | "service", you: id === me.actor_id }))
         .filter((p) => p.kind !== "service"),
       botName: bot?.avatar ? bot.persona.name : null,
@@ -155,8 +164,8 @@ export default async function RoomPage({ params, searchParams }: PageProps<"/wor
           ...rest,
           lens: chosen,
           notice: noticeFor(saved, error),
-          addNote: addNoteAction.bind(null, data.worldId),
-          linkRepo: linkRepoAction.bind(null, data.worldId),
+          addNote: data.canWrite ? addNoteAction.bind(null, data.worldId) : undefined,
+          linkRepo: data.canWrite ? linkRepoAction.bind(null, data.worldId) : undefined,
           saveBuild: saveBuildAction.bind(null, data.worldId),
           requestId: randomUUID(),
           live: data.botName ? <LiveLine userId={userId} botName={data.botName} /> : undefined,

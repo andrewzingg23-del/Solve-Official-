@@ -51,6 +51,7 @@ export type RoomMessage = {
   actor_kind: "human" | "agent" | "service"; actor_label: string;
   kind: "message" | "decision" | "ai_draft"; text: string;
   reply_to: string | null; source_refs: RoomSourceRef[];
+  ask_ai: boolean; reply_state: "pending" | "failed" | "complete" | null; request_id: string;
 };
 
 export type Balance = {
