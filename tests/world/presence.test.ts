@@ -1,68 +1,48 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
-import type { Kernel, KernelEvent } from "../../lib/kernel/client";
+import { it } from "node:test";
+import { kernelClient } from "../../lib/kernel/client";
+import { localSupabase } from "../../lib/kernel/local";
+import { createCreativeWorld } from "../../lib/world/creative";
+import { grantWorldAccess } from "../../lib/world/collaboration";
 import { heartbeat, PRESENCE_EVENT, readPresence } from "../../lib/world/presence";
+import { createKernelDb, user } from "../kernel/harness";
 
-const SCOPE = "world:00000000-0000-4000-8000-000000000001";
-
-function event(over: Partial<KernelEvent> = {}): KernelEvent {
-  return {
-    seq: 1,
-    id: "e1",
-    occurred_at: new Date().toISOString(),
-    type: PRESENCE_EVENT,
-    scope: SCOPE,
-    actor_id: "actor-1",
-    on_behalf_of: null,
-    grant_id: null,
-    auth_method: "user_jwt",
-    payload: { label: "Drew" },
-    corrects: null,
-    correlation_id: null,
-    hash: "h",
-    ...over,
-  };
+async function setup() {
+  const db = await createKernelDb();
+  const owner = kernelClient(localSupabase(db, user("auth:presence-owner")));
+  const viewer = kernelClient(localSupabase(db, user("auth:presence-viewer")));
+  await owner.register("Drew");
+  const viewerId = await viewer.register("Viewer");
+  const world = await createCreativeWorld(owner, { worldId: "00000000-0000-4000-8000-000000000931", title: "Presence" });
+  await grantWorldAccess(owner, { scope: world.scope, granteeActorId: viewerId, role: "viewer", requestId: "view" });
+  return { db, owner, viewer, world };
 }
 
-function fakeKernel(events: KernelEvent[], label = "Drew") {
-  const recorded: { type: string; scope: string; payload: Record<string, unknown> }[] = [];
-  return {
-    whoami: async () => ({ actor_id: "actor-1", kind: "human", label, owner_id: null }),
-    recordEvent: async (input: { type: string; scope: string; payload?: Record<string, unknown> }) => {
-      recorded.push({ type: input.type, scope: input.scope, payload: input.payload ?? {} });
-      return "event-id";
-    },
-    readEvents: async () => events,
-    recorded,
-  } as unknown as Kernel & { recorded: typeof recorded };
-}
+it("heartbeat records an authenticated event in the World and repeated heartbeat is idempotent", async () => {
+  const { owner, world } = await setup();
+  await heartbeat(owner, world.scope);
+  await heartbeat(owner, world.scope);
+  const events = (await owner.readEvents(world.scope, { limit: 100 })).filter(e => e.type === PRESENCE_EVENT);
+  assert.equal(events.length, 1);
+  assert.equal(events[0].actor_id, (await owner.whoami()).actor_id);
+});
 
-describe("world presence", () => {
-  it("heartbeat records a heartbeat event in the world scope", async () => {
-    const k = fakeKernel([]);
-    await heartbeat(k, SCOPE);
-    assert.equal(k.recorded.length, 1);
-    assert.equal(k.recorded[0].type, PRESENCE_EVENT);
-    assert.equal(k.recorded[0].scope, SCOPE);
-  });
+it("presence uses canonical identity, ignores supplied labels and unrelated events, and permits authorized viewers to read", async () => {
+  const { owner, viewer, world } = await setup();
+  await owner.recordEvent({ type: PRESENCE_EVENT, scope: world.scope, payload: { label: "Forged person" } });
+  await owner.recordEvent({ type: "world.note.added", scope: world.scope, payload: {} });
+  const present = await readPresence(viewer, world.scope);
+  assert.equal(present.length, 1);
+  assert.equal(present[0].label, "Drew");
+});
 
-  it("lists actors with fresh heartbeats, latest label wins", async () => {
-    const now = Date.now();
-    const k = fakeKernel([
-      event({ actor_id: "a", occurred_at: new Date(now - 10_000).toISOString(), payload: { label: "Old" } }),
-      event({ actor_id: "a", occurred_at: new Date(now - 5_000).toISOString(), payload: { label: "New" } }),
-      event({ actor_id: "b", occurred_at: new Date(now - 20_000).toISOString(), payload: { label: "Bee" } }),
-    ]);
-    const present = await readPresence(k, SCOPE);
-    assert.deepEqual(present.map((p) => p.label).sort(), ["Bee", "New"]);
-  });
-
-  it("drops stale heartbeats and non-heartbeat events", async () => {
-    const now = Date.now();
-    const k = fakeKernel([
-      event({ actor_id: "stale", occurred_at: new Date(now - 120_000).toISOString() }),
-      event({ type: "world.entity.write", actor_id: "other" }),
-    ]);
-    assert.deepEqual(await readPresence(k, SCOPE), []);
-  });
+it("presence becomes stale according to the database clock and denies an unauthorized scope", async () => {
+  const { db, owner, world } = await setup();
+  await heartbeat(owner, world.scope);
+  // Advance only this isolated fixture's SQL clock; no waits or event-history edits.
+  await db.owner("create or replace function pg_catalog.now() returns timestamptz language sql volatile as $$ select clock_timestamp() + interval '2 minutes' $$");
+  assert.deepEqual(await readPresence(owner, world.scope), []);
+  const outsider = kernelClient(localSupabase(db, user("auth:presence-outsider")));
+  await outsider.register("Outsider");
+  await assert.rejects(readPresence(outsider, world.scope));
 });

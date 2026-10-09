@@ -19,6 +19,7 @@ export type CreativeArtifact = {
   version: number;
   updatedAt: string;
   via: string | null; // the assistant the latest revision came through, when a bot made it
+  visibility: WorldEntity["visibility"];
 };
 
 export type CreateCreativeWorldInput = { worldId: string; title: string; goal?: string };
@@ -104,6 +105,7 @@ export type UpdateCreativeArtifactInput = {
   scope: string;
   entityId: string;
   requestId: string;
+  expectedVersion?: number;
   title: string;
   body: string;
   position: CreativePosition;
@@ -234,6 +236,7 @@ function artifactFromEntity(entity: WorldEntity): CreativeArtifact | null {
     version: entity.version,
     updatedAt: entity.updated_at,
     via: viaOf(entity.attributes),
+    visibility: entity.visibility,
   };
 }
 
@@ -492,14 +495,13 @@ export async function updateCreativeArtifact(kernel: Kernel, input: UpdateCreati
   const title = requireTitle(input.title);
   const body = requireBody(input.body);
   const position = requirePosition(input.position);
-  return kernel.upsertEntity({
+  return kernel.updateDocument({
     entityId: input.entityId,
-    kind: "document",
+    expectedVersion: input.expectedVersion ?? existing.version,
     scope,
     title,
     summary: body.trim().slice(0, 240),
     attributes: { documentType: "text", worldId, content: body, canvas: position, ...viaAttributes(input.via) },
-    visibility: "members",
     idempotencyKey: requestKey(`artifact-update:${input.entityId}`, input.requestId),
   });
 }

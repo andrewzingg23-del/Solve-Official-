@@ -12,9 +12,12 @@ import type { SavedProof } from "@/lib/bot/proof";
 import { groupGaps, type Gap } from "@/lib/bot/gaps";
 import type { Journey, WaitingItem } from "@/lib/bot/waiting";
 import type { Pull, RepoRead, RepoReadFailure, RepoRef } from "@/lib/github/repo";
+import type { RoomMessage } from "@/lib/kernel/client";
 import { BuildMap, BuildMark } from "./build-map";
 import { PiecesMap, type RoomPiece } from "./pieces-map";
-import { TalkPanel } from "./talk";
+import { SharedConversation } from "./conversation";
+import { SourcePublisher } from "./source-publisher";
+import { CostWorksheet } from "./cost-worksheet";
 import { ago } from "./time";
 
 export type RoomLens = "build" | "pieces";
@@ -37,6 +40,9 @@ export type RoomData = {
   saves: SavedProof[];
   activity: RoomActivity[];
   repo: { read: RepoRead; paired: boolean; unread?: RepoReadFailure } | null; // unread: why GitHub itself wasn't read
+  conversation?: { messages: RoomMessage[]; beforeSeq: number | null };
+  canWrite?: boolean;
+  currentActorId?: string;
   notice?: { tone: "ok" | "error"; text: string } | null;
   addNote?: (form: FormData) => void | Promise<void>;
   linkRepo?: (form: FormData) => void | Promise<void>;
@@ -159,9 +165,10 @@ export function RoomView({ data }: { data: RoomData }) {
         </nav>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 whitespace-nowrap text-[10px] uppercase tracking-[0.16em] text-muted">
           {data.sync}
-          <span className="tabular-nums">{here} here</span>
+          <span className="tabular-nums">{here} members</span>
           <span className="hidden sm:inline">Private</span>
           <Link href={`/world/${data.worldId}`} className="hover:text-accent">Details</Link>
+          <Link href={`/world/${data.worldId}#people-heading`} className="hover:text-accent">People &amp; access</Link>
           <Link href="/command" className="hover:text-accent">Command Center</Link>
         </div>
       </header>
@@ -177,7 +184,7 @@ export function RoomView({ data }: { data: RoomData }) {
           <Panel title="After" id="room-goal">
             <p className="break-words text-sm leading-6">{data.goal || data.title}</p>
           </Panel>
-          <Panel title="Here" id="room-here" aside={<span className="text-[10px] text-muted tabular-nums">{here}</span>}>
+          <Panel title="Members" id="room-here" aside={<span className="text-[10px] text-muted tabular-nums">{here}</span>}>
             <ul className="flex flex-col gap-2 text-sm">
               {data.people.map((p) => (
                 <li key={p.id} className="flex items-center justify-between gap-3">
@@ -198,7 +205,6 @@ export function RoomView({ data }: { data: RoomData }) {
             )}
             {data.live}
           </Panel>
-          {data.botName ? <TalkPanel botName={data.botName} /> : null}
           <Panel title="Routes" id="room-routes">
             {data.journeys.length ? (
               <ul className="flex flex-col gap-3">
@@ -220,7 +226,7 @@ export function RoomView({ data }: { data: RoomData }) {
           </Panel>
         </aside>
 
-        <section aria-label="Room canvas" className="order-2 flex min-w-0 flex-col gap-3 lg:order-2 lg:min-h-0">
+        <section aria-label="Room canvas" className="order-1 flex min-w-0 flex-col gap-3 lg:order-2 lg:min-h-0">
           <div className="flex items-center justify-between gap-3">
             <div role="tablist" aria-label="Canvas" className="flex items-center gap-1 rounded-md border border-line bg-surface/60 p-1 backdrop-blur-md">
               {data.repo ? (
@@ -231,6 +237,9 @@ export function RoomView({ data }: { data: RoomData }) {
             <span className="text-[10px] uppercase tracking-[0.16em] text-muted tabular-nums">{plural(underway.length, "route", "routes")} underway · {plural(data.saves.length, "save", "saves")}</span>
           </div>
           <div className="min-h-0 flex-1 lg:overflow-y-auto lg:pr-1">
+            {data.conversation ? <SharedConversation worldId={data.worldId} {...data.conversation} canWrite={data.canWrite} currentActorId={data.currentActorId} /> : null}
+            {data.canWrite ? <SourcePublisher worldId={data.worldId} /> : null}
+            {data.conversation ? <CostWorksheet worldId={data.worldId} canWrite={data.canWrite ?? false} /> : null}
             {lens === "build" && read ? (
               read.ok ? (
                 <>
@@ -252,7 +261,7 @@ export function RoomView({ data }: { data: RoomData }) {
           </div>
         </section>
 
-        <aside aria-label="What needs you and what happened" className="order-1 flex flex-col gap-4 lg:order-3 lg:min-h-0 lg:overflow-y-auto">
+        <aside aria-label="What needs you and what happened" className="order-2 flex flex-col gap-4 lg:order-3 lg:min-h-0 lg:overflow-y-auto">
           <Panel title="Waiting on you" id="room-waiting" aside={<span className="text-[10px] text-muted tabular-nums">{waitingCount}</span>}>
             {waitingCount ? (
               <ul className="flex flex-col divide-y divide-line">

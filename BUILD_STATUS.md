@@ -1,5 +1,20 @@
 # BUILD_STATUS
 
+## Main integration — 2026-10-08 21:23 EDT
+
+- Founder: "add it and ship", followed by "fix it". Fast-forwarded main from `661dfb7` to reviewed code `96c9908`; push and remote main hash confirmed. Integrated source matches the previously verified 421-test release exactly; no implementation changes or repeat of unaffected suites.
+- Prepared a source-hashed five-migration staging package. Local atomic upgrade preserved existing event IDs/hashes and the World, supported invitation acceptance and posting, and rejected repeated whole-package application without data changes.
+- Live activation remains blocked: Supabase management and Vercel admin credentials are missing; GitHub status/check API requests return Forbidden even outside the filesystem sandbox. Added the three specific API domains and secure admin credential requirements to the cloud draft. Saved draft revision 6 is confirmed; it requires settings review/save and publication, and does not change the current runtime.
+- No remote migration was applied. CI/deployment status and live Auth/provider behavior are unconfirmed. The main push can be picked up by the project's existing Git deployment integration; it is not evidence of a working deployed shared room.
+
+## Branch checkpoint — 2026-10-09 (shared idea space, codex/shared-idea-space)
+
+- First collaboration release: owner-managed expiring invitations, authenticated acceptance, persistent room messages, attributed human decisions, shared AI context with source versions, retries after reload, external MCP room tools, conflict-aware document editing, and a component cost worksheet with saved assumptions.
+- Extends existing Worlds, documents, actors and grants. Private documents are excluded from shared inference even for a private-read owner; revisions preserve disclosure level. Five additive migrations are listed in `docs/handoff/SHARED-IDEA-SPACE.md`.
+- Local checks: 421 tests passed, no failures/skips; typecheck and production build passed; lint reported 0 errors and 5 pre-existing warnings. The two-context Chromium journey passed with real SQL persistence/permissions and labelled Auth/inference fixtures, including duplicate submissions, refresh history retention and legacy source rendering. Fresh production HTTP smoke checks confirmed anonymous API denial, room sign-in redirect and private invitation landing.
+- Independent branch review complete: all four Important findings fixed with regressions; no Critical or Minor findings, no waivers. The invitation RPC now hashes the original token internally; stored digests cannot grant access. Source fields are checked before saving; acknowledged composer IDs retire; displayed history survives refresh.
+- No remote migration or deployment command and no live Auth/provider test. Supabase/OpenRouter settings remain missing; their requirements were saved in the cloud configuration draft. GitHub Actions status could not be read: GitHub API returned Forbidden. This is local verification, not a CI/deployment success claim. Real-Postgres concurrency and live integration remain staging checks.
+
 ## Current checkpoint — 2026-10-08 (ARGUS canvas v4, main @ 7e48454)
 
 - ARGUS canvas rebuilt as three.js + custom GLSL (commit 7e48454): fbm domain-warped plasma background, fresnel volumetric core + UnrealBloom, 5,200 GPU particles in 4 vortex bands, 9 energy beams as shader ribbons with comet pulses, dashed orbital rings, grid floor, ghost typography, starfield. 9 info clouds unchanged (Oct 7 FOMO snapshot) as HTML overlays projected from 3D anchors. Canvas-2D v3 kept as WebGL fallback (argus-canvas-2d.tsx). page.tsx untouched.

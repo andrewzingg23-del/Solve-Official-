@@ -5,6 +5,8 @@ import { getKernel } from "@/lib/kernel/server";
 import { label, secondaryAction } from "@/app/ui";
 import { listWorldCollaborators } from "@/lib/world/collaboration";
 import { grantWorldAccessAction, revokeWorldAccessAction } from "./access-actions";
+import { createInvitationAction, cancelInvitationAction } from "./invitation-actions";
+import { InvitationPanel } from "./invitation-panel";
 
 export async function WorldAccessPanel({ worldId, scope, saved, error }: {
   worldId: string;
@@ -22,6 +24,7 @@ export async function WorldAccessPanel({ worldId, scope, saved, error }: {
 
   const grant = grantWorldAccessAction.bind(null, worldId);
   const revoke = revokeWorldAccessAction.bind(null, worldId);
+  const invitations = await (await getKernel()).readWorldInvitations(worldId);
   const accessError = ["access", "access-input", "access-missing", "access-conflict", "access-save"].includes(error ?? "")
     ? error
     : undefined;
@@ -32,7 +35,7 @@ export async function WorldAccessPanel({ worldId, scope, saved, error }: {
         <div>
           <p className={label}>World access</p>
           <h2 id="people-heading" className="mt-1 text-lg font-medium">People who can contribute</h2>
-          <p className="mt-1 max-w-2xl text-xs leading-5 text-muted">Give someone access using their SOV ID from their Account page. This records a World-scoped kernel grant; it does not send an email.</p>
+          <p className="mt-1 max-w-2xl text-xs leading-5 text-muted">Invite someone with a link or their SOV ID. Choose what they can do in this World.</p>
         </div>
         <Link href="/account" className="text-xs text-accent underline underline-offset-4">Open my Account</Link>
       </div>
@@ -47,6 +50,8 @@ export async function WorldAccessPanel({ worldId, scope, saved, error }: {
                   "The access change could not be saved. Check kernel access and try again."}
         </p>
       )}
+
+      <InvitationPanel create={createInvitationAction.bind(null, worldId)} cancel={cancelInvitationAction.bind(null, worldId)} invitations={invitations} now={new Date().toISOString()} />
 
       <form action={grant} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
         <input type="hidden" name="requestId" value={randomUUID()} />

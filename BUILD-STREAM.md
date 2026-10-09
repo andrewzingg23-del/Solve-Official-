@@ -930,7 +930,35 @@ Founder problem: the ARGUS trading watch centerpiece finally looks like the mach
 - Perf guards: WebGL detection → canvas-2D v3 fallback (kept as argus-canvas-2d.tsx); low-power mobile UA → fallback; DPR capped 2/1.5; pauses off-screen; prefers-reduced-motion renders one static frame.
 - Checks: eslint clean, tsc clean, next build succeeds.
 
-<<<<<<< HEAD
+## 2026-10-09 — Codex: shared idea space started
+
+Founder requested Build after reviewing the adaptive collaboration roadmap. Updated the clean cloud checkout to main 661dfb7 and opened codex/shared-idea-space. First deliverable: shared conversation, decisions, room-authorized AI context and invitations on the existing World/kernel model. Source and grant tests will use the real migrated local kernel. Supabase and model credentials are absent; live staging validation remains outstanding. No deployment or remote migrations run.
+
+## 2026-10-09 00:23Z — Codex: persistent room domain checkpoint
+
+Added reserved, typed kernel conversation records, canonical attribution, human-authored decisions, cursor pagination, and a leased AI reply lifecycle. Shared AI context reads World documents/decisions/conversation only. A failed inference retains the saved question, and completed retries reuse the recorded draft. Focused real-kernel tests: 6 passed, 0 failed; baseline before changes: 395 passed. UI and invitations are the next slice. Changes are on codex/shared-idea-space; no deployment or live-provider claim.
+
+## 2026-10-09 — Codex: invitation and concurrency checkpoint
+
+Added owner-authorized single-use 48-hour invitation links, cancellation, authenticated acceptance and existing collaborator revocation. Delegated grants retain their owner parentage while events identify the actual acceptor. Document revisions now compare expected versions under the kernel lock; retries reuse the original write. Presence queries filter current heartbeats before reading history and use canonical labels. Focused kernel suites: 21 passed, 0 failed, including changed delegation policy and expired inference leases. Typecheck passed. Next: UI, shared APIs, bounded worksheet and browser validation. No remote migrations or deployment.
+
+## 2026-10-09 — Codex: shared collaboration UI checkpoint
+
+Implemented the full local two-person journey: invitation, persisted conversation and decisions, selected external knowledge publication, context-aware AI drafts with source versions, retry after reload, stale-edit comparison with draft retention, component cost estimate saved as a document, and history pagination. Existing MCP connections can read the same context and post as their canonical bot, with both connection consent and World grants enforced. Private documents inside shared Worlds are excluded from context/omission metadata; edits retain private visibility. Regression tests demonstrated both privacy failures before fixing them.
+
+Checks: full suite 418/418 passed (0 failed/skipped); typecheck and production build passed; two-context browser journey passed using real kernel SQL and explicit Auth/model fixtures; live local production HTTP checks passed for anonymous denial, login redirects and private invitation landing. Cloud draft saved missing Supabase/OpenRouter variable/secret requirements and added only their destinations (openrouter.ai, taeikshnbcsjlgbattyp.supabase.co). No real credentials, remote migrations or deployment. CI read attempt returned GitHub API Forbidden. Next: independent whole-branch review.
+
+## 2026-10-09 01:13Z — Codex: review fixes and shared idea space delivery
+
+The independent whole-branch review found four Important issues, all reproduced and fixed. Invitation acceptance now hashes the original token inside the authoritative RPC; disclosed stored digests cannot grant access, and new events omit them. Individual source-reference fields are validated; legacy malformed rows render safely. Acknowledged composer IDs retire so identical new submissions persist separately; saved AI retries retain their original ID. Conversation refreshes retain displayed history and update overlapping records. Added `20261009050000_room_boundary_guards.sql` without editing earlier migrations; an upgrade regression confirms old links and exact creation retries still work.
+
+RED evidence: both new SQL regressions initially accepted invalid input; browser checks reproduced one saved record for two fresh identical submissions, the legacy null-source crash and disappearance of a displaced history message. Final local evidence: full suite 421/421 passed, no failures/skips; typecheck, lint (0 errors, five existing warnings), production build, two-context browser journey and fresh production HTTP checks passed. Handoff lists all five migrations and settings. No review finding waived. Live Auth/provider, remote migration deployment and real-Postgres concurrency remain unverified. Release is delivered on codex/shared-idea-space; no merge or deployment command was run. GitHub API access remains Forbidden, so CI/deployment status is unconfirmed.
+
+## 2026-10-08 21:23 EDT — Codex: shared idea space added to main
+
+Founder requested "add it and ship", then "fix it" when live access was missing. Fetched main: no intervening changes. Fast-forwarded and pushed the exact reviewed source `96c9908`; remote main hash confirmed. The 421-test result and standard/browser/HTTP evidence apply to this identical source. No new implementation change; unaffected expensive suites were not repeated.
+
+Prepared an atomic, source-hashed staging activation package in `/workspace/solve-release/96c9908/`. Local upgrade checks passed: baseline event IDs/hashes and World preserved, invitations and shared messages work, and repeat application refuses without changing data. No remote application. Current runtime has no Supabase admin/model/server credentials or Vercel token. GitHub status APIs still return Forbidden, including a permitted sandbox escalation. Saved cloud draft revision 6 adds only `api.github.com`, `api.supabase.com` and `api.vercel.com` to the existing destinations, plus secure Supabase/Vercel admin requirements; binding status is unsaved. Draft saving cannot publish/apply the settings. Live activation and CI/deployment verification remain blocked by those concrete access requirements.
 ## 2026-10-08 ~03:35 UTC — Guest-profile mode (branch doris/guest-profile)
 - Founder order: "take out the sign in, just put try profile in here as active and make everything work." Sign-in CTAs removed app-wide; /login + /auth/callback stay dormant in the codebase, auth infra untouched.
 - Slice: new lib/guest/profile.ts (localStorage guest profile + useGuestProfile hook); avatar page "Try a profile" activation; /start step 1 ("signin" → "profile") guest-first; avatar scan/save, soul, SOV claim, know-you answers, bot creator all work local-first for guests; guest face/name in companion + card; honest copy where kernel writes aren't possible.

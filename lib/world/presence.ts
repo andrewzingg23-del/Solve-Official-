@@ -7,7 +7,6 @@
 import type { Kernel } from "../kernel/client";
 
 export const PRESENCE_EVENT = "world.presence.heartbeat";
-const FRESH_MS = 90_000;
 
 export type PresentActor = { actorId: string; label: string; at: string };
 
@@ -22,19 +21,6 @@ export async function heartbeat(kernel: Kernel, worldScope: string): Promise<voi
 }
 
 export async function readPresence(kernel: Kernel, worldScope: string): Promise<PresentActor[]> {
-  const events = await kernel.readEvents(worldScope, { limit: 200 });
-  const cutoff = Date.now() - FRESH_MS;
-  const latest = new Map<string, PresentActor>();
-  for (const e of events) {
-    if (e.type !== PRESENCE_EVENT) continue;
-    const at = new Date(e.occurred_at).getTime();
-    if (Number.isNaN(at) || at < cutoff) continue;
-    const actorId = e.actor_id;
-    const prev = latest.get(actorId);
-    if (!prev || at > new Date(prev.at).getTime()) {
-      const label = typeof e.payload?.label === "string" && e.payload.label ? e.payload.label : actorId.slice(0, 8);
-      latest.set(actorId, { actorId, label, at: e.occurred_at });
-    }
-  }
-  return [...latest.values()].sort((a, b) => a.label.localeCompare(b.label));
+  const actors = await kernel.readWorldPresence(worldScope);
+  return actors.map(a => ({ actorId: a.actor_id, label: a.label, at: new Date(a.at).toISOString() }));
 }
