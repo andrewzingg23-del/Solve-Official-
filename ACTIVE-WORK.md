@@ -47,6 +47,7 @@ Updated 2026-10-05 by Claude. The founder overrides anything here.
 | Anchor (the record's fingerprint on chain) | `lib/chain/anchor.ts` (Merkle and memo), `lib/bot/anchor.ts` (World anchors, inclusion proofs) | Devnet only; receipts carry proofs |
 | Wallet link | `lib/chain/wallet-proof.ts` (signed proof), kernel `link_wallet` | Codex: please consider a migration so `link_wallet` requires a verified proof (today a direct API call can link an address without one) |
 | Personal home (the vision's Command Center) | `app/command/` | Codex: please consider sending signed-in `/` to `/command` (a one-line change in `app/page.tsx`) |
+| Avatar growth (skills, levels, crew, brains) | `lib/bot/` (plan: `docs/plans/2026-10-09-ai-avatar.md`). Skills are computed from existing records; the crew is kernel agents with task leases; the context pack is `lib/bot/context.ts` | Founder, 2026-10-09. One avatar per person; no second identity per model or per helper. |
 | Community (people and their AIs building together) | `lib/community/community.ts`: a World with a front door (public profile in the owner's scope; members through `lib/world/collaboration.ts`; asks and notes as kernel messages). Pages `app/communities/`, `app/community/` | Founder, 2026-10-05 (`DECISIONS.md`). Extend this, don't build a second membership. |
 | Pack (a reusable tool any community switches on) | `lib/community/packs.ts` | The ventures' tools are packs: solar desk (`lib/solar/desk.ts`), sales dialer, risk tools, build room |
 

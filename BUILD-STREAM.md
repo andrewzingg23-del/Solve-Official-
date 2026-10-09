@@ -1038,3 +1038,20 @@ Prepared an atomic, source-hashed staging activation package in `/workspace/solv
 Code checkpoint `d7ac9230cc5c0ed9f6ed0bb290b1eac6b598a4bc`: Build run `37831693148` passed 406/406 tests, TypeScript, lint (zero errors, eight warnings) and production build. Studio browser run `37831693140` passed actual desktop/phone/no-WebGL editing, persistence/history, independent creations, four exports, physics, identity privacy, onboarding and phone/desktop map zoom/frame. Seven browser screenshots are attached to that run. READY preview: https://solve-l1jctbfmb-sovigrn.vercel.app/. All five Important and both Minor final review findings are addressed; none are deferred. Current main's ARGUS and community AI work is preserved. No production merge, deployment, schema or data changes.
 
 The phone map control overlap is fixed and verified with normal clicks. Complete review decisions, exact evidence and practical limits: `docs/handoff/2026-10-08-immersive-studio.md`. Documentation-only delivery follows the tested code.
+
+- 2026-10-09 23:55Z — Claude: the AI avatar as its own project (founder: "gamified avatar experience… level up their ai avatar… with real skills and useful behaviors… a sub set of agents under it… one consistent ai avatar… 3rd party ai llms… shared memory and context").
+  - **Plan:** `docs/plans/2026-10-09-ai-avatar.md`, covering:
+    - one identity with many brains, through one context pack;
+    - skills and levels computed from existing records, shown as the avatar's form;
+    - trust offers that turn a level into a permission only on the person's yes;
+    - a crew of task-leased helpers;
+    - behaviors;
+    - the Brains panel.
+  - **Found while mapping:** Talk (`app/api/bot/chat/route.ts`) doesn't read the avatar's memory. The soul.md and the face live on the sign-in account, outside the kernel persona: two homes for one identity.
+  - **Brand question for the founder:** levels vs BRAND.md §6 "No points, XP or badges".
+  - **Next:**
+    - slice 1, "one brain", which can start now;
+    - slice 2's UI waits on Codex's unmerged "Your AI" rebuild;
+    - slice 4 (crew) needs the staging server key in Vercel.
+  - **Checks:** docs only (no CI).
+
