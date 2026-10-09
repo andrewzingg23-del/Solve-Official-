@@ -1,11 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
 import { loginRequired } from "@/lib/auth/gate";
+import { launchRoute } from "@/lib/product/routes";
 
 // Paths that send signed-out visitors to /login.
 const protectedPaths = ["/account"];
 
 export async function proxy(request: NextRequest) {
+  const route = launchRoute(request.nextUrl.pathname);
+  if (route.kind !== "allow") {
+    if (route.kind === "deny" || !["GET", "HEAD"].includes(request.method)) {
+      return NextResponse.json({ error: "This feature is unavailable." }, { status: 404, headers: { "Cache-Control": "no-store" } });
+    }
+    const destination = request.nextUrl.clone();
+    destination.pathname = route.href;
+    destination.search = "";
+    return NextResponse.redirect(destination);
+  }
   const { response, signedIn } = await updateSession(request);
   const { pathname, search } = request.nextUrl;
 
