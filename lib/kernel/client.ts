@@ -45,6 +45,14 @@ export type Grant = {
 
 export type Actor = { actor_id: string; kind: "human" | "agent" | "service"; label: string; owner_id: string | null };
 
+export type RoomSourceRef = { entityId: string; version: number; title: string };
+export type RoomMessage = {
+  message_id: string; seq: number; occurred_at: string; actor_id: string;
+  actor_kind: "human" | "agent" | "service"; actor_label: string;
+  kind: "message" | "decision" | "ai_draft"; text: string;
+  reply_to: string | null; source_refs: RoomSourceRef[];
+};
+
 export type Balance = {
   account_id: string;
   scope: string;
@@ -905,6 +913,24 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
     inbox: () => call<InboxMessage[]>("inbox", { ...as }),
 
     // World Graph.
+    postRoomMessage: (input: { worldId: string; text: string; requestId: string; kind?: "message" | "decision"; askAi?: boolean }) =>
+      call<string>("post_room_message", { p_world_id: input.worldId, p_text: input.text, p_request_id: input.requestId,
+        p_kind: input.kind ?? "message", p_ask_ai: input.askAi ?? false, ...as }),
+
+    readRoomMessages: (worldId: string, options: { beforeSeq?: number; limit?: number; kind?: RoomMessage["kind"] } = {}) =>
+      call<RoomMessage[]>("read_room_messages", { p_world_id: worldId, p_before_seq: options.beforeSeq ?? null,
+        p_limit: options.limit ?? 50, p_kind: options.kind ?? null, ...as }),
+
+    claimRoomReply: (messageId: string) =>
+      one<{ state: "claimed" | "pending" | "complete"; lease_token: string | null; reply_id: string | null }>("claim_room_reply", { p_message_id: messageId, ...as }),
+
+    finishRoomReply: (input: { messageId: string; leaseToken: string; text: string; model: string; sourceRefs: RoomSourceRef[] }) =>
+      call<string>("finish_room_reply", { p_message_id: input.messageId, p_lease_token: input.leaseToken,
+        p_text: input.text, p_model: input.model, p_source_refs: input.sourceRefs, ...as }),
+
+    failRoomReply: (messageId: string, leaseToken: string) =>
+      call<void>("fail_room_reply", { p_message_id: messageId, p_lease_token: leaseToken, ...as }),
+
     upsertEntity: (input: {
       entityId?: string;
       kind: EntityKind;

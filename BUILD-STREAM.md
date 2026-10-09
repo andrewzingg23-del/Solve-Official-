@@ -991,3 +991,11 @@ Founder problem: the ARGUS trading watch centerpiece finally looks like the mach
 - Checks: eslint 0 errors (fixed 1 unused import), tsc clean on new files (2 pre-existing errors in tests/guest/profile.test.ts untouched), next build succeeds (40/40 static, 0 errors).
 - Note: mid-build the parent's ARGUS v5 work landed on main and my commit initially went to main; moved it to the branch and reset main to origin/main (6b0a663) — main is untouched.
 - Honest degradation: guests see join CTA (room notes aren't visible to guests); missing OpenRouter key / model errors surface plain copy; empty rooms brief honestly.
+
+## 2026-10-09 — Codex: shared idea space started
+
+Founder requested Build after reviewing the adaptive collaboration roadmap. Updated the clean cloud checkout to main 661dfb7 and opened codex/shared-idea-space. First deliverable: shared conversation, decisions, room-authorized AI context and invitations on the existing World/kernel model. Source and grant tests will use the real migrated local kernel. Supabase and model credentials are absent; live staging validation remains outstanding. No deployment or remote migrations run.
+
+## 2026-10-09 00:23Z — Codex: persistent room domain checkpoint
+
+Added reserved, typed kernel conversation records, canonical attribution, human-authored decisions, cursor pagination, and a leased AI reply lifecycle. Shared AI context reads World documents/decisions/conversation only. A failed inference retains the saved question, and completed retries reuse the recorded draft. Focused real-kernel tests: 6 passed, 0 failed; baseline before changes: 395 passed. UI and invitations are the next slice. Changes are on codex/shared-idea-space; no deployment or live-provider claim.
