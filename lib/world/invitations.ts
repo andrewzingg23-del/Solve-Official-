@@ -14,7 +14,8 @@ export async function createWorldInvitation(kernel: Kernel, worldId: string, rol
 }
 
 export function acceptWorldInvitation(kernel: Kernel, token: string): Promise<string> {
-  return kernel.acceptWorldInvitation(tokenHash(token));
+  if (!/^[a-f0-9]{64}$/.test(token)) throw new KernelError("invalid", "Invalid invitation link", "KA003");
+  return kernel.acceptWorldInvitation(token);
 }
 
 export function cancelWorldInvitation(kernel: Kernel, invitationId: string): Promise<void> {

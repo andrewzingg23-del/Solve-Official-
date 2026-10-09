@@ -2,8 +2,23 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { RoomMessage } from "@/lib/kernel/client";
+import type { RoomMessage, RoomSourceRef } from "@/lib/kernel/client";
 import type { RoomTurnInput, RoomTurnResult } from "@/lib/world/room";
+
+function mergeMessages(saved: RoomMessage[], incoming: RoomMessage[]) {
+  return [...new Map([...saved, ...incoming].map(m => [m.message_id, m])).values()].sort((a, b) => a.seq - b.seq);
+}
+
+function readableSourceRefs(value: unknown): RoomSourceRef[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry): entry is RoomSourceRef => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return false;
+    const ref = entry as Record<string, unknown>;
+    return typeof ref.entityId === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(ref.entityId) &&
+      typeof ref.version === "number" && Number.isInteger(ref.version) && ref.version > 0 && ref.version <= 2147483647 &&
+      typeof ref.title === "string" && ref.title.trim().length > 0;
+  });
+}
 
 export function SharedConversation({ worldId, messages, beforeSeq, canWrite = false, currentActorId }: {
   worldId: string; messages: RoomMessage[]; beforeSeq: number | null; canWrite?: boolean; currentActorId?: string;
@@ -13,30 +28,37 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [retry, setRetry] = useState<RoomTurnInput | null>(null);
-  const [earlier, setEarlier] = useState<RoomMessage[]>([]);
+  const [history, setHistory] = useState({ window: messages, messages });
+  if (history.window !== messages) {
+    setHistory({ window: messages, messages: mergeMessages(history.messages, messages) });
+  }
   const [cursor, setCursor] = useState<number | null | undefined>(undefined);
   const request = useRef<{ signature: string; id: string } | null>(null);
   const list = useRef<HTMLOListElement>(null);
   const followLatest = useRef(true);
   const showEarlier = useRef(false);
-  const all = [...new Map([...earlier, ...messages].map(m => [m.message_id, m])).values()].sort((a, b) => a.seq - b.seq);
+  const all = history.messages;
   const nextCursor = cursor === undefined ? beforeSeq : cursor;
   useLayoutEffect(() => {
     if (!list.current) return;
     if (showEarlier.current) { list.current.scrollTop = 0; showEarlier.current = false; }
     else if (followLatest.current) list.current.scrollTop = list.current.scrollHeight;
-  }, [messages, earlier]);
+  }, [all]);
 
   async function send(intent: RoomTurnInput["intent"], previous?: RoomTurnInput) {
     if (busy || !canWrite || (!previous && !text.trim())) return;
-    const signature = JSON.stringify({ text: text.trim(), intent });
-    if (!request.current || request.current.signature !== signature) request.current = { signature, id: crypto.randomUUID() };
-    const turn = previous ?? { worldId, text: text.trim(), intent, requestId: request.current.id };
+    let turn = previous;
+    if (!turn) {
+      const signature = JSON.stringify({ text: text.trim(), intent });
+      if (!request.current || request.current.signature !== signature) request.current = { signature, id: crypto.randomUUID() };
+      turn = { worldId, text: text.trim(), intent, requestId: request.current.id };
+    }
     setBusy(true); setNotice("");
     try {
       const res = await fetch(`/api/worlds/${worldId}/conversation`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(turn) });
       const data = await res.json() as RoomTurnResult & { error?: string };
       if (!res.ok) throw new Error(data.error || "Your message could not be saved.");
+      if (!previous) request.current = null;
       setText(v => v.trim() === turn.text ? "" : v);
       const retryable = ["failed", "unavailable", "pending"].includes(data.aiStatus);
       setRetry(retryable ? turn : null);
@@ -57,7 +79,7 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
       const page = await res.json();
       if (!res.ok) throw new Error(page.error || "Could not read earlier conversation.");
       followLatest.current = false; showEarlier.current = true;
-      setEarlier(current => [...page.messages, ...current]); setCursor(page.beforeSeq);
+      setHistory(current => ({ ...current, messages: mergeMessages(current.messages, page.messages) })); setCursor(page.beforeSeq);
     } catch (error) { setNotice(error instanceof Error ? error.message : "Could not read earlier conversation."); }
     finally { setBusy(false); }
   }
@@ -73,16 +95,18 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
         {all.length ? <button type="button" onClick={() => { followLatest.current = true; if (list.current) list.current.scrollTop = list.current.scrollHeight; }} className="ml-auto underline">Jump to latest</button> : null}
       </div>
       <ol ref={list} aria-label="Room messages" onScroll={e => { const el = e.currentTarget; followLatest.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60; }} className="flex max-h-96 flex-col gap-3 overflow-y-auto overscroll-contain">
-        {all.map(m => (
+        {all.map(m => {
+          const refs = readableSourceRefs(m.source_refs);
+          return (
           <li key={m.message_id} className={`rounded-lg border p-3 ${m.kind === "decision" ? "border-positive/30 bg-positive/5" : m.kind === "ai_draft" ? "border-accent/25 bg-accent/5" : "border-line bg-background/40"}`}>
             <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2 text-xs">
               <span className="font-medium">{m.kind === "ai_draft" ? `AI draft · requested by ${m.actor_label}` : `${m.actor_label}${m.actor_kind === "agent" ? " · AI agent" : ""}${m.kind === "decision" ? " · recorded decision" : ""}`}</span>
               <time dateTime={new Date(m.occurred_at).toISOString()} className="text-muted">{new Date(m.occurred_at).toLocaleString("en-US", { timeZone: "UTC", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZoneName: "short" })}</time>
             </div>
             <p className="whitespace-pre-wrap break-words text-sm leading-6">{m.text}</p>
-            {m.source_refs.length ? (
-              <details className="mt-2 text-xs text-muted"><summary className="cursor-pointer">Shared sources used · {m.source_refs.length}</summary>
-                <ul className="mt-2 space-y-1">{m.source_refs.map(s => <li key={s.entityId}><a href={`/world/${worldId}#piece-${s.entityId}`} className="text-accent underline">{s.title} · v{s.version}</a></li>)}</ul>
+            {refs.length ? (
+              <details className="mt-2 text-xs text-muted"><summary className="cursor-pointer">Shared sources used · {refs.length}</summary>
+                <ul className="mt-2 space-y-1">{refs.map(s => <li key={s.entityId}><a href={`/world/${worldId}#piece-${s.entityId}`} className="text-accent underline">{s.title} · v{s.version}</a></li>)}</ul>
               </details>
             ) : null}
             {canWrite && m.actor_id === currentActorId && m.ask_ai && m.reply_state !== "complete" ? <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted">
@@ -90,7 +114,8 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
               <button type="button" disabled={busy} onClick={() => void send("ask_ai", { worldId, requestId: m.request_id, text: m.text, intent: "ask_ai" })} className="text-accent underline disabled:opacity-50">Retry saved question</button>
             </div> : null}
           </li>
-        ))}
+          );
+        })}
       </ol>
       {!all.length ? <p className="text-sm leading-6 text-muted">Start with the idea, a question, or what you want to work out together.</p> : null}
       {canWrite ? (

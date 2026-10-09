@@ -120,6 +120,14 @@ try {
   await b.getByLabel("Message or question").fill("Prototype before tooling.");
   await b.getByRole("button", { name: "Record decision", exact: true }).click();
   await b.getByText("Ben · recorded decision", { exact: true }).waitFor();
+  for (let i = 0; i < 2; i++) {
+    await b.getByLabel("Message or question").fill("Repeated yes");
+    await b.getByRole("button", { name: "Send to room", exact: true }).click();
+    await b.getByLabel("Message or question").evaluate(async el => {
+      while ((el as HTMLTextAreaElement).disabled) await new Promise(resolve => setTimeout(resolve, 10));
+    });
+  }
+  assert.equal((await readRoomConversation(ana, worldId)).messages.filter(m => m.text === "Repeated yes").length, 2, "independent identical submissions both persist");
   await a.getByText("Bring selected AI knowledge into this room", { exact: true }).click();
   await a.getByLabel("Source title").fill("Selected Claude knowledge");
   await a.getByLabel("Selected knowledge").fill("A replaceable cartridge makes the prototype easier to test.");
@@ -174,6 +182,16 @@ try {
   await a.getByRole("button", { name: "Refresh shared state" }).click();
   await a.getByRole("button", { name: "Load earlier messages", exact: true }).click();
   await a.getByText("Zuber Pen idea: let us build the prototype.", { exact: true }).waitFor();
+  await a.getByText("History message 2", { exact: true }).waitFor();
+  await ana.postRoomMessage({ worldId, text: "History message 52", requestId: "history-52" });
+  await a.getByRole("button", { name: "Refresh shared state" }).click();
+  await a.getByText("History message 52", { exact: true }).waitFor();
+  assert.equal(await a.getByText("History message 2", { exact: true }).count(), 1, "refresh retains the message displaced from the latest window");
+  // Simulate a legacy append-only row written before source-reference validation.
+  // This owner-only fixture path is unavailable to authenticated API callers.
+  await db.owner("select kernel.append_event(row($1::uuid, null::uuid, 'human', 'user_jwt')::kernel.caller, 'kernel.room.message.posted', $2, null, $3::jsonb)", [anaId, world.scope, JSON.stringify({ kind: "ai_draft", text: "Legacy draft remains readable", source_refs: [null, { entityId: specId, version: 3, title: "Spec" }] })]);
+  await a.getByRole("button", { name: "Refresh shared state" }).click();
+  await a.getByText("Legacy draft remains readable", { exact: true }).waitFor();
   await a.getByText("Component cost worksheet", { exact: true }).click();
   await a.screenshot({ path: join(out, "desktop.png") });
   await a.setViewportSize({ width: 390, height: 844 });

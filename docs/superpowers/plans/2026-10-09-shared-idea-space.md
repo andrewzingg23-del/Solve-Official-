@@ -66,6 +66,6 @@ Existing MCP connections receive `read_room(world_id)` using the same bounded sh
 
 ### Task 4: Final review and delivery
 
-- [ ] Prepare the branch diff, spec, plan, test evidence and ledger for one fresh whole-branch reviewer.
-- [ ] Fix important findings with failing regression tests and rerun affected checks/full suite as warranted.
-- [ ] Record final evidence and integration status. Keep the branch reviewable and report the exact prerequisite for live use.
+- [x] Prepare the branch diff, spec, plan, test evidence and ledger for one fresh whole-branch reviewer.
+- [x] Fix important findings with failing regression tests and rerun affected checks/full suite as warranted.
+- [x] Record final evidence and integration status. Keep the branch reviewable and report the exact prerequisite for live use.

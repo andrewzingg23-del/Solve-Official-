@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { kernelClient, KernelError } from "../../lib/kernel/client";
+import { kernelClient, KernelError, type RoomSourceRef } from "../../lib/kernel/client";
 import { localSupabase } from "../../lib/kernel/local";
 import { createCreativeArtifact, createCreativeWorld } from "../../lib/world/creative";
 import { grantWorldAccess, revokeWorldAccess } from "../../lib/world/collaboration";
@@ -151,4 +151,18 @@ it("exposes persisted failed-question state and its original request for retry a
   assert.equal(question.ask_ai, true);
   assert.equal(question.reply_state, "failed");
   assert.equal(question.request_id, "reload-retry");
+});
+
+it("rejects malformed source references before saving a draft and leaves the lease available for a valid reply", async () => {
+  const { owner, brother, world } = await setup();
+  const sourceId = await createCreativeArtifact(owner, { scope: world.scope, worldEntityId: world.entityId, requestId: "ref-source", title: "Specification", body: "Shared", position: { x: 40, y: 50 } });
+  const messageId = await brother.postRoomMessage({ worldId, requestId: "invalid-refs", text: "Help", askAi: true });
+  const claim = await brother.claimRoomReply(messageId);
+  const valid = { entityId: sourceId, version: 1, title: "Specification" };
+  for (const bad of [null, "bad", {}, { ...valid, entityId: "not-a-uuid" }, { ...valid, version: "1" }, { ...valid, version: 1.5 }, { ...valid, version: 0 }, { ...valid, title: null }]) {
+    await assert.rejects(brother.finishRoomReply({ messageId, leaseToken: claim.lease_token!, text: "Invalid references", model: "test", sourceRefs: [bad] as unknown as RoomSourceRef[] }), e => e instanceof KernelError && e.name === "invalid");
+  }
+  assert.equal((await readRoomConversation(owner, worldId)).messages.length, 1);
+  await brother.finishRoomReply({ messageId, leaseToken: claim.lease_token!, text: "Valid references", model: "test", sourceRefs: [valid] });
+  assert.deepEqual((await readRoomConversation(owner, worldId)).messages[1].source_refs, [valid]);
 });

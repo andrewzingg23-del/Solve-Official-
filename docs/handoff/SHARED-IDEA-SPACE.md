@@ -23,8 +23,11 @@ Apply these additive migrations using the project's authorized staging migration
 - `supabase/migrations/20261009020000_world_invites_and_revisions.sql`
 - `supabase/migrations/20261009030000_room_reply_status.sql`
 - `supabase/migrations/20261009040000_private_room_sources.sql`
+- `supabase/migrations/20261009050000_room_boundary_guards.sql`
 
-Configure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for the same project. Configure Supabase Auth sign-in/callback settings for the app's staging origin. In-app inference additionally needs `OPENROUTER_API_KEY`. External MCP bot operations need that project's `SUPABASE_SECRET_KEY` and the existing OAuth/MCP setup described in the bot handoff.
+Apply all five in order with the matching app release. Invitation acceptance now takes the original token as `p_token`; the database hashes it internally. Stored digests cannot authorize acceptance, including hashes in historical events. Existing invitation links remain valid. New invitation events omit the digest.
+
+Configure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for the same project. Configure Supabase Auth sign-in/callback settings for the app's staging origin. In-app inference additionally needs `OPENROUTER_API_KEY`. External MCP bot operations need that project's `SUPABASE_SECRET_KEY` and the existing OAuth/MCP setup in `docs/plans/2026-10-04-master-bot.md` and `docs/plans/2026-10-04-bot-world-bridge.md`.
 
 The cloud configuration draft adds the missing variable/secret requirements without supplying values. Its secret destinations are `openrouter.ai` and the repository's staging host `taeikshnbcsjlgbattyp.supabase.co`. If a different Supabase project is chosen, update the secret destination to that exact host in environment settings. Review/save and publish the environment configuration to make it available to future cloud tasks. Publishing the cloud environment does not deploy the app or apply migrations.
 
@@ -34,7 +37,18 @@ The cloud configuration draft adds the missing variable/secret requirements with
 - `npm run typecheck`, `npm run lint`, `npm run build`: standard repository checks.
 - `npm run test:shared-room`: two Chromium contexts against real migrated SQL; authentication and inference are labelled fixtures. Set `CHROMIUM_PATH` if Chromium is not at `/usr/bin/chromium`. Screenshots are generated in ignored `.browser-tests/shared-room/`.
 
-The browser journey covers invitation acceptance, two-person persistence, decisions, deliberate shared-source publication, source-grounded inference, failure/retry across reloads, stale-edit retention, cost calculation/persistence, history pagination and mobile overflow. The HTTP tests exercise the same domain handlers used by the Next routes. Without live Supabase/model configuration, they do not validate live Auth, OAuth/provider integration, remote migrations, or deployed behavior. A real-Postgres concurrency/load check remains outstanding; local PGlite validates the SQL guards and transitions.
+The browser journey covers invitation acceptance, two-person persistence, decisions, deliberate shared-source publication, source-grounded inference, failure/retry across reloads, stale-edit retention, cost calculation/persistence, identical fresh submissions, history retention during refresh, legacy malformed-source rendering and mobile overflow. The HTTP tests exercise the same domain handlers used by the Next routes. Without live Supabase/model configuration, they do not validate live Auth, OAuth/provider integration, remote migrations, or deployed behavior. A real-Postgres concurrency/load check remains outstanding; local PGlite validates the SQL guards and transitions.
+
+## Review resolution
+
+One independent whole-branch review reported four Important findings and no Critical or Minor findings. All four received regressions and fixes:
+
+- Invitation acceptance hashes the raw token inside the authoritative RPC. A disclosed digest cannot join a World. New shared history omits the digest; upgrade tests retain existing links and exact creation retries.
+- The reply RPC validates each source-reference field. The renderer filters malformed historical references so an old append-only row cannot crash the room.
+- The composer retires acknowledged request IDs. Separate identical submissions persist separately; saved-question retry actions retain their original ID.
+- The conversation retains displayed messages across latest-window refreshes and updates overlapping records, preserving earlier history and current reply state.
+
+The reviewer declined to judge live Supabase/Auth/provider integration, remote migration deployment and real-Postgres concurrency. Those checks remain staging work; no review finding was waived.
 
 ## Remaining roadmap
 

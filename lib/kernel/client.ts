@@ -917,7 +917,7 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
     createWorldInvitation: (input: { worldId: string; tokenHash: string; role: "viewer" | "editor"; requestId: string }) =>
       one<{ invitation_id: string; expires_at: string }>("create_world_invitation", {
         p_world_id: input.worldId, p_token_hash: input.tokenHash, p_role: input.role, p_request_id: input.requestId, ...as }),
-    acceptWorldInvitation: (tokenHash: string) => call<string>("accept_world_invitation", { p_token_hash: tokenHash, ...as }),
+    acceptWorldInvitation: (token: string) => call<string>("accept_world_invitation", { p_token: token, ...as }),
     cancelWorldInvitation: (invitationId: string) => call<void>("cancel_world_invitation", { p_invitation_id: invitationId, ...as }),
     readWorldInvitations: (worldId: string) => call<Array<{ invitation_id: string; role: "viewer" | "editor"; expires_at: string; accepted_by: string | null; cancelled_at: string | null }>>("read_world_invitations", { p_world_id: worldId, ...as }),
     readWorldPresence: (scope: string) => call<Array<{ actor_id: string; label: string; at: string }>>("read_world_presence", { p_scope: scope, ...as }),
