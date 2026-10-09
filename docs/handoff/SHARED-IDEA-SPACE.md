@@ -1,6 +1,8 @@
 # Shared idea space handoff
 
-Branch: `codex/shared-idea-space`, based on main `661dfb7`.
+Integrated into `main` from `codex/shared-idea-space`. Code commit: `96c9908`; original base: `661dfb7`.
+
+Shipping checkpoint, 2026-10-08 21:23 EDT: the main push is confirmed. The integrated source is identical to the source verified by 421 passing tests, typecheck, lint, build and browser/HTTP checks. CI and Vercel status requests return Forbidden in the current cloud instance; deployment status is unconfirmed. Remote migrations and live activation have not been performed.
 
 ## Use
 
@@ -30,6 +32,10 @@ Apply all five in order with the matching app release. Invitation acceptance now
 Configure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for the same project. Configure Supabase Auth sign-in/callback settings for the app's staging origin. In-app inference additionally needs `OPENROUTER_API_KEY`. External MCP bot operations need that project's `SUPABASE_SECRET_KEY` and the existing OAuth/MCP setup in `docs/plans/2026-10-04-master-bot.md` and `docs/plans/2026-10-04-bot-world-bridge.md`.
 
 The cloud configuration draft adds the missing variable/secret requirements without supplying values. Its secret destinations are `openrouter.ai` and the repository's staging host `taeikshnbcsjlgbattyp.supabase.co`. If a different Supabase project is chosen, update the secret destination to that exact host in environment settings. Review/save and publish the environment configuration to make it available to future cloud tasks. Publishing the cloud environment does not deploy the app or apply migrations.
+
+Shipping also needs API access to `api.github.com`, `api.supabase.com` and `api.vercel.com`. These destinations and secure requirements for `SUPABASE_ACCESS_TOKEN` (Supabase management API) and `VERCEL_TOKEN` (deployment administration when needed) were added to the draft. No saved credential bindings exist for them in the draft. This cloud's proxy-secret delivery supports HTTPS; management API access is the supported route for administering the staging database here. The draft save does not apply runtime settings or create secret values.
+
+A generated staging package and SHA-256 manifest are available in this session at `/workspace/solve-release/96c9908/`. The five source migrations remain authoritative. The package applies them in one transaction, refuses a whole-package retry when release objects already exist, and requests a PostgREST schema reload. The authorized migration runner must record each version in its own migration history. Local baseline-upgrade verification preserved every existing event ID/hash and the existing World, then exercised invitation acceptance and room posting; a repeated apply refused without altering data. Remote baseline inspection is still required before application.
 
 ## Verification
 

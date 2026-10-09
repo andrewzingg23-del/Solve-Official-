@@ -1,5 +1,12 @@
 # BUILD_STATUS
 
+## Main integration — 2026-10-08 21:23 EDT
+
+- Founder: "add it and ship", followed by "fix it". Fast-forwarded main from `661dfb7` to reviewed code `96c9908`; push and remote main hash confirmed. Integrated source matches the previously verified 421-test release exactly; no implementation changes or repeat of unaffected suites.
+- Prepared a source-hashed five-migration staging package. Local atomic upgrade preserved existing event IDs/hashes and the World, supported invitation acceptance and posting, and rejected repeated whole-package application without data changes.
+- Live activation remains blocked: Supabase management and Vercel admin credentials are missing; GitHub status/check API requests return Forbidden even outside the filesystem sandbox. Added the three specific API domains and secure admin credential requirements to the cloud draft. Saved draft revision 6 is confirmed; it requires settings review/save and publication, and does not change the current runtime.
+- No remote migration was applied. CI/deployment status and live Auth/provider behavior are unconfirmed. The main push can be picked up by the project's existing Git deployment integration; it is not evidence of a working deployed shared room.
+
 ## Branch checkpoint — 2026-10-09 (shared idea space, codex/shared-idea-space)
 
 - First collaboration release: owner-managed expiring invitations, authenticated acceptance, persistent room messages, attributed human decisions, shared AI context with source versions, retries after reload, external MCP room tools, conflict-aware document editing, and a component cost worksheet with saved assumptions.
