@@ -999,3 +999,7 @@ Founder requested Build after reviewing the adaptive collaboration roadmap. Upda
 ## 2026-10-09 00:23Z — Codex: persistent room domain checkpoint
 
 Added reserved, typed kernel conversation records, canonical attribution, human-authored decisions, cursor pagination, and a leased AI reply lifecycle. Shared AI context reads World documents/decisions/conversation only. A failed inference retains the saved question, and completed retries reuse the recorded draft. Focused real-kernel tests: 6 passed, 0 failed; baseline before changes: 395 passed. UI and invitations are the next slice. Changes are on codex/shared-idea-space; no deployment or live-provider claim.
+
+## 2026-10-09 — Codex: invitation and concurrency checkpoint
+
+Added owner-authorized single-use 48-hour invitation links, cancellation, authenticated acceptance and existing collaborator revocation. Delegated grants retain their owner parentage while events identify the actual acceptor. Document revisions now compare expected versions under the kernel lock; retries reuse the original write. Presence queries filter current heartbeats before reading history and use canonical labels. Focused kernel suites: 21 passed, 0 failed, including changed delegation policy and expired inference leases. Typecheck passed. Next: UI, shared APIs, bounded worksheet and browser validation. No remote migrations or deployment.

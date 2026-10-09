@@ -128,3 +128,16 @@ it("leases an AI request so simultaneous retries cannot both invoke the provider
   assert.equal(retry.aiStatus, "pending");
   assert.equal(calls, 0);
 });
+
+it("reclaims expired inference leases and rejects the stale worker's reply", async () => {
+  const { db, brother } = await setup();
+  const messageId = await brother.postRoomMessage({ worldId, requestId: "expired-lease", text: "Help", askAi: true });
+  const first = await brother.claimRoomReply(messageId);
+  await db.owner("update kernel.room_replies set lease_until = now() - interval '1 second' where message_id = $1", [messageId]);
+  const second = await brother.claimRoomReply(messageId);
+  assert.equal(second.state, "claimed");
+  assert.notEqual(first.lease_token, second.lease_token);
+  await assert.rejects(brother.finishRoomReply({ messageId, leaseToken: first.lease_token!, text: "Old worker", model: "test", sourceRefs: [] }), conflict);
+  await brother.finishRoomReply({ messageId, leaseToken: second.lease_token!, text: "Current worker", model: "test", sourceRefs: [] });
+  assert.deepEqual((await readRoomConversation(brother, worldId)).messages.map(m => m.text), ["Help", "Current worker"]);
+});

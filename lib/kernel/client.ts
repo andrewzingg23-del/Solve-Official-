@@ -913,6 +913,18 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
     inbox: () => call<InboxMessage[]>("inbox", { ...as }),
 
     // World Graph.
+    createWorldInvitation: (input: { worldId: string; tokenHash: string; role: "viewer" | "editor"; requestId: string }) =>
+      one<{ invitation_id: string; expires_at: string }>("create_world_invitation", {
+        p_world_id: input.worldId, p_token_hash: input.tokenHash, p_role: input.role, p_request_id: input.requestId, ...as }),
+    acceptWorldInvitation: (tokenHash: string) => call<string>("accept_world_invitation", { p_token_hash: tokenHash, ...as }),
+    cancelWorldInvitation: (invitationId: string) => call<void>("cancel_world_invitation", { p_invitation_id: invitationId, ...as }),
+    readWorldInvitations: (worldId: string) => call<Array<{ invitation_id: string; role: "viewer" | "editor"; expires_at: string; accepted_by: string | null; cancelled_at: string | null }>>("read_world_invitations", { p_world_id: worldId, ...as }),
+    readWorldPresence: (scope: string) => call<Array<{ actor_id: string; label: string; at: string }>>("read_world_presence", { p_scope: scope, ...as }),
+    updateDocument: (input: { entityId: string; scope: string; expectedVersion: number; title: string; summary: string; attributes: Record<string, unknown>; idempotencyKey: string }) =>
+      call<string>("update_document_version", { p_entity_id: input.entityId, p_scope: input.scope,
+        p_expected_version: input.expectedVersion, p_title: input.title, p_summary: input.summary,
+        p_attributes: input.attributes, p_idempotency_key: input.idempotencyKey, ...as }),
+
     postRoomMessage: (input: { worldId: string; text: string; requestId: string; kind?: "message" | "decision"; askAi?: boolean }) =>
       call<string>("post_room_message", { p_world_id: input.worldId, p_text: input.text, p_request_id: input.requestId,
         p_kind: input.kind ?? "message", p_ask_ai: input.askAi ?? false, ...as }),

@@ -104,6 +104,7 @@ export type UpdateCreativeArtifactInput = {
   scope: string;
   entityId: string;
   requestId: string;
+  expectedVersion?: number;
   title: string;
   body: string;
   position: CreativePosition;
@@ -492,14 +493,13 @@ export async function updateCreativeArtifact(kernel: Kernel, input: UpdateCreati
   const title = requireTitle(input.title);
   const body = requireBody(input.body);
   const position = requirePosition(input.position);
-  return kernel.upsertEntity({
+  return kernel.updateDocument({
     entityId: input.entityId,
-    kind: "document",
+    expectedVersion: input.expectedVersion ?? existing.version,
     scope,
     title,
     summary: body.trim().slice(0, 240),
     attributes: { documentType: "text", worldId, content: body, canvas: position, ...viaAttributes(input.via) },
-    visibility: "members",
     idempotencyKey: requestKey(`artifact-update:${input.entityId}`, input.requestId),
   });
 }

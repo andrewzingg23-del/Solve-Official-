@@ -57,12 +57,16 @@ function grantFields(event: KernelEvent) {
 
 async function activeCollaborators(kernel: Kernel, scope: string, ownerActorId: string): Promise<WorldCollaborator[]> {
   const grants = new Map<string, { actorId: string; capability: string }>();
+  const invitations = new Set<string>();
   let afterSeq = 0;
   for (;;) {
     const page = await kernel.readEvents(scope, { afterSeq, limit: 500 });
     if (page.length === 0) break;
     for (const event of page) {
-      if (event.actor_id === ownerActorId) {
+      if (event.actor_id === ownerActorId && event.type === "kernel.world.invitation.created") invitations.add(event.id);
+      const invited = event.type === "kernel.grant.issued" && event.payload.issued_by === ownerActorId &&
+        typeof event.payload.invitation_event_id === "string" && invitations.has(event.payload.invitation_event_id);
+      if (event.actor_id === ownerActorId || invited) {
         const issued = grantFields(event);
         if (issued && issued.scope === scope && MANAGED_CAPABILITIES.includes(issued.capability as (typeof MANAGED_CAPABILITIES)[number])) {
           grants.set(issued.id, { actorId: issued.actorId, capability: issued.capability });
