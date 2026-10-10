@@ -1,0 +1,73 @@
+name: Deployed product
+on:
+  push:
+    branches:
+      - main
+      - codex/release-activation
+    paths:
+      - ".github/workflows/deployed-product.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: deployed-product-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  public:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check the public deployment
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          const origin = 'https://solve-sage.vercel.app'; // Repository's configured homepage.
+          const get = (path) => fetch(new URL(path, origin), {
+            redirect: 'manual', signal: AbortSignal.timeout(20000),
+            headers: { 'user-agent': 'Solve-read-only-release-check' },
+          });
+          try {
+            let home;
+            for (const [path, marker] of [
+              ['/', 'People. Ideas. Your AIs.'],
+              ['/account', 'Your profile. Your AI.'],
+              ['/communities', 'Build with people who share your goal.'],
+              ['/bot', 'Your personal AI'],
+            ]) {
+              const response = await get(path);
+              assert.equal(response.status, 200, `${path}: unexpected HTTP status`);
+              const html = await response.text();
+              assert.ok(html.includes(marker), `${path}: collaboration rebuild is absent`);
+              if (path === '/') home = html;
+              console.log(`${path}: rebuilt public page available`);
+            }
+            for (const path of ['/account', '/communities', '/bot']) {
+              assert.ok(home.includes(`href="${path}"`), `Missing core navigation: ${path}`);
+            }
+            const legacy = await get('/packs/trading');
+            assert.equal(legacy.status, 307, 'Trading page must redirect into the core product');
+            const location = new URL(legacy.headers.get('location'), origin);
+            assert.equal(location.origin, origin);
+            assert.equal(location.pathname, '/');
+            const market = await get('/api/market');
+            assert.equal(market.status, 404, 'Legacy market API must be unavailable');
+            assert.match(market.headers.get('cache-control') ?? '', /no-store/);
+            const assets = [...home.matchAll(/(?:src|href)="(\/_next\/[^"?]+\.(?:js|css)(?:\?[^" ]*)?)"/g)]
+              .map(match => match[1]);
+            const selected = [...new Set(assets)].slice(0, 3);
+            assert.ok(selected.length > 0, 'No built assets are referenced');
+            for (const path of selected) {
+              const response = await get(path);
+              assert.equal(response.status, 200, `Built asset unavailable: ${path}`);
+              assert.match(response.headers.get('content-type') ?? '', /javascript|css/);
+            }
+            console.log('Deployed anonymous core pages, navigation, assets and legacy-route gates passed. Live Auth, database writes and providers are separate checks.');
+          } catch (error) {
+            const message = String(error.message ?? error).replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A');
+            console.error(`::error title=Public deployment check::${message}`);
+            process.exitCode = 1;
+          }
+          JS

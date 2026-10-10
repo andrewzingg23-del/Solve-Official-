@@ -1,5 +1,11 @@
 # BUILD_STATUS
 
+## CI release gate passed — 2026-10-10 02:56 UTC
+
+- Build run `38018066907` on harness-fix source `a8f7cd6` passed Test, typecheck, lint and production build. The final local full suite also passed all 456 tests with zero failures/skips. Fresh-checkout regression and 60 real Postgres release checks are green. The missing parent-directory issue is resolved; no tests were disabled.
+- Added a read-only Deployed product workflow for the repository's configured homepage `https://solve-sage.vercel.app`. It checks the four public core pages, navigation, built assets and legacy trading/market gates, with failure details exposed through check annotations. YAML and inline Node syntax are validated; remote execution follows the push.
+- The new deployed-site check and documentation are the only additions after the CI-verified application/test implementation. Earlier browser and migration checks still cover the exact application source. Supabase management/model access remains missing; no live database change or live Auth/provider claim.
+
 ## CI root cause fixed — 2026-10-10 02:44 UTC
 
 - Instrumented run `38017300634` exposed all seven failures: `tests/product/actions.test.ts` called mkdtemp below ignored `.browser-tests` without creating its parent. Browser checks had already created that directory locally; a fresh CI checkout had not. No application action failed its behavior assertions in that run because the harness could not initialize.
