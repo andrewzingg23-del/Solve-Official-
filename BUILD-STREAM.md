@@ -1,6 +1,6 @@
 # Live build stream
 
-Current integration: `main` (collaboration rebuild source `0ad1dc4`)
+Current integration: `main` (collaboration rebuild source `0ad1dc4`); active follow-up `codex/release-activation`
 
 This file is the shared, committed progress feed. It is readable from the repository at any time; it does not expose uncommitted edits in a builder's private working tree.
 
@@ -1049,3 +1049,7 @@ Solves the founder's idea-and-AIs workflow by making Projects, Communities, Your
 ## 2026-10-10 02:15 UTC — main integration confirmed (Codex)
 
 Pushed codex/collaboration-rebuild, fast-forwarded main from fda0e7a to 0ad1dc474d51b38ee0bc846988b88d2cf6995b0f, pushed main and verified its remote hash. Main has the exact verified implementation, with no merge conflicts or extra source changes. Final current-tree 456-test suite and the recorded build/type/lint/product/shared-room/studio browser checks are green locally. No remote CI/deployment success is claimed; status/admin credentials remain unavailable. Next launch gate: inspect and apply only missing migrations, verify actual deployed Auth/two-account collaboration/external AI consent and Postgres concurrency, then run the founder-and-brother idea pilot. This follow-up checkpoint changes documentation only.
+
+## 2026-10-10 02:30 UTC — live activation continues; CI diagnosis (Codex)
+
+Founder said "go go go". GitHub check/status access now works: Vercel reports deployments complete and the main product-browser run passed. Main Build run 38016262639 failed in Test, with later steps skipped; log-download hosts are blocked and the Checks API only reports exit code 1. Added failed TAP diagnostics to .github/workflows/build.yml and scripts/report-test-failures.mjs, retaining pipefail and the actual test outcome. Lint passed with eight existing warnings; the reporter was checked against an actual failed rehearsal log. No app behavior changed in this diagnostic slice. Real Postgres 17 checks passed: 46 existing kernel/room/revision/profile tests and five simultaneous-connection cases, preserving event chains. Required management/model bindings remain absent; cloud draft domain additions cover the deployed site and log downloads. Next: push this diagnostic slice on its own branch, inspect the new CI evidence, and rehearse the six-migration upgrade. No remote migration or live sign-in test.

@@ -1,5 +1,13 @@
 # BUILD_STATUS
 
+## Live activation and CI diagnosis — 2026-10-10 02:30 UTC
+
+- Founder: "go go go". GitHub check/status access now works. Vercel reports successful deployments for source `0ad1dc4` and documentation checkpoint `a69a224`; product-browser workflow on main passed. Actual deployed HTTP checks are blocked by the cloud host allowlist, so this is a deployment-status result, not a verified live user journey.
+- Main Build run `38016262639` failed in Test; typecheck/lint/build were skipped by CI. Local 456-test and production build results remain green. Log download redirects to hosts the cloud cannot reach; check annotations expose only exit code 1. The release-activation branch captures test output with pipefail and emits failed TAP diagnostics to the Checks API for root-cause investigation. It does not suppress tests or change their exit status.
+- Real Postgres 17.10 is installed outside the repository from an integrity-checked, pinned npm package. Its documented package-local library links were restored after an initial startup failure. Forty-six existing kernel/room/revision/profile checks passed as a non-superuser migration owner with API roles. Five additional real-connection race checks passed: message retries, single-use invitation acceptance, document conflicts, AI leases and profile collisions; event chains stayed valid. Auth claims and AI output remain labelled local fixtures.
+- Supabase management/server credentials and model credentials remain absent. Staging public Auth settings respond, email sign-in is enabled and anonymous kernel reads are denied as expected. No email was sent, no test live user created and no remote migration applied. Required secure bindings are already in the cloud draft; deployed-host and GitHub-log domains are added for settings review/save.
+- Next: use the instrumented CI run to fix its exact failing behavior, finish the six-migration upgrade rehearsal, and activate only missing remote migrations when the management binding is available.
+
 ## Main integration — 2026-10-10 02:15 UTC
 
 - Fast-forwarded main from `fda0e7a` to collaboration rebuild `0ad1dc474d51b38ee0bc846988b88d2cf6995b0f` under the founder's earlier "add it and ship" instruction. Feature-branch push, main push and matching remote main hash are confirmed. Integrated source is exactly the verified tree; no merge conflict or additional implementation change.

@@ -37,7 +37,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Test
-        run: npm test
+        id: tests
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee "$RUNNER_TEMP/solve-tests.log"
+      - name: Report test failures
+        if: ${{ failure() && steps.tests.outcome == 'failure' }}
+        run: node scripts/report-test-failures.mjs "$RUNNER_TEMP/solve-tests.log"
       - name: Typecheck
         run: npm run typecheck
       - name: Lint
