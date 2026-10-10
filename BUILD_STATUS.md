@@ -1,5 +1,11 @@
 # BUILD_STATUS
 
+## Public deployment verified — 2026-10-10 02:59 UTC
+
+- Deployed product run `38018852679` passed against `https://solve-sage.vercel.app` on checker `cc552f1`. The actual anonymous public response contains all four rebuilt core pages and navigation; referenced assets load, `/packs/trading` redirects to core and `/api/market` returns a no-store 404. No live Auth, database write or provider request was performed by this check.
+- Standard Build run `38018066907` passed on `a8f7cd6`; local full suite passed 456/456. App, lib, migrations, tests and scripts match that verified source exactly at `cc552f1`; only the separately executed read-only checker and documentation were added afterward. Its automatic standard Build rerun is still in progress, not reported green here.
+- Integrating the follow-up into main under the existing ship instruction. The six-migration upgrade and 60 Postgres checks are verified locally, but remote migration inspection/application remains blocked by absent `SUPABASE_ACCESS_TOKEN`. Enter the binding through secure environment settings; do not send its value in chat.
+
 ## CI release gate passed — 2026-10-10 02:56 UTC
 
 - Build run `38018066907` on harness-fix source `a8f7cd6` passed Test, typecheck, lint and production build. The final local full suite also passed all 456 tests with zero failures/skips. Fresh-checkout regression and 60 real Postgres release checks are green. The missing parent-directory issue is resolved; no tests were disabled.
