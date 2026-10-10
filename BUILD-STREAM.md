@@ -1087,3 +1087,10 @@ The phone map control overlap is fixed and verified with normal clicks. Complete
 
 
 - 2026-10-10 01:35Z — Claude: CI green for 7855575 (avatar slice 1 and community shared context): https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/38012594167. The founder shared "MCP Vault — Platform Plan to $10M ARR"; analysis given in chat, no code. Most of the vault already exists here: sealed memory, the MCP connector, import, the context pack and community shared context. Gaps: export, finer per-client permissions, a cross-client recall test. Next: the founder's call on whether MCP Vault is a separate product or a frame for solve.
+
+- 2026-10-10 02:35Z — Claude: direction change. The founder read their brother's MCP Vault documents ("Platform Plan to $10M ARR", "The AI Passport"), said "this is sov id", and after a review of solve's code, "lets start from scratch".
+  - **Decision recorded:** `DECISIONS.md`. SOV ID's private side is built in a new repository, `andrewzingg23-del/sov-id`; solve keeps running and later signs in with SOV ID like any other app.
+  - **Why scratch:** solve's memory keys sit next to the data and its connector writes with the service key, the opposite of the passport's key design.
+  - **Built (local, waiting for the repository):** stage 0 of SOV ID: vision, key design draft for review, fact/grant model and open export format, strict validation, the deny-by-default policy decision, CI with pinned actions and a secret scan. 17 tests pass, typecheck clean, no secrets found.
+  - **Blocker:** this session can't create repositories. The founder creates `sov-id` (private, with a README) and gives the Claude GitHub App access; then it's pushed.
+  - **solve paths touched:** `DECISIONS.md`, `BUILD-STREAM.md` only. Checks: docs only.
