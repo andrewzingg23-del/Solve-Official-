@@ -1066,3 +1066,5 @@ The phone map control overlap is fixed and verified with normal clicks. Complete
   - **Checks:** docs only.
   - **Next:** the founder's call on "Level" (BRAND.md §6), then slice 1.
 
+
+- 2026-10-10 00:53Z — Claude: north star rewritten bigger at the founder's "try again": "more fun than a game, more useful than an assistant"; meet it and it already knows you; ideas assemble a world while the crew works as visible motion; skills you can touch and teach; other people's avatars in a living map; it steps into real life; every project has a replay; any brain, one character. File: `docs/plans/2026-10-10-avatar-north-star.md`. Docs only.
