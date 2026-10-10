@@ -11,6 +11,7 @@ import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { deskCommunityId, deskRequests } from "@/lib/solar/desk";
 import { getUser } from "@/lib/supabase/server";
+import { readCommunityContext } from "@/lib/community/context";
 import { CommunityView, panel, type Loaded } from "./view";
 
 export const metadata: Metadata = { title: "Community · solve" };
@@ -23,13 +24,14 @@ async function load(communityId: string): Promise<Loaded | "missing" | "identity
     const [{ me, standing }, avatars, [owner]] = await Promise.all([standingIn(kernel, community), kernel.myAvatars(), kernel.readActors([community.ownerId])]);
     const companion = companionOf(avatars);
     const inside = standing !== "guest";
-    const [asks, roster, notes, open, desk, aiNotes] = await Promise.all([
+    const [asks, roster, notes, open, desk, aiNotes, shared] = await Promise.all([
       standing === "owner" ? Promise.resolve([]) : myAsks(kernel, community),
       inside ? communityMembers(kernel, community) : Promise.resolve({ people: [], guests: [] }),
       inside ? notesForMe(kernel, community) : Promise.resolve([]),
       standing === "owner" ? joinRequests(kernel, community) : Promise.resolve([]),
       standing === "owner" && community.packs.includes("solar") ? deskRequests(kernel, community) : Promise.resolve(null),
       inside && companion ? aiSendsNotes(kernel, community) : Promise.resolve(null),
+      inside ? readCommunityContext(kernel, community).then((c) => c.entries).catch(() => []) : Promise.resolve([]),
     ]);
     return {
       community,
@@ -45,6 +47,7 @@ async function load(communityId: string): Promise<Loaded | "missing" | "identity
       desk,
       routed: deskCommunityId() === community.communityId,
       aiNotes,
+      shared,
     };
   } catch (error) {
     return error instanceof KernelError && error.name === "unauthenticated" ? "identity" : "unavailable";
@@ -61,6 +64,7 @@ const DONE: Record<string, string> = {
   "ai-notes-on": "Your AI can send notes for you here now.",
   "ai-notes-off": "Your AI no longer sends notes for you here.",
   "ai-in": "Your AI is in the room.",
+  shared: "Added. Every member's AI will see it.",
 };
 const ERRORS: Record<string, string> = {
   input: "Check what you entered and try again.",

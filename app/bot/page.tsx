@@ -28,6 +28,8 @@ import { TalkHero } from "./talk-hero";
 import { TalkCinema } from "./talk-cinema";
 import { TalkPanel } from "@/app/world/[worldId]/room/talk";
 import { getBotAvatar, faceSrc } from "@/lib/bot/avatar";
+import { brainsFrom } from "@/lib/bot/knowing";
+import { KnowsYou } from "./knows-you";
 
 export const metadata: Metadata = { title: "Your bot — solve" };
 
@@ -35,7 +37,7 @@ type Loaded =
   | { kind: "signed-out" }
   | { kind: "identity" }
   | { kind: "unavailable" }
-  | { kind: "ready"; userId: string; persona: Persona; version: number; savedAt: string | null; exists: boolean; connections: Connection[]; memories: Memory[]; worlds: WorldWithAccess[]; saves: Record<string, SavedProof[]>; waiting: WaitingItem[]; ownerId: string; botAgentId: string | null; pulse: Pulse | null; machine: MachineData };
+  | { kind: "ready"; userId: string; persona: Persona; version: number; savedAt: string | null; exists: boolean; connections: Connection[]; memories: Memory[]; worlds: WorldWithAccess[]; saves: Record<string, SavedProof[]>; waiting: WaitingItem[]; ownerId: string; botAgentId: string | null; pulse: Pulse | null; machine: MachineData; memoryCount: number; brains: { label: string; count: number }[] };
 
 async function load(): Promise<Loaded> {
   const user = await getUser();
@@ -48,7 +50,7 @@ async function load(): Promise<Loaded> {
     const [saves, waiting] = await Promise.all([latestSaves(kernel, worlds), waitingOn(kernel, worlds, bot.ownerId)]);
     const pulse = bot.avatar ? botPulse({ persona: bot.persona, since: bot.avatar.created_at, memories, connections, history: bot.history, now: new Date() }) : null;
     const machine = machineData({ connections, worlds, memories, versions: bot.history.length, now: new Date() });
-    return { kind: "ready", machine, userId: user.id, persona: bot.persona, version: bot.history.length, savedAt: bot.saved?.at ?? null, exists: Boolean(bot.avatar), connections, memories: memories.slice(0, 50), worlds, saves, waiting, ownerId: bot.ownerId, botAgentId: bot.avatar?.agent_id ?? null, pulse };
+    return { kind: "ready", machine, memoryCount: memories.length, brains: brainsFrom(memories), userId: user.id, persona: bot.persona, version: bot.history.length, savedAt: bot.saved?.at ?? null, exists: Boolean(bot.avatar), connections, memories: memories.slice(0, 50), worlds, saves, waiting, ownerId: bot.ownerId, botAgentId: bot.avatar?.agent_id ?? null, pulse };
   } catch (error) {
     if (error instanceof KernelError && error.name === "unauthenticated") return { kind: "identity" };
     return { kind: "unavailable" };
@@ -94,6 +96,20 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
         <Notice title="Your bot can't be loaded right now" body="The kernel did not answer. Nothing was changed; try again in a moment." />
       ) : (
         <>
+          <TalkHero
+            persona={state.kind === "ready" ? state.persona : DEFAULT_PERSONA}
+            name={botName}
+            face={face}
+            state={state.kind === "ready" && state.pulse ? state.pulse.mood : "idle"}
+            machine={state.kind === "ready" ? state.machine : EMPTY_MACHINE}
+            pulse={state.kind === "ready" ? state.pulse : null}
+          />
+          {/* The avatar first, then what it knows, then talking to it: the order a person meets it in. */}
+          {state.kind === "ready" && state.exists ? <KnowsYou botName={botName} face={face} memoryCount={state.memoryCount} brains={state.brains} /> : null}
+          <TalkCinema>
+            <TalkPanel botName={botName} canKeep={state.kind === "ready" && state.exists} />
+          </TalkCinema>
+          {state.kind === "ready" ? <WaitingOnYou items={state.waiting} /> : null}
           {state.kind === "ready" ? (
             <FirstSteps
               steps={firstSteps({
@@ -105,18 +121,6 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
               })}
             />
           ) : null}
-          {state.kind === "ready" ? <WaitingOnYou items={state.waiting} /> : null}
-          <TalkHero
-            persona={state.kind === "ready" ? state.persona : DEFAULT_PERSONA}
-            name={botName}
-            face={face}
-            state={state.kind === "ready" && state.pulse ? state.pulse.mood : "idle"}
-            machine={state.kind === "ready" ? state.machine : EMPTY_MACHINE}
-            pulse={state.kind === "ready" ? state.pulse : null}
-          />
-          <TalkCinema>
-            <TalkPanel botName={botName} />
-          </TalkCinema>
           <BotCreator
             initial={state.kind === "ready" ? state.persona : DEFAULT_PERSONA}
             signedIn={state.kind === "ready"}
@@ -126,8 +130,9 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
           />
           {state.kind === "ready" && state.exists ? <AgentContract botName={state.persona.name} connections={state.connections} worlds={state.worlds} /> : null}
           {state.kind === "ready" && state.exists ? <WhileYouWereAway botName={state.persona.name} /> : null}
-          {state.kind === "ready" && state.exists ? <BotImport botName={state.persona.name} /> : null}
+          {state.kind === "ready" && state.exists ? <div id="bring-history" className="scroll-mt-6"><BotImport botName={state.persona.name} /></div> : null}
           {state.kind === "ready" && state.exists ? (
+            <div id="connect-ai" className="scroll-mt-6">
             <Connections
               botName={state.persona.name}
               connectorUrl={await connectorUrl()}
@@ -135,6 +140,7 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
               memories={state.memories}
               live={state.pulse ? <LiveBot persona={state.persona} initial={state.pulse} userId={state.userId} /> : null}
             />
+            </div>
           ) : null}
           {state.kind === "ready" && state.exists && state.botAgentId ? <WorldsPanel botName={state.persona.name} botAgentId={state.botAgentId} worlds={state.worlds} saves={state.saves} ownerId={state.ownerId} error={worldError} /> : null}
           {state.kind === "ready" ? <BotPortraitCreator persona={state.persona} /> : null}

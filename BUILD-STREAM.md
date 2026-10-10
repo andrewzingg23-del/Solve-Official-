@@ -1068,3 +1068,20 @@ The phone map control overlap is fixed and verified with normal clicks. Complete
 
 
 - 2026-10-10 00:53Z — Claude: north star rewritten bigger at the founder's "try again": "more fun than a game, more useful than an assistant"; meet it and it already knows you; ideas assemble a world while the crew works as visible motion; skills you can touch and teach; other people's avatars in a living map; it steps into real life; every project has a replay; any brain, one character. File: `docs/plans/2026-10-10-avatar-north-star.md`. Docs only.
+
+- 2026-10-10 01:40Z — Claude: avatar slice 1 built (founder: "build it. also think about style and ergonomics"). Mid-build the founder added "community map sever for collaboration and context for theier models", "mcp", "common context protocol with a community o far agents", and that was built too.
+  - **Founder-first problem:** the avatar doesn't know what you told your other AIs, and every AI in a community works from a different picture.
+  - **Built:**
+    - the context pack;
+    - Talk reads memory, persona and soul, and shows what it had in mind and which model spoke;
+    - Keep this;
+    - "What I already know about you" with cited sources;
+    - a community's shared context with MCP tools and a page panel.
+  - **Paths:**
+    - `lib/bot/{context,knowing,chat,connector}.ts`, `lib/community/context.ts`;
+    - `app/api/bot/{keep,know,chat}`, `app/bot/{knows-you.tsx,page.tsx}`;
+    - `app/world/[worldId]/room/{talk.tsx,page.tsx}`, `app/world/[worldId]/page.tsx`, `app/community/[communityId]/{view,page,actions}`;
+    - tests.
+  - **Checks:** full suite 445/445; typecheck, lint and build ok; Chromium renders on desktop and phone with no page errors.
+  - **Next:** confirm CI. The founder tries "Show me" with real history once signed in on the preview.
+

@@ -9,6 +9,7 @@ import { setBotAccess } from "@/lib/bot/worlds";
 import { companionOf } from "@/lib/bot/store";
 import { answerAsk, askToJoin, CommunityInputError, letAiSendNotes, readCommunity, requireOwner, sendNote, updateCommunity } from "@/lib/community/community";
 import { answerDesign, DeskInputError } from "@/lib/solar/desk";
+import { addContextEntry, ContextInputError } from "@/lib/community/context";
 
 const text = (value: FormDataEntryValue | null) => (typeof value === "string" ? value : "");
 
@@ -24,7 +25,7 @@ async function act(communityId: string, done: string, work: (kernel: Awaited<Ret
     if (!community) error = "missing";
     else await work(kernel, community);
   } catch (caught) {
-    error = caught instanceof CommunityInputError || caught instanceof DeskInputError ? "input"
+    error = caught instanceof CommunityInputError || caught instanceof DeskInputError || caught instanceof ContextInputError ? "input"
       : caught instanceof KernelError && caught.name === "forbidden" ? "forbidden"
       : caught instanceof KernelError && caught.name === "not_found" ? "missing"
       : "save";
@@ -85,5 +86,11 @@ export async function letMyAiInAction(communityId: string) {
     if (!bot) throw new CommunityInputError("set up your bot first");
     await setBotAccess(kernel, { scope: community.scope, botAgentId: bot.agent_id, access: "add" }, `owner-ai-${community.communityId}`);
   });
+}
+
+// A member adds to the community's shared context: what every member's AI works from.
+export async function addContextAction(communityId: string, formData: FormData) {
+  await act(communityId, "shared", (kernel, community) =>
+    addContextEntry(kernel, community, { kind: text(formData.get("kind")), text: text(formData.get("text")), requestId: text(formData.get("requestId")) }));
 }
 

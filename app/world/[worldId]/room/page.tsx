@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { CONTEXT_KINDS, parseContextEntry } from "@/lib/community/context";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -64,6 +65,8 @@ function pieceOf(a: CreativeArtifact, journeys: Map<string, Journey>, saved: Set
   if (parsePart(a.body)) return { ...base, kind: "part", detail: null };
   if (parseCapabilityProposal(a.body)) return { ...base, kind: "proposal", detail: null };
   if (parsePixelArt(a.body)) return { ...base, kind: "art", detail: null };
+  const shared = parseContextEntry(a.body);
+  if (shared) return { ...base, kind: "text", title: CONTEXT_KINDS[shared.kind], detail: shared.text.length > 90 ? `${shared.text.slice(0, 88).trimEnd()}…` : shared.text };
   if (a.title === "Goal") return { ...base, kind: "goal", title: a.body.trim().split("\n")[0].slice(0, 160) || a.title, detail: null };
   const body = a.body.trim();
   return { ...base, kind: "text", detail: body ? (body.length > 90 ? `${body.slice(0, 88).trimEnd()}…` : body) : null };

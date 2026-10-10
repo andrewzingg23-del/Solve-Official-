@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { parseContextEntry } from "@/lib/community/context";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { label, primaryAction, quietLink, secondaryAction } from "@/app/ui";
@@ -74,6 +75,8 @@ function ArtifactCard({ worldId, artifact, saves = [], taken = null, takenBy = "
         <PartPreview worldId={worldId} pieceId={artifact.entityId} body={artifact.body} title={artifact.title} />
       ) : isPixelArt ? (
         <PixelArtPreview body={artifact.body} title={artifact.title} />
+      ) : parseContextEntry(artifact.body) ? (
+        <p className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-sm leading-6 text-muted">{parseContextEntry(artifact.body)!.text}</p>
       ) : artifact.body ? (
         <p className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-sm leading-6 text-muted">{artifact.body}</p>
       ) : (

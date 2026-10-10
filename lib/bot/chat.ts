@@ -60,6 +60,33 @@ export function buildChatSystemPrompt(botName: string): string {
   ].join("\n");
 }
 
+// The avatar's whole voice for one turn: who it is (the same on every model), the person's
+// soul.md, and what it has in mind about them (lib/bot/context.ts). Nothing here depends on which
+// model answers, so switching models never changes the character.
+export function buildTalkSystem(input: { botName: string; character?: string; soul?: string; context?: string }): string {
+  const parts = [buildChatSystemPrompt(input.botName)];
+  if (input.character) parts.push(`Who you are, on every model:\n${input.character}`);
+  if (input.soul) parts.push(`The person's soul.md for you (their words, honor them):\n${input.soul}`);
+  if (input.context) {
+    parts.push(
+      "What you know about them, from what they and their other AIs told you. Use it when it helps; never recite it back unprompted; if it doesn't cover something, say you don't know.\n" +
+        input.context,
+    );
+  }
+  return parts.join("\n\n");
+}
+
+// A model id in plain words for the person: "anthropic/claude-haiku-4.5" -> "Claude Haiku 4.5".
+export function modelLabel(model: string): string {
+  const name = (model.split("/").pop() ?? model).replace(/[:@].*$/, "");
+  return name
+    .split("-")
+    .filter(Boolean)
+    .map((w) => (/^\d/.test(w) ? w : /^gpt$/i.test(w) ? "GPT" : w[0].toUpperCase() + w.slice(1)))
+    .join(" ")
+    .slice(0, 60);
+}
+
 // Pick the OpenRouter chat model for the tier: cheapest capable first.
 // Tier "smart" reaches for the stronger model when the turn warrants it.
 // Env OPENROUTER_MODEL (flash/default) and OPENROUTER_MODEL_SMART override;

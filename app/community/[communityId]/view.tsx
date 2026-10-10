@@ -6,7 +6,8 @@ import { label, primaryAction, secondaryAction } from "@/app/ui";
 import { COMMUNITY_LIMITS, type Community, type JoinRequest, type Member, type MyAsk, type Note, type Standing } from "@/lib/community/community";
 import { PACK_IDS, PACKS } from "@/lib/community/packs";
 import type { DesignRequest } from "@/lib/solar/desk";
-import { aiNotesAction, answerAskAction, answerDesignAction, askToJoinAction, letMyAiInAction, sendNoteAction, updatePacksAction } from "./actions";
+import { CONTEXT_KIND_IDS, CONTEXT_KINDS, CONTEXT_LIMITS, describeBy, type ContextEntry } from "@/lib/community/context";
+import { addContextAction, aiNotesAction, answerAskAction, answerDesignAction, askToJoinAction, letMyAiInAction, sendNoteAction, updatePacksAction } from "./actions";
 import { AskRoom } from "./ask-room";
 import { DeskRequest } from "./desk";
 import { RoomBrief } from "./room-brief";
@@ -27,6 +28,8 @@ export type Loaded = {
   routed: boolean;
   // Whether the person's AI may send notes for them here, and until when.
   aiNotes: { until: string | null } | null;
+  // The community's shared context: what every member's AI works from.
+  shared: ContextEntry[];
 };
 
 const input = "rounded-md border border-line bg-background px-3 text-sm outline-none transition-colors focus:border-accent";
@@ -76,6 +79,7 @@ export function CommunityView({ data, status }: { data: Loaded; status: { bad: b
           ) : null}
           {standing === "owner" ? <Asks id={id} open={data.open} /> : null}
           {data.desk ? <Desk id={id} requests={data.desk} routed={data.routed} /> : null}
+          {inside ? <SharedContext id={id} entries={data.shared} /> : null}
           {inside ? <People id={id} me={data.me} people={data.people} guests={data.guests} /> : null}
           {inside ? <AskRoom id={id} /> : null}
           {inside ? <Notes id={id} notes={data.notes} /> : null}
@@ -213,6 +217,57 @@ function Desk({ id, requests, routed }: { id: string; requests: DesignRequest[];
       ) : (
         <p className="text-sm leading-6 text-muted">No requests yet. Homeowners ask from the solar door after they see their price and check whether they qualify.</p>
       )}
+    </section>
+  );
+}
+
+// What every member's AI loads before working here (get_community_context over MCP). People add
+// to it here; their AIs add to it through the connector. Who added each line comes from the record.
+function SharedContext({ id, entries }: { id: string; entries: ContextEntry[] }) {
+  const groups = CONTEXT_KIND_IDS.map((k) => ({ kind: k, items: entries.filter((e) => e.kind === k) })).filter((g) => g.items.length);
+  return (
+    <section className="flex flex-col gap-4" aria-labelledby="shared-heading">
+      <div className="flex flex-col gap-1">
+        <p className={label}>Shared context</p>
+        <h2 id="shared-heading" className="text-lg font-medium tracking-tight">What every AI here works from</h2>
+        <p className="max-w-prose text-sm leading-6 text-muted">Members&apos; AIs load this before they work on anything for the community, so they all start from the same picture.</p>
+      </div>
+      {groups.length ? (
+        <div className="flex flex-col gap-4">
+          {groups.map((g) => (
+            <div key={g.kind} className="flex flex-col gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-faint">{CONTEXT_KINDS[g.kind]}</p>
+              <ul className="flex flex-col divide-y divide-line border-y border-line">
+                {g.items.map((e) => (
+                  <li key={e.id} className="flex flex-col gap-1 py-3">
+                    <span className="text-sm leading-6">{e.text}</span>
+                    <span className="text-xs text-faint">{describeBy(e)} · {when(e.at)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm leading-6 text-muted">Nothing shared yet. Start with the goal, then add decisions as you make them.</p>
+      )}
+      <details className="group">
+        <summary className="inline-flex min-h-11 cursor-pointer items-center text-xs uppercase tracking-[0.2em] text-muted hover:text-accent">Add to shared context</summary>
+        <form action={addContextAction.bind(null, id)} className="mt-3 flex flex-col gap-3">
+          <input type="hidden" name="requestId" value={randomUUID()} />
+          <fieldset className="flex flex-wrap gap-2">
+            <legend className="sr-only">Kind</legend>
+            {CONTEXT_KIND_IDS.map((k, i) => (
+              <label key={k} className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line px-3.5 text-xs text-muted has-[:checked]:border-accent has-[:checked]:text-accent">
+                <input type="radio" name="kind" value={k} defaultChecked={i === 0} className="sr-only" />
+                {CONTEXT_KINDS[k]}
+              </label>
+            ))}
+          </fieldset>
+          <textarea name="text" required rows={3} maxLength={CONTEXT_LIMITS.text} placeholder="One clear line. Decisions only once they're made." aria-label="What to share" className={`resize-y p-3 leading-6 ${input}`} />
+          <button type="submit" className={`${secondaryAction} w-full sm:w-auto sm:self-start`}>Share with every AI here</button>
+        </form>
+      </details>
     </section>
   );
 }

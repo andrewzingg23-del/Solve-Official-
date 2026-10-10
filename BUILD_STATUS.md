@@ -567,3 +567,42 @@ Important final review findings are fixed: persisted ancestry, independent creat
 Code checkpoint `d7ac9230cc5c0ed9f6ed0bb290b1eac6b598a4bc`: Build run `37831693148` passed 406/406 tests, TypeScript, lint (zero errors, eight warnings) and production build. Studio browser run `37831693140` passed actual desktop/phone/no-WebGL editing, persistence/history, independent creations, four exports, physics, identity privacy, onboarding and phone/desktop map zoom/frame. Seven browser screenshots are attached to that run. READY preview: https://solve-l1jctbfmb-sovigrn.vercel.app/. All five Important and both Minor final review findings are addressed; none are deferred. Current main's ARGUS and community AI work is preserved. No production merge, deployment, schema or data changes.
 
 Handoff: `docs/handoff/2026-10-08-immersive-studio.md`. This is a concept creation studio; live shared/provider sessions, deep avatar generation, specialist CAD and real-world execution remain follow-ups.
+
+## 2026-10-10 — The avatar's one brain, day-one magic, and a community's shared context (Claude)
+
+Plan: `docs/plans/2026-10-09-ai-avatar.md`; north star: `docs/plans/2026-10-10-avatar-north-star.md`.
+
+- **One brain** (`lib/bot/context.ts`):
+  - The context pack picks the memories most relevant to the moment, then the newest. It labels where each came from ("Imported · Solar plan", "Claude", "You"), and stays bounded and inert.
+  - Talk now reads it with the person's sign-in, plus the persona brief and soul.md. The prompt has no model in it (`buildTalkSystem`), so every model answers as the same character.
+  - Under each reply: how many memories were in mind (tap to see which), and which model spoke.
+- **Keep this** (`/api/bot/keep`): any Talk line becomes a sealed, erasable memory. Your own words are labeled "You"; the avatar's are labeled "Talk · <model>".
+- **What I already know about you** (`lib/bot/knowing.ts`, `/api/bot/know`, `app/bot/knows-you.tsx`):
+  - Imported history and connected assistants are read first.
+  - The model must cite the memories each line rests on; lines with invented or missing citations are dropped.
+  - Nothing sensitive is inferred, and nothing is cached, so forgetting a memory leaves no paraphrase behind.
+  - On the avatar screen it sits right under the hero, before Talk. With few memories it asks for your other AIs ("Bring ChatGPT history" / "Connect another AI"). Otherwise one tap reveals the lines one at a time while the face's ring fills. Each source opens its words and the memory.
+  - Signed-in only, on Talk's limits. It shows the model and cost; Sonnet 5.5 for this read.
+- **A community's shared context over MCP** (`lib/community/context.ts`):
+  - Goals, decisions, facts, how we work and open questions are entries in the community's World.
+  - Connector tools: `get_community_context` (members only) and `add_community_context` (only for an AI its owner let into the room).
+  - Who added each entry, for whom and via which assistant comes from the record's entity-created events, never from the text.
+  - The community page shows them in a "Shared context" panel with an add form. The room and World pages show the entries as plain sentences.
+- **Style and ergonomics:**
+  - one primary action per card, full width under the thumb on phones;
+  - tap targets 44px or larger;
+  - a readable measure;
+  - motion as assembly, with reduced motion honored;
+  - live regions, and focus moves to the reveal;
+  - Talk's new rows avoid the classes TalkCinema re-skins.
+- **Shared files, additive:**
+  - Talk route (`app/api/bot/chat/route.ts`, Doris): context, `inMind`, `modelLabel`;
+  - `app/world/[worldId]/room/talk.tsx` (Doris): Keep, memories in mind, model;
+  - `app/world/[worldId]/page.tsx` (Codex): shared entries shown as text.
+- **Tests:**
+  - `tests/bot/context.test.ts`, `tests/bot/knowing.test.ts`, `tests/community/context.test.ts`;
+  - connector tool list updated.
+
+  Full suite 445/445; typecheck ok; lint 0 errors (the 8 warnings were already on main); build ok. Rendered in Chromium with mocked APIs (desktop and phone): the reveal, Talk with Keep and memories in mind, the empty state and the shared-context panel, with no page errors.
+- **Needs:** `OPENROUTER_API_KEY` where it runs (already used by Talk), a signed-in person with memories, and kernel v5 (staging has it).
+

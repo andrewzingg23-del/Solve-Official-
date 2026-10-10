@@ -16,12 +16,17 @@ import { CostMeter, type TalkUsage } from "./cost-meter";
 import { ApprovalCard, worldBuildGate } from "./approval-card";
 import { HumanHatch } from "./human-hatch";
 
+type InMind = { id: string; label: string };
+
 type TalkMessage = {
   role: "user" | "bot";
   text: string;
   usage?: TalkUsage | null;
   wayPlan?: RoutePlan | null;
   ask?: string; // the person's ask this reply's plan was drawn from
+  inMind?: InMind[]; // the memories the avatar had in mind for this reply (one brain)
+  model?: string; // which model answered, in plain words
+  kept?: "keeping" | "kept" | "failed";
 };
 
 type Approval = { plan: RoutePlan; ask: string; reason: string };
@@ -49,7 +54,55 @@ function readPlan(value: unknown): RoutePlan | null {
   return Array.isArray(p.milestones) ? (value as RoutePlan) : null;
 }
 
-export function TalkPanel({ botName }: { botName: string }) {
+function readInMind(value: unknown): InMind[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((v): v is InMind => !!v && typeof v === "object" && typeof (v as InMind).id === "string" && typeof (v as InMind).label === "string")
+    .slice(0, 12);
+}
+
+// Under a message: keep it in the avatar's memory, see what it had in mind, and which model spoke.
+// Rows here never use self-start/self-end, which TalkCinema styles as bubbles.
+function MessageMeta({ m, canKeep, onKeep }: { m: TalkMessage; canKeep: boolean; onKeep: () => void }) {
+  const [open, setOpen] = useState(false);
+  const mind = m.inMind ?? [];
+  if (!canKeep && !mind.length && !m.model) return null;
+  return (
+    <div className={`flex w-full flex-col gap-1.5 ${m.role === "user" ? "items-end" : "items-start"}`}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-faint">
+        {canKeep ? (
+          <button
+            type="button"
+            onClick={onKeep}
+            disabled={m.kept === "keeping" || m.kept === "kept"}
+            className="inline-flex min-h-8 items-center rounded-full px-1 font-semibold uppercase tracking-[0.16em] transition-colors hover:text-accent disabled:hover:text-faint"
+          >
+            {m.kept === "kept" ? "Kept" : m.kept === "keeping" ? "Keeping…" : m.kept === "failed" ? "Not kept · retry" : "Keep"}
+          </button>
+        ) : null}
+        {mind.length ? (
+          <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="inline-flex min-h-8 items-center px-1 transition-colors hover:text-accent">
+            {mind.length} {mind.length === 1 ? "memory" : "memories"} in mind
+          </button>
+        ) : null}
+        {m.model ? <span>{m.model}</span> : null}
+      </div>
+      {open && mind.length ? (
+        <ul className="flex flex-wrap gap-1.5">
+          {mind.map((x) => (
+            <li key={x.id}>
+              <a href={`#memory-${x.id}`} className="inline-flex min-h-8 items-center rounded-full border border-line px-2.5 text-[11px] text-muted transition-colors hover:border-accent hover:text-accent">
+                {x.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+export function TalkPanel({ botName, canKeep = false }: { botName: string; canKeep?: boolean }) {
   const [messages, setMessages] = useState<TalkMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -96,6 +149,11 @@ export function TalkPanel({ botName }: { botName: string }) {
             usage: readUsage((data as { usage?: unknown }).usage ?? null),
             wayPlan,
             ask: wayPlan ? message : undefined,
+            inMind: readInMind((data as { inMind?: unknown }).inMind),
+            model: (() => {
+              const label = ((data as { usage?: { modelLabel?: unknown } }).usage ?? {}).modelLabel;
+              return typeof label === "string" ? label.slice(0, 60) : undefined;
+            })(),
           },
         ]);
       }
@@ -103,6 +161,31 @@ export function TalkPanel({ botName }: { botName: string }) {
       setError("Couldn't reach the bot. Check your connection and try again.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  // "Keep this": the line goes into the avatar's shared memory, with whose words they were.
+  async function keep(index: number) {
+    const m = messages[index];
+    if (!m || m.kept === "keeping" || m.kept === "kept") return;
+    const mark = (kept: TalkMessage["kept"]) => setMessages((all) => all.map((x, i) => (i === index ? { ...x, kept } : x)));
+    mark("keeping");
+    try {
+      const res = await fetch("/api/bot/keep", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: m.text, from: m.role === "bot" ? "bot" : "you", model: m.model }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(typeof data.error === "string" ? data.error : "That wasn't kept.");
+        mark("failed");
+        return;
+      }
+      mark("kept");
+    } catch {
+      setError("Couldn't reach the server. Nothing was kept.");
+      mark("failed");
     }
   }
 
@@ -175,6 +258,7 @@ export function TalkPanel({ botName }: { botName: string }) {
                   ) : null}
                   <p className="whitespace-pre-wrap break-words">{m.text}</p>
                 </div>
+                <MessageMeta m={m} canKeep={canKeep} onKeep={() => void keep(i)} />
                 {m.role === "bot" && m.usage ? <CostMeter usage={m.usage} /> : null}
                 {plan && ask ? (
                   <WayPlanCard plan={plan} onBuild={() => requestBuild(plan, ask)} />

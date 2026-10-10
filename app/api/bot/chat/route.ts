@@ -6,6 +6,9 @@
 import { getUser } from "@/lib/supabase/server";
 import { loginRequired } from "@/lib/auth/gate";
 import { getBotSoul } from "@/lib/bot/soul";
+import { contextPack, sourceLabel } from "@/lib/bot/context";
+import { personaBrief } from "@/lib/bot/persona";
+import { loadBot } from "@/lib/bot/store";
 import { getKernel } from "@/lib/kernel/server";
 import { classifyTurn, WAY_REQUESTED, talkScope } from "@/lib/bot/intent";
 import { planVenture, type RoutePlan } from "@/lib/world/wayfinder";
@@ -15,8 +18,9 @@ import {
   completeChat,
 } from "@/lib/bot/openrouter";
 import {
-  buildChatSystemPrompt,
+  buildTalkSystem,
   estimateCostUsd,
+  modelLabel,
   parseTier,
   rateLimited,
   recordSpend,
@@ -102,9 +106,25 @@ export async function POST(request: Request) {
   try {
     // The user's soul.md shapes the voice — read fresh each turn.
     const soul = user ? getBotSoul({ user_metadata: (user as { user_metadata?: Record<string, unknown> }).user_metadata }) : "";
-    const system = soul
-      ? `${buildChatSystemPrompt(chat.botName)}\nThe person's soul.md for you (their words, honor them):\n${soul}`
-      : buildChatSystemPrompt(chat.botName);
+    // One brain: who the avatar is and what it knows come from solve, not from the model, so every
+    // model answers as the same character with the same memory (lib/bot/context.ts). Signed-in
+    // only; a guest's avatar has no memory yet. Reading must never break the conversation.
+    let character = "";
+    let context = "";
+    let inMind: { id: string; label: string }[] = [];
+    if (user) {
+      try {
+        const kernel = await getKernel();
+        const bot = await loadBot(kernel);
+        if (bot.avatar) character = personaBrief(bot.persona, bot.ownerLabel);
+        const pack = await contextPack(kernel, bot.ownerId, { query: chat.message });
+        context = pack.text;
+        inMind = pack.used.map((m) => ({ id: m.id, label: sourceLabel(m) }));
+      } catch {
+        // No identity or memory on this deployment yet: talk without it.
+      }
+    }
+    const system = buildTalkSystem({ botName: chat.botName, character, soul, context });
     const completion = await completeChat(
       apiKey,
       buildChatCompletionBody({ model, system, history: chat.history, message: chat.message }),
@@ -114,8 +134,10 @@ export async function POST(request: Request) {
       reply: completion.reply,
       wayEventId,
       wayPlan,
+      inMind,
       usage: {
         model,
+        modelLabel: modelLabel(model),
         tier,
         inputTokens: completion.inputTokens,
         outputTokens: completion.outputTokens,
