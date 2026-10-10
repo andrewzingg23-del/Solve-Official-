@@ -1,20 +1,17 @@
-// A World's room (master spec §7, "Real-time Build Rooms"; the canon's "Enter a Room"): the place to
-// work in a World, not a page about it. Who is here and what you're after on the left; the domain
-// canvas in the middle (the build for a World that links a repository, otherwise its pieces where
-// they were placed); what's waiting on you, what just happened and what is proven on the right; one
-// command bar at the bottom. Everything shown is read from the record or from GitHub. Empty means
-// empty.
+// The shared project workspace. Conversation is the primary surface; supporting
+// tools use the same saved record and stay out of the way until needed.
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { SavePoint } from "@/app/save-point";
 import type { Connection } from "@/lib/bot/memory";
 import type { SavedProof } from "@/lib/bot/proof";
-import { groupGaps, type Gap } from "@/lib/bot/gaps";
+import type { Gap } from "@/lib/bot/gaps";
 import type { Journey, WaitingItem } from "@/lib/bot/waiting";
 import type { Pull, RepoRead, RepoReadFailure, RepoRef } from "@/lib/github/repo";
 import type { RoomMessage } from "@/lib/kernel/client";
+import { Icon } from "@/app/product/icons";
 import { BuildMap, BuildMark } from "./build-map";
-import { PiecesMap, type RoomPiece } from "./pieces-map";
+import type { RoomPiece } from "./pieces-map";
 import { SharedConversation } from "./conversation";
 import { SourcePublisher } from "./source-publisher";
 import { CostWorksheet } from "./cost-worksheet";
@@ -52,35 +49,8 @@ export type RoomData = {
   sync?: ReactNode; // the room's live connection state
 };
 
-const panel = "flex flex-col gap-3 rounded-xl border border-line bg-surface/55 p-4 backdrop-blur-md";
-const heading = "text-[10px] font-semibold uppercase tracking-[0.22em] text-muted";
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-
-function Panel({ title, aside, children, id }: { title: string; aside?: ReactNode; children: ReactNode; id?: string }) {
-  return (
-    <section aria-labelledby={id} className={panel}>
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 id={id} className={heading}>{title}</h2>
-        {aside}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-const KIND_MARK: Record<RoomPerson["kind"], string> = { human: "person", agent: "bot", service: "service" };
-
-function journeyLine(j: Journey) {
-  if (j.state === "proposed") return `${plural(j.options.length, "route", "routes")} proposed`;
-  if (j.state === "done") return `${j.route} · done`;
-  return `${j.route} · ${j.done} of ${j.total}`;
-}
-
-function waitingLine(item: WaitingItem) {
-  if (item.kind === "approve") return { label: "Approve messages", detail: `${item.pending} of ${item.total} to approve` };
-  if (item.kind === "choose") return { label: "Choose a route", detail: item.options.join(" · ") };
-  return { label: "Next step", detail: `${item.step} · ${item.route}, ${item.done} of ${item.total}` };
-}
+const KIND_MARK: Record<RoomPerson["kind"], string> = { human: "Person", agent: "AI", service: "Service" };
 
 // Pull requests asking to merge into the trunk wait on whoever merges: the founder.
 function reviews(read: RepoRead | undefined): Pull[] {
@@ -94,11 +64,14 @@ function TokenNeeded({ paired, worldId, name, trunk }: { paired: boolean; worldI
     <>
       <p className="text-muted">
         {paired
-          ? "It is paired with you here, but this deployment has no GitHub token yet. Add one where the app is deployed:"
-          : "It is private, or GitHub isn\u2019t answering this deployment without a token. To read it here, the deployment needs a read-only GitHub token and a pairing:"}
+          ? "This repository is paired with your project. A deployment owner needs to enable GitHub read access before live builds can appear."
+          : "A private repository needs read access and a pairing with this project before it can appear here."}
       </p>
-      <pre className="overflow-x-auto rounded border border-line bg-background/80 p-3 font-mono text-xs leading-5">{`GITHUB_TOKEN=<a fine-grained token: read-only Actions, Contents, Metadata, Pull requests>${paired ? "" : `\nGITHUB_ROOMS=${worldId}=${name}${trunk ? `@${trunk}` : ""}`}`}</pre>
-      {paired ? null : <p className="text-xs text-muted">Or pair it in the repository itself, in solve.rooms.json. Pairing it with this World lets everyone you let into the World see it; pairing it with your sign-in email keeps it to you.</p>}
+      <details className="solve-room-connection-details">
+        <summary>Repository connection details</summary>
+        <pre>{`GITHUB_TOKEN=<a fine-grained token: read-only Actions, Contents, Metadata, Pull requests>${paired ? "" : `\nGITHUB_ROOMS=${worldId}=${name}${trunk ? `@${trunk}` : ""}`}`}</pre>
+        {paired ? null : <p className="text-xs text-muted">A deployment owner can also pair it in solve.rooms.json. A project pairing shares the repository with its members; an email pairing keeps it to that account.</p>}
+      </details>
     </>
   );
 }
@@ -126,13 +99,14 @@ function RepoUnavailable({ read, paired, worldId }: { read: Extract<RepoRead, { 
 
 function LinkRepoForm({ linkRepo, requestId }: { linkRepo: NonNullable<RoomData["linkRepo"]>; requestId?: string }) {
   return (
-    <form action={linkRepo} className="flex flex-col gap-3 rounded-xl border border-dashed border-line p-5">
-      <p className="text-sm font-medium">Build something with code here?</p>
-      <p className="text-xs leading-5 text-muted">Link its GitHub repository and the room shows the build as it happens: each builder&apos;s branches, pull requests and whether the build passed. It&apos;s added to this World&apos;s resources, and solve only reads it.</p>
+    <form action={linkRepo} className="solve-room-repo-form">
+      <p className="text-sm font-medium">Connect a GitHub repository</p>
+      <p className="text-xs leading-5 text-muted">Follow branches, pull requests and build results alongside the project. solve reads the repository and does not change its code.</p>
       <input type="hidden" name="requestId" value={requestId ?? ""} />
+      <label htmlFor="room-repository" className="text-xs text-muted">Repository URL</label>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <input name="url" type="url" required placeholder="https://github.com/owner/repo/tree/main" className="h-10 min-w-0 flex-1 rounded-md border border-line bg-background/80 px-3 font-mono text-xs outline-none focus:border-accent" />
-        <button type="submit" className="h-10 rounded-md border border-line px-4 text-[10px] font-semibold uppercase tracking-[0.2em] hover:border-accent hover:text-accent">Link repository</button>
+        <input id="room-repository" name="url" type="url" required placeholder="https://github.com/owner/repo/tree/main" className="min-w-0 flex-1 rounded-md border border-line bg-background/80 px-3 text-xs outline-none focus:border-accent" />
+        <button type="submit" className="solve-room-button">Link repository</button>
       </div>
     </form>
   );
@@ -140,213 +114,162 @@ function LinkRepoForm({ linkRepo, requestId }: { linkRepo: NonNullable<RoomData[
 
 export function RoomView({ data }: { data: RoomData }) {
   const read = data.repo?.read;
-  const lens: RoomLens = data.repo ? data.lens : "pieces";
   const toReview = reviews(read);
-  const waitingCount = data.waiting.length + toReview.length;
-  const underway = data.journeys.filter((j) => j.state !== "done");
-  const here = data.people.length;
+  const resources = data.pieces.filter(piece => piece.kind !== "outreach" && piece.kind !== "proposal" && piece.kind !== "routes");
+  const projectUrl = `/world/${data.worldId}`;
   return (
-    <div className="relative flex min-h-svh flex-col lg:h-svh lg:overflow-hidden">
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(90%_70%_at_50%_45%,rgb(10_18_32)_0%,rgb(4_7_13)_70%)]" />
-        <div className="absolute inset-0 opacity-60 [background-image:linear-gradient(rgb(242_247_251/0.035)_1px,transparent_1px),linear-gradient(90deg,rgb(242_247_251/0.035)_1px,transparent_1px)] [background-size:40px_40px] [mask-image:radial-gradient(70%_60%_at_50%_45%,black,transparent)]" />
-        <div className="absolute left-1/2 top-[42%] h-[60vmin] w-[60vmin] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/10 blur-3xl motion-safe:animate-[pulse_9s_ease-in-out_infinite]" />
-      </div>
-
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line/70 px-4 py-3 md:px-6">
-        <nav aria-label="Where you are" className="flex min-w-0 items-center gap-2 text-xs">
-          <Link href="/command" className="font-semibold uppercase tracking-[0.3em] text-accent">solve</Link>
-          <span className="text-muted">/</span>
-          <Link href="/worlds" className="text-muted hover:text-accent">Worlds</Link>
-          <span className="text-muted">/</span>
-          <span className="truncate">{data.title}</span>
-          <span className="text-muted">/</span>
-          <span className="font-semibold uppercase tracking-[0.2em] text-accent">Room</span>
+    <div className="solve-room">
+      <header className="solve-room-header">
+        <nav aria-label="Where you are" className="solve-room-breadcrumb">
+          <Link href="/worlds">Projects</Link>
+          <span aria-hidden="true">/</span>
+          <span>Shared workspace</span>
         </nav>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 whitespace-nowrap text-[10px] uppercase tracking-[0.16em] text-muted">
-          {data.sync}
-          <span className="tabular-nums">{here} members</span>
-          <span className="hidden sm:inline">Private</span>
-          <Link href={`/world/${data.worldId}`} className="hover:text-accent">Details</Link>
-          <Link href={`/world/${data.worldId}#people-heading`} className="hover:text-accent">People &amp; access</Link>
-          <Link href="/command" className="hover:text-accent">Command Center</Link>
+        <div className="solve-room-heading-row">
+          <div className="solve-room-project">
+            <span className="solve-room-project-icon"><Icon name="projects" width={24} height={24} /></span>
+            <div>
+              <h1>{data.title}</h1>
+              {data.goal ? <p>{data.goal}</p> : null}
+            </div>
+          </div>
+          <div className="solve-room-status">
+            {data.sync}
+            <span><Icon name="community" width={14} height={14} />{plural(data.people.length, "member", "members")}</span>
+          </div>
         </div>
+        <nav aria-label="Project sections" className="solve-room-sections">
+          <Link href={`${projectUrl}/room`} aria-current="page"><Icon name="chat" width={17} height={17} />Conversation</Link>
+          <Link href={`${projectUrl}#documents-heading`}><Icon name="document" width={17} height={17} />Documents</Link>
+          <Link href={`${projectUrl}#people-heading`}><Icon name="community" width={17} height={17} />People &amp; access</Link>
+          <Link href={projectUrl} className="solve-room-details-link">Project details<Icon name="arrow" width={15} height={15} /></Link>
+        </nav>
       </header>
 
       {data.notice ? (
-        <p role={data.notice.tone === "error" ? "alert" : "status"} className={`mx-4 mt-3 rounded-md border px-3 py-2 text-sm md:mx-6 ${data.notice.tone === "error" ? "border-negative/30 bg-negative/10 text-negative" : "border-positive/25 bg-positive/5 text-positive"}`}>
+        <p role={data.notice.tone === "error" ? "alert" : "status"} className={`solve-room-notice ${data.notice.tone === "error" ? "solve-room-error" : "solve-room-success"}`}>
           {data.notice.text}
         </p>
       ) : null}
 
-      <div className="grid flex-1 gap-4 p-4 md:p-6 lg:min-h-0 lg:grid-cols-[16rem_minmax(0,1fr)_20rem]">
-        <aside aria-label="Who and what" className="order-3 flex flex-col gap-4 lg:order-1 lg:min-h-0 lg:overflow-y-auto">
-          <Panel title="After" id="room-goal">
-            <p className="break-words text-sm leading-6">{data.goal || data.title}</p>
-          </Panel>
-          <Panel title="Members" id="room-here" aside={<span className="text-[10px] text-muted tabular-nums">{here}</span>}>
-            <ul className="flex flex-col gap-2 text-sm">
-              {data.people.map((p) => (
-                <li key={p.id} className="flex items-center justify-between gap-3">
-                  <span className="flex min-w-0 items-center gap-2">
-                    <span aria-hidden className={`h-1.5 w-1.5 shrink-0 rounded-full ${p.kind === "agent" ? "border border-accent" : "bg-foreground/70"}`} />
-                    <span className="truncate">{p.you ? `${p.label} (you)` : p.label}</span>
-                  </span>
-                  <span className="text-[10px] uppercase tracking-[0.14em] text-muted">{KIND_MARK[p.kind]}</span>
+      <div className="solve-room-workspace">
+        <div className="solve-room-main">
+          <div className="solve-room-conversation">
+            {data.conversation ? (
+              <SharedConversation worldId={data.worldId} {...data.conversation} canWrite={data.canWrite} currentActorId={data.currentActorId} />
+            ) : (
+              <section aria-labelledby="shared-conversation-heading">
+                <h2 id="shared-conversation-heading">Shared conversation</h2>
+                <p role="status">The shared conversation could not be loaded. Reload the project to try again.</p>
+              </section>
+            )}
+          </div>
+
+          {data.canWrite ? <div className="solve-room-publish"><SourcePublisher worldId={data.worldId} /></div> : null}
+
+          <section aria-labelledby="room-tools-heading" className="solve-room-tools">
+            <div className="solve-room-tools-heading">
+              <h2 id="room-tools-heading">Project tools</h2>
+              <p>Open what you need for the next step.</p>
+            </div>
+            {data.conversation ? <CostWorksheet worldId={data.worldId} canWrite={data.canWrite ?? false} /> : null}
+
+            {data.repo || data.linkRepo ? (
+              <details className="solve-room-disclosure">
+                <summary><span>Repository and build</span><span className="solve-room-summary-note">{read?.ok ? `${read.view.ref.owner}/${read.view.ref.repo}` : "GitHub"}</span></summary>
+                <div className="solve-room-disclosure-body">
+                  {read ? (
+                    read.ok ? (
+                      <>
+                        {data.repo?.unread ? (
+                          <div className="solve-room-repo-notice">
+                            <p><strong>The trunk as this app was deployed.</strong> Live builds and open pull requests need GitHub read access.</p>
+                            {data.repo.unread === "not_connected" || data.repo.unread === "not_found" ? <TokenNeeded paired={data.repo.paired} worldId={data.worldId} name={`${read.view.ref.owner}/${read.view.ref.repo}`} trunk={read.view.trunk} /> : null}
+                          </div>
+                        ) : null}
+                        <BuildMap view={read.view} now={data.now} save={data.saveBuild} savedLinks={new Set(data.saves.map(s => s.link).filter((link): link is string => !!link))} />
+                        {toReview.length ? (
+                          <section aria-labelledby="room-reviews-heading" className="solve-room-record-section">
+                            <h3 id="room-reviews-heading">Review to merge</h3>
+                            <ul className="solve-room-record-list">
+                              {toReview.map(pull => <li key={pull.number}><a href={pull.url} target="_blank" rel="noopener noreferrer">#{pull.number} {pull.title}</a><span>{pull.branch}</span></li>)}
+                            </ul>
+                          </section>
+                        ) : null}
+                      </>
+                    ) : <RepoUnavailable read={read} paired={data.repo?.paired ?? false} worldId={data.worldId} />
+                  ) : data.linkRepo ? <LinkRepoForm linkRepo={data.linkRepo} requestId={data.requestId} /> : null}
+                </div>
+              </details>
+            ) : null}
+
+            <details className="solve-room-disclosure">
+              <summary><span>Resources and saved progress</span><span className="solve-room-summary-note">On the record</span></summary>
+              <div className="solve-room-disclosure-body">
+                <section aria-labelledby="room-resources-heading" className="solve-room-record-section">
+                  <h3 id="room-resources-heading">Shared resources</h3>
+                  {resources.length ? (
+                    <ul className="solve-room-record-list">
+                      {resources.map(piece => <li key={piece.id}><Link href={`${projectUrl}#piece-${piece.id}`}><Icon name="document" width={17} height={17} />{piece.title}</Link>{piece.saved ? <span>Saved with proof</span> : null}</li>)}
+                    </ul>
+                  ) : <p>No shared resources yet. Add a document or selected knowledge when you are ready.</p>}
+                </section>
+                <section aria-labelledby="room-proof-heading" className="solve-room-record-section">
+                  <h3 id="room-proof-heading">Saved proof</h3>
+                  {read?.ok && read.view.trunkBuilds[0] ? <BuildMark build={read.view.trunkBuilds[0]} now={data.now} /> : null}
+                  {data.saves.length ? (
+                    <div className="solve-room-saves">{data.saves.slice().reverse().map(save => {
+                      const author = data.people.find(person => person.id === save.by);
+                      return <SavePoint key={save.recordId} what={save.what} basis={save.basis} at={save.at} number={save.number} link={save.link} who={author?.you ? "you" : author?.label ?? "the recorded author"} />;
+                    })}</div>
+                  ) : <p>No proof has been saved in this project yet.</p>}
+                </section>
+                {data.activity.length ? (
+                  <section aria-labelledby="room-activity-heading" className="solve-room-record-section">
+                    <h3 id="room-activity-heading">Recent activity</h3>
+                    <ol className="solve-room-activity">
+                      {data.activity.map(activity => <li key={activity.id}><span>{activity.what}<span className="solve-room-activity-who"> · {activity.who}</span></span><time dateTime={activity.at}>{ago(activity.at, data.now)}</time></li>)}
+                    </ol>
+                  </section>
+                ) : null}
+                {data.addNote ? (
+                  <details className="solve-room-note">
+                    <summary>Add a project note</summary>
+                    <form action={data.addNote}>
+                      <input type="hidden" name="requestId" value={data.requestId ?? ""} />
+                      <label htmlFor="room-note">Note or next step</label>
+                      <textarea id="room-note" name="note" required maxLength={7000} rows={3} placeholder="Keep a note with the project resources…" />
+                      <button type="submit" className="solve-room-button">Save note</button>
+                    </form>
+                  </details>
+                ) : null}
+              </div>
+            </details>
+          </section>
+        </div>
+
+        <aside aria-labelledby="room-members-heading" className="solve-room-members">
+          <div className="solve-room-members-heading"><h2 id="room-members-heading">Project members</h2><span>{data.people.length}</span></div>
+          {data.people.length ? (
+            <ul className="solve-room-people">
+              {data.people.map(person => (
+                <li key={person.id}>
+                  <span aria-hidden="true" className={`solve-room-person-icon${person.kind === "agent" ? " solve-room-ai-icon" : ""}`}>{person.kind === "agent" ? <Icon name="ai" width={18} height={18} /> : person.label.trim().slice(0, 1).toUpperCase() || "·"}</span>
+                  <div><strong>{person.label}{person.you ? " (you)" : ""}</strong><span>{KIND_MARK[person.kind]}</span></div>
                 </li>
               ))}
             </ul>
-            {data.botName ? (
-              <p className="text-xs leading-5 text-muted">
-                {data.botName}, your bot{data.assistants.length ? `, with ${data.assistants.map((a) => a.clientName).join(", ")}` : ", with no assistant connected"}.
-              </p>
-            ) : (
-              <Link href="/bot" className="text-xs text-accent">Make your bot to work here with your AI</Link>
-            )}
+          ) : <p className="solve-room-muted">No members could be loaded.</p>}
+          <Link href={`${projectUrl}#people-heading`} className="solve-room-manage">Manage people &amp; access<Icon name="arrow" width={15} height={15} /></Link>
+          <p className="solve-room-access-note"><Icon name="lock" width={14} height={14} />Shared work is visible to members with project access.</p>
+          <section aria-labelledby="room-ai-heading" className="solve-room-personal-ai">
+            <h3 id="room-ai-heading">Your AI</h3>
+            {data.botName ? <><p>{data.botName}</p><span>{data.assistants.length ? `Connected through ${data.assistants.map(assistant => assistant.clientName).join(", ")}.` : "No external assistant connected."}</span></> : <p>Set up your AI and choose the knowledge you want to share.</p>}
             {data.live}
-          </Panel>
-          <Panel title="Routes" id="room-routes">
-            {data.journeys.length ? (
-              <ul className="flex flex-col gap-3">
-                {data.journeys.map((j) => (
-                  <li key={j.pieceId} className="flex flex-col gap-1.5 text-sm">
-                    <Link href={`/world/${data.worldId}#piece-${j.pieceId}`} className="break-words hover:text-accent">{j.ask}</Link>
-                    {j.state !== "proposed" ? (
-                      <span aria-hidden className="h-1 overflow-hidden rounded-full bg-line">
-                        <span className="block h-full rounded-full bg-accent" style={{ width: `${j.total ? Math.round((j.done / j.total) * 100) : 0}%` }} />
-                      </span>
-                    ) : null}
-                    <span className="text-xs text-muted tabular-nums">{journeyLine(j)}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-xs leading-5 text-muted">No routes yet. Ask your assistant: &quot;Find me three ways to…&quot;</p>
-            )}
-          </Panel>
-        </aside>
-
-        <section aria-label="Room canvas" className="order-1 flex min-w-0 flex-col gap-3 lg:order-2 lg:min-h-0">
-          <div className="flex items-center justify-between gap-3">
-            <div role="tablist" aria-label="Canvas" className="flex items-center gap-1 rounded-md border border-line bg-surface/60 p-1 backdrop-blur-md">
-              {data.repo ? (
-                <Link role="tab" aria-selected={lens === "build"} href={`/world/${data.worldId}/room?lens=build`} className={`rounded px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] ${lens === "build" ? "bg-accent/15 text-accent" : "text-muted hover:text-foreground"}`}>Build</Link>
-              ) : null}
-              <Link role="tab" aria-selected={lens === "pieces"} href={`/world/${data.worldId}/room?lens=pieces`} className={`rounded px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] ${lens === "pieces" ? "bg-accent/15 text-accent" : "text-muted hover:text-foreground"}`}>Pieces · {data.pieces.length}</Link>
-            </div>
-            <span className="text-[10px] uppercase tracking-[0.16em] text-muted tabular-nums">{plural(underway.length, "route", "routes")} underway · {plural(data.saves.length, "save", "saves")}</span>
-          </div>
-          <div className="min-h-0 flex-1 lg:overflow-y-auto lg:pr-1">
-            {data.conversation ? <SharedConversation worldId={data.worldId} {...data.conversation} canWrite={data.canWrite} currentActorId={data.currentActorId} /> : null}
-            {data.canWrite ? <SourcePublisher worldId={data.worldId} /> : null}
-            {data.conversation ? <CostWorksheet worldId={data.worldId} canWrite={data.canWrite ?? false} /> : null}
-            {lens === "build" && read ? (
-              read.ok ? (
-                <>
-                  {data.repo?.unread ? (
-                    <div className="mb-4 flex flex-col gap-2 rounded-xl border border-line bg-surface/55 p-4 text-xs leading-5">
-                      <p><span className="font-medium">The trunk as this app was deployed.</span> <span className="text-muted">Builds and open pull requests need GitHub, which this deployment can&apos;t read yet.</span></p>
-                      {data.repo.unread === "not_connected" || data.repo.unread === "not_found" ? <TokenNeeded paired={data.repo.paired} worldId={data.worldId} name={`${read.view.ref.owner}/${read.view.ref.repo}`} trunk={read.view.trunk} /> : null}
-                    </div>
-                  ) : null}
-                  <BuildMap view={read.view} now={data.now} save={data.saveBuild} savedLinks={new Set(data.saves.map((s) => s.link).filter((l): l is string => !!l))} />
-                </>
-              ) : <RepoUnavailable read={read} paired={data.repo?.paired ?? false} worldId={data.worldId} />
-            ) : (
-              <div className="flex flex-col gap-4">
-                <PiecesMap worldId={data.worldId} pieces={data.pieces} />
-                {!data.repo && data.linkRepo ? <LinkRepoForm linkRepo={data.linkRepo} requestId={data.requestId} /> : null}
-              </div>
-            )}
-          </div>
-        </section>
-
-        <aside aria-label="What needs you and what happened" className="order-2 flex flex-col gap-4 lg:order-3 lg:min-h-0 lg:overflow-y-auto">
-          <Panel title="Waiting on you" id="room-waiting" aside={<span className="text-[10px] text-muted tabular-nums">{waitingCount}</span>}>
-            {waitingCount ? (
-              <ul className="flex flex-col divide-y divide-line">
-                {toReview.map((p) => (
-                  <li key={`pr:${p.number}`} className="flex flex-col gap-1 py-2.5 text-sm first:pt-0">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">Review to merge</span>
-                    <a href={p.url} target="_blank" rel="noopener noreferrer" className="break-words hover:text-accent">#{p.number} {p.title}</a>
-                    <span className="truncate font-mono text-[11px] text-muted">{p.branch}</span>
-                  </li>
-                ))}
-                {data.waiting.map((item) => {
-                  const w = waitingLine(item);
-                  return (
-                    <li key={`${item.kind}:${item.pieceId}`} className="flex flex-col gap-1 py-2.5 text-sm first:pt-0">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">{w.label}</span>
-                      <Link href={`/world/${data.worldId}#piece-${item.pieceId}`} className="break-words hover:text-accent">{item.ask}</Link>
-                      <span className="break-words text-xs leading-5 text-muted">{w.detail}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p className="text-xs leading-5 text-muted">Nothing is waiting on you here.</p>
-            )}
-          </Panel>
-
-          <Panel title="Proof" id="room-proof">
-            {read?.ok && read.view.trunkBuilds[0] ? (
-              <div className="flex flex-col gap-1 text-xs">
-                <span className="text-muted">The trunk on GitHub, read {ago(read.view.readAt, data.now)}:</span>
-                <BuildMark build={read.view.trunkBuilds[0]} now={data.now} />
-              </div>
-            ) : null}
-            {data.saves.length ? (
-              <div className="flex flex-col gap-3">
-                {data.saves.slice(-4).reverse().map((s) => <SavePoint key={s.recordId} what={s.what} basis={s.basis} at={s.at} number={s.number} link={s.link} />)}
-              </div>
-            ) : (
-              <p className="text-xs leading-5 text-muted">Nothing saved here yet. When something becomes real, save the proof on it.</p>
-            )}
-          </Panel>
-
-          <Panel title="Just happened" id="room-activity">
-            {data.activity.length ? (
-              <ol className="flex flex-col gap-2">
-                {data.activity.map((a) => (
-                  <li key={a.id} className="flex items-baseline justify-between gap-3 text-xs">
-                    <span className="min-w-0"><span className="text-foreground">{a.what}</span> <span className="text-muted">· {a.who}</span></span>
-                    <time dateTime={a.at} className="shrink-0 text-[10px] text-muted tabular-nums">{ago(a.at, data.now)}</time>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <p className="text-xs text-muted">No changes recorded yet.</p>
-            )}
-          </Panel>
-
-          {data.gaps.length ? (
-            <Panel title="What solve can't do yet" id="room-gaps">
-              <ul className="flex flex-col gap-2">
-                {groupGaps(data.gaps).map((g) => (
-                  <li key={g.latest.pieceId} className="flex flex-col gap-0.5 text-xs">
-                    <span className="break-words text-foreground">{g.goal}</span>
-                    <span className="text-muted">{g.times > 1 ? `Needed ${g.times} times` : "Needed once"}</span>
-                  </li>
-                ))}
-              </ul>
-            </Panel>
-          ) : null}
+            <Link href="/bot">{data.botName ? "Manage your AI" : "Set up your AI"}<Icon name="arrow" width={15} height={15} /></Link>
+          </section>
         </aside>
       </div>
-
-      <footer className="border-t border-line/70 bg-background/70 px-4 py-3 backdrop-blur-md md:px-6">
-        {data.addNote ? (
-          <form action={data.addNote} className="mx-auto flex max-w-4xl flex-col gap-2 sm:flex-row sm:items-center">
-            <input type="hidden" name="requestId" value={data.requestId ?? ""} />
-            <label className="sr-only" htmlFor="room-note">Add to this room</label>
-            <input id="room-note" name="note" required maxLength={7000} autoComplete="off" placeholder="Add a note, a decision or a next step to this room…" className="h-11 min-w-0 flex-1 rounded-md border border-line bg-surface/80 px-4 text-sm outline-none placeholder:text-muted/60 focus:border-accent" />
-            <button type="submit" className="h-11 rounded-md bg-accent px-5 text-xs font-semibold uppercase tracking-[0.2em] text-background hover:opacity-85">Add</button>
-          </form>
-        ) : null}
-        <p className="mx-auto mt-2 max-w-4xl text-[11px] leading-4 text-muted">
-          Or ask your assistant in Claude or ChatGPT to work here: it reads and adds through solve, only within what you granted.
-        </p>
-      </footer>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 // Component journey against the real SQL kernel behind the isolated fixture
 // server. Auth sessions and model completion are explicit fixtures, not live services.
+import { RecoverableForm } from "../../app/product/recoverable-form";
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { RoomView, type RoomData } from "../../app/world/[worldId]/room/view";
@@ -20,6 +21,8 @@ function App() {
   const [state, setState] = useState<State | null>(null);
   const [view, setView] = useState("room");
   const [error, setError] = useState("");
+  const [failForm, setFailForm] = useState(true);
+  const [lastRequest, setLastRequest] = useState("");
   const refresh = async () => {
     const res = await fetch("/fixture/state");
     if (!res.ok) { setError("Fixture access denied"); return; }
@@ -45,10 +48,10 @@ function App() {
   return <>
     <nav aria-label="Fixture controls" className="flex flex-wrap gap-4 border-b border-line bg-surface p-3 text-xs">
       <span className="text-muted">Local kernel fixture · provider simulated</span>
-      <button onClick={() => setView("room")}>Open room</button><button onClick={() => setView("details")}>Open access and documents</button><button onClick={() => void refresh()}>Refresh shared state</button>
+      <button onClick={() => setView("room")}>Open room</button><button onClick={() => setView("retained")}>Open retained-form fixture</button><button onClick={() => setView("details")}>Open access and documents</button><button onClick={() => void refresh()}>Refresh shared state</button>
     </nav>
     {error ? <p role="alert">{error}</p> : null}
-    {!state ? <p>Loading fixture…</p> : view === "room" ? <RoomView data={state.data} /> : <main className="mx-auto flex max-w-3xl flex-col gap-5 p-5">
+    {!state ? <p>Loading fixture…</p> : view === "retained" ? <section aria-label="Labelled form failure fixture" className="p-5"><p>This form&apos;s result is simulated to test draft retention.</p><button onClick={() => setFailForm(false)}>Allow fixture save</button><RecoverableForm action={async form => { setLastRequest(String(form.get("requestId"))); return failForm ? { ok: false, error: "Labelled database failure; your text is retained." } : { ok: true }; }}><input type="hidden" name="requestId" value="retained-browser-001" /><label htmlFor="retained-text">Retained draft</label><textarea id="retained-text" name="text" required /><button>Save retained draft</button></RecoverableForm><output aria-label="Last submitted request ID">{lastRequest}</output></section> : view === "room" ? <RoomView data={state.data} /> : <main className="mx-auto flex max-w-3xl flex-col gap-5 p-5">
       <h1 className="text-2xl">{state.data.title} · shared details</h1>
       {state.owner ? <InvitationPanel create={create} cancel={cancel} invitations={state.invitations} now={state.data.now} /> : null}
       <section aria-label="Specification editor" className="rounded border border-line p-4"><h2 className="text-lg">Specification · v{state.artifact.version}</h2><ArtifactEditor worldId={state.data.worldId} artifact={state.artifact} /></section>

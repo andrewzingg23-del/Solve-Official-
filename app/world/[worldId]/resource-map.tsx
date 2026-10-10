@@ -1,3 +1,4 @@
+import { RecoverableForm } from "@/app/product/recoverable-form";
 import { randomUUID } from "node:crypto";
 import { label, primaryAction, secondaryAction } from "@/app/ui";
 import {
@@ -57,7 +58,7 @@ function ResourceEntryCard({
       {entry.reportedBy === currentActorId || entry.reportedOnBehalfOf === currentActorId ? (
         <details className="border-t border-line pt-2">
           <summary className="cursor-pointer list-none text-[10px] font-semibold uppercase tracking-[0.14em] text-muted hover:text-accent">Revise or withdraw</summary>
-          <form action={update} className="mt-3 flex flex-col gap-3">
+          <RecoverableForm ownerActorId={currentActorId} action={update} className="mt-3 flex flex-col gap-3">
             <input type="hidden" name="entityId" value={entry.entityId} />
             <input type="hidden" name="requestId" value={randomUUID()} />
             <label className="flex flex-col gap-1 text-xs text-muted">
@@ -84,7 +85,7 @@ function ResourceEntryCard({
               </select>
             </label>
             <button type="submit" className={secondaryAction}>Save revision</button>
-          </form>
+          </RecoverableForm>
         </details>
       ) : (
         <p className="border-t border-line pt-2 text-[10px] leading-4 text-muted">The original event author, or the person they acted for, can revise or withdraw this entry.</p>
@@ -171,7 +172,7 @@ export function ResourceMapPanel({
 
       <details className="rounded border border-line bg-background/60 p-4">
         <summary className="cursor-pointer list-none text-sm font-medium hover:text-accent">Add an offer or need</summary>
-        <form action={create} className="mt-4 grid gap-3 md:grid-cols-2">
+        <RecoverableForm ownerActorId={currentActorId} action={create} className="mt-4 grid gap-3 md:grid-cols-2">
           <input type="hidden" name="requestId" value={randomUUID()} />
           <label className="flex flex-col gap-1.5 text-xs text-muted">
             I can offer / I need
@@ -206,7 +207,7 @@ export function ResourceMapPanel({
             This remains private to people and agents granted access to this World. A supplied URL is an unverified pointer; do not paste secrets, signed private links, or sensitive personal details. SOV does not match, assign, message, purchase, or publish from this entry.
           </p>
           <button type="submit" className={primaryAction}>Add to resource map</button>
-        </form>
+        </RecoverableForm>
       </details>
     </section>
   );

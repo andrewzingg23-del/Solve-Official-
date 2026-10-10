@@ -1,5 +1,14 @@
 # BUILD_STATUS
 
+## Collaboration rebuild — 2026-10-10 02:14 UTC
+
+- Founder ordered a complete rebuild around community and collaboration with personal AIs. The public product now has four homes: Projects, Communities, Your AI and Profile. Trading, cards, money and experimental/promotional screens are excluded from the default launch surface, including direct legacy POST/API requests.
+- Projects retain account-scoped idea drafts through sign-in and create canonical private Worlds only on explicit confirmation. Shared rooms lead with attributed conversation and selected AI context; documents, People and optional tools remain connected to existing records and grants. Communities retain actual membership, owner review and explicit AI access.
+- Profile and AI editing preserve the canonical Solve ID, require explicit local-profile review and reject stale-account writes. Recoverable forms retain text and request identity after failed saves. New additive profile migration `20261009060000_person_profile.sql` projects names from append-only events; no applied migration or database was reset.
+- Local verification: final full-suite repeat passed all 456 tests, zero failures/skips; typecheck, lint and production build passed (eight existing lint image warnings). Product, real-SQL shared-room and opted-in studio Chromium journeys passed on desktop and phones.
+- Fresh independent review found no Critical issues. All five material findings were reproduced and fixed; no minors are deferred. The People navigation issue was promoted to a core fix; the existing controlled document editor was retained after checking its stale-edit behavior. Evidence and practical limits: `docs/handoff/COLLABORATION-REBUILD.md`.
+- Source is on `codex/collaboration-rebuild`, based on main `fda0e7a`; integration follows the founder's earlier "add it and ship" instruction. No remote migration or manual deployment was performed. GitHub status/deployment APIs and Supabase/Vercel administrative access remain unavailable; a Git push is not a live activation claim.
+
 ## Main integration — 2026-10-08 21:23 EDT
 
 - Founder: "add it and ship", followed by "fix it". Fast-forwarded main from `661dfb7` to reviewed code `96c9908`; push and remote main hash confirmed. Integrated source matches the previously verified 421-test release exactly; no implementation changes or repeat of unaffected suites.

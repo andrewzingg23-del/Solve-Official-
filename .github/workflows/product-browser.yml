@@ -1,0 +1,38 @@
+name: Product browser
+on:
+  push:
+    branches:
+      - main
+      - codex/collaboration-rebuild
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: product-browser-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  product:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright-core install --with-deps chromium
+      - run: npm run build
+      - run: npm run test:product
+      - run: npm run test:shared-room
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: product-browser-evidence
+          path: |
+            test-results/product
+            .browser-tests/shared-room/*.png
+          retention-days: 7

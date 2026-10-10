@@ -3,74 +3,18 @@ import { redirect } from "next/navigation";
 import { safeNextPath } from "@/lib/safe-next-path";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getUser } from "@/lib/supabase/server";
-import { SetupNotice } from "@/app/setup-notice";
-import { field, primaryAction, quietLink } from "@/app/ui";
 import { sendMagicLink } from "./actions";
-
-const enter = (delay: number) =>
-  ({ animation: "page-enter 0.6s var(--ease-calm) both", animationDelay: `${delay}s` }) as const;
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const { next, error, sent } = await searchParams;
   const nextPath = safeNextPath(next);
-
   if (await getUser()) redirect(nextPath);
-
-  return (
-    <main className="relative mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-8 px-4 py-16">
-      {/* The door glows before it opens. */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-1/3 h-[300px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-[50%] bg-accent/[0.09] blur-3xl" />
-      </div>
-
-      <div className="relative flex flex-col gap-4" style={enter(0)}>
-        <p className="eyebrow">solve</p>
-        <h1 className="text-6xl font-medium tracking-tight md:text-7xl">
-          Enter<span className="text-accent" style={{ textShadow: "0 0 24px rgb(34 211 238 / 0.5)" }}>.</span>
-        </h1>
-        <p className="text-sm leading-6 text-muted">We email you a link. No password.</p>
-      </div>
-
-      {!isSupabaseConfigured ? (
-        <div className="relative" style={enter(0.08)}>
-          <SetupNotice />
-        </div>
-      ) : typeof sent === "string" ? (
-        <div className="glass relative p-5" style={enter(0.08)}>
-          <p className="text-sm">
-            Link sent to <strong className="text-foreground">{sent}</strong>.
-          </p>
-          <p className="mt-1.5 text-xs leading-5 text-muted">Tap the link in that email to enter.</p>
-        </div>
-      ) : (
-        <form action={sendMagicLink} className="relative flex flex-col gap-4" style={enter(0.08)}>
-          <input type="hidden" name="next" value={nextPath} />
-          <label htmlFor="email" className="eyebrow">
-            Email
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            placeholder="you@example.com"
-            className={field}
-          />
-          <button type="submit" className={primaryAction}>
-            Email me a link
-          </button>
-          {typeof error === "string" && (
-            <p role="alert" className="alert-pin rounded-xl px-4 py-3 text-sm">
-              {error}
-            </p>
-          )}
-        </form>
-      )}
-
-      <Link href="/" className={`${quietLink} relative self-start`} style={enter(0.16)}>
-        Back
-      </Link>
-    </main>
-  );
+  return <main className="solve-page solve-login-page">
+    <header className="solve-page-heading"><span className="solve-kicker">Welcome to solve</span><h1>Sign in to build together.</h1><p>Save your projects, invite your people and bring your AI. We’ll email you a sign-in link.</p></header>
+    {!isSupabaseConfigured ? <section role="status" className="solve-panel"><h2>Sign-in is temporarily unavailable.</h2><p className="mt-3">Your local idea and profile stay on this device. You can return to them while account access is restored.</p><Link href="/worlds/new" className="solve-text-link mt-4 inline-block">Return to your idea →</Link></section> : typeof sent === "string" ? <section role="status" className="solve-panel"><h2>Check your inbox.</h2><p className="mt-3">We sent a sign-in link to <strong>{sent}</strong>. Open it to continue where you left off.</p><Link href={`/login?next=${encodeURIComponent(nextPath)}`} className="solve-text-link mt-4 inline-block">Try another email</Link></section> : <form action={sendMagicLink} className="solve-form solve-panel">
+      <input type="hidden" name="next" value={nextPath} /><label htmlFor="email">Email address</label><input id="email" name="email" type="email" required autoComplete="email" placeholder="you@example.com" />
+      <button className="solve-button">Email me a sign-in link</button>{typeof error === "string" ? <p role="alert" className="solve-error">{error}</p> : null}
+    </form>}
+    <Link href={nextPath === "/worlds/new" ? "/worlds/new" : "/"} className="solve-text-link mt-6 inline-block">← Back to {nextPath === "/worlds/new" ? "your idea" : "Projects"}</Link>
+  </main>;
 }

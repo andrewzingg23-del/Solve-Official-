@@ -1,7 +1,6 @@
 # Live build stream
 
-Active build branch: `codex/gateway-oidc-fallback`
-Active build branch: `codex/need-to-route-network-state-spec`
+Active build branch: `codex/collaboration-rebuild`
 
 This file is the shared, committed progress feed. It is readable from the repository at any time; it does not expose uncommitted edits in a builder's private working tree.
 
@@ -1042,3 +1041,7 @@ The phone map control overlap is fixed and verified with normal clicks. Complete
 ## 2026-10-08 22:11 EDT — collaboration rebuild started (Codex)
 
 Founder ordered a complete collaboration-first experience and removal of unready surfaces. Pulled main to fda0e7a and created codex/collaboration-rebuild; preserve the integrated shared-room and immersive-studio data and source. Spec and plan saved under docs/superpowers. Central launch policy excludes financial/experimental pages and APIs by default, including direct POSTs; core Worlds, invitations and OAuth/MCP remain available. Route regressions observed RED (4 failures) then GREEN (6/6). Next: replace root/navigation/project entry, then profile continuity and focused shared work. No remote service or migration changes.
+
+## 2026-10-10 02:14 UTC — collaboration rebuild verified (Codex)
+
+Solves the founder's idea-and-AIs workflow by making Projects, Communities, Your AI and Profile the public product. Rebuilt app entry/navigation, project draft/create flow, account and AI continuity, shared rooms and community views; default route policy excludes unready trading, payment and experimental surfaces. Added authenticated append-only profile-name RPC and recoverable text forms without replacing existing project data or authority. Changes cover app/product, account/bot/community/world views, lib/product, kernel client, one additive migration, regression/browser checks and the product-browser workflow. Local checks: final full-suite repeat passed all 456 tests, typecheck/lint/build passed (eight existing lint warnings); product, real-SQL shared-room and opted-in studio desktop/phone journeys passed. Independent whole-branch review complete: five material findings reproduced and fixed, no deferred minors. Next: commit/push this coherent slice and fast-forward main under the founder's existing ship instruction. No remote database change or manual deployment; live Auth/provider/concurrency and deployment activation remain unconfirmed. Handoff: docs/handoff/COLLABORATION-REBUILD.md.

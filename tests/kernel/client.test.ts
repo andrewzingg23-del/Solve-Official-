@@ -28,6 +28,7 @@ async function exerciseEveryMethod(supabase: SupabaseClient, actAs?: string) {
   const evidence = { basis: "artifact", content_hash: `sha256:${"0".repeat(64)}` } as const;
   const id = "00000000-0000-4000-8000-000000000009";
   await k.register("label");
+  await k.setPersonLabel("label", "person-label-001");
   await k.whoami();
   await k.createAgent("agent", "key");
   await k.createServiceActor("service", "key");

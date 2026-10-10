@@ -5,7 +5,7 @@
 // previews only: on the live bot, states come from real activity.
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
-import { useGuestProfile } from "@/lib/guest/profile";
+import { loadGuestProfile, useGuestProfile } from "@/lib/guest/profile";
 import { label, primaryAction, secondaryAction } from "@/app/ui";
 import {
   ACCESSORIES,
@@ -89,14 +89,14 @@ const TRAIT_ENDS: Record<Trait, [string, string]> = {
 };
 
 const ERRORS: Record<string, string> = {
-  "signed-out": "Your profile isn't active — try a profile first.",
-  identity: "Finish setting up your SOV ID first (open You).",
+  "signed-out": "Sign in again to save this persona to your account.",
+  identity: "Finish your account setup in Profile before saving your AI.",
   forbidden: "The kernel refused this save.",
-  conflict: "This save was already used for a different draft. Reload the bot before trying again.",
-  unavailable: "Couldn't save just now. Nothing was changed; try again.",
+  conflict: "Your account or saved draft changed. Your edits are still here; reopen Your AI in the account you want to use and review before saving.",
+  unavailable: "Couldn't confirm this save. Your edits are still here; retry or reload to check your saved persona.",
 };
 
-export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPTY_MACHINE }: { initial: Persona; signedIn: boolean; version: number; savedAt: string | null; machine?: MachineData }) {
+export function BotCreator({ initial, signedIn, version, savedAt, ownerId, machine = EMPTY_MACHINE }: { initial: Persona; signedIn: boolean; ownerId?: string; version: number; savedAt: string | null; machine?: MachineData }) {
   const [persona, setPersona] = useState(initial);
   const [saved, setSaved] = useState(initial);
   const [saveInfo, setSaveInfo] = useState({ version, savedAt });
@@ -135,6 +135,11 @@ export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPT
     if (!signedIn) {
       // Guest: the persona is kept on this device with the profile.
       guest.save({ botPersona: draft });
+      const stored = loadGuestProfile();
+      if (!stored || JSON.stringify(stored.botPersona) !== JSON.stringify(draft)) {
+        setMessage({ tone: "error", text: "This browser couldn't save your persona. Your edits are still here. Allow browser storage and retry, or sign in to save." });
+        return;
+      }
       setSaved(draft);
       setMessage({ tone: "ok", text: `${draft.name} kept on this device.` });
       setMood("happy");
@@ -142,16 +147,20 @@ export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPT
     }
     const requestId = crypto.randomUUID();
     startTransition(async () => {
-      const result = await saveBotAction(requestId, draft);
-      if (result.ok) {
-        setPersona(result.persona);
-        setSaved(result.persona);
-        setValuesText(result.persona.values.join(", "));
-        setSaveInfo({ version: result.version, savedAt: result.savedAt });
-        setMessage({ tone: "ok", text: `${result.persona.name} saved.` });
-        setMood("happy");
-      } else {
-        setMessage({ tone: "error", text: ERRORS[result.error] ?? ERRORS.unavailable });
+      try {
+        const result = await saveBotAction(requestId, draft, ownerId ?? "");
+        if (result.ok) {
+          setPersona(result.persona);
+          setSaved(result.persona);
+          setValuesText(result.persona.values.join(", "));
+          setSaveInfo({ version: result.version, savedAt: result.savedAt });
+          setMessage({ tone: "ok", text: `${result.persona.name} saved.` });
+          setMood("happy");
+        } else {
+          setMessage({ tone: "error", text: ERRORS[result.error] ?? ERRORS.unavailable });
+        }
+      } catch {
+        setMessage({ tone: "error", text: ERRORS.unavailable });
       }
     });
   }
@@ -161,10 +170,10 @@ export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPT
       {/* Stage */}
       <div className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-6">
         <div className="flex flex-col gap-2">
-          <p className={label}>Your bot</p>
-          <h1 className="text-3xl font-medium leading-tight tracking-tight md:text-4xl">Make it yours.</h1>
+          <p className={label}>Persona</p>
+          <h2 className="text-3xl font-medium leading-tight tracking-tight md:text-4xl">Make it yours.</h2>
           <p className="max-w-lg text-sm leading-6 text-muted">
-            One character, whichever AI you use. Claude, ChatGPT or Meta AI speak through it, so it looks, sounds and remembers the same everywhere.
+            Choose a character, a voice and a way of working. A connected assistant can read this persona when you authorize it.
           </p>
         </div>
         <AgentStage persona={persona} state={mood} size={240} machine={machine} note="State preview. On your live bot, states follow what it is really doing." />
@@ -301,6 +310,7 @@ export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPT
           <div className="flex flex-col gap-6">
             <Field name="Name">
               <input
+                aria-label="Name"
                 value={persona.name}
                 maxLength={LIMITS.name}
                 onChange={(e) => setPersona((p) => ({ ...p, name: e.target.value }))}
@@ -337,6 +347,7 @@ export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPT
             </Field>
             <Field name="A line in its voice" hint={`${persona.voice.length}/${LIMITS.voice}`}>
               <input
+                aria-label="A line in its voice"
                 value={persona.voice}
                 maxLength={LIMITS.voice}
                 onChange={(e) => setPersona((p) => ({ ...p, voice: e.target.value }))}
@@ -346,6 +357,7 @@ export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPT
             </Field>
             <Field name="Who it is" hint={`${persona.about.length}/${LIMITS.about}`}>
               <textarea
+                aria-label="Who it is"
                 value={persona.about}
                 maxLength={LIMITS.about}
                 rows={4}
@@ -355,6 +367,7 @@ export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPT
             </Field>
             <Field name="Values" hint={`Up to ${LIMITS.values}, separated by commas`}>
               <input
+                aria-label="Values"
                 value={valuesText}
                 onChange={(e) => setValuesText(e.target.value)}
                 onBlur={() => { const values = validatePersona({ values: valuesText.split(",") }).values; update({ values }); setValuesText(values.join(", ")); }}
@@ -372,7 +385,7 @@ export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPT
               {pending ? "Saving" : saveInfo.version ? "Save changes" : signedIn ? "Bring it to life" : "Keep it on this device"}
             </button>
           ) : (
-            <Link href="/avatar" className={primaryAction}>Try a profile to keep it</Link>
+            <Link href="/account" className={primaryAction}>Open Profile to keep it</Link>
           )}
         </div>
         <p role="status" className={`min-h-5 text-sm ${message?.tone === "error" ? "text-negative" : "text-positive"}`}>
@@ -383,7 +396,7 @@ export function BotCreator({ initial, signedIn, version, savedAt, machine = EMPT
                 : ""
               : "")}
         </p>
-        {!active ? <p className="text-xs leading-5 text-muted">You are trying the creator. Try a profile and your bot is kept on this device.</p> : null}
+        {!active ? <p className="text-xs leading-5 text-muted">You are previewing a persona. Set up your profile to keep your choices on this device.</p> : null}
       </div>
     </section>
   );

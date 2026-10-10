@@ -1,6 +1,5 @@
-// A World's room: the build read from GitHub for a World that links a repository, its pieces where
-// they were placed otherwise, and what is waiting on the person, including pull requests asking to
-// merge into the trunk. Rendered as markup; nothing here reaches GitHub or a kernel.
+// The room consumes authorized data. This checks attribution, access-aware
+// controls and real repository evidence; browser fixtures cover interaction and layout.
 import assert from "node:assert/strict";
 import { it } from "node:test";
 import type { RepoRead } from "../../lib/github/repo";
@@ -33,6 +32,8 @@ const ok: RepoRead = {
 
 async function render(over: Record<string, unknown>) {
   const { renderToStaticMarkup } = await import("react-dom/server");
+  const { createElement } = await import("react");
+  const { AppRouterContext } = await import("next/dist/shared/lib/app-router-context.shared-runtime");
   const { RoomView } = await import("../../app/world/[worldId]/room/view");
   const data = {
     worldId: WORLD, title: "Build solve", goal: "Ship solve to the founder first", now: NOW, lens: "build" as const,
@@ -40,7 +41,9 @@ async function render(over: Record<string, unknown>) {
     journeys: [], waiting: [], gaps: [], saves: [], activity: [], repo: null,
     ...over,
   };
-  return renderToStaticMarkup(RoomView({ data }));
+  return renderToStaticMarkup(createElement(AppRouterContext.Provider, { value: {
+    back() {}, forward() {}, refresh() {}, push() {}, replace() {}, prefetch() {}, bfcacheId: "room-render-fixture",
+  } }, RoomView({ data })));
 }
 
 it("shows the build from GitHub: builders, the trunk's latest build, and pull requests waiting to merge", async () => {
@@ -61,7 +64,7 @@ it("says plainly why a repository isn't showing, with the exact pairing to add",
   assert.doesNotMatch(html, /Review to merge/);
 });
 
-it("shows pieces where they were placed, with the point only on a saved one, and offers to link a repository", async () => {
+it("keeps saved resource links and repository linking available while excluding unfinished route and outreach tools", async () => {
   const linkRepo = async () => {};
   const html = await render({
     lens: "pieces",
@@ -69,12 +72,39 @@ it("shows pieces where they were placed, with the point only on a saved one, and
     pieces: [
       { id: "g", title: "Ship solve", x: 50, y: 25, kind: "goal", detail: null, saved: false },
       { id: "n", title: "Ask Manus for the builders doc", x: 24, y: 30, kind: "text", detail: null, saved: true },
+      { id: "o", title: "Practice outreach", x: 24, y: 30, kind: "outreach", detail: null, saved: false },
+      { id: "p", title: "Proposed capability", x: 24, y: 30, kind: "proposal", detail: null, saved: false },
+      { id: "r", title: "Non-executable route", x: 24, y: 30, kind: "routes", detail: null, saved: false },
     ],
   });
-  assert.match(html, /left:24%;top:30%/);
-  assert.equal((html.match(/aria-label="Saved with proof"/g) ?? []).length, 2); // the canvas and the phone list
+  assert.match(html, new RegExp(`href="/world/${WORLD}#piece-n"`));
+  assert.match(html, /Ask Manus for the builders doc/);
+  assert.match(html, /Saved with proof/);
   assert.match(html, /Link repository/);
-  assert.doesNotMatch(html, /role="tab"[^>]*>Build</); // no Build lens without a repository
+  assert.doesNotMatch(html, /Practice outreach|Proposed capability|Non-executable route/);
+});
+
+it("lets readers see attributed conversation while keeping publishing and write controls for editors", async () => {
+  const conversation = { beforeSeq: null, messages: [{ message_id: "m", seq: 1, occurred_at: NOW, actor_id: "b", actor_kind: "human", actor_label: "Ana", kind: "decision", text: "Prototype the cartridge first", reply_to: null, source_refs: [], ask_ai: false, reply_state: null, request_id: "request" }] };
+  const reader = await render({ conversation, canWrite: false });
+  assert.match(reader, /Ana · recorded decision/);
+  assert.match(reader, /Prototype the cartridge first/);
+  assert.match(reader, /Ask the owner for editor access/);
+  assert.doesNotMatch(reader, /Send to room|Publish shared source|name="note"/);
+  const editor = await render({ conversation, canWrite: true });
+  assert.match(editor, /Ana · recorded decision/);
+  assert.match(editor, /Send to room/);
+  assert.match(editor, /Bring selected AI knowledge into this room/);
+  assert.match(editor, /Publish shared source/);
+});
+
+it("attributes a saved self-reported result to its author rather than the viewer", async () => {
+  const html = await render({
+    people: [{ id: "a", label: "Andrew", kind: "human", you: true }, { id: "b", label: "Ana", kind: "human", you: false }],
+    saves: [{ pieceId: "r", what: "Prototype assembled", proof: "", link: null, basis: "self_reported", at: NOW, recordId: "e1", number: 41, by: "b" }],
+  });
+  assert.match(html, /On Ana&#x27;s word/);
+  assert.doesNotMatch(html, /On your word/);
 });
 
 it("offers to save the trunk's passed build as proof, and shows it saved once it is", async () => {

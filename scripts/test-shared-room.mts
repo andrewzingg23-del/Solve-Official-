@@ -24,7 +24,8 @@ await mkdir(out, { recursive: true });
 await build({ entryPoints: [join(root, "tests/browser/shared-room-entry.tsx")], bundle: true, format: "esm", platform: "browser", target: "es2022",
   outfile: join(out, "app.js"), logLevel: "warning", alias: { "next/navigation": join(root, "tests/browser/shared-room-shims.tsx"), "next/link": join(root, "tests/browser/shared-room-shims.tsx") } });
 const css = await postcss([tailwind()]).process(await readFile(join(root, "app/globals.css"), "utf8"), { from: join(root, "app/globals.css") });
-await writeFile(join(out, "style.css"), css.css);
+const roomCss = await readFile(join(root, "app/world/[worldId]/room/room.css"), "utf8");
+await writeFile(join(out, "style.css"), `${css.css}\n${roomCss}\n.solve-recoverable-fields { display: contents; }`);
 
 const db = await createKernelDb();
 const ana = kernelClient(localSupabase(db, user("auth:browser-ana")));
@@ -101,6 +102,14 @@ try {
   for (const page of [a, b]) page.on("pageerror", e => { errors.push(e.message); console.error("Browser fixture error:", e.message); });
   await a.goto(base);
   await a.getByRole("heading", { name: "Shared conversation" }).waitFor();
+  assert.equal(await a.getByRole("link", { name: "Documents", exact: true }).count(), 1, "the room exposes its shared documents without leaving the conversation to find them");
+  assert.equal(await a.getByRole("link", { name: "Documents", exact: true }).getAttribute("href"), `/world/${worldId}#documents-heading`);
+  assert.equal(await a.getByRole("link", { name: "People & access", exact: true }).getAttribute("href"), `/world/${worldId}#people-heading`);
+  assert.equal(await a.getByLabel("Component 1", { exact: true }).isVisible(), false, "optional estimates stay collapsed when entering a room");
+  await a.getByText("Resources and saved progress", { exact: true }).click();
+  await a.getByRole("link", { name: "Spec", exact: true }).waitFor();
+  await a.getByText("Resources and saved progress", { exact: true }).click();
+  await a.getByLabel("Message or question").waitFor();
   await a.getByRole("button", { name: "Open access and documents" }).click();
   await a.getByLabel("Invitation role").selectOption("editor");
   await a.getByRole("button", { name: "Create invite link" }).click();
@@ -193,10 +202,34 @@ try {
   await a.getByRole("button", { name: "Refresh shared state" }).click();
   await a.getByText("Legacy draft remains readable", { exact: true }).waitFor();
   await a.getByText("Component cost worksheet", { exact: true }).click();
+  await a.evaluate(() => window.scrollTo(0, 0));
   await a.screenshot({ path: join(out, "desktop.png") });
   await a.setViewportSize({ width: 390, height: 844 });
   assert.equal(await a.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, "mobile content does not overflow horizontally");
+  for (const name of ["Documents", "People & access"]) {
+    const link = a.getByRole("link", { name, exact: true });
+    assert.equal(await link.isVisible(), true, `${name} remains available on mobile`);
+    const size = await link.boundingBox();
+    assert.ok(size && size.height >= 44, `${name} has a usable mobile touch target`);
+  }
   await a.screenshot({ path: join(out, "mobile.png"), fullPage: true });
+  await a.getByRole("button", { name: "Open retained-form fixture" }).click();
+  await a.getByRole("textbox", { name: "Retained draft" }).fill("Keep my private work until the database confirms it.");
+  await a.getByRole("button", { name: "Save retained draft" }).click();
+  await a.getByRole("alert").filter({ hasText: "Labelled database failure" }).waitFor();
+  assert.equal(await a.getByRole("textbox", { name: "Retained draft" }).inputValue(), "Keep my private work until the database confirms it.");
+  const retainedRequest = await a.getByLabel("Last submitted request ID").textContent();
+  await a.getByRole("button", { name: "Save retained draft" }).click();
+  await a.getByRole("alert").filter({ hasText: "Labelled database failure" }).waitFor();
+  assert.equal(await a.getByLabel("Last submitted request ID").textContent(), retainedRequest, "retry retains its request identity");
+  await a.getByRole("button", { name: "Allow fixture save" }).click();
+  await a.getByRole("button", { name: "Save retained draft" }).click();
+  await a.getByRole("status").filter({ hasText: "Saved." }).waitFor();
+  assert.equal(await a.getByRole("textbox", { name: "Retained draft" }).inputValue(), "", "only an acknowledged save clears the text");
+  await a.getByRole("textbox", { name: "Retained draft" }).fill("A fresh saved note");
+  await a.getByRole("button", { name: "Save retained draft" }).click();
+  await a.getByRole("status").filter({ hasText: "Saved." }).waitFor();
+  assert.notEqual(await a.getByLabel("Last submitted request ID").textContent(), retainedRequest);
   const artifacts = (await loadCreativeWorld(ana, worldId)).artifacts;
   assert.equal(artifacts.find(a => a.entityId === specId)?.version, 3);
   assert.ok(artifacts.some(a => a.title === "Component cost estimate" && a.body.includes("$311.00")));

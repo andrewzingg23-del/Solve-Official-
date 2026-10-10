@@ -9,14 +9,14 @@ const root=process.cwd(),out=join(root,"test-results");mkdirSync(out,{recursive:
 const cache=process.env.PLAYWRIGHT_BROWSERS_PATH||join(homedir(),".cache/ms-playwright");
 const candidates=existsSync(cache)?readdirSync(cache).filter(d=>/^chromium(?:_headless_shell)?-\d+$/.test(d)).sort().reverse().flatMap(d=>["chrome-linux/chrome","chrome-linux64/chrome","chrome-linux/headless_shell","chrome-linux64/headless_shell"].map(p=>join(cache,d,p))):[];
 const executablePath=process.env.CHROMIUM_PATH||candidates.find(existsSync);if(!executablePath)throw new Error("Install Chromium with npx playwright-core@1.56.1 install chromium, or set CHROMIUM_PATH.");
-const server=spawn(process.execPath,["node_modules/next/dist/bin/next","start","--port","3004"],{cwd:root,stdio:["ignore","pipe","pipe"]});
+const server=spawn(process.execPath,["node_modules/next/dist/bin/next","start","--port","3004"],{cwd:root,env:{...process.env,ENABLE_EXPERIMENTAL_FEATURES:"true"},stdio:["ignore","pipe","pipe"]});
 let serverLog="";server.stdout.on("data",d=>{serverLog=(serverLog+d).slice(-8000);});server.stderr.on("data",d=>{serverLog=(serverLog+d).slice(-8000);});
 const url="http://127.0.0.1:3004";let browser;
 try{
  let ready=false;for(let i=0;i<90;i++){try{const r=await fetch(url);if(r.ok){ready=true;break;}}catch{}await new Promise(r=>setTimeout(r,1000));}if(!ready)throw new Error("App did not start: "+serverLog);
  browser=await chromium.launch({executablePath,args:["--no-sandbox","--enable-unsafe-swiftshader"]});
  const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on("pageerror",e=>errors.push(e.message));
- await page.goto(url);await page.getByRole("heading",{name:"A space for what’s next."}).waitFor();
+ await page.goto(url+"/studio");await page.getByRole("heading",{name:"A space for what’s next."}).waitFor();
  await page.getByRole("button",{name:"New creation",exact:true}).click();
  const dialog=page.getByRole("dialog");await dialog.getByRole("textbox",{name:"Creation name"}).fill("Test workbench");
  await dialog.getByRole("button",{name:"Everyday objects"}).click();await dialog.getByRole("button",{name:"Create editable concept"}).click();
@@ -41,10 +41,10 @@ try{
  const exported=page.waitForEvent("download");await page.getByRole("button",{name:"Export card",exact:true}).click();const sharedFile=await(await exported).path();assert.equal(JSON.parse(readFileSync(sharedFile,"utf8")).modules[0].value,4);
  await page.reload();await page.getByRole("heading",{name:"Avery",exact:true}).waitFor();await page.screenshot({path:join(out,"sov-id-desktop.png"),fullPage:true});
  await page.setViewportSize({width:390,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1));await page.screenshot({path:join(out,"sov-id-mobile.png"),fullPage:true});
- await page.goto(url);await page.getByRole("button",{name:"Desktop",exact:true}).click();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1));await page.screenshot({path:join(out,"studio-mobile.png"),fullPage:true});
- await page.goto(url+"/start?step=avatar");await page.getByText("Identity · 3 of 3").waitFor();await page.getByRole("button",{name:"Enter your studio",exact:true}).click();await page.getByRole("heading",{name:"A space for what’s next."}).waitFor();assert.deepEqual(errors,[]);
+ await page.goto(url+"/studio");await page.getByRole("button",{name:"Desktop",exact:true}).click();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1));await page.screenshot({path:join(out,"studio-mobile.png"),fullPage:true});
+ await page.goto(url+"/start?step=avatar");await page.getByText("Identity · 3 of 3").waitFor();await page.getByRole("button",{name:"Enter your studio",exact:true}).click();await page.getByRole("heading",{name:"Good ideas deserve a place to grow."}).waitFor();assert.deepEqual(errors,[]);
  const fallback=await chromium.launch({executablePath,args:["--no-sandbox","--disable-webgl"]}),flat=await fallback.newPage({viewport:{width:390,height:844}});
- await flat.goto(url);await flat.getByLabel("Editable three dimensional projection").waitFor();await flat.getByRole("button",{name:"Oak floor",exact:true}).click();await flat.getByRole("spinbutton",{name:"Width",exact:true}).waitFor();await flat.screenshot({path:join(out,"studio-projection-mobile.png"),fullPage:true});
+ await flat.goto(url+"/studio");await flat.getByLabel("Editable three dimensional projection").waitFor();await flat.getByRole("button",{name:"Oak floor",exact:true}).click();await flat.getByRole("spinbutton",{name:"Width",exact:true}).waitFor();await flat.screenshot({path:join(out,"studio-projection-mobile.png"),fullPage:true});
  await flat.goto(url+"/map");await flat.getByRole("button",{name:/^Be me /}).click();await flat.getByRole("button",{name:"Approve",exact:true}).click();await flat.getByRole("button",{name:"Approve",exact:true}).waitFor({state:"hidden",timeout:60000});
  const map=flat.getByRole("img",{name:"Flat map of authorized World places"});await map.waitFor();const wholeMap=await map.getAttribute("viewBox");await flat.getByRole("button",{name:"Zoom map in"}).click();assert.notEqual(await map.getAttribute("viewBox"),wholeMap);await flat.getByRole("button",{name:"Frame whole map"}).click();assert.equal(await map.getAttribute("viewBox"),wholeMap);await flat.screenshot({path:join(out,"flat-map-mobile.png"),fullPage:true});
  await flat.setViewportSize({width:1440,height:1000});await flat.getByRole("button",{name:"Zoom map in"}).click();assert.notEqual(await map.getAttribute("viewBox"),wholeMap);await flat.screenshot({path:join(out,"flat-map-desktop.png"),fullPage:true});await fallback.close();

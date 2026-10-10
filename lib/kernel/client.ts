@@ -441,6 +441,7 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
   return {
     // Signed-in users: links the session to a canonical actor. Safe on every sign-in.
     register: (label = "") => call<string>("register", { p_label: label }),
+    setPersonLabel: (label: string, requestId: string) => call<string>("set_person_label", { p_label: label, p_request_id: requestId }),
 
     whoami: () => one<Actor>("whoami", { ...as }),
 

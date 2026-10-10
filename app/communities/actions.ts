@@ -1,12 +1,13 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { ACCOUNT_CHANGED, sameDisplayedAccount } from "@/lib/product/account-guard";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { CommunityInputError, startCommunity } from "@/lib/community/community";
 
 export async function startCommunityAction(formData: FormData) {
-  if (!(await getUser())) redirect("/login?next=%2Fcommunities");
+  const user = await getUser();
+  if (!sameDisplayedAccount(formData.get("expectedUserId"), user?.id)) return { ok: false as const, error: ACCOUNT_CHANGED };
   const nonce = formData.get("nonce");
   let communityId: string;
   try {
@@ -18,7 +19,7 @@ export async function startCommunityAction(formData: FormData) {
     });
     communityId = community.communityId;
   } catch (error) {
-    redirect(`/communities?error=${error instanceof CommunityInputError ? "input" : "start"}`);
+    return { ok: false as const, error: error instanceof CommunityInputError ? "Check your community name and description. Your draft is still here." : "Your community could not be started. Your draft is still here; retry shortly." };
   }
-  redirect(`/community/${communityId}?started=1`);
+  return { ok: true as const, href: `/community/${communityId}?started=1` };
 }

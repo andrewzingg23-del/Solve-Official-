@@ -4,7 +4,8 @@
 // message. All run with the person's own sign-in, so the kernel records them as the actor; a bot can
 // do none of them.
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { experimentalFeaturesEnabled } from "@/lib/product/routes";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
@@ -45,6 +46,7 @@ export async function stepDoneAction(worldId: string, formData: FormData) {
 
 // Approving one outreach message. On the Practice channel it is recorded and not sent outside solve.
 export async function approveOutreachAction(worldId: string, formData: FormData) {
+  if (!experimentalFeaturesEnabled()) notFound();
   if (!(await getUser())) redirect(`/login?next=${encodeURIComponent(worldPath(worldId))}`);
   try {
     await approveAndSend(await getKernel(), { worldId, pieceId: text(formData.get("pieceId")), lead: Number(text(formData.get("lead"))) });
@@ -56,6 +58,7 @@ export async function approveOutreachAction(worldId: string, formData: FormData)
 }
 // Recording what happened with one approved message, on the person's own word.
 export async function recordOutcomeAction(worldId: string, formData: FormData) {
+  if (!experimentalFeaturesEnabled()) notFound();
   if (!(await getUser())) redirect(`/login?next=${encodeURIComponent(worldPath(worldId))}`);
   try {
     const kernel = await getKernel();
@@ -69,6 +72,7 @@ export async function recordOutcomeAction(worldId: string, formData: FormData) {
 }
 // Anchoring a World's record on chain (devnet only), as its owner. Only a fingerprint is written.
 export async function anchorWorldAction(worldId: string) {
+  if (!experimentalFeaturesEnabled()) notFound();
   if (!(await getUser())) redirect(`/login?next=${encodeURIComponent(worldPath(worldId))}`);
   const chain = await anchorChainFromEnv().catch(() => null);
   if (!chain) redirect(`${worldPath(worldId)}?error=anchor-off`);

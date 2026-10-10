@@ -1,5 +1,7 @@
 "use server";
 
+import { ACCOUNT_CHANGED, requireDisplayedActor } from "@/lib/product/account-guard";
+import type { FormResult } from "@/app/product/recoverable-form";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
@@ -17,10 +19,12 @@ export type SaveResult = { ok: true; version: number; savedAt: string | null; pe
 
 // Saves the signed-in person's bot. The persona is validated again inside saveBot; the request id
 // makes a double-click or a retried request write one version, not two.
-export async function saveBotAction(requestId: string, persona: unknown): Promise<SaveResult> {
+export async function saveBotAction(requestId: string, persona: unknown, expectedOwnerId: string): Promise<SaveResult> {
   if (!(await getUser())) return { ok: false, error: "signed-out" };
   try {
-    const bot = await saveBot(await getKernel(), persona, requestId);
+    const kernel = await getKernel();
+    await requireDisplayedActor(kernel, expectedOwnerId);
+    const bot = await saveBot(kernel, persona, requestId);
     revalidatePath("/bot");
     return { ok: true, version: bot.history.length, savedAt: bot.saved?.at ?? null, persona: bot.persona };
   } catch (error) {
@@ -73,13 +77,17 @@ export async function disconnectAction(formData: FormData) {
 }
 
 // The person feeds their bot directly.
-export async function addMemoryAction(formData: FormData) {
-  if (!(await getUser())) return;
-  const kernel = await getKernel();
-  const me = await kernel.whoami();
-  const source = { kind: "person", title: field(formData.get("title")) || null, url: field(formData.get("url")) || null };
-  await noteMemory(kernel, me.actor_id, { text: field(formData.get("text")), source }, { client_id: null, client_name: null }).catch(() => null);
-  revalidatePath("/bot");
+export async function addMemoryAction(formData: FormData): Promise<FormResult> {
+  if (!(await getUser())) return { ok: false, error: "Sign in again to save this knowledge. Your text is still here." };
+  try {
+    const kernel = await getKernel();
+    await requireDisplayedActor(kernel, field(formData.get("expectedActorId")));
+    const me = await kernel.whoami();
+    const source = { kind: "person", title: field(formData.get("title")) || null, url: field(formData.get("url")) || null };
+    await noteMemory(kernel, me.actor_id, { text: field(formData.get("text")), source }, { client_id: null, client_name: null });
+    revalidatePath("/bot");
+    return { ok: true };
+  } catch (error) { return { ok: false, error: error instanceof KernelError && error.name === "conflict" ? ACCOUNT_CHANGED : "Your knowledge couldn't be saved. Your text is still here; retry in a moment." }; }
 }
 
 // Erases a memory: its key is destroyed, so its words are gone for good.
