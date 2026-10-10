@@ -1,5 +1,11 @@
 # BUILD_STATUS
 
+## CI root cause fixed — 2026-10-10 02:44 UTC
+
+- Instrumented run `38017300634` exposed all seven failures: `tests/product/actions.test.ts` called mkdtemp below ignored `.browser-tests` without creating its parent. Browser checks had already created that directory locally; a fresh CI checkout had not. No application action failed its behavior assertions in that run because the harness could not initialize.
+- Reproduced the exact seven ENOENT failures from a clean temporary working directory, then fixed the harness to create the parent with recursive mkdir. The same seven real-SQL/action checks passed from that clean directory. Lint and typecheck passed; final full suite is running. App and migration implementation are unchanged.
+- The diagnostic reporter successfully exposed stack traces through the Checks API and keeps the test command's failing exit status. Push the harness fix on the activation branch for a full CI rerun before integration. Live migration access remains unavailable.
+
 ## Live activation and CI diagnosis — 2026-10-10 02:30 UTC
 
 - Founder: "go go go". GitHub check/status access now works. Vercel reports successful deployments for source `0ad1dc4` and documentation checkpoint `a69a224`; product-browser workflow on main passed. Actual deployed HTTP checks are blocked by the cloud host allowlist, so this is a deployment-status result, not a verified live user journey.

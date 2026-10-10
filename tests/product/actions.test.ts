@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createKernelDb, user } from "../kernel/harness";
@@ -19,6 +19,7 @@ declare global { var __solveActionFixture: { user: { id: string; user_metadata: 
 let modules: Promise<Record<string, Record<string, (...args: unknown[]) => Promise<unknown>>>> | undefined;
 async function actions() {
   return modules ??= (async () => {
+    await mkdir(join(process.cwd(), ".browser-tests"), { recursive: true });
     const dir = await mkdtemp(join(process.cwd(), ".browser-tests", "action-regressions-"));
     const entries = { profile: "app/account/profile-actions.ts", project: "app/product/project-actions.ts", bot: "app/bot/actions.ts", documents: "app/world/[worldId]/actions.ts", communities: "app/communities/actions.ts", community: "app/community/[communityId]/actions.ts", people: "app/world/[worldId]/access-panel.tsx" };
     const stubs: Record<string, string> = {
