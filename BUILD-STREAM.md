@@ -1,6 +1,6 @@
 # Live build stream
 
-Current integration: `main` (collaboration rebuild source `0ad1dc4`); active follow-up `codex/release-activation`
+Current integration: `main` (activation follow-up `beab77f`); remote migration activation awaits secure management access
 
 This file is the shared, committed progress feed. It is readable from the repository at any time; it does not expose uncommitted edits in a builder's private working tree.
 
@@ -1069,3 +1069,7 @@ Build run 38018066907 passed Test/typecheck/lint/build on a8f7cd6. Local full su
 ## 2026-10-10 02:59 UTC — actual public deployment check passed (Codex)
 
 Deployed product run 38018852679 passed on cc552f1 against solve-sage.vercel.app: all four core pages and navigation, referenced assets, trading redirect and no-store market API denial. This is an actual anonymous deployed HTTP check; it does not simulate sign-in or claim database/provider writes. App/lib/migrations/tests/scripts match the source verified by green standard Build run 38018066907 at a8f7cd6; the only additions are the separately verified public checker and docs. Its automatic full Build rerun is still running. Next: integrate the verified follow-up into main. Supabase management binding is absent, so live migration/Auth/provider activation remains blocked despite passing public and local Postgres checks.
+
+## 2026-10-10 03:02 UTC — follow-up pushed to main; remaining prerequisite confirmed (Codex)
+
+Fast-forwarded main a69a224→beab77fb38c9b388fb049e24cab46077a67e4bd8, pushed and verified the remote hash. Main public-deployment run 38019136354 passed. App/lib/migrations/tests/scripts match green standard Build 38018066907 at a8f7cd6; local suite 456/456 and real Postgres release checks 60/60. Main's automatic Build/Product browser reruns are in progress, not reported green. Rechecked binding presence only: Supabase management/server, Vercel admin and OpenRouter bindings remain absent in this cloud. No remote migration, real user invitation or live provider call. The source-hashed migration inspection/package and tested reusable setup are ready; secure SUPABASE_ACCESS_TOKEN delivery is needed to continue actual staging activation. This is a documentation-only completion checkpoint.

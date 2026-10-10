@@ -6,6 +6,8 @@ Founder ordered a complete collaboration-first experience and removal of unready
 
 Source commit `0ad1dc474d51b38ee0bc846988b88d2cf6995b0f` was pushed on `codex/collaboration-rebuild`, fast-forwarded into main and pushed to origin. The remote main hash was verified at 2026-10-10 02:15 UTC. Main matches the locally verified implementation exactly. This record is a subsequent documentation-only checkpoint; CI/deployment results remain unconfirmed.
 
+Activation follow-up `beab77fb38c9b388fb049e24cab46077a67e4bd8` was fast-forwarded into main, pushed and remote-hash verified at 03:02 UTC. It adds the fresh-checkout harness fix, accessible CI failure diagnostics and the actual public-site check. Main Deployed product run `38019136354` passed. Standard Build run `38018066907` passed on `a8f7cd6`, whose app/lib/migrations/tests/scripts match the integrated source; main's automatic standard Build/Product browser reruns are still pending. The public app is verified anonymously; live database/Auth/provider activation remains separate and blocked by missing administrative access.
+
 ## Delivered behavior
 
 - Projects replaces the trading/studio entry point. People can draft an idea locally, continue through sign-in, and explicitly create a real private project. Drafts are scoped to the displayed account and clear only on confirmed creation.

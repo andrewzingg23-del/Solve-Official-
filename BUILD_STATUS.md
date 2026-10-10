@@ -1,5 +1,11 @@
 # BUILD_STATUS
 
+## Activation follow-up integrated — 2026-10-10 03:02 UTC
+
+- Fast-forwarded main from `a69a224` to `beab77fb38c9b388fb049e24cab46077a67e4bd8`, pushed and verified the matching remote hash. This integrates the fresh-checkout harness fix, test-failure diagnostics and independently passing public deployment check. App/lib/migrations/tests/scripts match standard-CI-verified `a8f7cd6`; no runtime app/schema change followed that verification.
+- Main Deployed product run `38019136354` passed against the actual public site. Standard Build run `38018066907` passed the verified source; main's automatic Build `38019136291` and Product browser `38019136228` reruns are still in progress and are not claimed green. The final local suite passed 456/456; 60 real Postgres checks passed.
+- Code/setup work available in this session is complete. Live migration application and real Auth/AI-provider collaboration tests remain blocked: `SUPABASE_ACCESS_TOKEN`, Vercel administrative and server/model bindings are absent from this cloud. This does not establish whether server/model bindings exist in the deployed project. The immediate prerequisite is secure `SUPABASE_ACCESS_TOKEN` delivery for read-only staging inspection and application of only missing migrations. No remote migration or live user invitation was performed.
+
 ## Public deployment verified — 2026-10-10 02:59 UTC
 
 - Deployed product run `38018852679` passed against `https://solve-sage.vercel.app` on checker `cc552f1`. The actual anonymous public response contains all four rebuilt core pages and navigation; referenced assets load, `/packs/trading` redirects to core and `/api/market` returns a no-store 404. No live Auth, database write or provider request was performed by this check.
