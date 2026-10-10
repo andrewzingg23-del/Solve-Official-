@@ -1085,3 +1085,5 @@ The phone map control overlap is fixed and verified with normal clicks. Complete
   - **Checks:** full suite 445/445; typecheck, lint and build ok; Chromium renders on desktop and phone with no page errors.
   - **Next:** confirm CI. The founder tries "Show me" with real history once signed in on the preview.
 
+
+- 2026-10-10 01:35Z — Claude: CI green for 7855575 (avatar slice 1 and community shared context): https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/38012594167. The founder shared "MCP Vault — Platform Plan to $10M ARR"; analysis given in chat, no code. Most of the vault already exists here: sealed memory, the MCP connector, import, the context pack and community shared context. Gaps: export, finer per-client permissions, a cross-client recall test. Next: the founder's call on whether MCP Vault is a separate product or a frame for solve.
