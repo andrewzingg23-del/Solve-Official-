@@ -1,5 +1,11 @@
 # BUILD_STATUS
 
+## Main integration — 2026-10-10 02:15 UTC
+
+- Fast-forwarded main from `fda0e7a` to collaboration rebuild `0ad1dc474d51b38ee0bc846988b88d2cf6995b0f` under the founder's earlier "add it and ship" instruction. Feature-branch push, main push and matching remote main hash are confirmed. Integrated source is exactly the verified tree; no merge conflict or additional implementation change.
+- Final local checks: all 456 tests passed, typecheck/lint/build passed, product/shared-room/experimental-studio desktop and phone browser journeys passed. All material independent-review findings are fixed; no deferred minors.
+- Remote CI and deployment status remain unconfirmed because status/admin access is unavailable. No remote migration or manual deployment was performed. The profile migration and any missing earlier shared-room migrations must be applied after checking destination history; real Auth, two-account collaboration, provider consent and Postgres concurrency remain the live activation gate. See `docs/handoff/COLLABORATION-REBUILD.md`.
+
 ## Collaboration rebuild — 2026-10-10 02:14 UTC
 
 - Founder ordered a complete rebuild around community and collaboration with personal AIs. The public product now has four homes: Projects, Communities, Your AI and Profile. Trading, cards, money and experimental/promotional screens are excluded from the default launch surface, including direct legacy POST/API requests.
@@ -7,7 +13,7 @@
 - Profile and AI editing preserve the canonical Solve ID, require explicit local-profile review and reject stale-account writes. Recoverable forms retain text and request identity after failed saves. New additive profile migration `20261009060000_person_profile.sql` projects names from append-only events; no applied migration or database was reset.
 - Local verification: final full-suite repeat passed all 456 tests, zero failures/skips; typecheck, lint and production build passed (eight existing lint image warnings). Product, real-SQL shared-room and opted-in studio Chromium journeys passed on desktop and phones.
 - Fresh independent review found no Critical issues. All five material findings were reproduced and fixed; no minors are deferred. The People navigation issue was promoted to a core fix; the existing controlled document editor was retained after checking its stale-edit behavior. Evidence and practical limits: `docs/handoff/COLLABORATION-REBUILD.md`.
-- Source is on `codex/collaboration-rebuild`, based on main `fda0e7a`; integration follows the founder's earlier "add it and ship" instruction. No remote migration or manual deployment was performed. GitHub status/deployment APIs and Supabase/Vercel administrative access remain unavailable; a Git push is not a live activation claim.
+- Source was verified on `codex/collaboration-rebuild`, based on main `fda0e7a`, and is now integrated into main at `0ad1dc4`. No remote migration or manual deployment was performed. GitHub status/deployment APIs and Supabase/Vercel administrative access remain unavailable; a Git push is not a live activation claim.
 
 ## Main integration — 2026-10-08 21:23 EDT
 

@@ -1,6 +1,6 @@
 # Live build stream
 
-Active build branch: `codex/collaboration-rebuild`
+Current integration: `main` (collaboration rebuild source `0ad1dc4`)
 
 This file is the shared, committed progress feed. It is readable from the repository at any time; it does not expose uncommitted edits in a builder's private working tree.
 
@@ -1045,3 +1045,7 @@ Founder ordered a complete collaboration-first experience and removal of unready
 ## 2026-10-10 02:14 UTC — collaboration rebuild verified (Codex)
 
 Solves the founder's idea-and-AIs workflow by making Projects, Communities, Your AI and Profile the public product. Rebuilt app entry/navigation, project draft/create flow, account and AI continuity, shared rooms and community views; default route policy excludes unready trading, payment and experimental surfaces. Added authenticated append-only profile-name RPC and recoverable text forms without replacing existing project data or authority. Changes cover app/product, account/bot/community/world views, lib/product, kernel client, one additive migration, regression/browser checks and the product-browser workflow. Local checks: final full-suite repeat passed all 456 tests, typecheck/lint/build passed (eight existing lint warnings); product, real-SQL shared-room and opted-in studio desktop/phone journeys passed. Independent whole-branch review complete: five material findings reproduced and fixed, no deferred minors. Next: commit/push this coherent slice and fast-forward main under the founder's existing ship instruction. No remote database change or manual deployment; live Auth/provider/concurrency and deployment activation remain unconfirmed. Handoff: docs/handoff/COLLABORATION-REBUILD.md.
+
+## 2026-10-10 02:15 UTC — main integration confirmed (Codex)
+
+Pushed codex/collaboration-rebuild, fast-forwarded main from fda0e7a to 0ad1dc474d51b38ee0bc846988b88d2cf6995b0f, pushed main and verified its remote hash. Main has the exact verified implementation, with no merge conflicts or extra source changes. Final current-tree 456-test suite and the recorded build/type/lint/product/shared-room/studio browser checks are green locally. No remote CI/deployment success is claimed; status/admin credentials remain unavailable. Next launch gate: inspect and apply only missing migrations, verify actual deployed Auth/two-account collaboration/external AI consent and Postgres concurrency, then run the founder-and-brother idea pilot. This follow-up checkpoint changes documentation only.

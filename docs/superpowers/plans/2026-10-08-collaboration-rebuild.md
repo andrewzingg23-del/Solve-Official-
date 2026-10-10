@@ -72,4 +72,4 @@
 
 - [x] Run desktop/mobile core workflow checks, full `npm test`, `npm run typecheck`, `npm run lint`, `npm run build` and production HTTP policy checks. Save logs and screenshots.
 - [x] Obtain one independent whole-branch review; reproduce and fix material findings, then rerun affected checks and required final suite.
-- [ ] Integrate into main using existing ship authorization when checks pass; verify the remote hash and report any live activation/CI visibility limitations accurately.
+- [x] Integrate into main using existing ship authorization when checks pass; verify the remote hash and report any live activation/CI visibility limitations accurately.

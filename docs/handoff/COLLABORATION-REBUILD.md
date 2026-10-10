@@ -2,6 +2,10 @@
 
 Founder ordered a complete collaboration-first experience and removal of unready public features. This rebuild starts from main `fda0e7a` and preserves existing projects, invitations, actors, bot personas, documents, history, grants and studio source. The public product is now Projects, Communities, Your AI and Profile.
 
+## Integration record
+
+Source commit `0ad1dc474d51b38ee0bc846988b88d2cf6995b0f` was pushed on `codex/collaboration-rebuild`, fast-forwarded into main and pushed to origin. The remote main hash was verified at 2026-10-10 02:15 UTC. Main matches the locally verified implementation exactly. This record is a subsequent documentation-only checkpoint; CI/deployment results remain unconfirmed.
+
 ## Delivered behavior
 
 - Projects replaces the trading/studio entry point. People can draft an idea locally, continue through sign-in, and explicitly create a real private project. Drafts are scoped to the displayed account and clear only on confirmed creation.
@@ -28,7 +32,7 @@ The review's document-editor loss claim was narrowed to creation: ArtifactEditor
 
 ## Live activation boundary
 
-No remote migration or manual deployment was performed. A main push can trigger existing Git/Vercel integration; it does not establish a working live rollout. GitHub status/deployment APIs and Supabase/Vercel administrative credentials were unavailable in this cloud environment. No secret values belong in chat.
+No remote migration or manual deployment was performed. The confirmed main push can trigger existing Git/Vercel integration; it does not establish a working live rollout. GitHub status/deployment APIs and Supabase/Vercel administrative credentials were unavailable in this cloud environment. No secret values belong in chat.
 
 Apply only missing migrations after inspecting the destination's migration history. Preserve the five earlier shared-room migrations (`20261009010000` through `20261009050000`) and add `20261009060000_person_profile.sql` for authenticated profile-name editing. Do not reapply an entire migration bundle or reset any database. The new migration preserves immutable actors and existing reader authority checks; API roles gain no direct kernel access.
 
