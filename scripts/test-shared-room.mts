@@ -218,6 +218,9 @@ try {
   await a.getByRole("button", { name: "Save retained draft" }).click();
   await a.getByRole("alert").filter({ hasText: "Labelled database failure" }).waitFor();
   assert.equal(await a.getByRole("textbox", { name: "Retained draft" }).inputValue(), "Keep my private work until the database confirms it.");
+  // The request-ID readout is fixture state set alongside the transition; React may commit
+  // the alert before it, so wait for the readout to populate instead of racing the commit.
+  await a.waitForFunction(() => (document.querySelector('output[aria-label="Last submitted request ID"]')?.textContent ?? "").length > 0);
   const retainedRequest = await a.getByLabel("Last submitted request ID").textContent();
   await a.getByRole("button", { name: "Save retained draft" }).click();
   await a.getByRole("alert").filter({ hasText: "Labelled database failure" }).waitFor();
