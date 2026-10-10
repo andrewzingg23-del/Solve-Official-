@@ -1055,3 +1055,14 @@ The phone map control overlap is fixed and verified with normal clicks. Complete
     - slice 4 (crew) needs the staging server key in Vercel.
   - **Checks:** docs only (no CI).
 
+- 2026-10-10 00:20Z — Claude: the avatar's north star (founder: "Imagine how amazing it would have to be first… differentiated enough… a playground for people to build and communicate virtually and really").
+  - **Written:** `docs/plans/2026-10-10-avatar-north-star.md`, covering:
+    - the bar: Muse's live avatar and background work, Copilot's Mico and 32-person groups, Gemini Spark;
+    - a day with it;
+    - why no one else is this;
+    - the playground, virtual and real;
+    - six tests it must pass.
+  - **Plan changes:** slice 1 becomes "one brain and day-one magic", plus new slices "Ask my avatar" and "avatars in rooms".
+  - **Checks:** docs only.
+  - **Next:** the founder's call on "Level" (BRAND.md §6), then slice 1.
+
