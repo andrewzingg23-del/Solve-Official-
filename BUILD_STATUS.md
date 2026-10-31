@@ -1,5 +1,13 @@
 # BUILD_STATUS
 
+## One Solve run — Step 0 + Step 1 passport cache — 2026-10-31 (Claude)
+
+- **Run started.** Trunk is `main` (DECISIONS.md 2026-10-31, decision (a)). Working branch `claude/passport-link`. Progress tracked in `docs/plans/RUN-PROGRESS.md`, which carries the live WAITING ON ANDREW list.
+- **Step 0:** decisions (a)–(d) recorded in DECISIONS.md; branch audit in `docs/qa/2026-10-31-branch-audit.md` (29 branches; 22 safe-to-delete + 3 to review — **nothing deleted**, awaits founder OK); legacy harvest in `docs/plans/legacy-harvest.md` (archiving + deployment/DB disposition await founder OK).
+- **Step 1:** passport link verified green on a clean tree — `npm run typecheck` ok, `npm run lint` 0 errors / 8 pre-existing `<img>` warnings, `npm test` **461/461** (passport 5/5). Added the ~10-min per-person cache (`lib/passport/cache.ts` + rewired `lib/passport/context.ts`): profile and project list read once per ~10 min, related facts every message — three passport reads per turn down to one. New `tests/passport/cache.test.ts` (3 tests); passport suite 8/8.
+- **Next:** open the Step 1 PR into `main` (merge on the founder's word); then the Step 3 context packer (pure, fixture-tested, needs no secrets) while Step 2 waits on `SUPABASE_ACCESS_TOKEN`, Vercel secrets and the founder's go for migrations.
+- No remote database change. No merge. No branch deletion. No secret handled.
+
 ## One Solve run — Step 3 context packer — 2026-10-31 (Claude)
 
 - New `lib/ai/context.ts` — the AI engine's context packer (pure, deterministic). Fixed token budget filled in priority order (rules/persona → passport profile → project brief → top-k facts → recent turns → the ask), per-layer caps, deterministic truncation. Tests pin: caps and budget never exceeded, higher layers never dropped for lower, the required ask always survives.
