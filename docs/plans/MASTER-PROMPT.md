@@ -317,6 +317,40 @@ I'm running this as ONE long autonomous run. Build everything in Part D, in this
    - Then send a final report: what's live, how to use each piece, what's waiting on me, and the recommended next things to build.
 
 ══════════════════════════════════════════════
+PART F: VISION UPDATE, 2026-10-31 (applies to every step)
+══════════════════════════════════════════════
+The vision widened. Solve is not just my operating system: it's for everyone, from kids creating together to hedge fund managers. Every person owns their passport, rooms run under a policy that fits their stakes, and anyone can add any integration.
+
+1. ROOM POLICY PROFILES (one engine, different rules). Every room has a policy:
+   - Kid: parent-owned; invite-only; no strangers; parent sees everything; AI creates and tutors only, no outbound actions; curated integrations (Scratch, Minecraft Education, Roblox Studio, Tinkercad). Under-13 profiles need verified parental consent (COPPA), created from a parent's passport.
+   - Teen (13+): own passport, optionally family-linked; moderation; no spending without a parent's limits.
+   - Personal: the person's own rules.
+   - Team: roles (owner, manager, member, recruit); hierarchy visibility (managers see their downline); shared integrations without sharing logins.
+   - Company: SSO (SAML/OIDC: Okta, Google, Microsoft Entra), SCIM provisioning, admin policies (allowed models, integrations, AIs), data region, no training on company data, audit export, expiring guest access.
+   - Walled (regulated finance): compartments act as information barriers; crossing attempts are blocked and logged; a compliance-officer role approves anything leaving the firm; personal-trade pre-clearance cards; restricted-list checks; retention for SEC 17a-4/FINRA; legal hold; archive export (Smarsh, Global Relay); a firm-locked model list with zero retention and optional private models; dual approval for anything market-facing; trading integrations read-only by default.
+   Build the policy engine in Milestone 3 (alongside Step 5), with Personal and Team first. Kid/Teen in Milestone 4, Company and Walled after launch. Each as a tested policy, not a separate product.
+2. APPROVER BY POLICY. The same Do it / Change it card, but who approves depends on the room policy: the person, a parent, a manager, compliance, or two signers. Tests for every profile.
+3. INTEGRATIONS ANYONE CAN ADD (expands Step 11). Eight ways in:
+   (1) one-tap catalog
+   (2) connect any MCP server by URL, with its tools explained in plain words and chosen per tool
+   (3) say it ("connect my Jobber")
+   (4) the AI builds a connector as a Machine from public API docs: read-only first, actions only after an approved test, keys sealed
+   (5) a Zapier/Make/n8n bridge for the long tail
+   (6) a private email-in address and webhook URL per project
+   (7) a browser agent for portals with no API: you watch, and every submit needs a card
+   (8) file and export import (CSV, PDF, Google Takeout, Instagram download, bank statements) into passport review.
+   Ecosystem:
+   - community-built connectors published as Packs, with author, version, permissions and installs
+   - verified badges, with review before any connector that can send/post/spend is listed publicly
+   - a request board with voting
+   - role templates ("I'm a realtor / gym owner / creator / student / agency / fund") suggesting the top 5 connections and Machines
+   - combo bonuses on the AI card (Calendar + Gmail + Twilio = "Full Follow-up")
+   Catalog coverage spans: communication, sales/CRM, solar, insurance, recruiting/social, marketing/creative, money, knowledge/docs, AI models/agents, building, life/travel, identity/trust, education (kid-safe), small-business POS and field service, real estate (MLS, Follow Up Boss), creators (YouTube, Twitch, Patreon), events, nonprofits, enterprise (M365, Salesforce, Jira, Snowflake), and finance data (Bloomberg, FactSet, PitchBook, EDGAR; read-only).
+   Build order: catalog + connect-by-URL → Zapier bridge + email-in → role templates → AI-built connectors → browser agent → community Packs, request board, badges.
+4. LIFELONG PASSPORT. A person's passport grows with them: a kid's creative history, a teen's verified projects, an adult's career, and work history they carry between rooms, teams and companies. Nothing is lost when they change jobs; employers see only what the person shares.
+5. Safety stays the same at every level: approval screens from each app, sealed keys, reads automatic, real actions need a card, health and finance data private by default, one-tap disconnect everywhere, every use on the record.
+
+══════════════════════════════════════════════
 START NOW
 ══════════════════════════════════════════════
 Create docs/plans/RUN-PROGRESS.md. Send me one message with your plan for Milestone 1 and the complete WAITING ON ANDREW list for it. Then start Step 0 immediately, without waiting for my reply on anything that isn't irreversible. Keep going through all four milestones until the finish line.
