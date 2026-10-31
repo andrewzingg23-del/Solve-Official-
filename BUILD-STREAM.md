@@ -1083,3 +1083,17 @@ Step 0 (clean the ground): recorded the founder's decisions (a)–(d) in DECISIO
 Step 1 (finish the passport link): verified green on a clean tree — `rm -rf .next && npm run typecheck` ok, `npm run lint` 0 errors (8 pre-existing `<img>` warnings), `npm test` 461/461 (passport 5/5). Added the ~10-minute per-person cache the plan calls for: new `lib/passport/cache.ts` (`TtlCache`, pure) and rewired `lib/passport/context.ts` to read `get_profile`/`list_projects` once per ~10 min per person while still reading `search_context` every message (three passport reads per turn → one). New tests `tests/passport/cache.test.ts` (3) cover TTL expiry, per-person dedup, and no-link; passport suite now 8/8, typecheck + lint clean.
 
 Not done (awaits the founder): open the Step 1 PR into main (next, this session), then merge on his word; Step 2 live DB/settings (needs SUPABASE_ACCESS_TOKEN, Vercel secrets, his go for migrations). Next slice while blocked: the Step 3 context packer (pure, fixture-tested — no secrets needed).
+
+## 2026-10-31 — One Solve Step 3: the context packer (Claude)
+
+Founder problem solved: every AI call needs a fixed token budget filled in priority order, so a long chat or a big passport never blows the context or the cost. This is the pure, testable core of the Step 3 / Step 10 AI engine, buildable now with no secrets.
+
+New `lib/ai/context.ts` (pure, deterministic): `estimateTokens` (~4 chars/token), `truncateToTokens` (cap-safe, marks a cut), and `packContext(layers, budget)`. Layers in priority order — rules/persona, passport profile, project brief, top-k facts, recent turns, the ask. Guarantees pinned by tests: no layer exceeds its cap, the pack never exceeds the budget, higher layers are never dropped for lower ones, and the required "ask" is reserved first so the person's message always survives. Output keeps layer order; blank layers are omitted but still accounted for.
+
+Tests `tests/ai/context.test.ts` 7/7; `npm run typecheck` ok; `npm run lint` 0 errors (8 pre-existing `<img>` warnings). Branch `claude/ai-context` from main. Not yet wired into the chat route — that slice (project brief + session synth + the before/after token/cost numbers on 20 real messages) needs the live OpenRouter path and the passport embeddings (OPENAI_API_KEY on the passport project), both waiting on Andrew. Next unblocked: wire packContext into lib/bot/chat.ts behind the existing tiering, with fixtures.
+
+## 2026-10-31 — One Solve Step 3: pack the chat system prompt to a budget (Claude)
+
+Founder problem solved: a rich soul.md or a big passport could quietly dominate (or blow) the chat context and run up cost. `packSystemPrompt` in lib/bot/chat.ts now assembles the system prompt through the Step 3 context packer: rules (required, always kept), then soul, project brief, passport, each capped, inside a token budget (default 2400, env CHAT_CONTEXT_BUDGET_TOKENS). Additive — a new pure function beside the existing tiering/spend logic; the chat route is untouched in this PR.
+
+Stacked on PR #19 (lib/ai/context.ts). Tests tests/bot/system-prompt.test.ts 4/4; full bot suite 135/135 (incl. the existing tiering/spend tests); typecheck ok; lint 0 errors. Route wiring (passing soul + passport through packSystemPrompt in app/api/bot/chat/route.ts) is the next slice, done once PR #18 (passport in the route) and #19 are on main, so two PRs don't edit the same route lines. Branch claude/chat-context-pack.
