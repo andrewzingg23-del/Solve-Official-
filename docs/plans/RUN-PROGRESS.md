@@ -46,9 +46,13 @@ Steps 0, 1, 2, 3 (lean: context packer + project brief + energy cap), 7 (morning
 | ~10-min passport cache | 1 | **done** | lib/passport/cache.ts + context.ts; tests 8/8. |
 | Open Step 1 PR → main | 1 | **done** | PR #18 open (passport-link → main). You merge (#5). |
 | Live DB + settings | 2 | **blocked** | Needs #1–#4, #6. |
-| Context packer (lib/ai/context.ts, pure) | 3 | **done** | PR #19 (claude/ai-context → main). 7/7 tests. You merge. |
-| Project brief + session synth + before/after numbers | 3 | **blocked** | Needs OpenRouter + passport embeddings (OPENAI_API_KEY). Wire packContext into chat next (fixtures). |
-| Morning brief + cron + push + PWA | 7 | todo | Brief logic buildable; push/cron need live deploy. |
+| Context packer (lib/ai/context.ts, pure) | 3 | **done** | PR #19. 7/7 tests. |
+| Chat system-prompt packing | 3 | **done** | PR #20 (stacked on #19). |
+| Energy budget (lib/ai/energy.ts) | 3 | **done** | PR #21. The lean "energy cap". 5/5 tests. |
+| Installable PWA | 7 | **done** | PR #22. manifest + icons; 2/2 tests. |
+| Project brief + session synth + before/after numbers | 3 | **blocked** | Needs OpenRouter + passport embeddings (OPENAI_API_KEY). |
+| Morning brief + cron + push | 7 | **blocked** | Needs live DB + OpenRouter + deploy for cron/push. |
+| Route wiring (packSystemPrompt into chat) | 3 | **blocked** | Needs #18 + #20 on main first (merges blocked). |
 
 ## Milestone 2 — "My AI works for me"
 Steps 4 (no dead buttons), 6 (kid-simple home), rest of 7, Step 11 first path (Google Calendar + Gmail). — not started.
@@ -69,9 +73,14 @@ Steps 10 (Machines), rest of 3 (council), rest of 9, rest of 11, Kid + Teen poli
 - AGENTS.md trunk line change (#11).
 
 ## Open PRs (await founder merge — mergeable in a batch)
+- **#21** claude/ai-energy → main — Step 3 energy budget. Independent.
+- **#22** claude/pwa-installable → main — Step 7 installable PWA. Independent.
 - **#18** claude/passport-link → main — Step 1 passport link + ~10-min cache + Step 0 docs.
 - **#19** claude/ai-context → main — Step 3 context packer (pure). Independent of #18.
 - **#20** claude/chat-context-pack → (base #19) — Step 3 `packSystemPrompt`. Stacked on #19; retarget to main after #19 lands.
+
+## Wall reached (2026-10-31)
+Every Milestone-1 slice buildable without your secrets or a merge is shipped as a green PR (#18, #19, #20, #21, #22). Everything remaining needs one of: (a) your secrets (#1–#4), (b) a PR merge (blocked by the harness "Merge Without Review" gate — grant `Bash(gh pr merge:*)` or merge in the UI), or (c) live infra to validate against.
 
 ## Next action
 Everything else unblocked has been built; the critical path is now **blocked on Andrew** (WAITING items #1–#4 above): merge passport PR #1, paste the two Vercel secrets, provide `SUPABASE_ACCESS_TOKEN`, add the Auth redirect URL. These unblock Step 2 (live DB) and every live proof the rest of Milestone 1 depends on.
