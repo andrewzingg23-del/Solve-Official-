@@ -280,6 +280,43 @@ STEP 12: READY FOR OTHER PEOPLE
 - Launch checklist with every item verified on the live site. My go before opening sign-ups beyond invites.
 
 ══════════════════════════════════════════════
+PART E: AUTONOMOUS RUN PROTOCOL (one prompt, whole build)
+══════════════════════════════════════════════
+I'm running this as ONE long autonomous run. Build everything in Part D, in this order. I use each milestone as soon as it lands, so ship each one before starting the next:
+  Milestone 1, "My AI knows me": Steps 0, 1, 2, 3 (lean: context packer, project brief, energy cap), 7 (morning brief, scheduled job, push, installable app).
+  Milestone 2, "My AI works for me": Steps 4, 6, the rest of 7, and Step 11's first path (Google Calendar + Gmail).
+  Milestone 3, "My people are in it": Steps 5, 8, and Step 9's first game (the sales-floor trainer).
+  Milestone 4, "Build anything": Steps 10, the rest of 3 (council), the rest of 9, the rest of 11, then 12.
+
+1. STATE ON DISK, NOT IN YOUR HEAD.
+   - Keep docs/plans/RUN-PROGRESS.md on the working branch: current milestone and step, done/in-progress/blocked per slice, open PRs, what's waiting on me, decisions made, next action.
+   - Update it and push after every slice.
+   - If your context resets or the session restarts, re-read this file, RUN-PROGRESS.md and the latest BUILD-STREAM.md entry, then continue exactly where you left off. Never redo finished work.
+2. NEVER IDLE ON ME.
+   - Collect everything you need from me (merges, keys pasted in Vercel, OKs for irreversible actions, Supabase token) into a "WAITING ON ANDREW" list at the top of RUN-PROGRESS.md, and send it to me as one message at each milestone boundary, or immediately if it blocks everything.
+   - While blocked on one item, keep building every other slice that doesn't depend on it, using staging/previews and tests.
+   - Never skip an approval gate to save time: irreversible actions wait for my word.
+3. STACK, DON'T STALL, ON MERGES.
+   - When a slice depends on an unmerged PR, branch from that PR's branch and keep going. Note the dependency in the PR description and RUN-PROGRESS.md.
+   - Keep PRs small, one slice each, so I can merge them in a batch.
+4. VERIFY BEFORE MOVING ON.
+   - Each slice meets Part C's "Done means" on staging or preview, with tests green and CI green.
+   - At each milestone: run the full suite, the Step 4 every-control check, and a phone-width walkthrough of the milestone's promise. Send me screenshots plus one plain-English paragraph.
+   - For security-sensitive slices (passport multi-person isolation, token handling, the Machine sandbox, approval gates, money), use a separate fresh subagent that hasn't seen the code to review the diff and try to break it. Fix what it finds before merging.
+5. USE HELPERS FOR BREADTH, STAY THE LEAD FOR DEPTH.
+   - Hand independent, well-scoped work to subagents in parallel (branch audit, legacy harvest, catalog entries, copy rewrites, test writing), each with exact paths and done-criteria. Review their output yourself before it lands.
+   - Never let two agents edit the same files at once.
+6. QUALITY DOESN'T DECAY.
+   - Late steps get the same rigor as early ones. Before each step, re-read its section in Part D and the Clarifications in docs/plans/2026-10-31-one-solve.md.
+   - If a step turns out wrong or much larger than described, write a short proposal in RUN-PROGRESS.md, choose the most sensible path within these rules, and flag it in your next update.
+7. COST AWARENESS.
+   - Prefer the cheapest model that does the job in the product (Step 3 rules).
+   - In your own run, don't re-run unaffected expensive suites. Run focused tests per slice and the full suite at milestones.
+8. FINISH LINE.
+   - The run is done when all four milestones are live, every item in Step 12's launch checklist is verified on the live site, and RUN-PROGRESS.md shows nothing outstanding except items waiting on me.
+   - Then send a final report: what's live, how to use each piece, what's waiting on me, and the recommended next things to build.
+
+══════════════════════════════════════════════
 START NOW
 ══════════════════════════════════════════════
-Begin with Step 0. Before writing code, send me a short plan for Steps 0–2: what you'll check, what you'll change, and what you need from me (merges, keys, OKs) in one list. Then execute. Work through every step in order, slice by slice, and keep going until One Solve is live, my people are in it, and I'm using it every day.
+Create docs/plans/RUN-PROGRESS.md. Send me one message with your plan for Milestone 1 and the complete WAITING ON ANDREW list for it. Then start Step 0 immediately, without waiting for my reply on anything that isn't irreversible. Keep going through all four milestones until the finish line.
