@@ -11,6 +11,7 @@ const homes: Array<{ href: string; label: string; icon: IconName }> = [
   { href: "/", label: "Projects", icon: "projects" },
   { href: "/communities", label: "Communities", icon: "community" },
   { href: "/bot", label: "Your AI", icon: "ai" },
+  { href: "/travel", label: "Travel", icon: "travel" },
   { href: "/account", label: "Profile", icon: "profile" },
 ];
 export type ShellIdentity = { userId: string; name: string; botName: string; face: string } | null;

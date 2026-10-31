@@ -24,6 +24,7 @@ import { addToWorld, proposeCapability, readWorldAsBot, startWorld, WORLD_LIMITS
 import { aiSendsNotes, COMMUNITY_LIMITS, CommunityInputError, communityMembers, joinRequests, listCommunities, myCommunities, notesForMe, readCommunity, sendNote, standingIn } from "@/lib/community/community";
 import { PACKS } from "@/lib/community/packs";
 import { deskRequests } from "@/lib/solar/desk";
+import { airbnbSearchLink, nights, TravelInputError, uberRideLink } from "@/lib/travel/links";
 import {
   MEMORY_LIMITS,
   MemoryInputError,
@@ -466,6 +467,42 @@ export const TOOLS = [
       additionalProperties: false,
     },
     annotations: ADD,
+  },
+  {
+    name: "plan_travel",
+    title: "Plan a ride or a stay",
+    description:
+      "Builds one-tap links that open Uber with a ride filled in and Airbnb on a search for a place, dates and guests. It does not book or pay: the person confirms in Uber or Airbnb. Give the links to the person; ask for anything missing (where to, dates) rather than guessing.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        ride: {
+          type: "object",
+          description: "A ride. Leave pickup out to start from the rider's current location.",
+          properties: {
+            dropoff: { type: "string", maxLength: 200, description: "Where to: an address or a well-known place name." },
+            pickup: { type: "string", maxLength: 200, description: "Where from, if not where the person is now." },
+          },
+          required: ["dropoff"],
+          additionalProperties: false,
+        },
+        stay: {
+          type: "object",
+          properties: {
+            where: { type: "string", maxLength: 200, description: "City, neighborhood or area." },
+            checkin: { type: "string", description: "YYYY-MM-DD" },
+            checkout: { type: "string", description: "YYYY-MM-DD" },
+            adults: { type: "integer", minimum: 1, maximum: 16 },
+            children: { type: "integer", minimum: 0, maximum: 15 },
+            max_price: { type: "integer", minimum: 10, description: "Highest nightly price." },
+          },
+          required: ["where"],
+          additionalProperties: false,
+        },
+      },
+      additionalProperties: false,
+    },
+    annotations: READ,
   },
 ] as const;
 
@@ -1190,6 +1227,37 @@ export function createConnector(s: Session) {
         bot_may_send_notes: Boolean(notesOn),
         url: `${s.appUrl}/community/${community.communityId}`,
       });
+    }
+
+    if (name === "plan_travel") {
+      const ride = args.ride && typeof args.ride === "object" ? (args.ride as Record<string, unknown>) : null;
+      const stay = args.stay && typeof args.stay === "object" ? (args.stay as Record<string, unknown>) : null;
+      if (!ride && !stay) return fail("Say what to plan: a ride (where to) or a stay (where, and dates if known).");
+      const num = (v: unknown) => (typeof v === "number" ? v : undefined);
+      const str = (v: unknown) => (typeof v === "string" ? v : undefined);
+      try {
+        const out: Record<string, unknown> = {};
+        const lines: string[] = [];
+        if (ride) {
+          const dropoff = str(ride.dropoff) ?? "";
+          const pickup = str(ride.pickup);
+          const url = uberRideLink({ dropoff: { address: dropoff }, pickup: pickup ? { address: pickup } : undefined, clientId: process.env.UBER_CLIENT_ID });
+          out.ride = { url, dropoff, pickup: pickup ?? "current location" };
+          lines.push(`Ride to ${inert(dropoff)}${pickup ? ` from ${inert(pickup)}` : ""}: ${url}`);
+        }
+        if (stay) {
+          const input = { where: str(stay.where) ?? "", checkin: str(stay.checkin), checkout: str(stay.checkout), adults: num(stay.adults), children: num(stay.children), maxPrice: num(stay.max_price) };
+          const url = airbnbSearchLink(input);
+          const span = input.checkin && input.checkout ? `, ${input.checkin} to ${input.checkout} (${nights(input.checkin, input.checkout)} nights)` : ", no dates yet";
+          out.stay = { url, ...input };
+          lines.push(`Stays in ${inert(input.where)}${span}: ${url}`);
+        }
+        lines.push("", "These open Uber and Airbnb with everything filled in. Nothing is booked or paid until the person confirms there.");
+        return ok(lines.join("\n"), out);
+      } catch (error) {
+        if (error instanceof TravelInputError) return fail(`Can't build that link: ${error.message}.`);
+        throw error;
+      }
     }
 
     return fail(`Unknown tool: ${name}`);

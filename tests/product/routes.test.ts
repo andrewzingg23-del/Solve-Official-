@@ -41,3 +41,7 @@ test("prefix matching does not block unrelated routes", () => {
     assert.deepEqual(launchRoute(path, {}), { kind: "allow" });
   }
 });
+
+test("Travel is a launch surface, not an experiment", () => {
+  assert.deepEqual(launchRoute("/travel", {}), { kind: "allow" });
+});

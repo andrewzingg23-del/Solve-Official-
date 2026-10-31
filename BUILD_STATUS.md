@@ -1,5 +1,9 @@
 # BUILD_STATUS
 
+## Travel pack — 2026-10-30 (main)
+
+- `/travel`, a `travel` pack, and the bot tool `plan_travel`: one-tap links that open Uber with the ride filled in and Airbnb on a search for the place, dates and guests. Booking and payment happen in Uber or Airbnb; neither offers an API that lets solve book. Full suite 452/452, typecheck and lint ok.
+
 ## Activation follow-up integrated — 2026-10-10 03:02 UTC
 
 - Fast-forwarded main from `a69a224` to `beab77fb38c9b388fb049e24cab46077a67e4bd8`, pushed and verified the matching remote hash. This integrates the fresh-checkout harness fix, test-failure diagnostics and independently passing public deployment check. App/lib/migrations/tests/scripts match standard-CI-verified `a8f7cd6`; no runtime app/schema change followed that verification.
