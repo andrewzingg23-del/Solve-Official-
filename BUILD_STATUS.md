@@ -1,5 +1,11 @@
 # BUILD_STATUS
 
+## One Solve run — Step 3 context packer — 2026-10-31 (Claude)
+
+- New `lib/ai/context.ts` — the AI engine's context packer (pure, deterministic). Fixed token budget filled in priority order (rules/persona → passport profile → project brief → top-k facts → recent turns → the ask), per-layer caps, deterministic truncation. Tests pin: caps and budget never exceeded, higher layers never dropped for lower, the required ask always survives.
+- Tests `tests/ai/context.test.ts` 7/7; typecheck ok; lint 0 errors. Branch `claude/ai-context` from main (separate PR from the passport link).
+- Not wired into chat yet: the live first slice (project brief + session synth + before/after token/cost on 20 real messages) needs OpenRouter and the passport embeddings (OPENAI_API_KEY on sovereign-passport), both awaiting Andrew.
+
 ## Activation follow-up integrated — 2026-10-10 03:02 UTC
 
 - Fast-forwarded main from `a69a224` to `beab77fb38c9b388fb049e24cab46077a67e4bd8`, pushed and verified the matching remote hash. This integrates the fresh-checkout harness fix, test-failure diagnostics and independently passing public deployment check. App/lib/migrations/tests/scripts match standard-CI-verified `a8f7cd6`; no runtime app/schema change followed that verification.

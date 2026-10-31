@@ -1074,6 +1074,20 @@ Deployed product run 38018852679 passed on cc552f1 against solve-sage.vercel.app
 
 Fast-forwarded main a69a224→beab77fb38c9b388fb049e24cab46077a67e4bd8, pushed and verified the remote hash. Main public-deployment run 38019136354 passed. App/lib/migrations/tests/scripts match green standard Build 38018066907 at a8f7cd6; local suite 456/456 and real Postgres release checks 60/60. Main's automatic Build/Product browser reruns are in progress, not reported green. Rechecked binding presence only: Supabase management/server, Vercel admin and OpenRouter bindings remain absent in this cloud. No remote migration, real user invitation or live provider call. The source-hashed migration inspection/package and tested reusable setup are ready; secure SUPABASE_ACCESS_TOKEN delivery is needed to continue actual staging activation. This is a documentation-only completion checkpoint.
 
+## 2026-10-31 — One Solve Step 3: the context packer (Claude)
+
+Founder problem solved: every AI call needs a fixed token budget filled in priority order, so a long chat or a big passport never blows the context or the cost. This is the pure, testable core of the Step 3 / Step 10 AI engine, buildable now with no secrets.
+
+New `lib/ai/context.ts` (pure, deterministic): `estimateTokens` (~4 chars/token), `truncateToTokens` (cap-safe, marks a cut), and `packContext(layers, budget)`. Layers in priority order — rules/persona, passport profile, project brief, top-k facts, recent turns, the ask. Guarantees pinned by tests: no layer exceeds its cap, the pack never exceeds the budget, higher layers are never dropped for lower ones, and the required "ask" is reserved first so the person's message always survives. Output keeps layer order; blank layers are omitted but still accounted for.
+
+Tests `tests/ai/context.test.ts` 7/7; `npm run typecheck` ok; `npm run lint` 0 errors (8 pre-existing `<img>` warnings). Branch `claude/ai-context` from main. Not yet wired into the chat route — that slice (project brief + session synth + the before/after token/cost numbers on 20 real messages) needs the live OpenRouter path and the passport embeddings (OPENAI_API_KEY on the passport project), both waiting on Andrew. Next unblocked: wire packContext into lib/bot/chat.ts behind the existing tiering, with fixtures.
+
+## 2026-10-31 — One Solve Step 3: pack the chat system prompt to a budget (Claude)
+
+Founder problem solved: a rich soul.md or a big passport could quietly dominate (or blow) the chat context and run up cost. `packSystemPrompt` in lib/bot/chat.ts now assembles the system prompt through the Step 3 context packer: rules (required, always kept), then soul, project brief, passport, each capped, inside a token budget (default 2400, env CHAT_CONTEXT_BUDGET_TOKENS). Additive — a new pure function beside the existing tiering/spend logic; the chat route is untouched in this PR.
+
+Stacked on PR #19 (lib/ai/context.ts). Tests tests/bot/system-prompt.test.ts 4/4; full bot suite 135/135 (incl. the existing tiering/spend tests); typecheck ok; lint 0 errors. Route wiring (passing soul + passport through packSystemPrompt in app/api/bot/chat/route.ts) is the next slice, done once PR #18 (passport in the route) and #19 are on main, so two PRs don't edit the same route lines. Branch claude/chat-context-pack.
+
 ## 2026-10-31 — One Solve Step 7: installable PWA (Claude)
 
 Founder problem solved: Solve should live on the phone's home screen like an app. Added `app/manifest.ts` (name, standalone, brand navy #04070d, the existing square mark `public/brand/solve-app-icon.svg`) — the manifest link is auto-added by the file convention. Additive edits to `app/layout.tsx` (Codex's path): a `viewport` export for `themeColor`, and `appleWebApp` + `icons` metadata. Tests `tests/product/manifest.test.ts` 2/2 (fields + icon files exist); product suite 24/24; typecheck ok; lint 0 errors. Branch `claude/pwa-installable` from main. Note for Codex: layout change is additive (one import, two exports extended) — no logic touched. Follow-up polish: a dedicated maskable/raster icon set.
