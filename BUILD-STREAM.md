@@ -1073,3 +1073,13 @@ Deployed product run 38018852679 passed on cc552f1 against solve-sage.vercel.app
 ## 2026-10-10 03:02 UTC — follow-up pushed to main; remaining prerequisite confirmed (Codex)
 
 Fast-forwarded main a69a224→beab77fb38c9b388fb049e24cab46077a67e4bd8, pushed and verified the remote hash. Main public-deployment run 38019136354 passed. App/lib/migrations/tests/scripts match green standard Build 38018066907 at a8f7cd6; local suite 456/456 and real Postgres release checks 60/60. Main's automatic Build/Product browser reruns are in progress, not reported green. Rechecked binding presence only: Supabase management/server, Vercel admin and OpenRouter bindings remain absent in this cloud. No remote migration, real user invitation or live provider call. The source-hashed migration inspection/package and tested reusable setup are ready; secure SUPABASE_ACCESS_TOKEN delivery is needed to continue actual staging activation. This is a documentation-only completion checkpoint.
+
+## 2026-10-31 — One Solve run kickoff: Step 0 docs + Step 1 passport cache (Claude)
+
+Founder problem solved: Step 1 of the One Solve plan — Your AI knows the founder by reading his SOV Passport, without logging three passport reads per message. Branch `claude/passport-link` (built on `main`).
+
+Step 0 (clean the ground): recorded the founder's decisions (a)–(d) in DECISIONS.md with his words; wrote the branch audit (`docs/qa/2026-10-31-branch-audit.md`, 29 branches classified, nothing deleted — deletions await the founder's OK); wrote the legacy harvest (`docs/plans/legacy-harvest.md`: XP curve `xpForLevel(n)=25·(n−1)·n`→Step 8, multiplier ladder→Step 9, MONETARY_POLICY/TERMS_DRAFT→Step 12, Mission Control→Command view, VISION docs→canon comparison; archiving awaits OK); created `docs/plans/RUN-PROGRESS.md` with the WAITING ON ANDREW list.
+
+Step 1 (finish the passport link): verified green on a clean tree — `rm -rf .next && npm run typecheck` ok, `npm run lint` 0 errors (8 pre-existing `<img>` warnings), `npm test` 461/461 (passport 5/5). Added the ~10-minute per-person cache the plan calls for: new `lib/passport/cache.ts` (`TtlCache`, pure) and rewired `lib/passport/context.ts` to read `get_profile`/`list_projects` once per ~10 min per person while still reading `search_context` every message (three passport reads per turn → one). New tests `tests/passport/cache.test.ts` (3) cover TTL expiry, per-person dedup, and no-link; passport suite now 8/8, typecheck + lint clean.
+
+Not done (awaits the founder): open the Step 1 PR into main (next, this session), then merge on his word; Step 2 live DB/settings (needs SUPABASE_ACCESS_TOKEN, Vercel secrets, his go for migrations). Next slice while blocked: the Step 3 context packer (pure, fixture-tested — no secrets needed).
