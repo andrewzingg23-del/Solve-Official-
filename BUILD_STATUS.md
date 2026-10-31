@@ -1,5 +1,9 @@
 # BUILD_STATUS
 
+## Travel pack — 2026-10-30 (branch claude/travel-pack)
+
+- `/travel`, a `travel` pack, and the bot tool `plan_travel`: one-tap links that open Uber with the ride filled in and Airbnb on a search for the place, dates and guests. Booking and payment happen in Uber or Airbnb; neither offers an API that lets solve book. Full suite 452/452, typecheck and lint ok.
+
 ## Main integration — 2026-10-08 21:23 EDT
 
 - Founder: "add it and ship", followed by "fix it". Fast-forwarded main from `661dfb7` to reviewed code `96c9908`; push and remote main hash confirmed. Integrated source matches the previously verified 421-test release exactly; no implementation changes or repeat of unaffected suites.

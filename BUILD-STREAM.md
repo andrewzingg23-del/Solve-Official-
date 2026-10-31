@@ -1094,3 +1094,10 @@ The phone map control overlap is fixed and verified with normal clicks. Complete
   - **Built (local, waiting for the repository):** stage 0 of SOV ID: vision, key design draft for review, fact/grant model and open export format, strict validation, the deny-by-default policy decision, CI with pinned actions and a secret scan. 17 tests pass, typecheck clean, no secrets found.
   - **Blocker:** this session can't create repositories. The founder creates `sov-id` (private, with a README) and gives the Claude GitHub App access; then it's pushed.
   - **solve paths touched:** `DECISIONS.md`, `BUILD-STREAM.md` only. Checks: docs only.
+
+- 2026-10-31 00:55Z — Claude: Travel pack (founder: "Add Uber and Airbnb to my AI solve app"). Founder problem: getting rides and stays without leaving his AI.
+  - **What it does:** the founder (or his connected AI, through the new `plan_travel` tool) fills in a ride or a stay; Uber opens with the ride filled in, Airbnb opens on the search for the place, dates and guests. He confirms and pays there.
+  - **Why links, not booking:** Uber lets outside apps open a prefilled ride (universal link) but not order one; Airbnb has no public API and isn't taking new partners. Nothing here books, charges or signs in. Optional `UBER_CLIENT_ID` env is passed through if set.
+  - **Paths:** `lib/travel/links.ts`, `app/travel/`, `lib/community/packs.ts` (new `travel` pack), `lib/bot/connector.ts` (read-only `plan_travel` tool), `tests/travel/links.test.ts`, `tests/bot/connector.test.ts`.
+  - **Checks:** full suite 452/452; typecheck ok; lint 0 errors (8 existing warnings); `/travel` in Chromium at phone size: both links correct, no page errors, no sideways scroll, nothing under the bottom menu.
+  - **Next:** CI on `claude/travel-pack`, then merge into the trunk.
