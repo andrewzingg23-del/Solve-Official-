@@ -10,6 +10,9 @@ import { getKernel } from "@/lib/kernel/server";
 import { passportContext } from "@/lib/passport/context";
 import { classifyTurn, WAY_REQUESTED, talkScope } from "@/lib/bot/intent";
 import { planVenture, type RoutePlan } from "@/lib/world/wayfinder";
+import { asksDevelopmentStatus, developmentRoomReply } from "@/lib/github/status";
+import { deployedView } from "@/lib/github/deployed";
+import { readRepo, repoForViewer, roomRepos, type RepoView } from "@/lib/github/repo";
 import {
   OPENROUTER_MISSING_KEY_ERROR,
   buildChatCompletionBody,
@@ -59,6 +62,28 @@ export async function POST(request: Request) {
     typeof rawMessage === "string" ? parseTier(rawMessage) : { tier: "flash" as ChatTier, message: "" };
   const chat = validateChatBody({ ...(body as object), message: tieredMessage });
   if (!chat) return json({ error: "Send a message, your bot's name, and up to 20 history items." }, 422);
+
+  // Development Room: a dev-status question ("what is Claude working on?") is answered
+  // deterministically from connected GitHub/CI evidence — never the LLM, never fabricated,
+  // and works even without a chat provider key. Falls through to normal chat on anything else.
+  if (asksDevelopmentStatus(chat.message).match) {
+    try {
+      const paired = repoForViewer(user?.email ?? null, roomRepos(process.env.GITHUB_ROOMS));
+      let view: RepoView | null = null;
+      if (paired) {
+        const r = await readRepo(paired, { token: process.env.GITHUB_TOKEN || null });
+        if (r.ok) view = r.view;
+      }
+      if (!view) {
+        const [owner, repo] = (process.env.SOLVE_DEPLOYED_REPO ?? "").split("/");
+        if (owner && repo) view = deployedView({ owner, repo, trunk: process.env.SOLVE_DEPLOYED_REF ?? null });
+      }
+      const devReply = developmentRoomReply(chat.message, view);
+      if (devReply) return json({ reply: devReply, source: "development-room" });
+    } catch {
+      // Never let the Development Room path break normal chat.
+    }
+  }
 
   if (spendBlocked(limiterKey))
     return json({ error: "Hourly token budget spent — back in a bit." }, 429);

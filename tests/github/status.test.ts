@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { it } from "node:test";
 import {
   asksDevelopmentStatus,
+  developmentRoomReply,
   developmentStatus,
   provenanceLine,
   whatIsWorkingOn,
@@ -59,6 +60,14 @@ it("summarizes the whole development status including trunk CI", () => {
   const out = developmentStatus(view(), NOW);
   assert.match(out, /• Claude: 1 open PR/);
   assert.match(out, /Trunk \(main\): latest CI passed/);
+});
+
+it("developmentRoomReply answers dev questions and defers everything else", () => {
+  const v = view();
+  assert.match(developmentRoomReply("What is Claude working on?", v)!, /#25 wire passport/);
+  assert.match(developmentRoomReply("what's the dev status", v)!, /• Claude:/);
+  assert.equal(developmentRoomReply("write a poem", v), null, "not a dev question → defer");
+  assert.equal(developmentRoomReply("What is Claude working on?", null), null, "no repo view → defer to normal chat");
 });
 
 it("recognizes development-status questions and extracts the builder", () => {

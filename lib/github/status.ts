@@ -75,6 +75,18 @@ export function developmentStatus(view: RepoView, now: number = Date.now()): str
   return `${head}\n${lines.join("\n")}`;
 }
 
+/**
+ * The Development Room's answer for a chat turn, or null to let normal chat handle it.
+ * Deterministic and source-backed — no LLM, so it works even without a chat provider key.
+ * Returns null when the message isn't a dev-status question, or when no repo view is available
+ * (the caller then falls through to the normal bot).
+ */
+export function developmentRoomReply(message: string, view: RepoView | null, now: number = Date.now()): string | null {
+  const q = asksDevelopmentStatus(message);
+  if (!q.match || !view) return null;
+  return q.builder ? whatIsWorkingOn(view, q.builder, now) : developmentStatus(view, now);
+}
+
 /** Light intent match for the chat path: does this message ask about dev status / who's working on what. */
 export function asksDevelopmentStatus(message: string): { match: boolean; builder?: string } {
   const m = message.toLowerCase();
