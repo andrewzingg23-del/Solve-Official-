@@ -1073,3 +1073,22 @@ Deployed product run 38018852679 passed on cc552f1 against solve-sage.vercel.app
 ## 2026-10-10 03:02 UTC — follow-up pushed to main; remaining prerequisite confirmed (Codex)
 
 Fast-forwarded main a69a224→beab77fb38c9b388fb049e24cab46077a67e4bd8, pushed and verified the remote hash. Main public-deployment run 38019136354 passed. App/lib/migrations/tests/scripts match green standard Build 38018066907 at a8f7cd6; local suite 456/456 and real Postgres release checks 60/60. Main's automatic Build/Product browser reruns are in progress, not reported green. Rechecked binding presence only: Supabase management/server, Vercel admin and OpenRouter bindings remain absent in this cloud. No remote migration, real user invitation or live provider call. The source-hashed migration inspection/package and tested reusable setup are ready; secure SUPABASE_ACCESS_TOKEN delivery is needed to continue actual staging activation. This is a documentation-only completion checkpoint.
+- 2026-10-10 02:35Z — Claude: direction change. The founder read their brother's MCP Vault documents ("Platform Plan to $10M ARR", "The AI Passport"), said "this is sov id", and after a review of solve's code, "lets start from scratch".
+  - **Decision recorded:** `DECISIONS.md`. SOV ID's private side is built in a new repository, `andrewzingg23-del/sov-id`; solve keeps running and later signs in with SOV ID like any other app.
+  - **Why scratch:** solve's memory keys sit next to the data and its connector writes with the service key, the opposite of the passport's key design.
+  - **Built (local, waiting for the repository):** stage 0 of SOV ID: vision, key design draft for review, fact/grant model and open export format, strict validation, the deny-by-default policy decision, CI with pinned actions and a secret scan. 17 tests pass, typecheck clean, no secrets found.
+  - **Blocker:** this session can't create repositories. The founder creates `sov-id` (private, with a README) and gives the Claude GitHub App access; then it's pushed.
+  - **solve paths touched:** `DECISIONS.md`, `BUILD-STREAM.md` only. Checks: docs only.
+
+- 2026-10-31 00:55Z — Claude: Travel pack (founder: "Add Uber and Airbnb to my AI solve app"). Founder problem: getting rides and stays without leaving his AI.
+  - **What it does:** the founder (or his connected AI, through the new `plan_travel` tool) fills in a ride or a stay; Uber opens with the ride filled in, Airbnb opens on the search for the place, dates and guests. He confirms and pays there.
+  - **Why links, not booking:** Uber lets outside apps open a prefilled ride (universal link) but not order one; Airbnb has no public API and isn't taking new partners. Nothing here books, charges or signs in. Optional `UBER_CLIENT_ID` env is passed through if set.
+  - **Paths:** `lib/travel/links.ts`, `app/travel/`, `lib/community/packs.ts` (new `travel` pack), `lib/bot/connector.ts` (read-only `plan_travel` tool), `tests/travel/links.test.ts`, `tests/bot/connector.test.ts`.
+  - **Checks:** full suite 452/452; typecheck ok; lint 0 errors (8 existing warnings); `/travel` in Chromium at phone size: both links correct, no page errors, no sideways scroll, nothing under the bottom menu.
+  - **Next:** CI on `claude/travel-pack`, then merge into the trunk.
+
+- 2026-10-31 01:55Z — Claude: Travel pack to production (founder: "lets get this live all in all where I can use it"). Production deploys `main` (solve-sage.vercel.app), which carries the product redesign; the Travel commit was rebuilt on `main` in branch `claude/travel-live`.
+  - **On main:** `/travel` restyled to the product design (`solve-page`, `solve-panel`, `solve-form`); Travel added to the sidebar and phone menu (five tabs; touch targets still at least 44px at 320px); `plan_travel` tool kept on `main`'s tool list; `/travel` pinned as a launch route in `tests/product/routes.test.ts`; `scripts/test-product.mjs` expects the new menu and checks `/travel` at 390 and 320px.
+  - **Checks:** full suite 458/458; typecheck ok; lint 0 errors (8 existing warnings). Local `next build` can't fetch Google Fonts in this sandbox, so the production build is CI's and Vercel's. `/travel` in Chromium at phone size (dev server): both links correct, no page errors, no sideways scroll.
+  - **Next:** CI on the pull request into `main`, merge, confirm the production deploy serves `/travel`.
+

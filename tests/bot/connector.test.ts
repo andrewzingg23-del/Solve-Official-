@@ -49,7 +49,7 @@ it("speaks the protocol: initialize, ping, tools, notifications and errors", asy
   assert.equal(unknownVersion.result.protocolVersion, PROTOCOL_VERSIONS[0], "otherwise the newest version is offered");
   assert.deepEqual(await c.handle({ jsonrpc: "2.0", id: 3, method: "ping" }), { jsonrpc: "2.0", id: 3, result: {} });
   const list = (await c.handle({ jsonrpc: "2.0", id: 4, method: "tools/list" })) as { result: { tools: { name: string }[] } };
-  assert.deepEqual(list.result.tools.map((t) => t.name), ["read_studios", "save_studio", "whoami", "get_context", "search", "fetch", "remember", "learn_business", "list_worlds", "read_world", "read_room", "post_room_message", "start_world", "map_world_resource", "add_to_world", "add_proof", "design_part", "create_pixel_art", "propose_routes", "propose_outreach", "record_outcome", "propose_capability", "list_communities", "read_community", "send_note"]);
+  assert.deepEqual(list.result.tools.map((t) => t.name), ["read_studios", "save_studio", "whoami", "get_context", "search", "fetch", "remember", "learn_business", "list_worlds", "read_world", "read_room", "post_room_message", "start_world", "map_world_resource", "add_to_world", "add_proof", "design_part", "create_pixel_art", "propose_routes", "propose_outreach", "record_outcome", "propose_capability", "list_communities", "read_community", "send_note", "plan_travel"]);
   assert.equal(TOOLS.find((t) => t.name === "remember")!.annotations.readOnlyHint, false);
   assert.equal(await c.handle({ jsonrpc: "2.0", method: "notifications/initialized" }), null, "notifications get no response");
   assert.equal((await c.handle({ jsonrpc: "2.0", id: 5, method: "resources/list" }) as { error: { code: number } }).error.code, -32601);
@@ -308,4 +308,27 @@ it("creates attributed pixel art in a World and makes retries idempotent", async
   }, "pixel-read-only");
   const readOnly = await call(session(ana, CLAUDE), "create_pixel_art", input);
   assert.equal(readOnly.isError, true, "read-only assistant cannot write the image");
+});
+
+it("plans a ride and a stay as links the person books, for any connected assistant, and never books", async () => {
+  const { ana, anaId, bot, session, call } = await setting();
+  const s = session(ana, CLAUDE);
+  assert.equal((await call(s, "plan_travel", { ride: { dropoff: "MCO" } })).isError, true, "not connected: no tools");
+  await approveConnection(ana, anaId, bot.avatar!.agent_id, { clientId: CLAUDE, clientName: "Claude", mode: "read" }, "travel-read");
+
+  const plan = await call(s, "plan_travel", {
+    ride: { dropoff: "Orlando International Airport" },
+    stay: { where: "Nashville, TN", checkin: "2026-11-13", checkout: "2026-11-15", adults: 2 },
+  });
+  assert.equal(plan.isError, undefined, plan.content[0].text);
+  const out = plan.structuredContent as { ride: { url: string }; stay: { url: string } };
+  assert.match(out.ride.url, /^https:\/\/m\.uber\.com\/ul\/\?/);
+  assert.match(out.stay.url, /^https:\/\/www\.airbnb\.com\/s\/Nashville%2C%20TN\/homes\?checkin=2026-11-13&checkout=2026-11-15&adults=2$/);
+  assert.match(plan.content[0].text, /2 nights/);
+  assert.match(plan.content[0].text, /Nothing is booked or paid/);
+
+  const bad = await call(s, "plan_travel", { stay: { where: "Austin", checkin: "2026-11-15", checkout: "2026-11-13" } });
+  assert.equal(bad.isError, true);
+  assert.match(bad.content[0].text, /check-out must be after check-in/);
+  assert.equal((await call(s, "plan_travel", {})).isError, true);
 });

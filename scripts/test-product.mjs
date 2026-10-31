@@ -28,7 +28,7 @@ try {
   page.on("pageerror", error => errors.push(error.message));
   await page.goto(url);
   await page.getByRole("heading", { name: "Good ideas deserve a place to grow." }).waitFor();
-  assert.deepEqual(await page.getByRole("navigation", { name: "Primary", exact: true }).getByRole("link").allTextContents(), ["Projects", "Communities", "Your AI", "Profile"]);
+  assert.deepEqual(await page.getByRole("navigation", { name: "Primary", exact: true }).getByRole("link").allTextContents(), ["Projects", "Communities", "Your AI", "Travel", "Profile"]);
   assert.equal(await page.getByRole("link", { name: /trading|payment card|packs|studio|coming soon/i }).count(), 0);
   await fit(page);
   await page.getByRole("textbox", { name: "Project name", exact: true }).fill("Zuber Pen");
@@ -62,7 +62,7 @@ try {
   assert.equal(await page.getByRole("link", { name: "Sign in to explore communities" }).count(), 1);
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 });
-    for (const [path, heading] of [["/", "Good ideas deserve a place to grow."], ["/account", "Your profile. Your AI."], ["/communities", "Build with people who share your goal."], ["/bot", "Your AI"]]) {
+    for (const [path, heading] of [["/", "Good ideas deserve a place to grow."], ["/account", "Your profile. Your AI."], ["/communities", "Build with people who share your goal."], ["/bot", "Your AI"], ["/travel", "Get there. Stay there."]]) {
       await page.goto(url + path); await page.getByRole("heading", { name: heading, exact: true }).waitFor(); await fit(page);
       const navigation = page.getByRole("navigation", { name: "Primary mobile" });
       assert.ok(await navigation.isVisible());
