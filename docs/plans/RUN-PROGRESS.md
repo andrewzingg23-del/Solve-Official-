@@ -19,7 +19,7 @@ Nothing here is done by me — each needs your word or your hands (secrets, merg
 4. **Supabase Auth redirect URLs** must include `https://solve-sage.vercel.app/**`.
 
 ### Needs your OK before I touch (irreversible)
-5. **Merge the Step 1 PR** (passport-link → main) once you've seen it. I open it; you merge.
+5. **Merge the Step 1 PR → #18** (passport-link → main) once you've seen it. Open; you merge.
 6. **Production database migrations** (Step 2): staging first, then production, each after your "go." Never without you.
 7. **Branch deletions** (Step 0 audit, `docs/qa/2026-10-31-branch-audit.md`): 22 safe-to-delete + 3 to review. None deleted yet.
 8. **PR #15 (Members Only)**: rework or merge so its `app/product/shell.tsx` change doesn't collide with Steps 6 & 12. Your call on which.
@@ -43,8 +43,8 @@ Steps 0, 1, 2, 3 (lean: context packer + project brief + energy cap), 7 (morning
 | Rework/merge PR #15 | 0 | **blocked** | Your call (#8). |
 | Previews off production | 0 | **blocked** | Propose Vercel change; your OK (#10). |
 | Passport link checks green | 1 | **done** | rm -rf .next → typecheck ✅, lint ✅ (0 errors, 8 known img warnings), test ✅ 461/461 incl. passport 5/5. |
-| ~10-min passport cache | 1 | **in progress** | Add per-person cache in lib/passport/context.ts (plan Step 1/2). Next. |
-| Open Step 1 PR → main | 1 | **in progress** | Opening now; you merge (#5). |
+| ~10-min passport cache | 1 | **done** | lib/passport/cache.ts + context.ts; tests 8/8. |
+| Open Step 1 PR → main | 1 | **done** | PR #18 open (passport-link → main). You merge (#5). |
 | Live DB + settings | 2 | **blocked** | Needs #1–#4, #6. |
 | AI engine first slice (context packer, project brief, session synth) | 3 | todo | Pure/tested; buildable without secrets using fixtures. |
 | Morning brief + cron + push + PWA | 7 | todo | Brief logic buildable; push/cron need live deploy. |
