@@ -68,9 +68,11 @@ Steps 10 (Machines), rest of 3 (council), rest of 9, rest of 11, Kid + Teen poli
 - VISION canon: add a "become somebody" line? (legacy-harvest.md item 5.)
 - AGENTS.md trunk line change (#11).
 
-## Open PRs (await founder merge)
-- **#18** claude/passport-link → main — Step 1 passport link + cache + Step 0 docs.
-- **#19** claude/ai-context → main — Step 3 context packer. Independent of #18.
+## Open PRs (await founder merge — mergeable in a batch)
+- **#18** claude/passport-link → main — Step 1 passport link + ~10-min cache + Step 0 docs.
+- **#19** claude/ai-context → main — Step 3 context packer (pure). Independent of #18.
+- **#20** claude/chat-context-pack → (base #19) — Step 3 `packSystemPrompt`. Stacked on #19; retarget to main after #19 lands.
 
 ## Next action
-Wire `packContext` (lib/ai/context.ts) into lib/bot/chat.ts behind the existing tiering, with fixtures (no secrets) — the chat-side half of the Step 3 first slice. Then the morning-brief logic (Step 7) as far as it goes without live push/cron. Everything needing live DB/secrets (Step 2, embeddings, live brief delivery) stays in WAITING ON ANDREW.
+Everything else unblocked has been built; the critical path is now **blocked on Andrew** (WAITING items #1–#4 above): merge passport PR #1, paste the two Vercel secrets, provide `SUPABASE_ACCESS_TOKEN`, add the Auth redirect URL. These unblock Step 2 (live DB) and every live proof the rest of Milestone 1 depends on.
+When #18+#19+#20 are on main: wire `packSystemPrompt` into `app/api/bot/chat/route.ts` (pass soul + passport), a few lines. When the live DB + OpenRouter are up: Step 3 session-synth + project brief with before/after token/cost on 20 real messages; Step 7 morning brief across ventures + Vercel Cron + web push + PWA.
