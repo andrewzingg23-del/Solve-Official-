@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Archivo, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { getUser } from "@/lib/supabase/server";
@@ -20,6 +20,18 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "solve",
   description: "A shared place for people, ideas and your AIs. Think, plan and build together.",
+  applicationName: "solve",
+  // Installable to the home screen (PWA). The manifest link is added by app/manifest.ts.
+  appleWebApp: { capable: true, title: "solve", statusBarStyle: "black-translucent" },
+  icons: {
+    icon: [{ url: "/brand/solve-favicon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/brand/solve-app-icon.svg", type: "image/svg+xml" }],
+  },
+};
+
+// themeColor lives on the viewport export in this Next version (not metadata).
+export const viewport: Viewport = {
+  themeColor: "#04070d",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

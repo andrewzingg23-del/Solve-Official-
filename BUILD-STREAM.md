@@ -1088,6 +1088,10 @@ Founder problem solved: a rich soul.md or a big passport could quietly dominate 
 
 Stacked on PR #19 (lib/ai/context.ts). Tests tests/bot/system-prompt.test.ts 4/4; full bot suite 135/135 (incl. the existing tiering/spend tests); typecheck ok; lint 0 errors. Route wiring (passing soul + passport through packSystemPrompt in app/api/bot/chat/route.ts) is the next slice, done once PR #18 (passport in the route) and #19 are on main, so two PRs don't edit the same route lines. Branch claude/chat-context-pack.
 
+## 2026-10-31 — One Solve Step 7: installable PWA (Claude)
+
+Founder problem solved: Solve should live on the phone's home screen like an app. Added `app/manifest.ts` (name, standalone, brand navy #04070d, the existing square mark `public/brand/solve-app-icon.svg`) — the manifest link is auto-added by the file convention. Additive edits to `app/layout.tsx` (Codex's path): a `viewport` export for `themeColor`, and `appleWebApp` + `icons` metadata. Tests `tests/product/manifest.test.ts` 2/2 (fields + icon files exist); product suite 24/24; typecheck ok; lint 0 errors. Branch `claude/pwa-installable` from main. Note for Codex: layout change is additive (one import, two exports extended) — no logic touched. Follow-up polish: a dedicated maskable/raster icon set.
+
 ## 2026-10-31 — One Solve Step 3: energy budget (Claude)
 
 Founder problem solved: the AI's cost needs a visible, per-person ceiling — the Energy bar on the AI card (Step 3 lean / Step 10 Budgets). New `lib/ai/energy.ts` (pure): task classes (fast/smart/code/vision/voice/council) with energy costs, monthly pools per tier (free 100 fast-only, paid 2000 all classes, BYOK unlimited), `canAfford` with plain-words refusals and an upgrade flag (never a raw error), and `energyReadout` for the bar. Tests tests/ai/energy.test.ts 5/5; typecheck ok; lint 0 errors. Independent branch `claude/ai-energy` from main. Wiring into the chat endpoint and the card is a later slice (needs the live usage log + the AI card UI).
