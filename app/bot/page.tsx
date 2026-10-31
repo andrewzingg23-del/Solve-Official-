@@ -17,6 +17,9 @@ import { RebuiltPersona } from "./rebuilt-persona";
 import { ProjectAccess, type ProjectAccessWorld } from "./rebuilt-permissions";
 import { RetryAi } from "./rebuilt-retry";
 import "./rebuilt-ai.css";
+import { PassportPanel, type PassportView } from "./passport-panel";
+import { PassportError, passportUrl, projectsFrom } from "@/lib/passport/client";
+import { withPassport } from "@/lib/passport/link";
 
 export const metadata: Metadata = { title: "Your AI — solve" };
 
@@ -42,7 +45,19 @@ type Loaded =
       connections: Connection[] | null;
       memories: Memory[] | null;
       worlds: ProjectAccessWorld[] | null;
+      passport: PassportView;
     };
+
+// The passport panel: whether solve is linked, and the ventures the passport holds.
+async function readPassport(kernel: Kernel, ownerId: string): Promise<PassportView> {
+  try {
+    const projects = await withPassport(kernel, ownerId, async (call) => projectsFrom(await call("list_projects")));
+    return projects === null ? { kind: "unlinked" } : { kind: "linked", projects };
+  } catch (error) {
+    if (error instanceof PassportError && error.code === "reconnect") return { kind: "reconnect" };
+    return { kind: "linked", projects: null };
+  }
+}
 
 // A failed permission read must not look like a project with no access.
 async function readProjectAccess(kernel: Kernel, agentId: string): Promise<ProjectAccessWorld[]> {
@@ -71,8 +86,9 @@ async function load(section: Section): Promise<Loaded> {
       connections = links.status === "fulfilled" ? links.value : null;
       worlds = projects.status === "fulfilled" ? projects.value : null;
     }
+    let passport: PassportView = { kind: "unlinked" };
     if (bot.avatar && section === "knowledge") {
-      memories = await readMemories(kernel, bot.ownerId).catch(() => null);
+      [memories, passport] = await Promise.all([readMemories(kernel, bot.ownerId).catch(() => null), readPassport(kernel, bot.ownerId)]);
     }
     return {
       kind: "ready",
@@ -85,6 +101,7 @@ async function load(section: Section): Promise<Loaded> {
       connections,
       memories,
       worlds,
+      passport,
     };
   } catch (error) {
     if (error instanceof KernelError && error.name === "unauthenticated") return { kind: "identity" };
@@ -100,7 +117,7 @@ async function connectorUrl() {
   return `${proto}://${host}/mcp`;
 }
 
-export default async function BotPage({ searchParams }: { searchParams?: Promise<{ section?: string | string[]; world_error?: string | string[] }> }) {
+export default async function BotPage({ searchParams }: { searchParams?: Promise<{ section?: string | string[]; world_error?: string | string[]; passport?: string | string[] }> }) {
   const params = searchParams ? await searchParams : {};
   const section: Section = params.section === "connections" || params.section === "knowledge" ? params.section : "persona";
   const state = await load(section);
@@ -172,6 +189,7 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
         </div>
       ) : (
         <div className="solve-ai-stack">
+          <PassportPanel view={state.passport} passportUrl={passportUrl()} outcome={typeof params.passport === "string" ? params.passport : undefined} />
           {state.memories ? (
             <>
               <Knowledge botName={state.persona.name} memories={state.memories} ownerId={state.ownerId} />
