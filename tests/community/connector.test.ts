@@ -53,7 +53,9 @@ it("reads the person's communities and sends notes for them only where allowed",
   assert.equal(read.isError, undefined);
   assert.match(read.content[0].text, /Who is in:[\s\S]*Ana \(started it\)[\s\S]*Ben \(builds\), with Rex, their AI/);
   assert.match(read.content[0].text, /Rex may not send notes/);
-  assert.doesNotMatch(read.content[0].text, /Palm Way|555/, "a member never sees a homeowner's details");
+  // Match the homeowner's real details (address, city, phone, surname), not a bare
+  // "555" — that substring also appears in random actor UUIDs and made this flaky.
+  assert.doesNotMatch(read.content[0].text, /Palm Way|Tampa|555 0142|Reyes/, "a member never sees a homeowner's details");
 
   const refused = await call(ben.k, "send_note", { community_id: c.communityId, to: ana.id, text: "Bracket is ready." });
   assert.equal(refused.isError, true);
@@ -81,7 +83,7 @@ it("tells the owner's AI what waits without handing over a homeowner's details",
   const read = await call(ana.k, "read_community", { community_id: c.communityId });
   assert.match(read.content[0].text, /Asking to join:[\s\S]*Dana: I want to sell solar too\./);
   assert.match(read.content[0].text, /Solar desk: 1 waiting on a design, 0 answered/);
-  assert.doesNotMatch(read.content[0].text, /Palm Way|555|Reyes/);
+  assert.doesNotMatch(read.content[0].text, /Palm Way|Tampa|555 0142|Reyes/);
   const readOnly = await call(ana.k, "send_note", { community_id: c.communityId, to: dana.id, text: "hi" });
   assert.match(readOnly.content[0].text, /read only/);
 });
