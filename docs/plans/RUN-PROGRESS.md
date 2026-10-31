@@ -85,3 +85,20 @@ Every Milestone-1 slice buildable without your secrets or a merge is shipped as 
 ## Next action
 Everything else unblocked has been built; the critical path is now **blocked on Andrew** (WAITING items #1–#4 above): merge passport PR #1, paste the two Vercel secrets, provide `SUPABASE_ACCESS_TOKEN`, add the Auth redirect URL. These unblock Step 2 (live DB) and every live proof the rest of Milestone 1 depends on.
 When #18+#19+#20 are on main: wire `packSystemPrompt` into `app/api/bot/chat/route.ts` (pass soul + passport), a few lines. When the live DB + OpenRouter are up: Step 3 session-synth + project brief with before/after token/cost on 20 real messages; Step 7 morning brief across ventures + Vercel Cron + web push + PWA.
+
+---
+
+## 2026-10-31 — directives update + Development Room (Priority 1)
+Founder sent (this session): model-ecosystem/distribution directive; "make SOLVE build SOLVE" Development Room directive (**new Priority 1**); high-leverage execution directive (P1 Dev Room, P2 capability contract, P3 external user journey w/ payments, P4 compounding). Operating principle: *other AIs supply intelligence; SOLVE supplies durable coordination, permissioned action, independently valuable workspaces.*
+
+**Key finding:** the Development Room already exists in code — `app/world/[worldId]/room/` + `app/command/repo-room.tsx` read the repo (commits/PRs/CI) via `lib/github/repo.ts`, read-only, with `GITHUB_TOKEN`. Built, not activated (no token set).
+
+**Shipped this session (merged to main):** #18 passport link+cache, #19 context packer, #20 chat packing, #21 energy, #22 PWA, #25 chat-route passport wiring. **Open PRs:** #23 audit, #24 DB runbook, #26 DB findings+RUN-PROGRESS, #27 Development Room answer (`lib/github/status.ts` — "What is Claude working on?", verified against the real repo, 5/5 tests).
+
+**Blocking activation (exact fixes):**
+1. **Kernel DB** — prod is a broken partial schema (zero rows); staging parked at clean slate. Need a migration-apply channel: (a) a Supabase token for the account owning org `cdgzgvnwpkrqmxljeafh` → I curl-apply from disk (script `scratchpad/rebuild_db.sh` ready); or (b) a Claude Code permission rule for `mcp__claude_ai_Supabase__execute_sql` → set DB password + node/pg; or (c) you run the runbook. Recommend (a).
+2. `OPENROUTER_API_KEY` + `SUPABASE_SECRET_KEY` in Vercel "solve" prod.
+3. `GITHUB_TOKEN` (+ `GITHUB_ROOMS`) in Vercel → lights up the Development Room.
+4. Supabase Auth redirect URL `https://solve-sage.vercel.app/**`.
+
+**Next 3 by impact:** (1) unblock + run the DB clean rebuild (staging→prod) — unlocks memory/passport/chat; (2) wire `asksDevelopmentStatus` into the chat route + set `GITHUB_TOKEN` → phone acceptance test live; (3) the Priority-2 capability contract (reuse passport-link + GitHub-read as its first instances).
