@@ -45,14 +45,15 @@ Steps 0, 1, 2, 3 (lean: context packer + project brief + energy cap), 7 (morning
 | Passport link checks green | 1 | **done** | rm -rf .next → typecheck ✅, lint ✅ (0 errors, 8 known img warnings), test ✅ 461/461 incl. passport 5/5. |
 | ~10-min passport cache | 1 | **done** | lib/passport/cache.ts + context.ts; tests 8/8. |
 | Open Step 1 PR → main | 1 | **done** | PR #18 open (passport-link → main). You merge (#5). |
-| Live DB + settings | 2 | **blocked** | Needs #1–#4, #6. |
-| Context packer (lib/ai/context.ts, pure) | 3 | **done** | PR #19. 7/7 tests. |
-| Chat system-prompt packing | 3 | **done** | PR #20 (stacked on #19). |
-| Energy budget (lib/ai/energy.ts) | 3 | **done** | PR #21. The lean "energy cap". 5/5 tests. |
-| Installable PWA | 7 | **done** | PR #22. manifest + icons; 2/2 tests. |
+| Live DB + settings | 2 | **blocked — needs decision** | Prod schema is a broken partial-migration state (zero rows); staging paused. See `docs/plans/2026-10-31-db-state-findings.md`. Recommend clean rebuild (needs OK to override "never db reset"). |
+| Context packer (lib/ai/context.ts, pure) | 3 | **merged** | PR #19 → main. |
+| Chat system-prompt packing | 3 | **merged** | PR #20 → main. |
+| Energy budget (lib/ai/energy.ts) | 3 | **merged** | PR #21 → main. |
+| Installable PWA | 7 | **merged** | PR #22 → main. |
+| Passport link + cache | 1 | **merged** | PR #18 → main (squashed). |
+| Route wiring (packSystemPrompt into chat) | 3 | **done** | PR #25 open (soul + passport through the budget). Both halves on main. |
 | Project brief + session synth + before/after numbers | 3 | **blocked** | Needs OpenRouter + passport embeddings (OPENAI_API_KEY). |
 | Morning brief + cron + push | 7 | **blocked** | Needs live DB + OpenRouter + deploy for cron/push. |
-| Route wiring (packSystemPrompt into chat) | 3 | **blocked** | Needs #18 + #20 on main first (merges blocked). |
 
 ## Milestone 2 — "My AI works for me"
 Steps 4 (no dead buttons), 6 (kid-simple home), rest of 7, Step 11 first path (Google Calendar + Gmail). — not started.
@@ -72,16 +73,15 @@ Steps 10 (Machines), rest of 3 (council), rest of 9, rest of 11, Kid + Teen poli
 - VISION canon: add a "become somebody" line? (legacy-harvest.md item 5.)
 - AGENTS.md trunk line change (#11).
 
-## Open PRs (await founder merge — mergeable in a batch)
-- **#21** claude/ai-energy → main — Step 3 energy budget. Independent.
-- **#22** claude/pwa-installable → main — Step 7 installable PWA. Independent.
-- **#18** claude/passport-link → main — Step 1 passport link + ~10-min cache + Step 0 docs.
-- **#19** claude/ai-context → main — Step 3 context packer (pure). Independent of #18.
-- **#20** claude/chat-context-pack → (base #19) — Step 3 `packSystemPrompt`. Stacked on #19; retarget to main after #19 lands.
+## Merged into main (2026-10-31)
+- **#19** context packer · **#20** chat system-prompt packing · **#22** installable PWA · **#18** passport link + cache + Step 0 docs (squashed) · **#21** energy budget. All five Milestone-1 code/doc PRs are on main.
 
-## Wall reached (2026-10-31)
-Every Milestone-1 slice buildable without your secrets or a merge is shipped as a green PR (#18, #19, #20, #21, #22). Everything remaining needs one of: (a) your secrets (#1–#4), (b) a PR merge (blocked by the harness "Merge Without Review" gate — grant `Bash(gh pr merge:*)` or merge in the UI), or (c) live infra to validate against.
+## Open PRs (await founder merge)
+- **#25** claude/chat-route-wire → main — wire passport + soul through the budget in the chat route. Bot suite 135/135.
+- **#23** public-entrance audit (doc). · **#24** Step 2 DB runbook (doc). · **#15** Members Only — **hold** (not during Milestone 1).
+
+## Blocker needing your decision — the live database
+Prod `Solve-Official-` schema is a **broken partial-migration state** (objects from #4/#5/#7 partly present, tables from #4/#9/#10/#14 missing), **zero rows**. A plain `supabase db push` would fail on #5. Staging is **paused**. Full forensics + options: `docs/plans/2026-10-31-db-state-findings.md`. **Recommended: clean rebuild** (safe at zero rows; needs your OK to override "never db reset"), rehearsed on a resumed staging first.
 
 ## Next action
-Everything else unblocked has been built; the critical path is now **blocked on Andrew** (WAITING items #1–#4 above): merge passport PR #1, paste the two Vercel secrets, provide `SUPABASE_ACCESS_TOKEN`, add the Auth redirect URL. These unblock Step 2 (live DB) and every live proof the rest of Milestone 1 depends on.
-When #18+#19+#20 are on main: wire `packSystemPrompt` into `app/api/bot/chat/route.ts` (pass soul + passport), a few lines. When the live DB + OpenRouter are up: Step 3 session-synth + project brief with before/after token/cost on 20 real messages; Step 7 morning brief across ventures + Vercel Cron + web push + PWA.
+Merge #25 (route wiring). Then the live path waits on you: (1) choose the DB path (clean rebuild recommended) + resume staging; (2) paste `OPENROUTER_API_KEY` + `SUPABASE_SECRET_KEY` in Vercel + add the Auth redirect URL. With those, I run staging → verify → your go → production, then prove the live app on your phone, and build Step 3 synth/brief + Step 7 morning brief (cron/push) against the live services.
