@@ -46,7 +46,8 @@ Steps 0, 1, 2, 3 (lean: context packer + project brief + energy cap), 7 (morning
 | ~10-min passport cache | 1 | **done** | lib/passport/cache.ts + context.ts; tests 8/8. |
 | Open Step 1 PR → main | 1 | **done** | PR #18 open (passport-link → main). You merge (#5). |
 | Live DB + settings | 2 | **blocked** | Needs #1–#4, #6. |
-| AI engine first slice (context packer, project brief, session synth) | 3 | todo | Pure/tested; buildable without secrets using fixtures. |
+| Context packer (lib/ai/context.ts, pure) | 3 | **done** | PR #19 (claude/ai-context → main). 7/7 tests. You merge. |
+| Project brief + session synth + before/after numbers | 3 | **blocked** | Needs OpenRouter + passport embeddings (OPENAI_API_KEY). Wire packContext into chat next (fixtures). |
 | Morning brief + cron + push + PWA | 7 | todo | Brief logic buildable; push/cron need live deploy. |
 
 ## Milestone 2 — "My AI works for me"
@@ -67,5 +68,9 @@ Steps 10 (Machines), rest of 3 (council), rest of 9, rest of 11, Kid + Teen poli
 - VISION canon: add a "become somebody" line? (legacy-harvest.md item 5.)
 - AGENTS.md trunk line change (#11).
 
+## Open PRs (await founder merge)
+- **#18** claude/passport-link → main — Step 1 passport link + cache + Step 0 docs.
+- **#19** claude/ai-context → main — Step 3 context packer. Independent of #18.
+
 ## Next action
-Add the ~10-min passport context cache (lib/passport/context.ts), re-run focused tests, then open the Step 1 PR into main and send the Milestone 1 message. Then build the Step 3 context packer (pure, fixture-tested — no secrets needed) while blocked items wait on Andrew.
+Wire `packContext` (lib/ai/context.ts) into lib/bot/chat.ts behind the existing tiering, with fixtures (no secrets) — the chat-side half of the Step 3 first slice. Then the morning-brief logic (Step 7) as far as it goes without live push/cron. Everything needing live DB/secrets (Step 2, embeddings, live brief delivery) stays in WAITING ON ANDREW.
