@@ -85,3 +85,18 @@ Prod `Solve-Official-` schema is a **broken partial-migration state** (objects f
 
 ## Next action
 Merge #25 (route wiring). Then the live path waits on you: (1) choose the DB path (clean rebuild recommended) + resume staging; (2) paste `OPENROUTER_API_KEY` + `SUPABASE_SECRET_KEY` in Vercel + add the Auth redirect URL. With those, I run staging → verify → your go → production, then prove the live app on your phone, and build Step 3 synth/brief + Step 7 morning brief (cron/push) against the live services.
+
+---
+
+## 2026-11-01 — HANDOFF TO CODEX + infrastructure live
+Full handoff: **`docs/handoff/CODEX-HANDOFF.md`**. Summary:
+
+**Last verified completed work:** Production kernel REBUILT clean (`dupgybzkkbddsbaykrae`): 14/14 migrations, 38 kernel tables, `kernel.actions`, `verify_chain` ok, authenticated DB read/write passed. `kernel_api` EXPOSED via PostgREST (`public,graphql_public,kernel_api`); grant-level pre-check confirms anon/PUBLIC execute nothing. Staging rebuilt identically. Merged to main through #31 (Milestone-1 code, Development Room, CI/Vercel gate, Composable-Worlds composition primitive `lib/community/template.ts`). Suite ~487/0/1-skip.
+
+**Current production status:** DB-level persistence genuinely functional (verified). Deployed-app persistence NOT yet live — needs the Vercel env vars + Auth redirect (below). Prod Vercel deploy READY/healthy on latest main.
+
+**Remaining blockers:** (1) live REST authorization tests #2–#5 for `kernel_api` not yet run (paused); (2) Vercel prod env `OPENROUTER_API_KEY`, `SUPABASE_SECRET_KEY`, `GITHUB_TOKEN`(+`GITHUB_ROOMS`) + Supabase Auth redirect `https://solve-sage.vercel.app/**`; (3) GitHub Actions billing (worked around by the Vercel gate); (4) Arcadia digest flake (quarantined, root fix pending); (5) recommend Supabase Pro. Rotate the SOV token + JWT secret (in transcript).
+
+**Immediate next engineering action (Codex):** verify the `kernel_api` REST authorization boundary live (unauthenticated denied, authenticated works, no cross-user leak), then confirm the live app on a phone once the env vars are set.
+
+**Required acceptance tests:** anonymous REST call to a `kernel_api` RPC is rejected; an authenticated call (JWT) to an authorized function succeeds; a user without a grant cannot read another's private resource; public/graphql_public REST unchanged; on the live site — email sign-in, save AI, add a memory, Connect passport, a chat that knows the founder's ventures, and "What is Claude working on?" answering from GitHub evidence.
