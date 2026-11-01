@@ -1,14 +1,11 @@
 name: Build
 on:
+  # GitHub Actions runs only on pushes to main (post-merge). Per-PR checks run on
+  # Vercel (build command "npm test && npm run build"), to conserve GitHub Actions
+  # usage while account billing is constrained (2026-11-01).
   push:
     branches:
-      - "**"
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
-  pull_request:
-    branches:
-      - "**"
+      - main
     paths-ignore:
       - "**/*.md"
       - "docs/**"
