@@ -1109,3 +1109,7 @@ Founder problem solved: the AI's cost needs a visible, per-person ceiling — th
 ## 2026-10-31 — One Solve Step 3: wire the passport into the chat prompt budget (Claude)
 
 Founder problem solved: Passport now flows into the live AI chat through the token budget, not blind concatenation. `app/api/bot/chat/route.ts` now builds its system prompt with `packSystemPrompt({ rules, soul, passport })` (one import, replaces the hand-rolled base/system string join). Behaviour-equivalent when soul/passport are small; bounded by per-layer caps and the budget when large; the bot's rules are always kept. Both halves (passport route code #18, packSystemPrompt #20) are now on main, so this is a clean few-line slice from main. Tests: bot suite 135/135, typecheck ok, lint 0 errors. Not provable live until OPENROUTER_API_KEY is set in Vercel. Branch claude/chat-route-wire.
+
+## 2026-10-31 — Fix flaky CI: connector privacy test matched "555" in UUIDs (Claude)
+
+The privacy-isolation test (tests/community/connector.test.ts) used doesNotMatch(/Palm Way|555/). The bare "555" also matches the "555" inside random actor UUIDs (e.g. 4123621d-5558-), so the test failed intermittently on any branch with no real leak, blocking the merge pipeline. Tightened both assertions to the homeowner's real details (/Palm Way|Tampa|555 0142|Reyes/), which cannot occur in a UUID. No privacy weakening. Verified 20/20 green runs. Branch claude/fix-flaky-connector-test.
