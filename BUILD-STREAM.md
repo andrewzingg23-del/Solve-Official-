@@ -1113,3 +1113,7 @@ Founder problem solved: Passport now flows into the live AI chat through the tok
 ## 2026-10-31 — Fix flaky CI: connector privacy test matched "555" in UUIDs (Claude)
 
 The privacy-isolation test (tests/community/connector.test.ts) used doesNotMatch(/Palm Way|555/). The bare "555" also matches the "555" inside random actor UUIDs (e.g. 4123621d-5558-), so the test failed intermittently on any branch with no real leak, blocking the merge pipeline. Tightened both assertions to the homeowner's real details (/Palm Way|Tampa|555 0142|Reyes/), which cannot occur in a UUID. No privacy weakening. Verified 20/20 green runs. Branch claude/fix-flaky-connector-test.
+
+## 2026-11-01 — Development Room (consolidated) re-PR'd on the Vercel-gated main (Claude)
+
+Re-assembled the Development Room (closed #27/#29) as one clean branch on main after #28 (which added the Arcadia quarantine so npm test reliably gates Vercel). lib/github/status.ts (whatIsWorkingOn / developmentStatus / developmentRoomReply, source-stamped, honest about deployment-only mode) + the chat route short-circuit (app/api/bot/chat/route.ts answers "what is Claude working on?" from GitHub evidence before the LLM, no chat key needed, falls through otherwise) + tests. Local: full suite 487 pass / 0 fail / 1 skipped, typecheck ok, lint 0 errors. Branch claude/dev-room. Now gated by the Vercel build (npm test && npm run build). Lights up live with GITHUB_TOKEN (+ GITHUB_ROOMS) or SOLVE_DEPLOYED_REPO in Vercel.
