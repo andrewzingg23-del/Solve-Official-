@@ -54,10 +54,18 @@ it("the system prompt speaks as the bot and sets its bounds", () => {
 });
 
 it("resolves OpenRouter models per tier, cheapest capable first", () => {
-  // Defaults are verified current Claude IDs on OpenRouter (2026-10-06).
-  assert.equal(resolveChatModel("flash"), "anthropic/claude-haiku-4.5");
-  assert.equal(resolveChatModel("smart"), "anthropic/claude-sonnet-5.5");
-  assert.equal(resolveChatModel(), "anthropic/claude-haiku-4.5", "default tier stays flash");
+  // Defaults hold only when no env override is set. Isolate the ambient OPENROUTER_MODEL env so this
+  // stays deterministic even when a deployment sets a model (e.g. the free-model defaults in prod).
+  const a = process.env.OPENROUTER_MODEL, b = process.env.OPENROUTER_MODEL_SMART;
+  delete process.env.OPENROUTER_MODEL; delete process.env.OPENROUTER_MODEL_SMART;
+  try {
+    assert.equal(resolveChatModel("flash"), "anthropic/claude-haiku-4.5");
+    assert.equal(resolveChatModel("smart"), "anthropic/claude-sonnet-5.5");
+    assert.equal(resolveChatModel(), "anthropic/claude-haiku-4.5", "default tier stays flash");
+  } finally {
+    if (a === undefined) delete process.env.OPENROUTER_MODEL; else process.env.OPENROUTER_MODEL = a;
+    if (b === undefined) delete process.env.OPENROUTER_MODEL_SMART; else process.env.OPENROUTER_MODEL_SMART = b;
+  }
 });
 
 it("lets the environment override the OpenRouter model", () => {
@@ -86,21 +94,28 @@ it("rate-limits each person to 30 messages an hour", async () => {
 
 it("routes simple turns to flash and complex turns to smart", async () => {
   const { parseTier, resolveChatModel } = await import("../../lib/bot/chat");
+  // Isolate the ambient model override (see note above) so the default-model assertions are stable.
+  const a = process.env.OPENROUTER_MODEL, b = process.env.OPENROUTER_MODEL_SMART;
+  delete process.env.OPENROUTER_MODEL; delete process.env.OPENROUTER_MODEL_SMART;
+  try {
+    const simple = parseTier("hey, what's up");
+    assert.equal(simple.tier, "flash");
+    assert.equal(resolveChatModel(simple.tier), "anthropic/claude-haiku-4.5");
 
-  const simple = parseTier("hey, what's up");
-  assert.equal(simple.tier, "flash");
-  assert.equal(resolveChatModel(simple.tier), "anthropic/claude-haiku-4.5");
+    const forced = parseTier("smart: analyze this quarter for me");
+    assert.equal(forced.tier, "smart");
+    assert.equal(forced.message, "analyze this quarter for me", "prefix is stripped");
+    assert.equal(resolveChatModel(forced.tier), "anthropic/claude-sonnet-5.5");
 
-  const forced = parseTier("smart: analyze this quarter for me");
-  assert.equal(forced.tier, "smart");
-  assert.equal(forced.message, "analyze this quarter for me", "prefix is stripped");
-  assert.equal(resolveChatModel(forced.tier), "anthropic/claude-sonnet-5.5");
+    const long = parseTier("x".repeat(601));
+    assert.equal(long.tier, "smart");
 
-  const long = parseTier("x".repeat(601));
-  assert.equal(long.tier, "smart");
-
-  const code = parseTier("fix this:\n```js\nconst x = 1;\n```");
-  assert.equal(code.tier, "smart");
+    const code = parseTier("fix this:\n```js\nconst x = 1;\n```");
+    assert.equal(code.tier, "smart");
+  } finally {
+    if (a === undefined) delete process.env.OPENROUTER_MODEL; else process.env.OPENROUTER_MODEL = a;
+    if (b === undefined) delete process.env.OPENROUTER_MODEL_SMART; else process.env.OPENROUTER_MODEL_SMART = b;
+  }
 });
 
 it("caps hourly token spend per person", async () => {
