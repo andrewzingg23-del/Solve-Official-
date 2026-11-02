@@ -62,6 +62,7 @@ function providerErrorMessage(status: number, data: unknown): string {
 
 export type ChatCompletionResult = {
   reply: string;
+  finishReason: string | null;
   inputTokens: number;
   outputTokens: number;
 };
@@ -89,10 +90,10 @@ export async function completeChat(
     data = null;
   }
   if (!res.ok) throw new Error(providerErrorMessage(res.status, data));
-  const choice = (data as { choices?: { message?: { content?: unknown } }[] } | null)?.choices?.[0]
-    ?.message;
+  const choice = (data as { choices?: { finish_reason?: unknown; message?: { content?: unknown } }[] } | null)?.choices?.[0];
   const reply =
-    choice && typeof choice.content === "string" ? choice.content.trim() : "";
+    typeof choice?.message?.content === "string" ? choice.message.content.trim() : "";
+  const finishReason = typeof choice?.finish_reason === "string" ? choice.finish_reason : null;
   if (!reply) throw new Error("The bot had nothing to say. Try again.");
   const usage = (data as { usage?: { prompt_tokens?: unknown; completion_tokens?: unknown } } | null)
     ?.usage;
@@ -104,5 +105,5 @@ export async function completeChat(
     typeof usage?.completion_tokens === "number" && usage.completion_tokens > 0
       ? Math.ceil(usage.completion_tokens)
       : 0;
-  return { reply, inputTokens, outputTokens };
+  return { reply, finishReason, inputTokens, outputTokens };
 }

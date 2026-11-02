@@ -23,7 +23,7 @@ async function actions() {
     const dir = await mkdtemp(join(process.cwd(), ".browser-tests", "action-regressions-"));
     const entries = { profile: "app/account/profile-actions.ts", project: "app/product/project-actions.ts", bot: "app/bot/actions.ts", documents: "app/world/[worldId]/actions.ts", communities: "app/communities/actions.ts", community: "app/community/[communityId]/actions.ts", people: "app/world/[worldId]/access-panel.tsx" };
     const stubs: Record<string, string> = {
-      "@/lib/supabase/server": 'export async function getUser(){return globalThis.__solveActionFixture.user;} export async function createClient(){return {auth:{updateUser:async()=>({error:null})}};}',
+      "@/lib/supabase/server": 'export async function getUser(){return globalThis.__solveActionFixture.user;} export async function createClient(){return {auth:{updateUser:async()=>({error:null}),oauth:{revokeGrant:async()=>({error:null})}}};}',
       "@/lib/kernel/server": 'export async function getKernel(){return globalThis.__solveActionFixture.kernel;}',
       "next/cache": 'export function revalidatePath(){}',
       "next/navigation": 'export function redirect(url){throw new Error("redirect:"+url);} export function notFound(){throw new Error("not-found");} export function useRouter(){return {refresh(){},push(){}};}',
@@ -115,4 +115,24 @@ test("the displayed current account can save profile, persona and project", asyn
   assert.equal((persona as { ok: boolean }).ok, true); assert.equal((await loadBot(ben)).persona.name, "Juno");
   const project = await a.project.createProject({ id: "73fc282f-63ac-4c5e-8d63-949d3a778b93", title: "Ben's idea", goal: "A real saved project" }, "auth:action-ben");
   assert.equal((project as { ok: boolean }).ok, true);
+});
+
+
+test("checking assistant authorizations is read only and refuses a stale account", async () => {
+  const { ben, anaActor } = await accountFixture(), a = await actions();
+  const before = await ben.myGrants();
+  const stale = await a.bot.checkConnectionsAction(anaActor) as { ok: boolean };
+  assert.equal(stale.ok, false);
+  const current = await a.bot.checkConnectionsAction((await ben.whoami()).actor_id) as { ok: boolean; message: string };
+  assert.equal(current.ok, true);
+  assert.match(current.message, /No assistant authorizations/);
+  assert.deepEqual(await ben.myGrants(), before);
+  assert.equal((await loadBot(ben)).avatar, null, "a check never creates a persona or grants");
+});
+
+test("stale connection controls cannot revoke another account's permissions", async () => {
+  const { anaActor } = await accountFixture(), a = await actions();
+  const form = new FormData(); form.set("expectedActorId", anaActor); form.set("client_id", "shared-assistant-id");
+  const result = await a.bot.disconnectAction(form) as { ok: boolean };
+  assert.equal(result?.ok, false);
 });

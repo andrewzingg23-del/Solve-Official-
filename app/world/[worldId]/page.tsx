@@ -1,3 +1,6 @@
+import { ProjectNav } from "./project-nav";
+import { readMeaningfulActivity } from "@/lib/world/progress";
+import { NextSteps } from "./next-steps/panel";
 import { RecoverableForm } from "@/app/product/recoverable-form";
 import { randomUUID } from "node:crypto";
 import Link from "next/link";
@@ -143,7 +146,7 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
     artifacts = loaded.artifacts;
     resources = loaded.resources;
     currentActorId = (await kernel.whoami()).actor_id;
-    events = await kernel.readEvents(world.scope, { newestFirst: true, limit: 12 });
+    events = await readMeaningfulActivity(kernel, world.scope, 12);
     saves = await proofsIn(kernel, world.scope).catch(() => []);
     taken = await takenRoutes(kernel, world.scope).catch(() => new Map<string, TakenRoute>());
     canEdit = (await kernel.myGrants()).some(grant => (grant.scope === world.scope || grant.scope === "*") && (grant.capability === "*" || grant.capability === "world.entity.write"));
@@ -185,12 +188,13 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
         <Link href={`/world/${worldId}/room`} className="solve-text-link">← Back to the conversation</Link>
         <span className="solve-kicker mt-5">Private project</span><h1>{world.title}</h1>
         <p>Keep the documents, people and decisions behind your shared work in one place.</p>
-        <nav aria-label="Project details" className="mt-5 flex flex-wrap gap-4"><a href="#documents-heading" className="solve-text-link">Documents</a><a href="#people-heading" className="solve-text-link">People</a><a href="#history" className="solve-text-link">History</a></nav>
+        <ProjectNav worldId={worldId} />
         <div className="mt-5 flex flex-wrap gap-3 text-xs text-muted"><WorldLiveSync worldId={worldId} authUserId={user.id} /><WorldPresence worldId={worldId} /></div>
       </header>
       {saved === "artifact" && <p role="status" className="solve-notice">Document saved. Its revision is in project history.</p>}
       {(saved === "route" || saved === "step") && <p role="status" className="solve-notice">Your update is saved in project history.</p>}
       {(error === "route-input" || error === "route-access" || error === "route-save" || error === "world-missing") && <p role="alert" className="solve-error">{error === "route-access" ? "Only the project owner can update this plan." : "The update could not be saved. Your existing work has not changed; try again."}</p>}
+      <NextSteps worldId={worldId} actorId={currentActorId} artifacts={artifacts} canWrite={canEdit} />
       <section aria-labelledby="documents-heading" className="mb-9 scroll-mt-24">
         <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3"><h2 id="documents-heading">Documents</h2><span className="solve-muted">{artifacts.length} saved · revisions tracked</span></div>
         <div className="solve-two-columns">

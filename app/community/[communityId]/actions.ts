@@ -25,6 +25,7 @@ async function act(communityId: string, done: string, formData: FormData, work: 
   } catch (error) {
     return { ok: false, error: error instanceof Error && error.message === ACCOUNT_CHANGED ? ACCOUNT_CHANGED : error instanceof CommunityInputError || error instanceof DeskInputError ? "Check what you entered. Your text is still here." : error instanceof KernelError && error.name === "forbidden" ? "Your access changed. Your text is still here; contact the owner." : "The change couldn't be saved. Keep this page open and retry." };
   }
+  revalidatePath("/communities");
   revalidatePath(path); return { ok: true, href: `${path}?done=${done}` };
 }
 export async function askToJoinAction(communityId: string, formData: FormData) {
@@ -56,4 +57,8 @@ export async function letMyAiInAction(communityId: string, formData: FormData) {
     if (!bot) throw new CommunityInputError("set up your bot first");
     await setBotAccess(kernel, { scope: community.scope, botAgentId: bot.agent_id, access: "add" }, `owner-ai-${community.communityId}`);
   });
+}
+
+export async function directoryVisibilityAction(communityId: string, formData: FormData) {
+  return act(communityId, "directory", formData, (kernel, community) => updateCommunity(kernel, community, { directoryListed: formData.get("listed") === "true" }));
 }

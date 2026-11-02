@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { RoomMessage, RoomSourceRef } from "@/lib/kernel/client";
 import type { RoomTurnInput, RoomTurnResult } from "@/lib/world/room";
+import { SafeMarkdown } from "./safe-markdown";
 
 function mergeMessages(saved: RoomMessage[], incoming: RoomMessage[]) {
   return [...new Map([...saved, ...incoming].map(m => [m.message_id, m])).values()].sort((a, b) => a.seq - b.seq);
@@ -20,8 +21,8 @@ function readableSourceRefs(value: unknown): RoomSourceRef[] {
   });
 }
 
-export function SharedConversation({ worldId, messages, beforeSeq, canWrite = false, currentActorId }: {
-  worldId: string; messages: RoomMessage[]; beforeSeq: number | null; canWrite?: boolean; currentActorId?: string;
+export function SharedConversation({ worldId, messages, beforeSeq, canWrite = false, currentActorId, starterPrompts = [] }: {
+  worldId: string; messages: RoomMessage[]; beforeSeq: number | null; canWrite?: boolean; currentActorId?: string; starterPrompts?: Array<{ label: string; text: string }>;
 }) {
   const router = useRouter();
   const [text, setText] = useState("");
@@ -35,14 +36,15 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
   const [cursor, setCursor] = useState<number | null | undefined>(undefined);
   const request = useRef<{ signature: string; id: string } | null>(null);
   const list = useRef<HTMLOListElement>(null);
-  const followLatest = useRef(true);
+  const composer = useRef<HTMLTextAreaElement>(null);
+  const followLatest = useRef(false);
   const showEarlier = useRef(false);
   const all = history.messages;
   const nextCursor = cursor === undefined ? beforeSeq : cursor;
   useLayoutEffect(() => {
     if (!list.current) return;
-    if (showEarlier.current) { list.current.scrollTop = 0; showEarlier.current = false; }
-    else if (followLatest.current) list.current.scrollTop = list.current.scrollHeight;
+    if (showEarlier.current) { list.current.firstElementChild?.scrollIntoView({ block: "start" }); showEarlier.current = false; }
+    else if (followLatest.current) { composer.current?.scrollIntoView({ block: "nearest" }); followLatest.current = false; }
   }, [all]);
 
   async function send(intent: RoomTurnInput["intent"], previous?: RoomTurnInput) {
@@ -92,9 +94,9 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
       </div>
       <div className="flex flex-wrap justify-between gap-2 text-xs text-accent">
         {nextCursor ? <button type="button" onClick={loadEarlier} disabled={busy} className="underline disabled:opacity-50">Load earlier messages</button> : null}
-        {all.length ? <button type="button" onClick={() => { followLatest.current = true; if (list.current) list.current.scrollTop = list.current.scrollHeight; }} className="ml-auto underline">Jump to latest</button> : null}
+        {all.length ? <button type="button" onClick={() => { (composer.current ?? list.current?.lastElementChild)?.scrollIntoView({ block: "nearest" }); composer.current?.focus({ preventScroll: true }); }} className="ml-auto underline">Jump to latest</button> : null}
       </div>
-      <ol ref={list} aria-label="Room messages" onScroll={e => { const el = e.currentTarget; followLatest.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60; }} className="flex max-h-96 flex-col gap-3 overflow-y-auto overscroll-contain">
+      <ol ref={list} aria-label="Room messages" className="flex min-w-0 flex-col gap-3">
         {all.map(m => {
           const refs = readableSourceRefs(m.source_refs);
           return (
@@ -103,7 +105,7 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
               <span className="font-medium">{m.kind === "ai_draft" ? `AI draft · requested by ${m.actor_label}` : `${m.actor_label}${m.actor_kind === "agent" ? " · AI agent" : ""}${m.kind === "decision" ? " · recorded decision" : ""}`}</span>
               <time dateTime={new Date(m.occurred_at).toISOString()} className="text-muted">{new Date(m.occurred_at).toLocaleString("en-US", { timeZone: "UTC", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZoneName: "short" })}</time>
             </div>
-            <p className="whitespace-pre-wrap break-words text-sm leading-6">{m.text}</p>
+            {m.kind === "ai_draft" ? <SafeMarkdown text={m.text} /> : <p className="whitespace-pre-wrap break-words text-sm leading-6">{m.text}</p>}
             {refs.length ? (
               <details className="mt-2 text-xs text-muted"><summary className="cursor-pointer">Shared sources used · {refs.length}</summary>
                 <ul className="mt-2 space-y-1">{refs.map(s => <li key={s.entityId}><a href={`/world/${worldId}#piece-${s.entityId}`} className="text-accent underline">{s.title} · v{s.version}</a></li>)}</ul>
@@ -121,13 +123,14 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
       {canWrite ? (
         <form onSubmit={event => { event.preventDefault(); void send("message"); }} className="flex flex-col gap-3">
           <label htmlFor="room-message" className="text-xs text-muted">Message or question</label>
-          <textarea id="room-message" value={text} onChange={e => setText(e.target.value)} rows={3} maxLength={8000} required disabled={busy} placeholder="What should we work on?" className="min-w-0 resize-y rounded-md border border-line bg-background p-3 text-sm leading-6 outline-none focus:border-accent disabled:opacity-60" />
+          {starterPrompts.length ? <div aria-label="Suggested questions" className="flex flex-wrap gap-2">{starterPrompts.map(prompt => <button key={prompt.label} type="button" disabled={busy} onClick={() => { setText(prompt.text.slice(0, 8000)); composer.current?.focus(); }} className="rounded-md border border-accent/30 px-3 py-2 text-sm text-accent disabled:opacity-50">{prompt.label}</button>)}</div> : null}
+          <textarea ref={composer} id="room-message" value={text} onChange={e => setText(e.target.value)} rows={3} maxLength={8000} required disabled={busy} placeholder="What should we work on?" className="min-w-0 resize-y rounded-md border border-line bg-background p-3 text-sm leading-6 outline-none focus:border-accent disabled:opacity-60" />
           <div className="flex flex-wrap gap-2">
             <button disabled={busy || !text.trim()} className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-background disabled:opacity-50">{busy ? "Saving…" : "Send to room"}</button>
             <button type="button" disabled={busy || !text.trim()} onClick={() => void send("ask_ai")} className="rounded-md border border-accent/50 px-4 py-2 text-sm text-accent disabled:opacity-50">Ask AI</button>
             <button type="button" disabled={busy || !text.trim()} onClick={() => void send("decision")} className="rounded-md border border-line px-4 py-2 text-sm disabled:opacity-50">Record decision</button>
           </div>
-          <p className="text-[11px] leading-5 text-muted">Ask AI sends selected shared documents, recorded decisions and recent messages through OpenRouter to the chosen model provider. Personal memory stays private. AI replies are drafts; a recorded decision names its author.</p>
+          <p className="text-xs leading-5 text-muted">Ask AI sends selected shared documents, recorded decisions and recent messages through OpenRouter to the chosen model provider. Personal memory stays private. AI replies are drafts; a recorded decision names its author.</p>
         </form>
       ) : <p className="text-xs text-muted">You can view this room. Ask the owner for editor access to contribute.</p>}
       {notice ? <p role="status" className="text-xs leading-5 text-muted">{notice}</p> : null}

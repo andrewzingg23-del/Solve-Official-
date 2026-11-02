@@ -44,7 +44,7 @@ export async function WorldAccessPanel({ worldId, scope, saved, error }: {
         <div>
           <p className={label}>Project access</p>
           <h2 id="people-heading" className="mt-1 text-lg font-medium">People who can contribute</h2>
-          <p className="mt-1 max-w-2xl text-xs leading-5 text-muted">Invite someone with a link or their Solve ID. Choose what they can do in this project.</p>
+          <p className="mt-1 max-w-2xl text-xs leading-5 text-muted">Create an invitation link and choose what someone can do in this project.</p>
         </div>
         <Link href="/account" className="text-xs text-accent underline underline-offset-4">Open my Profile</Link>
       </div>
@@ -62,6 +62,7 @@ export async function WorldAccessPanel({ worldId, scope, saved, error }: {
 
       <InvitationPanel create={createInvitationAction.bind(null, worldId)} cancel={cancelInvitationAction.bind(null, worldId)} invitations={invitations} now={new Date().toISOString()} />
 
+      <details><summary className="cursor-pointer text-sm">Advanced access controls</summary><p className="my-3 text-xs text-muted">Use a registered person’s technical Solve ID, or remove existing access.</p>
       <form action={grant} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
         <input type="hidden" name="requestId" value={randomUUID()} />
         <label className="flex min-w-0 flex-col gap-1.5 text-xs text-muted">
@@ -98,6 +99,7 @@ export async function WorldAccessPanel({ worldId, scope, saved, error }: {
         <p className="rounded border border-dashed border-line p-4 text-sm text-muted">Only you have access right now.</p>
       )}
 
+      </details>
       <p className="text-[11px] leading-5 text-muted">Editors can create and revise items inside this project. Other authorized people see saved changes automatically; revisions and authorship stay in project history.</p>
     </section>
   );

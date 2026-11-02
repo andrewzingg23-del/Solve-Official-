@@ -1,3 +1,4 @@
+import { ProjectNav } from "../project-nav";
 // The shared project workspace. Conversation is the primary surface; supporting
 // tools use the same saved record and stay out of the way until needed.
 import type { ReactNode } from "react";
@@ -15,6 +16,7 @@ import type { RoomPiece } from "./pieces-map";
 import { SharedConversation } from "./conversation";
 import { SourcePublisher } from "./source-publisher";
 import { CostWorksheet } from "./cost-worksheet";
+import { PROJECT_STARTERS } from "@/lib/world/progress";
 import { ago } from "./time";
 
 export type RoomLens = "build" | "pieces";
@@ -45,6 +47,8 @@ export type RoomData = {
   linkRepo?: (form: FormData) => void | Promise<void>;
   saveBuild?: (form: FormData) => void | Promise<void>;
   requestId?: string;
+  nextSteps?: ReactNode;
+  development?: ReactNode;
   live?: ReactNode; // the bot's live line, when there is a bot
   sync?: ReactNode; // the room's live connection state
 };
@@ -138,12 +142,7 @@ export function RoomView({ data }: { data: RoomData }) {
             <span><Icon name="community" width={14} height={14} />{plural(data.people.length, "member", "members")}</span>
           </div>
         </div>
-        <nav aria-label="Project sections" className="solve-room-sections">
-          <Link href={`${projectUrl}/room`} aria-current="page"><Icon name="chat" width={17} height={17} />Conversation</Link>
-          <Link href={`${projectUrl}#documents-heading`}><Icon name="document" width={17} height={17} />Documents</Link>
-          <Link href={`${projectUrl}#people-heading`}><Icon name="community" width={17} height={17} />People &amp; access</Link>
-          <Link href={projectUrl} className="solve-room-details-link">Project details<Icon name="arrow" width={15} height={15} /></Link>
-        </nav>
+        <ProjectNav worldId={data.worldId} conversation />
       </header>
 
       {data.notice ? (
@@ -154,9 +153,10 @@ export function RoomView({ data }: { data: RoomData }) {
 
       <div className="solve-room-workspace">
         <div className="solve-room-main">
+          {data.nextSteps}
           <div className="solve-room-conversation">
             {data.conversation ? (
-              <SharedConversation worldId={data.worldId} {...data.conversation} canWrite={data.canWrite} currentActorId={data.currentActorId} />
+              <SharedConversation starterPrompts={PROJECT_STARTERS} worldId={data.worldId} {...data.conversation} canWrite={data.canWrite} currentActorId={data.currentActorId} />
             ) : (
               <section aria-labelledby="shared-conversation-heading">
                 <h2 id="shared-conversation-heading">Shared conversation</h2>
@@ -172,6 +172,7 @@ export function RoomView({ data }: { data: RoomData }) {
               <h2 id="room-tools-heading">Project tools</h2>
               <p>Open what you need for the next step.</p>
             </div>
+            {data.development}
             {data.conversation ? <CostWorksheet worldId={data.worldId} canWrite={data.canWrite ?? false} /> : null}
 
             {data.repo || data.linkRepo ? (

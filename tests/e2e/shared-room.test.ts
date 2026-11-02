@@ -166,3 +166,28 @@ it("rejects malformed source references before saving a draft and leaves the lea
   await brother.finishRoomReply({ messageId, leaseToken: claim.lease_token!, text: "Valid references", model: "test", sourceRefs: [valid] });
   assert.deepEqual((await readRoomConversation(owner, worldId)).messages[1].source_refs, [valid]);
 });
+
+it("keeps internal identifiers out of inference while preserving source provenance", async () => {
+  const { owner, world } = await setup();
+  const sourceId = await createCreativeArtifact(owner, { scope: world.scope, worldEntityId: world.entityId, requestId: "readable-source", title: "Prototype notes", body: "Try a cartridge", position: { x: 1, y: 1 } });
+  const decisionId = await owner.postRoomMessage({ worldId, requestId: "readable-decision", text: "Start small", kind: "decision" });
+  const context = await loadRoomContext(owner, worldId);
+  assert.ok(!context.sharedText.includes(sourceId));
+  assert.ok(!context.sharedText.includes(decisionId));
+  assert.ok(context.sourceRefs.some(ref => ref.entityId === sourceId));
+  assert.match(context.system, /concise/i);
+});
+
+it("does not persist a provider-truncated draft as complete and retries the same saved question", async () => {
+  const { owner } = await setup();
+  const input = { worldId, requestId: "cut-off", text: "Give me a brief plan", intent: "ask_ai" as const };
+  const first = await submitRoomTurn(owner, input, async () => ({ text: "Start by", model: "test", finishReason: "length" }));
+  assert.equal(first.aiStatus, "failed");
+  assert.match(first.error!, /cut short/i);
+  const messages = (await readRoomConversation(owner, worldId)).messages;
+  assert.equal(messages.length, 1);
+  assert.equal(messages[0].reply_state, "failed");
+  const retried = await submitRoomTurn(owner, input, async () => ({ text: "Build one prototype.", model: "test", finishReason: "stop" }));
+  assert.equal(retried.aiStatus, "complete");
+  assert.equal((await readRoomConversation(owner, worldId)).messages.length, 2);
+});

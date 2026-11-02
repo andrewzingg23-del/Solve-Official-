@@ -1,3 +1,6 @@
+import { DevelopmentWorkspace } from '../development/panel';
+import { NextSteps } from "../next-steps/panel";
+import { meaningfulActivity, readMeaningfulActivity } from "@/lib/world/progress";
 import { randomUUID } from "node:crypto";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -88,7 +91,7 @@ async function load(worldId: string, viewer: { id: string; email?: string | null
     const [ov, saves, events, bot, read, conversation, access, membership] = await Promise.all([
       overview(kernel, [{ worldId: world.worldId, title: world.title, scope: world.scope }], me.actor_id),
       proofsIn(kernel, world.scope).catch(() => []),
-      kernel.readEvents(world.scope, { newestFirst: true, limit: 14 }).catch(() => []),
+      readMeaningfulActivity(kernel, world.scope, 14).catch(() => []),
       loadBot(kernel).catch(() => null),
       repo ? readRepo(repo.ref, { token: repo.paired ? process.env.GITHUB_TOKEN || null : null }) : Promise.resolve(null),
       readRoomConversation(kernel, worldId),
@@ -114,6 +117,8 @@ async function load(worldId: string, viewer: { id: string; email?: string | null
       now: new Date().toISOString(),
       pieces: artifacts.filter(a => a.visibility !== "private").map((a) => pieceOf(a, journeys, saved)),
       conversation,
+      development: await DevelopmentWorkspace({kernel,worldId:world.worldId,title:world.title,userId:viewer.id,actorId:me.actor_id,repository:repo}),
+      nextSteps: <NextSteps worldId={world.worldId} actorId={me.actor_id} artifacts={artifacts} canWrite={access.decision === "ALLOW"} />,
       currentActorId: me.actor_id,
       canWrite: access.decision === "ALLOW",
       people: memberIds
@@ -125,7 +130,7 @@ async function load(worldId: string, viewer: { id: string; email?: string | null
       waiting: waitingFrom(ov.journeys, ov.approvals),
       gaps: ov.gaps,
       saves,
-      activity: events.slice(0, 10).map((e) => {
+      activity: events.filter(e => meaningfulActivity(e.type)).slice(0, 10).map((e) => {
         const via = viaOf((e.payload as { request?: { attributes?: Record<string, unknown> } } | null)?.request?.attributes);
         return { id: e.id, what: eventTitle(e.type), who: via ? `${name(e.actor_id)} via ${via}` : name(e.actor_id), at: new Date(e.occurred_at).toISOString() };
       }),

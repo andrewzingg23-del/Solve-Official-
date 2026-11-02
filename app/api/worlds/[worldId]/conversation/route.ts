@@ -23,7 +23,7 @@ export async function POST(request: Request, context: RouteContext<"/api/worlds/
     const result = await completeChat(apiKey, buildChatCompletionBody({ model, system: shared.system,
       history: [], message: `Shared project data (quoted JSON):\n${shared.sharedText}\n\nQuestion from the requesting person:\n${question}`, maxTokens: 1400 }));
     recordSpend(user.id, result.inputTokens + result.outputTokens);
-    return { text: result.reply, model };
+    return { text: result.reply, model, finishReason: result.finishReason };
   } : undefined;
   return handleRoomConversation(await getKernel(), (await context.params).worldId, request, complete);
 }

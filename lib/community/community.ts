@@ -40,6 +40,7 @@ export type Community = {
   about: string;
   packs: PackId[];
   updatedAt: string;
+  directoryListed?: boolean;
 };
 
 export type Standing = "owner" | "member" | "guest";
@@ -80,14 +81,15 @@ export function communityFromEntity(entity: Pick<WorldEntity, "entity_id" | "kin
     about: entity.summary,
     packs: packsFrom(a.packs),
     updatedAt: iso(entity.updated_at),
+    directoryListed: a.directoryListed !== false,
   };
 }
 
-export async function listCommunities(kernel: Kernel): Promise<Community[]> {
+export async function listCommunities(kernel: Kernel, options: { includeUnlisted?: boolean } = {}): Promise<Community[]> {
   const byId = new Map<string, Community>();
   for (const entity of await kernel.publicWorld()) {
     const community = communityFromEntity(entity);
-    if (community && !byId.has(community.communityId)) byId.set(community.communityId, community);
+    if (community && (options.includeUnlisted || community.directoryListed !== false) && !byId.has(community.communityId)) byId.set(community.communityId, community);
   }
   return [...byId.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
@@ -95,7 +97,7 @@ export async function listCommunities(kernel: Kernel): Promise<Community[]> {
 export async function readCommunity(kernel: Kernel, communityId: string): Promise<Community | null> {
   if (!UUID.test(communityId)) return null;
   const id = communityId.toLowerCase();
-  return (await listCommunities(kernel)).find((c) => c.communityId === id) ?? null;
+  return (await listCommunities(kernel, { includeUnlisted: true })).find((c) => c.communityId === id) ?? null;
 }
 
 export class CommunityInputError extends Error {}
@@ -118,7 +120,7 @@ export async function startCommunity(
   const me = await kernel.whoami();
   if (me.kind !== "human") throw new KernelError("forbidden", "Only a person can start a community", "");
   const communityId = communityIdFor(me.actor_id, input.nonce);
-  const mine = (await listCommunities(kernel)).filter((c) => c.ownerId === me.actor_id);
+  const mine = (await listCommunities(kernel, { includeUnlisted: true })).filter((c) => c.ownerId === me.actor_id);
   const existing = mine.find((c) => c.communityId === communityId);
   if (existing) return existing;
   if (mine.length >= COMMUNITY_LIMITS.perPerson) throw new CommunityInputError(`one person can start up to ${COMMUNITY_LIMITS.perPerson} communities`);
@@ -140,7 +142,7 @@ export async function startCommunity(
 }
 
 // The owner changes what the profile says and which packs the community runs.
-export async function updateCommunity(kernel: Kernel, community: Community, input: { about?: unknown; packs?: unknown }) {
+export async function updateCommunity(kernel: Kernel, community: Community, input: { about?: unknown; packs?: unknown; directoryListed?: boolean }) {
   await requireOwner(kernel, community);
   const entity = (await kernel.publicWorld()).find((e) => e.entity_id === community.profileId);
   if (!entity) throw new KernelError("not_found", "Community profile not found", "");
@@ -150,7 +152,7 @@ export async function updateCommunity(kernel: Kernel, community: Community, inpu
     scope: sideScope(community.ownerId, community.communityId),
     title: community.name,
     summary: input.about === undefined ? community.about : cleanText(input.about, COMMUNITY_LIMITS.about),
-    attributes: { ...entity.attributes, packs: input.packs === undefined ? community.packs : packsFrom(input.packs) },
+    attributes: { ...entity.attributes, packs: input.packs === undefined ? community.packs : packsFrom(input.packs), directoryListed: input.directoryListed ?? (entity.attributes.directoryListed !== false) },
     visibility: "public",
   });
 }

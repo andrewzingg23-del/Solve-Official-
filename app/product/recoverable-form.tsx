@@ -13,10 +13,11 @@ export function RecoverableForm({ action, children, className, ownerActorId, own
   const formRef = useRef<HTMLFormElement>(null);
   const request = useRef<{ signature: string; ids: Record<string, string> } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [busy, startTransition] = useTransition();
   const router = useRouter();
-  return <form ref={formRef} className={className} onSubmit={event => {
+  return <form ref={formRef} className={className} onInput={() => { setSuccess(null); setDirty(true); }} onSubmit={event => {
     event.preventDefault(); if (busy) return;
     const form = event.currentTarget;
     const data = new FormData(form, (event.nativeEvent as SubmitEvent).submitter);
@@ -31,7 +32,7 @@ export function RecoverableForm({ action, children, className, ownerActorId, own
         if (result && !result.ok) { setError(result.error); return; }
         form.reset();
         request.current = null;
-        setSuccess(successMessage);
+        setDirty(false); setSuccess(successMessage);
         if (result?.ok && result.href) router.push(result.href);
         else router.refresh();
       } catch { setError("The connection was interrupted. Your text is still here; keep this page open and retry."); }
@@ -42,7 +43,7 @@ export function RecoverableForm({ action, children, className, ownerActorId, own
       {ownerUserId ? <input type="hidden" name="expectedUserId" value={ownerUserId} /> : null}
       {children}
     </fieldset>
-    {error ? <p role="alert" className="solve-error">{error}</p> : success ? <p role="status" className="solve-success">{success}</p> : null}
+    {error ? <p role="alert" className="solve-error">{error}</p> : success ? <p role="status" className="solve-success">{success}</p> : dirty && !busy ? <p role="status" className="solve-muted">Unsaved changes</p> : null}
     {busy ? <p role="status" className="solve-muted">Saving…</p> : null}
   </form>;
 }

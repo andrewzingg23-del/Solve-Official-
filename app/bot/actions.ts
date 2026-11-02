@@ -25,7 +25,7 @@ export async function saveBotAction(requestId: string, persona: unknown, expecte
     const kernel = await getKernel();
     await requireDisplayedActor(kernel, expectedOwnerId);
     const bot = await saveBot(kernel, persona, requestId);
-    revalidatePath("/bot");
+    revalidatePath("/", "layout");
     return { ok: true, version: bot.history.length, savedAt: bot.saved?.at ?? null, persona: bot.persona };
   } catch (error) {
     if (error instanceof KernelError && error.name === "unauthenticated") return { ok: false, error: "identity" };
@@ -66,14 +66,21 @@ export async function startWorldForBotAction(formData: FormData) {
 
 // Disconnects an assistant: the kernel stops honoring it at once, and Supabase forgets the grant
 // so it has to ask again.
-export async function disconnectAction(formData: FormData) {
+export async function disconnectAction(formData: FormData): Promise<FormResult> {
   const clientId = field(formData.get("client_id"));
-  if (!clientId || !(await getUser())) return;
-  const kernel = await getKernel();
-  const me = await kernel.whoami();
-  await revokeConnection(kernel, me.actor_id, clientId, field(formData.get("request_id")) || crypto.randomUUID());
-  await (await createClient()).auth.oauth.revokeGrant({ clientId }).catch(() => null);
-  revalidatePath("/bot");
+  if (!clientId || !(await getUser())) return { ok: false, error: "Your session is unavailable. No connection was changed." };
+  try {
+    const kernel = await getKernel();
+    await requireDisplayedActor(kernel, field(formData.get("expectedActorId")));
+    const me = await kernel.whoami();
+    await revokeConnection(kernel, me.actor_id, clientId, field(formData.get("request_id")) || crypto.randomUUID());
+    const { error } = await (await createClient()).auth.oauth.revokeGrant({ clientId });
+    if (error) return { ok: false, error: "Solve access was revoked, but the sign-in authorization could not be removed. Retry to finish disconnecting." };
+    revalidatePath("/bot");
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof KernelError && error.name === "conflict" ? ACCOUNT_CHANGED : "The connection could not be fully revoked. Retry to confirm its status." };
+  }
 }
 
 // The person feeds their bot directly.
@@ -151,5 +158,19 @@ export async function shareSaveAction(_previous: ShareResult, formData: FormData
     if (error instanceof ReceiptError) return { error: `Not shared: ${error.message}.` };
     if (error instanceof KernelError) return { error: "This save can't be shared right now." };
     throw error;
+  }
+}
+
+
+// Read-only check of recorded consent. It cannot claim a third-party app is online.
+export async function checkConnectionsAction(expectedOwnerId: string): Promise<{ ok: boolean; message: string }> {
+  if (!(await getUser())) return { ok: false, message: "Your session is unavailable. Reopen Profile before checking access." };
+  try {
+    const kernel = await getKernel();
+    await requireDisplayedActor(kernel, expectedOwnerId);
+    const connections = await readConnections(kernel, expectedOwnerId);
+    return { ok: true, message: connections.length ? `${connections.length} assistant authorization${connections.length === 1 ? " is" : "s are"} recorded. This checks saved permissions only; an end-to-end request from your assistant is still needed.` : "No assistant authorizations are recorded. The built-in room AI works separately from these connections." };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error && error.message === ACCOUNT_CHANGED ? ACCOUNT_CHANGED : "We could not verify authorizations. No permissions were changed; retry shortly." };
   }
 }

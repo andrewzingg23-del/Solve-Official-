@@ -1,0 +1,10 @@
+'use client';
+import { useState } from 'react';
+import { parseProjectBackup, PROJECT_BACKUP_MAX_BYTES, type ProjectBackup } from '@/lib/world/backup';
+import { RecoverableForm } from '@/app/product/recoverable-form';
+import { restoreBackupAction } from './actions';
+export function RestoreBackup({userId,actorId}:{userId:string;actorId:string}){
+ const [preview,setPreview]=useState<{backup:ProjectBackup;raw:string;id:string}|null>(null);
+ const [error,setError]=useState('');
+ return <section><label>Choose your SOLVE JSON backup (up to 1 MB)<input type="file" accept=".json,application/json" onChange={async event=>{setPreview(null);setError('');const file=event.target.files?.[0];if(!file)return;try{if(file.size>PROJECT_BACKUP_MAX_BYTES)throw Error('Choose a backup smaller than 1 MB.');const raw=await file.text();const backup=parseProjectBackup(raw);setPreview({backup,raw:JSON.stringify(backup),id:crypto.randomUUID()});}catch(error){setError(error instanceof Error?error.message:'This backup could not be read.');}}}/></label>{error?<p role="alert">{error}</p>:null}{preview?<div key={preview.id}><h2>{preview.backup.project.title}</h2><p>{preview.backup.project.goal}</p><p>{preview.backup.documents.length} documents · {preview.backup.messages?.length??0} conversation references</p><p>Imported text is labeled as a reference. Original authors and decisions are unverified. Private documents remain private; this restores content, not the original guest identity.</p><ul>{preview.backup.documents.map((doc,i)=><li key={i}>{doc.title} · {doc.visibility}</li>)}</ul><RecoverableForm action={restoreBackupAction} ownerUserId={userId} ownerActorId={actorId} successMessage="Restored. Opening your copy…"><input type="hidden" name="backup" value={preview.raw}/><input type="hidden" name="requestId" value={preview.id}/><label><input name="reviewed" value="yes" type="checkbox" required/>I reviewed this content and want a new private project copy.</label><button type="submit" className="solve-room-button">Restore private copy</button></RecoverableForm></div>:null}</section>;
+}
