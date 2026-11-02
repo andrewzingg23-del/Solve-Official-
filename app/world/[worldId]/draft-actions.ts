@@ -47,6 +47,11 @@ export async function generateFirstDraftAction(worldId: string, formData: FormDa
     if (!isSubstantiveDraft(html)) {
       return { ok: false, error: "The draft didn't come through cleanly. Try again, or add a little more detail to your idea." };
     }
+    // Recoverable, not a crash: keep it within the kernel document size so persistence never fails
+    // with a raw limit error. (Larger drafts move to object storage in a later slice.)
+    if (html.length > 12000) {
+      return { ok: false, error: "This draft came back larger than we can save yet. Try a simpler description or fewer sections, then build again." };
+    }
 
     await createCreativeArtifact(kernel, {
       scope: world.scope,
@@ -56,6 +61,7 @@ export async function generateFirstDraftAction(worldId: string, formData: FormDa
       body: html,
       position: { x: 50, y: 30 },
       via: { clientId: null, clientName: "SOLVE" },
+      documentType: "website",
     });
   } catch (error) {
     if (error instanceof Error && error.message === ACCOUNT_CHANGED) return { ok: false, error: ACCOUNT_CHANGED };

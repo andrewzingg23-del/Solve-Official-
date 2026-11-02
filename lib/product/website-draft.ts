@@ -27,6 +27,7 @@ export function buildWebsiteDraftMessages(req: DraftRequest): { role: "system" |
         "- NO JavaScript, NO <script>, NO external resources (no CDN links, web fonts, remote images or iframes). Use system fonts and CSS gradients/SVG for visuals.",
         "- Write real, specific copy drawn from the user's goal — headline, subheadline, sections, and a clear call to action. Never use lorem ipsum.",
         "- It must look like a real page for THIS idea, not a generic template.",
+        "- Keep the whole document COMPACT — under about 10,000 characters. Prefer concise CSS and tight copy over length; a strong one-page draft, not an exhaustive site.",
       ].join("\n"),
     },
     {

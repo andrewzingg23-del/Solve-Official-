@@ -3,6 +3,7 @@
 import { useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CreativeArtifact } from "@/lib/world/creative";
+import { looksLikeHtmlDocument } from "@/lib/product/website-draft";
 
 export function ArtifactEditor({ worldId, artifact }: { worldId: string; artifact: CreativeArtifact }) {
   const router = useRouter();
@@ -12,6 +13,7 @@ export function ArtifactEditor({ worldId, artifact }: { worldId: string; artifac
   const [latest, setLatest] = useState<CreativeArtifact | null>(null);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const bodyLimit = looksLikeHtmlDocument(artifact.body) ? 12000 : 7000;
   const request = useRef<{ signature: string; id: string } | null>(null);
   const saved = latest && latest.version >= artifact.version ? latest : artifact;
   const changed = saved.version > version;
@@ -36,7 +38,7 @@ export function ArtifactEditor({ worldId, artifact }: { worldId: string; artifac
   return (
     <form onSubmit={save} className="mt-3 flex min-w-0 flex-col gap-3">
       <label className="flex flex-col gap-1.5 text-xs text-muted">Title<input required maxLength={160} value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} className="h-10 rounded border border-line bg-background px-3 text-sm text-foreground" /></label>
-      <div className="flex flex-col gap-1.5"><label htmlFor={bodyId} className="text-xs text-muted">Text</label><textarea id={bodyId} maxLength={7000} rows={5} value={draft.body} onChange={e => setDraft({ ...draft, body: e.target.value })} className="resize-y rounded border border-line bg-background p-3 text-sm leading-5 text-foreground" /></div>
+      <div className="flex flex-col gap-1.5"><label htmlFor={bodyId} className="text-xs text-muted">Text</label><textarea id={bodyId} maxLength={bodyLimit} rows={5} value={draft.body} onChange={e => setDraft({ ...draft, body: e.target.value })} className="resize-y rounded border border-line bg-background p-3 text-sm leading-5 text-foreground" /></div>
       <div className="grid grid-cols-2 gap-3">
         {(["x", "y"] as const).map(axis => <label key={axis} className="flex flex-col gap-1.5 text-xs text-muted">Canvas {axis.toUpperCase()} · {draft.position[axis]}%<input type="range" min="0" max="100" value={draft.position[axis]} onChange={e => setDraft({ ...draft, position: { ...draft.position, [axis]: Number(e.target.value) } })} className="accent-accent" /></label>)}
       </div>
