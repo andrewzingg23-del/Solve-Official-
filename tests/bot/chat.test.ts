@@ -140,4 +140,7 @@ it("estimates cost from the OpenRouter model family, labeled as estimate", async
   assert.ok(haiku > 0 && sonnet > haiku, "sonnet estimates cost more than haiku");
   assert.equal(haiku, 1.0 + 5.0, "haiku-4.5 priced at $1/M in, $5/M out (2026-10-06)");
   assert.equal(estimateCostUsd("unknown-model-x", 0, 0), 0);
+  // ":free" models cost nothing even at volume; unknown models aren't guessed as the priciest tier.
+  assert.equal(estimateCostUsd("nvidia/nemotron-3.5-lightning:free", 1_000_000, 1_000_000), 0, "free model is $0");
+  assert.equal(estimateCostUsd("some/other-model", 1_000_000, 1_000_000), 0, "unknown model isn't priced as opus");
 });
