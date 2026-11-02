@@ -628,3 +628,6 @@ Important final review findings are fixed: persisted ancestry, independent creat
 Code checkpoint `d7ac9230cc5c0ed9f6ed0bb290b1eac6b598a4bc`: Build run `37831693148` passed 406/406 tests, TypeScript, lint (zero errors, eight warnings) and production build. Studio browser run `37831693140` passed actual desktop/phone/no-WebGL editing, persistence/history, independent creations, four exports, physics, identity privacy, onboarding and phone/desktop map zoom/frame. Seven browser screenshots are attached to that run. READY preview: https://solve-l1jctbfmb-sovigrn.vercel.app/. All five Important and both Minor final review findings are addressed; none are deferred. Current main's ARGUS and community AI work is preserved. No production merge, deployment, schema or data changes.
 
 Handoff: `docs/handoff/2026-10-08-immersive-studio.md`. This is a concept creation studio; live shared/provider sessions, deep avatar generation, specialist CAD and real-world execution remain follow-ups.
+
+## 2026-11-01 — Seamless guests
+Guest Auth bootstrap and additive subject-bound kernel registration implemented on codex/seamless-guest. 495 tests pass / 1 existing skip; typecheck, lint (0 errors), production build pass. Reviewed independently. Guest provider activation and live create/save/reload verification pending.

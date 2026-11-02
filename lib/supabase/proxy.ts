@@ -1,3 +1,5 @@
+import { loginRequired } from "@/lib/auth/gate";
+import { kernelClient } from "@/lib/kernel/client";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured, supabasePublishableKey, supabaseUrl } from "./config";
@@ -26,5 +28,26 @@ export async function updateSession(request: NextRequest) {
   });
 
   const { data } = await supabase.auth.getClaims();
-  return { response, signedIn: Boolean(data?.claims) };
+  let signedIn = Boolean(data?.claims);
+  // Establish the cookie before rendering; Server Components cannot persist it.
+  // Keep callback/API traffic and asset requests free of implicit account creation.
+  const path = request.nextUrl.pathname;
+  const guestPage = ["GET", "POST"].includes(request.method)
+    && !path.startsWith("/api/") && !path.startsWith("/auth/")
+    && path !== "/login" && !path.startsWith("/_next/")
+    && !/\.[a-z0-9]+$/i.test(path);
+  if (!signedIn && !loginRequired() && guestPage) {
+    const { data: guest, error } = await supabase.auth.signInAnonymously();
+    signedIn = !error && Boolean(guest.session);
+  }
+  if (signedIn && guestPage) {
+    try {
+      await kernelClient(supabase).register();
+    } catch {
+      // Preserve the session and draft; identity-gated writes still fail closed.
+      console.error("SOLVE identity registration unavailable");
+    }
+  }
+  response.headers.set("Cache-Control", "private, no-store");
+  return { response, signedIn };
 }

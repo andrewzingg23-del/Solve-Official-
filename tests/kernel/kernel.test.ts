@@ -78,12 +78,8 @@ describe("identity", () => {
     assert.equal(who.kind, "human");
   });
 
-  it("rejects anonymous sessions and unregistered callers", async () => {
+  it("rejects unregistered callers", async () => {
     const k = await createKernelDb();
-    await assert.rejects(
-      k.rpc({ role: "authenticated", sub: "anon-1", is_anonymous: true }, "register"),
-      sqlstate("KA001"),
-    );
     await assert.rejects(
       k.rpc(alice, "record_event", { p_type: "note.created", p_scope: "system" }),
       sqlstate("KA001"),

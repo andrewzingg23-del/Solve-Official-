@@ -8,7 +8,8 @@ import { sendMagicLink } from "./actions";
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const { next, error, sent } = await searchParams;
   const nextPath = safeNextPath(next);
-  if (await getUser()) redirect(nextPath);
+  const user = await getUser();
+  if (user && !user.is_anonymous) redirect(nextPath);
   return <main className="solve-page solve-login-page">
     <header className="solve-page-heading"><span className="solve-kicker">Welcome to solve</span><h1>Sign in to build together.</h1><p>Save your projects, invite your people and bring your AI. We’ll email you a sign-in link.</p></header>
     {!isSupabaseConfigured ? <section role="status" className="solve-panel"><h2>Sign-in is temporarily unavailable.</h2><p className="mt-3">Your local idea and profile stay on this device. You can return to them while account access is restored.</p><Link href="/worlds/new" className="solve-text-link mt-4 inline-block">Return to your idea →</Link></section> : typeof sent === "string" ? <section role="status" className="solve-panel"><h2>Check your inbox.</h2><p className="mt-3">We sent a sign-in link to <strong>{sent}</strong>. Open it to continue where you left off.</p><Link href={`/login?next=${encodeURIComponent(nextPath)}`} className="solve-text-link mt-4 inline-block">Try another email</Link></section> : <form action={sendMagicLink} className="solve-form solve-panel">

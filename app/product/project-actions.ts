@@ -9,7 +9,7 @@ import { validateProjectDraft } from "@/lib/product/draft";
 export async function createProject(input: unknown, expectedUserId: string): Promise<{ ok: true; worldId: string } | { ok: false; error: string }> {
   const user = await getUser();
   if (!sameDisplayedAccount(expectedUserId, user?.id)) return { ok: false, error: ACCOUNT_CHANGED };
-  if (!user) return { ok: false, error: "Sign in to save this project. Your draft is still here." };
+  if (!user) return { ok: false, error: "Your workspace could not connect yet. Your draft is still here; refresh and retry." };
   const checked = validateProjectDraft(input);
   if (!checked.ok) return checked;
   try {
