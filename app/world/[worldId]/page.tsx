@@ -22,6 +22,9 @@ import { RouteCard } from "@/app/route-card";
 import { stepDoneAction, takeRouteAction } from "@/app/route-actions";
 import { createArtifactAction } from "./actions";
 import { ArtifactEditor } from "./artifact-editor";
+import { DraftPreview } from "./draft-preview";
+import { generateFirstDraftAction } from "./draft-actions";
+import { looksLikeHtmlDocument, stripActiveContent } from "@/lib/product/website-draft";
 import { WorldBotAccessPanel } from "./bot-access-panel";
 import { WorldAccessPanel } from "./access-panel";
 import { WorldLiveSync } from "./live-sync";
@@ -55,6 +58,7 @@ function ArtifactCard({ worldId, artifact, saves = [], taken = null, takenBy = "
   const isPart = parsePart(artifact.body) !== null;
   const routes = parseRoutes(artifact.body);
   const outreach = routes ? null : parseOutreach(artifact.body);
+  const isWebsite = !routes && !outreach && !isPart && !isPixelArt && looksLikeHtmlDocument(artifact.body);
   return (
     <article id={`piece-${artifact.entityId}`} className="flex w-full scroll-mt-6 flex-col gap-3 rounded-md border border-line bg-surface/95 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.25)] backdrop-blur-md">
       <header className="flex items-start justify-between gap-3">
@@ -71,6 +75,8 @@ function ArtifactCard({ worldId, artifact, saves = [], taken = null, takenBy = "
         <PartPreview worldId={worldId} pieceId={artifact.entityId} body={artifact.body} title={artifact.title} />
       ) : isPixelArt ? (
         <PixelArtPreview body={artifact.body} title={artifact.title} />
+      ) : isWebsite ? (
+        <DraftPreview html={stripActiveContent(artifact.body)} title={artifact.title} />
       ) : artifact.body ? (
         <p className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-sm leading-6 text-muted">{artifact.body}</p>
       ) : (
@@ -118,6 +124,27 @@ function CreateArtifactForm({ worldId, position, error, actorId }: { worldId: st
           <textarea name="body" maxLength={7000} rows={6} placeholder="Put the first thought here…" className="resize-y rounded-md border border-line bg-background p-3 text-sm leading-6 text-foreground outline-none placeholder:text-muted/50 focus:border-accent" />
         </label>
         <button type="submit" className={primaryAction}>Save document</button>
+      </RecoverableForm>
+    </section>
+  );
+}
+
+function FirstDraftPanel({ worldId, actorId, goal }: { worldId: string; actorId: string; goal: string }) {
+  const generate = generateFirstDraftAction.bind(null, worldId);
+  return (
+    <section className="flex flex-col gap-4 rounded-md border border-accent/40 bg-surface/80 p-5 shadow-[0_0_30px_rgba(34,211,238,0.12)] md:p-6">
+      <div className="flex flex-col gap-2">
+        <p className={label}>Start here</p>
+        <h2 className="text-xl font-medium tracking-tight">See a first draft</h2>
+        <p className="text-sm leading-6 text-muted">SOLVE turns your idea into an interactive website draft you can look at and refine. This takes a few seconds.</p>
+      </div>
+      <RecoverableForm action={generate} ownerActorId={actorId} className="flex flex-col gap-3" successMessage="Building your first preview…">
+        <input type="hidden" name="requestId" value={randomUUID()} />
+        <label className="flex flex-col gap-1.5 text-xs text-muted">
+          What you want to make happen
+          <textarea name="goal" defaultValue={goal} maxLength={7000} rows={3} placeholder="Describe your idea. We’ll help shape the first draft." className="resize-y rounded-md border border-line bg-background p-3 text-sm leading-6 text-foreground outline-none placeholder:text-muted/50 focus:border-accent" />
+        </label>
+        <button type="submit" className={primaryAction}>Create first draft</button>
       </RecoverableForm>
     </section>
   );
@@ -181,6 +208,10 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
     return !t || t.takenBy === me ? "you" : (actorLabels.get(t.takenBy) ?? "its owner");
   };
   const nextPosition = { x: 24 + (artifacts.length % 3) * 26, y: 26 + (Math.floor(artifacts.length / 3) % 3) * 22 };
+  const goalArtifact = artifacts.find((a) => a.title === "Goal");
+  const worldSummary = world.summary?.trim() ?? "";
+  const goalText = goalArtifact?.body.trim() || (worldSummary.startsWith("A private World") ? "" : worldSummary);
+  const hasWebsiteDraft = artifacts.some((a) => looksLikeHtmlDocument(a.body));
 
   return (
     <main className="solve-page">
@@ -195,6 +226,10 @@ export default async function CreativeWorldPage({ params, searchParams }: PagePr
       {(saved === "route" || saved === "step") && <p role="status" className="solve-notice">Your update is saved in project history.</p>}
       {(error === "route-input" || error === "route-access" || error === "route-save" || error === "world-missing") && <p role="alert" className="solve-error">{error === "route-access" ? "Only the project owner can update this plan." : "The update could not be saved. Your existing work has not changed; try again."}</p>}
       <NextSteps worldId={worldId} actorId={currentActorId} artifacts={artifacts} canWrite={canEdit} />
+      {saved === "draft" && <p role="status" className="solve-notice">Your preview is ready below.</p>}
+      {canEdit && !hasWebsiteDraft && goalText.length >= 3 ? (
+        <section className="mb-9"><FirstDraftPanel worldId={worldId} actorId={currentActorId} goal={goalText} /></section>
+      ) : null}
       <section aria-labelledby="documents-heading" className="mb-9 scroll-mt-24">
         <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3"><h2 id="documents-heading">Documents</h2><span className="solve-muted">{artifacts.length} saved · revisions tracked</span></div>
         <div className="solve-two-columns">
