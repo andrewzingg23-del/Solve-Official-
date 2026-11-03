@@ -1,0 +1,276 @@
+{
+  "schema_version": "1.0.0",
+  "mission_id": "SOLVE-MVP-001",
+  "title": "Building SOLVE",
+  "recorded_at": "2026-11-03",
+  "record_type": "github_review_checkpoint",
+  "record_status": "documentation_only_not_live_in_app",
+  "canonical_repository": "andrewzingg23-del/Solve-Official-",
+  "integration_branch": "main",
+  "observed_main_sha": "5529d1c7382eac1d598f7797fe1f2456cb55b5b8",
+  "review_branch": "strategy/building-solve-mission-20261103",
+  "source_file": "docs/operations/BUILDING-SOLVE.md",
+  "objective": "Build an AI-native environment where any person can create, modify, save, reopen and publish a genuinely functioning World; use SOLVE-provided default AI within limits while user-owned external AI connections remain optional; coordinate development through source-backed Missions and portable handoffs.",
+  "canonical_sources": [
+    {
+      "path": "VISION-CANON.md",
+      "role": "founder_vision_and_latest_amendments"
+    },
+    {
+      "path": "BUILD-CHARTER.md",
+      "role": "durable_engineering_priority"
+    },
+    {
+      "path": "DIRECTIVES.md",
+      "role": "active_founder_orders"
+    },
+    {
+      "path": "DECISIONS.md",
+      "role": "accepted_founder_decisions"
+    },
+    {
+      "path": "SECURITY-INVARIANTS.md",
+      "role": "security_constraints"
+    },
+    {
+      "path": "docs/brand/BRAND.md",
+      "role": "approved_brand"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "architecture",
+      "value": "Option B: verify and retain trusted kernel/persistence/authority; selectively rebuild application UI and product layer",
+      "status": "accepted",
+      "basis": "founder directive + Claude audit, 51f7b55"
+    },
+    {
+      "id": "trunk",
+      "value": "main is canonical; fresh branches/PRs; no reset, blanket merge or feature-branch-as-trunk",
+      "status": "accepted",
+      "basis": "DECISIONS.md 2026-10-31"
+    },
+    {
+      "id": "ai",
+      "value": "SOLVE-native AI from onboarding using a controlled hosted default; personal third-party provider connection optional; native editing works without inference",
+      "status": "accepted_product_requirement",
+      "basis": "latest founder clarification"
+    },
+    {
+      "id": "identity",
+      "value": "SOV ID based on independent sovereign-passport, integration to be verified",
+      "status": "accepted_intent_unverified_live_link",
+      "basis": "DECISIONS.md 2026-10-31"
+    },
+    {
+      "id": "agent_continuity",
+      "value": "portable source-backed context packages, explicit task ownership and verified outcomes; no claim of live access to private agent sessions",
+      "status": "accepted_product_requirement",
+      "basis": "founder clarification"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "main_sha",
+      "state": "connector_verified",
+      "source": "github main...main compare",
+      "value": "5529d1c7382eac1d598f7797fe1f2456cb55b5b8"
+    },
+    {
+      "id": "audit_commit",
+      "state": "committed_not_integrated",
+      "url": "https://github.com/andrewzingg23-del/Solve-Official-/commit/51f7b55e63570c3c95c7432c0ac2ef19dd27c1a8",
+      "caveat": "Claude-reported staging SQL/test observations were not independently rerun here."
+    },
+    {
+      "id": "foundation_divergence",
+      "state": "connector_verified",
+      "base": "main",
+      "head": "claude/foundation-decision",
+      "ahead_by": 9,
+      "behind_by": 33
+    },
+    {
+      "id": "pr42",
+      "state": "open_draft_product_conflict",
+      "url": "https://github.com/andrewzingg23-del/Solve-Official-/pull/42",
+      "reason": "Requires personal connected AI for basic work."
+    },
+    {
+      "id": "pr43",
+      "state": "open_draft_documentation",
+      "url": "https://github.com/andrewzingg23-del/Solve-Official-/pull/43",
+      "reason": "Defines proposed quality gates, not passed deployment gates."
+    },
+    {
+      "id": "staging_world_read",
+      "state": "blocked_author_reported",
+      "error": "Invalid API key",
+      "project_ref": "taeikshnbcsjlgbattyp",
+      "caveat": "Preview SUPABASE_SECRET_KEY mismatch suspected; not independently reverified here."
+    }
+  ],
+  "blockers": [
+    {
+      "id": "staging_api_key",
+      "state": "requires_safe_verification",
+      "description": "Verify Preview server key/project match; authorized and unauthorized World-read paths; never log secret.",
+      "blocking": [
+        "live_mcp_world_read"
+      ],
+      "not_blocking": [
+        "independent_native_world_builder_analysis",
+        "mission_handoff_docs"
+      ]
+    },
+    {
+      "id": "branch_divergence",
+      "state": "requires_reconciliation",
+      "description": "Review main and divergent branches in narrow, reversible PRs.",
+      "blocking": [
+        "safe_promotion_of_divergent_changes"
+      ]
+    },
+    {
+      "id": "passport_location",
+      "state": "unverified",
+      "description": "Confirm accessible repository or deployment and interface before editing SOV Passport."
+    },
+    {
+      "id": "ai_default_billing",
+      "state": "not_verified",
+      "description": "Confirm supported provider, funding model and hard spending caps before promising included hosted AI in production."
+    }
+  ],
+  "work_items": [
+    {
+      "id": "F0",
+      "title": "Map and reproduce native World create/edit/save/reopen + AI entry path on main",
+      "state": "ready",
+      "assigned_to": null,
+      "priority": 1,
+      "dependencies": [],
+      "required_evidence": [
+        "repro_steps",
+        "file_function_map",
+        "actual_test_result",
+        "smallest_gap"
+      ]
+    },
+    {
+      "id": "F1",
+      "title": "AI intention -> validated native World objects -> preview/edit/save/reopen with model-independent fallback",
+      "state": "not_started",
+      "assigned_to": null,
+      "priority": 2,
+      "dependencies": [
+        "F0"
+      ],
+      "required_evidence": [
+        "browser_test",
+        "permission_test",
+        "persistence_test",
+        "model_cost_limits"
+      ]
+    },
+    {
+      "id": "F2",
+      "title": "Publish public page/form -> nonmember response -> private record/task",
+      "state": "not_started",
+      "assigned_to": null,
+      "priority": 3,
+      "dependencies": [
+        "F1"
+      ],
+      "required_evidence": [
+        "external_url",
+        "nonmember_e2e",
+        "cross_user_privacy_test"
+      ]
+    },
+    {
+      "id": "C0",
+      "title": "Verify staging key and bot-versus-user read authority without security bypass",
+      "state": "ready_parallel",
+      "assigned_to": null,
+      "dependencies": [],
+      "required_evidence": [
+        "safe_authorized_read",
+        "safe_unauthorized_denial"
+      ]
+    },
+    {
+      "id": "R0",
+      "title": "Map divergent branches and PRs into main-based reviewable slices",
+      "state": "ready_parallel",
+      "assigned_to": null,
+      "dependencies": [],
+      "required_evidence": [
+        "commit_compare",
+        "no_force_push",
+        "test_results"
+      ]
+    },
+    {
+      "id": "H0",
+      "title": "Use MD+JSON for explicit Claude/ChatGPT/Muse handoffs, then wire to real World",
+      "state": "ready",
+      "assigned_to": null,
+      "dependencies": [],
+      "required_evidence": [
+        "second_agent_resume",
+        "source_backed_result",
+        "next_handoff"
+      ]
+    }
+  ],
+  "next_task_id": "F0",
+  "next_action": "On a fresh main-based branch, reproduce the actual native World path and identify the minimum change needed for default AI-assisted intention-to-World composition; do not merge or deploy.",
+  "handoff_contract": {
+    "mandatory_fields": [
+      "mission_id",
+      "task_id",
+      "accepted_decisions",
+      "relevant_source_links",
+      "observed_main_sha",
+      "file_scope",
+      "authorized_actions",
+      "completion_criteria",
+      "latest_verified_results",
+      "unverified_claims",
+      "blockers",
+      "next_action"
+    ],
+    "state_vocabulary": [
+      "claimed",
+      "in_progress",
+      "blocked",
+      "proposed",
+      "implemented_unverified",
+      "verified",
+      "rejected"
+    ],
+    "authoritative_order": [
+      "latest_founder_instruction",
+      "accepted_canon_and_decisions",
+      "verified_source_state",
+      "mission_checkpoint",
+      "unverified_agent_claims"
+    ],
+    "rules": [
+      "Scoped context only",
+      "No secrets or unrelated private data",
+      "No invented live AI session control",
+      "No production deploy or destructive migrations without consent",
+      "Verification must be attributable and linked",
+      "One writer per architectural surface"
+    ]
+  },
+  "release_acceptance": [
+    "User obtains useful AI-assisted World without supplying a personal AI key",
+    "User edits native objects and reopens persistent state without model availability",
+    "Public output works for nonmembers; authorized submission returns as private work",
+    "Second person with limited permissions can contribute but cannot access unrelated data",
+    "Second AI can continue a bounded task from mission context with source-backed output"
+  ]
+}
