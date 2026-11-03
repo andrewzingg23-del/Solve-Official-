@@ -109,3 +109,32 @@ SOV remains an internal economic primitive unless separately approved. Give it r
 The long-term ambition is for SOLVE to become a programmable interface for reality: a place where people can understand where they are, decide where they want to go, discover viable routes, assemble the systems and people required, create digitally and physically, act in the world, and preserve trustworthy evidence of what changed.
 
 **SOLVE helps people and communities become more prepared, more capable, and harder to make powerless.**
+
+
+## Founder clarification — effortless connections, optional by design (2026-11-03)
+
+**SOLVE Connect** is a core product capability: **Find it → Connect it → Use it.** People should be able to discover useful third-party software, AI providers, social profiles, professional networks, devices, and services through plain-language intent or search; authorize supported connections with minimal friction; verify that they work; grant access to selected Worlds; and disconnect or revoke access easily. Connections are attached to a person's identity but **access is scoped per World**. Reuse the existing provider-adapter, identity, permission, and kernel architecture rather than creating a parallel integration system.
+
+SOLVE should continually discover and evaluate useful external capabilities, preferring official APIs, supported MCP interfaces, SDKs, and lawful licensed integrations. It should distinguish **discovered**, **supported**, **authorized/connected**, and **verified working**. Scraping public information is a discovery method only where permitted, not a means to evade access controls. Use previously authorized capabilities within their approved scopes; require consent for new sensitive access, purchases, publication, or consequential actions. Monitor health and compatibility, test alternatives, and preserve rollback and portability. Never silently replace working integrations or expose credentials.
+
+**Every connection and advanced feature is optional.** Users can create, save, collaborate, and participate without linking Instagram, LinkedIn, an AI account, payment rails, or any external service. Linking a public profile is distinct from granting account access; connecting an AI API is distinct from controlling an existing assistant session. Disconnection must not destroy SOLVE identity, Worlds, or unrelated work. **The complexity of integration belongs to SOLVE, not the user.**
+
+## Founder clarification — adoption through genuine utility (2026-11-03)
+
+Design for three sequential real-user acceptance journeys on **one universal World architecture**, not separate hardcoded products:
+
+1. **Founder / customer zero — Building SOLVE.** The founder opens a persistent World, sees source-backed GitHub/CI/deployment and contributor status, reviews evidence, records a decision or task, and resumes work without switching among fragmented tools. Agents act only through verified connections and bounded authority.
+2. **Brother / customer one — commercial project.** A person working on a commercial interior project can begin with files, project context, tasks, collaborators, and optional relevant software. He can accept a narrowly scoped invitation and contribute without elaborate onboarding or mandatory ownership of a separate World. Do not assume unverified construction, estimating, permitting, or compliance functions.
+3. **Unrelated new user — different intention.** A nontechnical person can create a suitable World for an unrelated project, produce and save something useful, and return without founder-specific terminology or a tutorial.
+
+Design the journey for **first useful result → effortless optional connection → simple invitation → persistent contribution → meaningful return**. On return, show what changed, what is verified, what remains unresolved, and the next useful action; do not invent progress. Measure time to useful outcome, successful save/return, connection success, invitation acceptance, genuine contributions, and repeat value rather than vanity engagement. The first target is **three people who independently want to keep using SOLVE**, not a large nominal user count.
+
+## Founder clarification — community, creation, and optional commerce (2026-11-03)
+
+**Community is the intended long-term moat, earned through useful creation, collaboration, exchange, and trust—not merely a social feed or user count.** People can create privately, invite others into shared Worlds, and optionally publish permission-safe, versioned creations for discovery, reuse, or sale. Potential offerings include Worlds, templates, workflows, capabilities, designs, services, and memberships. The buyer should be able to use a published creation without needing to understand its internal construction.
+
+Maintain a strict boundary between private working state and publishable packages: never leak private context, secrets, unpublished work, or permissions through sharing or commerce. Plan for creator ownership, attribution, versioning, licensing, reputation, discovery, and provider-independent payment rails without forcing a marketplace or payments into the immediate release. Do not assume network effects exist until users actually share valuable creations and others adopt them.
+
+**Immediate build priority:** make SOLVE radically simpler and visibly different, with a working founder World, a usable invitation flow, optional SOLVE Connect, persistent work, and a second unrelated World journey. Preserve the kernel, trust boundaries, and useful existing capabilities. The universal architecture must support community and commerce later; the immediate product must already be valuable without either.
+
+**SIMPLE SCALES: Everything useful can be connected or shared when chosen; nothing unnecessary is mandatory.**
