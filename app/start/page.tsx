@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { getUser } from "@/lib/supabase/server";
+import { getKernel } from "@/lib/kernel/server";
+import { connectionStatus } from "@/lib/ai/provider";
 import { isValidStep } from "@/lib/bot/soul";
 import { getBotAvatar } from "@/lib/bot/avatar";
 import { getBotSoul } from "@/lib/bot/soul";
@@ -21,6 +23,7 @@ export default async function StartPage({
   const social = Array.isArray(params.social) ? params.social[0] : params.social;
 
   const user = await getUser();
+  const chatReady = user ? await connectionStatus(await getKernel()).then((status) => status.active).catch(() => false) : false;
   const avatar = getBotAvatar(user);
   const soul = getBotSoul(user);
   const socials = getSocialConnections(user);
@@ -39,7 +42,7 @@ export default async function StartPage({
       socials={socials}
       socialNotice={social === "connected" ? "connected" : social === "error" ? "error" : null}
       metaReady={Boolean(process.env.META_APP_ID?.trim())}
-      chatReady={Boolean(process.env.ANTHROPIC_API_KEY?.trim())}
+      chatReady={chatReady}
       faceGenReady={Boolean(
         (process.env.HF_CREDENTIALS || process.env.HF_KEY || process.env.HIGGSFIELD_API_KEY)?.trim(),
       )}

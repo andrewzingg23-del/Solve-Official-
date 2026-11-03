@@ -14,6 +14,7 @@ import type { ReactNode } from "react";
 import { createCreativeWorld } from "../../lib/world/creative";
 import { grantWorldAccess } from "../../lib/world/collaboration";
 import { loadBot } from "../../lib/bot/store";
+import { saveProvider } from "../../lib/ai/provider";
 
 declare global { var __solveActionFixture: { user: { id: string; user_metadata: Record<string, unknown> } | null; kernel: Kernel }; }
 let modules: Promise<Record<string, Record<string, (...args: unknown[]) => Promise<unknown>>>> | undefined;
@@ -108,6 +109,8 @@ test("members can reach People without owner management controls", async () => {
 
 test("the displayed current account can save profile, persona and project", async () => {
   const { ben } = await accountFixture(), a = await actions();
+  process.env.SOLVE_PROVIDER_ENCRYPTION_KEY = "test-only-encryption-secret-32-characters";
+  await saveProvider(ben, { apiKey: "fixture-private-provider-key", model: "fixture/model" });
   const actor = (await ben.whoami()).actor_id;
   const profile = await a.profile.saveProfileAction({ name: "Benjamin", botName: "Mira", face: "host" }, "current-profile-001", "auth:action-ben");
   assert.equal((profile as { ok: boolean }).ok, true);

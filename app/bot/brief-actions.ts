@@ -1,6 +1,7 @@
 "use server";
 
-import Anthropic from "@anthropic-ai/sdk";
+import { readProvider } from "@/lib/ai/provider";
+import { buildChatCompletionBody, completeChat } from "@/lib/bot/openrouter";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { buildBriefPrompt, readBrief, writeBrief, BRIEF_TTL_MS, type Brief } from "@/lib/bot/brief";
@@ -19,8 +20,8 @@ export async function getBrief(): Promise<Brief | null> {
   const cached = await readBrief(kernel, ownerId);
   if (cached) return cached;
 
-  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
-  if (!apiKey) return null;
+  const provider = await readProvider(kernel);
+  if (!provider) return null;
 
   // Gather what's real: waiting items, world list. Keep it small and fast.
   const worlds = await worldsForBot(kernel, ownerId).catch(() => []);
@@ -35,14 +36,14 @@ export async function getBrief(): Promise<Brief | null> {
   });
 
   try {
-    const client = new Anthropic({ apiKey });
-    const res = await client.messages.create({
-      model: "anthropic/claude-haiku-4-5",
-      max_tokens: 512,
-      messages: [{ role: "user", content: prompt }],
-    });
-    const text = res.content.find((b) => b.type === "text");
-    const brief = text?.type === "text" ? text.text.trim() : "";
+    const res = await completeChat(provider.apiKey, buildChatCompletionBody({
+      model: provider.model,
+      maxTokens: 512,
+      history: [],
+      system: "Write a concise, grounded brief from the supplied project records. Never invent activity.",
+      message: prompt,
+    }));
+    const brief = res.reply;
     if (!brief) return null;
     await writeBrief(kernel, ownerId, brief);
     return { text: brief, at: new Date().toISOString() };

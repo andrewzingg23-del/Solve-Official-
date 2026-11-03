@@ -9,6 +9,7 @@ import { localSupabase } from "../../lib/kernel/local";
 import { kernelClient, KernelError, type Kernel } from "../../lib/kernel/client";
 import { createCreativeWorld, createCreativeArtifact, updateCreativeArtifact, loadCreativeWorld } from "../../lib/world/creative";
 import { grantWorldAccess } from "../../lib/world/collaboration";
+import { saveProvider } from "../../lib/ai/provider";
 
 declare global { var __draftFixture: { kernel: Kernel; user: { id: string } | null }; }
 export const html = '<!DOCTYPE html><html><head><title>Cafe</title></head><body><h1>Cafe</h1><p>Fresh coffee and warm pastries by the beach. Come in every morning for breakfast and a quiet place to relax.</p></body></html>';
@@ -36,6 +37,8 @@ test('draft action enforces grants before inference and reconciles only confirme
   const owner = kernelClient(localSupabase(db, user('auth:draft-owner')));
   const viewer = kernelClient(localSupabase(db, user('auth:draft-viewer')));
   await owner.register('Owner'); const viewerId = await viewer.register('Viewer');
+  process.env.SOLVE_PROVIDER_ENCRYPTION_KEY = 'test-only-encryption-secret-32-characters';
+  await saveProvider(owner, { apiKey: 'fixture-not-a-secret', model: 'fixture-only:free' });
   let world = await createCreativeWorld(owner, { worldId: '00000000-0000-4000-8000-000000000aa1', title: 'Cafe', goal: 'Make a coffee shop website' });
   await grantWorldAccess(owner, { scope: world.scope, granteeActorId: viewerId, role: 'viewer', requestId: 'viewer-001' });
   const run = await loadAction();
@@ -68,7 +71,8 @@ test('draft action enforces grants before inference and reconciles only confirme
       globalThis.__draftFixture.kernel = owner;
     });
     await t.test('complete source persists; retry opens it without another provider call', async () => {
-      assert.equal((await run(world.worldId, form)).ok, true);
+      const result = await run(world.worldId, form);
+      assert.equal(result.ok, true, JSON.stringify(result));
       const stored = (await loadCreativeWorld(owner, world.worldId)).artifacts.filter(a => a.body === html);
       assert.equal(stored.length, 1); assert.equal(stored[0].version, 1);
       const count = calls;
@@ -117,6 +121,7 @@ test('draft action enforces grants before inference and reconciles only confirme
     await t.test('an authorized editor can create a first draft', async () => {
       const editor = kernelClient(localSupabase(db, user('auth:draft-editor')));
       const editorId = await editor.register('Editor');
+      await saveProvider(editor, { apiKey: 'fixture-editor-key-long-enough', model: 'fixture-only:free' });
       const shared = await createCreativeWorld(owner, { worldId: '00000000-0000-4000-8000-000000000aa8', title: 'Shared cafe' });
       await grantWorldAccess(owner, { scope: shared.scope, granteeActorId: editorId, role: 'editor', requestId: 'editor-001' });
       globalThis.__draftFixture = { kernel: editor, user: { id: 'auth:draft-editor' } };

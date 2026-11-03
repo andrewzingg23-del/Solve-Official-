@@ -54,8 +54,8 @@ export function Connections({ ownerId, botName, connectorUrl, connections }: { o
 
       <section className="solve-panel solve-ai-card" aria-labelledby="connect-assistant">
         <div className="solve-ai-card-heading"><Icon name="plus" /><h2 id="connect-assistant">Connect an assistant</h2></div>
-        <p>Use this MCP connector URL in an assistant that supports remote MCP with OAuth. You choose its permissions on solve.</p>
-        <p>The built-in project room AI is separate and does not need this connector.</p>
+        <p><a href="/connect" className="solve-text-link">Connect a model key or check activation →</a></p><p>Use this MCP connector URL in an assistant that supports remote MCP with OAuth. You choose its permissions on solve.</p>
+        <p>For AI responses inside SOLVE, connect your own model key. An assistant connector works from the external assistant.</p>
         <CopyField value={connectorUrl} name="MCP connector URL" />
         <dl className="solve-ai-modes">
           <div><dt>Read only</dt><dd>Reads your persona, private knowledge and project context your AI is allowed to see.</dd></div>

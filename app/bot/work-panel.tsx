@@ -2,11 +2,13 @@ import Link from "next/link";
 import { getUser } from "@/lib/supabase/server";
 import { getKernel } from "@/lib/kernel/server";
 import { listCreativeWorlds } from "@/lib/world/creative";
+import { connectionStatus } from "@/lib/ai/provider";
 
 export async function AiWork() {
   const user = await getUser();
-  const projects = user ? await listCreativeWorlds(await getKernel()).catch(() => null) : [];
-  const configured = Boolean(process.env.OPENROUTER_API_KEY?.trim());
+  const kernel = user ? await getKernel() : null;
+  const projects = kernel ? await listCreativeWorlds(kernel).catch(() => null) : [];
+  const configured = kernel ? await connectionStatus(kernel).then((status) => status.active).catch(() => false) : false;
   return <div className="solve-ai-stack">
     <section className="solve-panel solve-ai-card">
       <h2>What would you like to move forward?</h2>
@@ -16,8 +18,8 @@ export async function AiWork() {
     </section>
     <section className="solve-panel solve-ai-card">
       <h2>Two ways to use AI here</h2>
-      <p><strong>Built-in room AI:</strong> {configured ? "configured on this service; availability is confirmed when a request completes." : "not configured on this service yet."} It works from the project context you may access. An external connector is not required.</p>
-      <p><strong>Your personal AI and external assistants:</strong> your saved character, personality and private knowledge can be used by an assistant you authorize separately. This does not run a background worker or automatically import chats.</p>
+      <p><strong>Your connected AI:</strong> {configured ? "connected; availability is confirmed when a request completes." : "connect an assistant or your own model key to activate AI work."}</p>
+      <p>Your saved character, personality and private knowledge can be used by an assistant you authorize separately. Connecting does not automatically import chats.</p>
       <div className="solve-ai-actions"><Link href="/bot?section=knowledge" className="solve-text-link">Add private knowledge →</Link><Link href="/bot?section=connections" className="solve-text-link">Review connections and permissions →</Link><Link href="/bot?section=persona" className="solve-text-link">Customize appearance & personality →</Link></div>
     </section>
   </div>;

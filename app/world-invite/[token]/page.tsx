@@ -31,15 +31,16 @@ export default async function InvitationPage({ params, searchParams }: PageProps
       redirect(`/world-invite/${token}?error=unavailable`);
     }
     revalidatePath(`/world/${worldId}`);
-    redirect(`/world/${worldId}/room`);
+    redirect(`/world/${worldId}/work`);
   }
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-xl flex-col justify-center gap-5 px-5 py-12">
       <Link href="/" className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">solve</Link>
-      <h1 className="text-3xl font-medium">You’ve been invited to a World.</h1>
+      <h1 className="text-3xl font-medium">You’ve been invited to a shared workspace.</h1>
       <p className="text-sm leading-6 text-muted">Accept to join a private space for shared ideas, conversation and AI-assisted work. The owner controls whether you can view or edit. Project details appear after you join.</p>
       {!valid || error ? <p role="alert" className="rounded border border-negative/30 p-3 text-sm text-negative">This invitation is unavailable. It may have expired, been cancelled or already been used. If you already joined, open your Worlds; otherwise ask the owner for a fresh link.</p> : null}
-      {valid && !error ? user ? <form action={accept}><button className={primaryAction}>Accept invitation</button></form> : <Link href={`/login?next=${encodeURIComponent(`/world-invite/${token}`)}`} className={primaryAction}>Sign in to accept</Link> : null}
+      {user?.is_anonymous ? <p className="text-sm text-muted">You are using a browser-bound guest session. <Link href={`/login?next=${encodeURIComponent(`/world-invite/${token}`)}`} className="text-accent underline">Sign in with email before accepting to keep access across devices.</Link></p> : null}
+      {valid && !error ? user && !user.is_anonymous ? <form action={accept}><button className={primaryAction}>Accept invitation</button></form> : <Link href={`/login?next=${encodeURIComponent(`/world-invite/${token}`)}`} className={primaryAction}>Sign in to accept</Link> : null}
       <Link href="/worlds" className={secondaryAction}>My Worlds</Link>
     </main>
   );

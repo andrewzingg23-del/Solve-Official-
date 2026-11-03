@@ -1,10 +1,10 @@
 "use server";
+import { readProvider } from "@/lib/ai/provider";
 
 import { companionOf } from "@/lib/bot/store";
 import {
   buildChatCompletionBody,
   completeChat,
-  OPENROUTER_DEFAULT_MODEL_FLASH,
 } from "@/lib/bot/openrouter";
 import {
   communityMembers,
@@ -60,17 +60,13 @@ async function ctxFor(communityId: string): Promise<Ctx> {
   return { ok: true, kernel, community, me, botName: bot?.name ?? "Your bot" };
 }
 
-function modelKey(): string | null {
-  const key = process.env.OPENROUTER_API_KEY?.trim();
-  return key || null;
-}
-
-async function complete(prompt: string, maxTokens: number): Promise<string> {
-  const apiKey = modelKey();
-  if (!apiKey) throw new Error("noconfig");
+async function complete(kernel: Kernel, prompt: string, maxTokens: number): Promise<string> {
+  const provider = await readProvider(kernel);
+  if (!provider) throw new Error("noconfig");
+  const {apiKey,model} = provider;
   const { reply } = await completeChat(apiKey,
     buildChatCompletionBody({
-      model: OPENROUTER_DEFAULT_MODEL_FLASH,
+      model,
       system: "You are a community room assistant. Be direct, specific, and honest. Never invent.",
       history: [],
       message: prompt,
@@ -88,7 +84,7 @@ export async function getRoomBrief(communityId: string): Promise<RoomBriefResult
 
   const cached = await readRoomBrief(ctx.kernel, communityId, ctx.me).catch(() => null);
   if (cached) return { brief: cached };
-  if (!modelKey()) return { error: "noconfig" };
+  if (!await readProvider(ctx.kernel)) return { error: "noconfig" };
 
   const [notes, roster] = await Promise.all([
     notesForMe(ctx.kernel, ctx.community, 30).catch(() => []),
@@ -111,7 +107,7 @@ export async function getRoomBrief(communityId: string): Promise<RoomBriefResult
   });
 
   try {
-    const text = await complete(prompt, 400);
+    const text = await complete(ctx.kernel, prompt, 400);
     if (!text) return { error: "model" };
     await writeRoomBrief(ctx.kernel, communityId, ctx.me, text).catch(() => {});
     return { brief: { text, at: new Date().toISOString() } };
@@ -127,7 +123,7 @@ export async function askRoom(communityId: string, question: string): Promise<As
 
   const ctx = await ctxFor(communityId);
   if (!ctx.ok) return { error: ctx.error };
-  if (!modelKey()) return { error: "noconfig" };
+  if (!await readProvider(ctx.kernel)) return { error: "noconfig" };
 
   const notes = await notesForMe(ctx.kernel, ctx.community, 30).catch(() => []);
   const prompt = buildAskRoomPrompt({
@@ -138,7 +134,7 @@ export async function askRoom(communityId: string, question: string): Promise<As
   });
 
   try {
-    const answer = await complete(prompt, 600);
+    const answer = await complete(ctx.kernel, prompt, 600);
     if (!answer) return { error: "model" };
     return { answer };
   } catch (e) {
