@@ -639,3 +639,9 @@ Handoff: `docs/handoff/2026-10-08-immersive-studio.md`. This is a concept creati
 
 ## 2026-11-01 — Seamless guests
 Guest Auth bootstrap and additive subject-bound kernel registration implemented on codex/seamless-guest. 495 tests pass / 1 existing skip; typecheck, lint (0 errors), production build pass. Reviewed independently. Guest provider activation and live create/save/reload verification pending.
+
+## 2026-11-03 — Connection-gated shared workspace
+
+Branch `codex/shared-workspace` adds the first founder/brother workspace over the existing governed World foundation. A person signs in, connects an external OAuth MCP assistant or their own OpenRouter model, creates an adaptable project, keeps versioned documents and safe visual page drafts, invites a collaborator, and can continue through shared conversation, next steps and exports. Each collaborator supplies their own intelligence connection. Without one, SOLVE preserves and displays existing work but cannot create or invoke AI. There is no deployment model-key fallback.
+
+Local evidence: 542 tests passed, 1 intentionally skipped, 0 failed; TypeScript passed; lint reported 0 errors and 9 pre-existing warnings; the production build compiled and generated 47/47 pages. Preview and real-credential journeys remain pending. Production is unchanged.

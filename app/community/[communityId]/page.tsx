@@ -7,6 +7,7 @@ import { aiSendsNotes, communityMembers, joinRequests, myAsks, notesForMe, readC
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
+import { connectionStatus } from "@/lib/ai/provider";
 import { CommunityView, type Loaded } from "./view";
 import styles from "@/app/communities/community.module.css";
 
@@ -20,12 +21,13 @@ async function load(communityId: string): Promise<Loaded | "missing" | "identity
     const [{ me, standing }, avatars, [owner]] = await Promise.all([standingIn(kernel, community), kernel.myAvatars(), kernel.readActors([community.ownerId])]);
     const companion = companionOf(avatars);
     const inside = standing !== "guest";
-    const [asks, roster, notes, open, aiNotes] = await Promise.all([
+    const [asks, roster, notes, open, aiNotes, aiStatus] = await Promise.all([
       standing === "owner" ? Promise.resolve([]) : myAsks(kernel, community),
       inside ? communityMembers(kernel, community) : Promise.resolve({ people: [], guests: [] }),
       inside ? notesForMe(kernel, community) : Promise.resolve([]),
       standing === "owner" ? joinRequests(kernel, community) : Promise.resolve([]),
       inside && companion ? aiSendsNotes(kernel, community) : Promise.resolve(null),
+      connectionStatus(kernel),
     ]);
     return {
       community,
@@ -39,7 +41,7 @@ async function load(communityId: string): Promise<Loaded | "missing" | "identity
       notes,
       open,
       aiNotes,
-      roomAiConfigured: Boolean(process.env.OPENROUTER_API_KEY?.trim()),
+      roomAiConfigured: aiStatus.active,
     };
   } catch (error) {
     return error instanceof KernelError && error.name === "unauthenticated" ? "identity" : "unavailable";

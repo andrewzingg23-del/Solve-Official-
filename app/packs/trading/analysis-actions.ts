@@ -1,6 +1,8 @@
 "use server";
 
-import Anthropic from "@anthropic-ai/sdk";
+import { getKernel } from "@/lib/kernel/server";
+import { readProvider } from "@/lib/ai/provider";
+import { buildChatCompletionBody, completeChat } from "@/lib/bot/openrouter";
 import { getUser } from "@/lib/supabase/server";
 import { candleStats, marketSnapshot, symbolLabel, type SymbolId } from "@/lib/packs/trading";
 
@@ -13,8 +15,8 @@ export type MarketTicket = {
 export async function analyzeMarket(): Promise<{ ok: boolean; ticket?: MarketTicket; error?: string }> {
   const user = await getUser();
   if (!user) return { ok: false, error: "Sign in first." };
-  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
-  if (!apiKey) return { ok: false, error: "The bot isn't configured on this deployment." };
+  const provider = await readProvider(await getKernel()).catch(() => null);
+  if (!provider) return { ok: false, error: "Connect your own model before requesting analysis." };
 
   let snapshot;
   try {
@@ -36,14 +38,14 @@ export async function analyzeMarket(): Promise<{ ok: boolean; ticket?: MarketTic
   ].join("\n");
 
   try {
-    const client = new Anthropic({ apiKey });
-    const res = await client.messages.create({
-      model: "anthropic/claude-haiku-4-5",
-      max_tokens: 512,
-      messages: [{ role: "user", content: prompt }],
-    });
-    const text = res.content.find((b) => b.type === "text");
-    const out = text?.type === "text" ? text.text.trim() : "";
+    const res = await completeChat(provider.apiKey, buildChatCompletionBody({
+      model: provider.model,
+      maxTokens: 512,
+      history: [],
+      system: "Analyze only the supplied market statistics and return the requested JSON. Never give financial advice.",
+      message: prompt,
+    }));
+    const out = res.reply;
     if (!out) return { ok: false, error: "The bot had nothing to say." };
     const ticket = JSON.parse(out) as MarketTicket;
     if (!ticket.trend || !ticket.momentum || !ticket.watch) throw new Error("bad shape");

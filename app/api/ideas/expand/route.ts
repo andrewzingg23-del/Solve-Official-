@@ -1,26 +1,14 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { readProvider } from "@/lib/ai/provider";
+import { buildChatCompletionBody, completeChat } from "@/lib/bot/openrouter";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { loadCreativeWorld } from "@/lib/world/creative";
 import { createIdeaExpander } from "@/lib/world/idea-expansion";
 import { readIdeaGraph } from "@/lib/world/ideas";
-import { GATEWAY_REASONING_MODEL, GATEWAY_URL } from "@/lib/world/claude";
 
 function text(value: unknown, max: number): value is string {
   return typeof value === "string" && value.length > 0 && value.length <= max;
-}
-
-function modelClient() {
-  if (process.env.ANTHROPIC_API_KEY) {
-    const anthropic = new Anthropic();
-    return { model: "claude-opus-5-5", create: anthropic.messages.create.bind(anthropic.messages) };
-  }
-  if (process.env.AI_GATEWAY_API_KEY) {
-    const gateway = new Anthropic({ apiKey: process.env.AI_GATEWAY_API_KEY, baseURL: GATEWAY_URL });
-    return { model: process.env.AI_GATEWAY_MODEL || GATEWAY_REASONING_MODEL, create: gateway.messages.create.bind(gateway.messages) };
-  }
-  return null;
 }
 
 export async function POST(request: Request) {
@@ -35,11 +23,10 @@ export async function POST(request: Request) {
   const input = body as Record<string, unknown>;
   if (!text(input.worldId, 36) || !text(input.ideaId, 36)) return Response.json({ error: "World and idea ids are required" }, { status: 422 });
 
-  const client = modelClient();
-  if (!client) return Response.json({ error: "No reasoning model is configured for this environment." }, { status: 503 });
-
   try {
     const kernel = await getKernel();
+    const provider = await readProvider(kernel);
+    if (!provider) return Response.json({ error: "Connect your own model before expanding an idea." }, { status: 409 });
     const { world } = await loadCreativeWorld(kernel, input.worldId);
     const graph = await readIdeaGraph(kernel, world.scope);
     const selected = graph.ideas.find((idea) => idea.id === input.ideaId);
@@ -48,10 +35,22 @@ export async function POST(request: Request) {
       .filter((link) => link.fromId === selected.id || link.toId === selected.id)
       .map((link) => link.fromId === selected.id ? link.toId : link.fromId));
     const related = graph.ideas.filter((idea) => relatedIds.has(idea.id)).slice(0, 8);
-    const expander = createIdeaExpander((requestShape) => client.create(requestShape), client.model);
+    const expander = createIdeaExpander(async (requestShape) => {
+      const result = await completeChat(provider.apiKey, buildChatCompletionBody({
+        model: provider.model,
+        maxTokens: requestShape.max_tokens,
+        history: [],
+        system: `${requestShape.system}\nReturn only JSON matching this schema:\n${JSON.stringify(requestShape.output_config.format.schema)}`,
+        message: requestShape.messages[0].content,
+      }), { allowEmpty: true, timeoutMs: 50_000 });
+      return {
+        stop_reason: result.finishReason === "length" ? "max_tokens" : result.finishReason,
+        content: result.reply ? [{ type: "text", text: result.reply }] : [],
+      };
+    }, provider.model);
     const draft = await expander.expand(selected, related);
     if (!draft) return Response.json({ error: "the model did not return a usable proposal" }, { status: 502 });
-    return Response.json({ model: client.model, draft });
+    return Response.json({ model: provider.model, draft });
   } catch (error) {
     if (error instanceof KernelError) {
       if (error.name === "unauthenticated") return Response.json({ error: "Sign in to expand an idea." }, { status: 401 });

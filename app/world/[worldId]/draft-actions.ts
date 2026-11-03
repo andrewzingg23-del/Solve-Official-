@@ -3,6 +3,7 @@
 // Slice B — generate a first website draft for a project from its goal. Kernel-authorized, bounded by
 // the existing token budget, and persisted as a normal versioned CreativeArtifact (one concept, one
 // home). The generated HTML is untrusted and only ever shown in the script-free sandboxed preview.
+import { readProvider, PROVIDER_REQUIRED } from "@/lib/ai/provider";
 import { revalidatePath } from "next/cache";
 import { ACCOUNT_CHANGED, requireDisplayedActor } from "@/lib/product/account-guard";
 import type { FormResult } from "@/app/product/recoverable-form";
@@ -10,8 +11,8 @@ import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { createCreativeArtifact, loadCreativeWorld } from "@/lib/world/creative";
-import { buildChatCompletionBody, ChatTimeoutError, completeChat, OPENROUTER_MISSING_KEY_ERROR } from "@/lib/bot/openrouter";
-import { recordSpend, resolveChatModel, spendBlocked } from "@/lib/bot/chat";
+import { buildChatCompletionBody, ChatTimeoutError, completeChat } from "@/lib/bot/openrouter";
+import { recordSpend, spendBlocked } from "@/lib/bot/chat";
 import { buildWebsiteDraftMessages, draftErrorMessage, evaluateDraft, looksLikeHtmlDocument } from "@/lib/product/website-draft";
 
 // The provider call is bounded below this route's function limit so a slow model fails cleanly as a
@@ -43,9 +44,9 @@ export async function generateFirstDraftAction(worldId: string, formData: FormDa
     if (goal.length < 3) return { ok: false, error: "Add a sentence about what you want, then build the draft." };
     if (spendBlocked(me.actor_id)) return { ok: false, error: "You've used this hour's build budget. Try again shortly." };
 
-    const apiKey = process.env.OPENROUTER_API_KEY?.trim();
-    if (!apiKey) return { ok: false, error: OPENROUTER_MISSING_KEY_ERROR };
-    const model = resolveChatModel("smart");
+    const provider = await readProvider(kernel);
+    if (!provider) return { ok: false, error: PROVIDER_REQUIRED };
+    const { apiKey, model } = provider;
     const messages = buildWebsiteDraftMessages({ title: world.title, goal });
     const t0 = Date.now();
     let result;

@@ -570,6 +570,7 @@ export function createConnector(s: Session) {
     const canRemember = connection.mode === "remember";
 
     if (name === "whoami") {
+      await s.person.recordEvent({ type: "bot.connection.checked", scope: `actor:${owner.actor_id}/bot:links`, payload: { client_id: s.clientId, tool: "whoami" } });
       const brief = personaBrief(persona, owner.label);
       const mode = canRemember ? "read and add" : "read only";
       return ok(`${brief}\n\nThis connection (${connection.clientName}) is ${mode}.`, {

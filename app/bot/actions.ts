@@ -169,7 +169,7 @@ export async function checkConnectionsAction(expectedOwnerId: string): Promise<{
     const kernel = await getKernel();
     await requireDisplayedActor(kernel, expectedOwnerId);
     const connections = await readConnections(kernel, expectedOwnerId);
-    return { ok: true, message: connections.length ? `${connections.length} assistant authorization${connections.length === 1 ? " is" : "s are"} recorded. This checks saved permissions only; an end-to-end request from your assistant is still needed.` : "No assistant authorizations are recorded. The built-in room AI works separately from these connections." };
+    return { ok: true, message: connections.length ? `${connections.length} assistant authorization${connections.length === 1 ? " is" : "s are"} recorded. This checks saved permissions only; an end-to-end request from your assistant is still needed.` : "No assistant authorizations are recorded. Connect an assistant or your own model key to activate AI work." };
   } catch (error) {
     return { ok: false, message: error instanceof Error && error.message === ACCOUNT_CHANGED ? ACCOUNT_CHANGED : "We could not verify authorizations. No permissions were changed; retry shortly." };
   }

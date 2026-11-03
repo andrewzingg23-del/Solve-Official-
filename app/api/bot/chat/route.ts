@@ -1,3 +1,4 @@
+import { readProvider, PROVIDER_REQUIRED } from "@/lib/ai/provider";
 // The room's talking bot, server side. Signed-in people only (it costs money);
 // the key never reaches a browser. Conversational only — it never acts.
 // Chat pipe: plain fetch to OpenRouter (Drew's order 2026-10-06:
@@ -14,7 +15,6 @@ import { asksDevelopmentStatus, developmentRoomReply } from "@/lib/github/status
 import { deployedView } from "@/lib/github/deployed";
 import { readRepo, repoForViewer, roomRepos, type RepoView } from "@/lib/github/repo";
 import {
-  OPENROUTER_MISSING_KEY_ERROR,
   buildChatCompletionBody,
   completeChat,
 } from "@/lib/bot/openrouter";
@@ -25,7 +25,6 @@ import {
   parseTier,
   rateLimited,
   recordSpend,
-  resolveChatModel,
   spendBlocked,
   tokensSpentThisHour,
   validateChatBody,
@@ -88,10 +87,10 @@ export async function POST(request: Request) {
   if (spendBlocked(limiterKey))
     return json({ error: "Hourly token budget spent — back in a bit." }, 429);
 
-  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
-  if (!apiKey) return json({ error: OPENROUTER_MISSING_KEY_ERROR }, 503);
-
-  const model = resolveChatModel(tier);
+  if (!user) return json({error: PROVIDER_REQUIRED}, 401);
+  const provider = await readProvider(await getKernel()).catch(()=>null);
+  if (!provider) return json({ error: PROVIDER_REQUIRED }, 409);
+  const {apiKey,model} = provider;
 
   // The Inside loop, first half: when the person asks for a way (not small
   // talk), their ask goes on the kernel record before the bot answers.

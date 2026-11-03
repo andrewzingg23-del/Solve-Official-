@@ -4,6 +4,7 @@
 // becomes "no interpretation", and the caller falls back to the rule-based interpreter. Nothing
 // here acts.
 import type Anthropic from "@anthropic-ai/sdk";
+import { buildChatCompletionBody, completeChat } from "@/lib/bot/openrouter";
 import type { Intent } from "./horizon";
 import { INTENT_SCHEMA, LIMITS, ROUTE_SCHEMA, SYSTEM_PROMPT, validateIntent, validateRouteChoice, type RouteChoice, type RouteOption } from "./reasoning";
 
@@ -47,6 +48,22 @@ export function claudeReasoner(messages: MessagesApi, model = REASONING_MODEL): 
 // gateway does not document. A refusal is still no answer.
 export function gatewayReasoner(messages: GatewayMessagesApi, model = GATEWAY_REASONING_MODEL): Reasoner {
   return reasoner(model, (ask) => messages.create(request(model, ask)));
+}
+
+export function openRouterReasoner(apiKey: string, model: string): Reasoner {
+  return reasoner(model, async ({ schema, content }) => {
+    const result = await completeChat(apiKey, buildChatCompletionBody({
+      model,
+      maxTokens: 8_192,
+      history: [],
+      system: `${SYSTEM_PROMPT}\nReturn only JSON matching this schema:\n${JSON.stringify(schema)}`,
+      message: content,
+    }), { allowEmpty: true, timeoutMs: 50_000 });
+    return {
+      stop_reason: result.finishReason === "length" ? "max_tokens" : result.finishReason,
+      content: result.reply ? [{ type: "text", text: result.reply }] : [],
+    };
+  });
 }
 
 function reasoner(model: string, send: (ask: Ask) => Promise<Reply>): Reasoner {

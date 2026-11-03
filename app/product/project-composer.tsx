@@ -31,7 +31,7 @@ export function ProjectComposer({ owner, worldId }: { owner: string | null; worl
         clearTimeout(slowTimer);
         if (!result.ok) { setError(result.error); return; }
         clear(result.worldId);
-        router.push(`/world/${result.worldId}/room`); router.refresh();
+        router.push(`/world/${result.worldId}/work`); router.refresh();
       } catch { clearTimeout(slowTimer); setError("The connection was interrupted. Your draft is still here; try again."); }
     });
   };

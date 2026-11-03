@@ -1,0 +1,51 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { build } from 'esbuild';
+import { mkdir, mkdtemp } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
+import { createKernelDb,user } from '../kernel/harness';
+import { kernelClient,type Kernel } from '../../lib/kernel/client';
+import { localSupabase } from '../../lib/kernel/local';
+import { saveProvider } from '../../lib/ai/provider';
+import { createCreativeWorld,loadCreativeWorld,updateCreativeArtifact } from '../../lib/world/creative';
+import { grantWorldAccess } from '../../lib/world/collaboration';
+declare global { var __workKernel: Kernel; }
+test('shared work preserves versions, requires personal connection and refuses stale AI edits before inference',async()=>{
+  process.env.SOLVE_PROVIDER_ENCRYPTION_KEY='test-only-encryption-secret-32-characters';
+  const db=await createKernelDb();
+  const owner=kernelClient(localSupabase(db,user('work-a'))),brother=kernelClient(localSupabase(db,user('work-b'))),outsider=kernelClient(localSupabase(db,user('work-c')));
+  const a=await owner.register('A'),b=await brother.register('B');await outsider.register('C');
+  const world=await createCreativeWorld(owner,{worldId:'00000000-0000-4000-8000-00000000b001',title:'Anything together'});
+  await grantWorldAccess(owner,{scope:world.scope,granteeActorId:b,role:'editor',requestId:'brother'});
+  globalThis.__workKernel=owner;
+  await mkdir('.browser-tests',{recursive:true});const dir=await mkdtemp('.browser-tests/work-action-');
+  const stubs:Record<string,string>={'@/lib/kernel/server':'export async function getKernel(){return globalThis.__workKernel}', '@/lib/supabase/server':'export async function getUser(){return {id:"fixture"}}','next/cache':'export function revalidatePath(){}','server-only':''};
+  await build({entryPoints:['app/world/[worldId]/work/actions.ts'],outfile:`${dir}/action.mjs`,bundle:true,platform:'node',format:'esm',packages:'external',plugins:[{name:'fixtures',setup(p){p.onResolve({filter:/kernel\/client$/},()=>({path:pathToFileURL(`${process.cwd()}/lib/kernel/client.ts`).href,external:true}));p.onResolve({filter:/.*/},x=>x.path in stubs?{path:x.path,namespace:'fixture'}:undefined);p.onLoad({filter:/.*/,namespace:'fixture'},x=>({contents:stubs[x.path]}));}}]});
+  const actions=await import(pathToFileURL(`${process.cwd()}/${dir}/action.mjs`).href);
+  const form=new FormData();form.set('expectedActorId',a);form.set('requestId','new-note');form.set('title','Our plan');form.set('body','First shared thought');form.set('kind','text');
+  assert.equal((await actions.saveWork(world.worldId,form)).ok,false,'no default AI connection');
+  await saveProvider(owner,{apiKey:'fixture-private-key',model:'fixture/model'});
+  assert.equal((await actions.saveWork(world.worldId,form)).ok,true);
+  assert.equal((await actions.saveWork(world.worldId,form)).ok,true);
+  let docs=(await loadCreativeWorld(owner,world.worldId)).artifacts;assert.equal(docs.length,1);
+  const doc=docs[0];form.set('entityId',doc.entityId);form.set('version','1');form.set('requestId','edit-note');form.set('body','Second shared thought');
+  globalThis.__workKernel=brother;form.set('expectedActorId',b);
+  assert.equal((await actions.saveWork(world.worldId,form)).ok,false,'brother needs his own connection');
+  await saveProvider(brother,{apiKey:'brothers-key',model:'fixture/model'});
+  assert.equal((await actions.saveWork(world.worldId,form)).ok,true);
+  docs=(await loadCreativeWorld(owner,world.worldId)).artifacts;assert.equal(docs[0].version,2);assert.equal(docs[0].body,'Second shared thought');
+  const oldFetch=globalThis.fetch;let calls=0;
+  globalThis.fetch=(async()=>{calls++;return Response.json({choices:[{message:{content:'A refined shared plan.'},finish_reason:'stop'}]});}) as typeof fetch;
+  form.set('instruction','Refine our plan');
+  try {
+    assert.equal((await actions.reviseWork(world.worldId,form)).ok,false);assert.equal(calls,0,'stale version refused before inference');
+    form.set('version','2');form.set('requestId','ai-edit');const revised=await actions.reviseWork(world.worldId,form);assert.equal(revised.ok,true,JSON.stringify(revised));assert.equal(calls,1);
+    const latest=(await loadCreativeWorld(owner,world.worldId)).artifacts[0];assert.equal(latest.version,3);
+    form.set('version','3');globalThis.fetch=(async()=>{throw new Error('provider offline');}) as typeof fetch;
+    assert.equal((await actions.reviseWork(world.worldId,form)).ok,false);assert.equal((await loadCreativeWorld(owner,world.worldId)).artifacts[0].version,3);
+    globalThis.fetch=(async()=>{await updateCreativeArtifact(owner,{scope:world.scope,entityId:doc.entityId,expectedVersion:3,requestId:'concurrent',title:doc.title,body:'Newer human change',position:doc.position});return Response.json({choices:[{message:{content:'Stale AI result'},finish_reason:'stop'}]});}) as typeof fetch;
+    assert.equal((await actions.reviseWork(world.worldId,form)).ok,false);assert.equal((await loadCreativeWorld(owner,world.worldId)).artifacts[0].body,'Newer human change');
+    globalThis.__workKernel=outsider;form.set('expectedActorId',(await outsider.whoami()).actor_id);
+    assert.equal((await actions.saveWork(world.worldId,form)).ok,false);
+  } finally {globalThis.fetch=oldFetch;}
+});

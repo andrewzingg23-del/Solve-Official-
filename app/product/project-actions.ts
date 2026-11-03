@@ -1,4 +1,5 @@
 "use server";
+import { requireConnection, CONNECT_REQUIRED } from "@/lib/ai/provider";
 import { getUser } from "@/lib/supabase/server";
 import { getKernel } from "@/lib/kernel/server";
 import { createCreativeWorld } from "@/lib/world/creative";
@@ -12,11 +13,13 @@ export async function createProject(input: unknown, expectedUserId: string): Pro
   const checked = validateProjectDraft(input);
   if (!checked.ok) return checked;
   try {
-    const world = await createCreativeWorld(await getKernel(), { worldId: checked.draft.id, title: checked.draft.title, goal: checked.draft.goal });
+    const kernel = await getKernel();
+    await requireConnection(kernel);
+    const world = await createCreativeWorld(kernel, { worldId: checked.draft.id, title: checked.draft.title, goal: checked.draft.goal });
     // The client navigates straight to the new project; "/" and "/worlds" are dynamic (auth-bound,
     // no-store) so they refresh on their next visit. Re-rendering those lists inside the action would
     // bundle two more kernel round-trips into this response and, on a cold worker, push it past the
     // function limit — leaving creation stuck. Creation is idempotent (worldId), so retries are safe.
     return { ok: true, worldId: world.worldId };
-  } catch { return { ok: false, error: "Your project couldn't be saved yet. Your draft is kept here; try again." }; }
+  } catch (error) { if (error instanceof Error && error.message === CONNECT_REQUIRED) return {ok:false,error:CONNECT_REQUIRED}; return { ok: false, error: "Your project couldn't be saved yet. Your draft is kept here; try again." }; }
 }

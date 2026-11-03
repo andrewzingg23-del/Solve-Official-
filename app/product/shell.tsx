@@ -10,7 +10,7 @@ import { Icon, type IconName } from "./icons";
 const homes: Array<{ href: string; label: string; icon: IconName }> = [
   { href: "/", label: "Projects", icon: "projects" },
   { href: "/communities", label: "Communities", icon: "community" },
-  { href: "/bot", label: "Your AI", icon: "ai" },
+  { href: "/connect", label: "Connections", icon: "ai" },
   { href: "/account", label: "Profile", icon: "profile" },
 ];
 export type ShellIdentity = { userId: string; name: string; guest: boolean; persona: Persona } | null;
@@ -39,7 +39,7 @@ export function ProductShell({ children, identity }: { children: React.ReactNode
       </div>
     </aside>
     <div className="solve-body">
-      <header className="solve-topbar"><Link href="/" className="solve-mobile-wordmark">solve<span>.</span></Link><span className="solve-topbar-title">{path.startsWith("/world/") ? "Shared workspace" : homes.find(home => home.href === active)?.label || (path === "/login" ? "Welcome to solve" : "Your workspace")}</span><div>{identity ? <span className="solve-private-label"><Icon name="lock" width={14} />{identity.guest ? "Guest workspace" : "Your workspace"}</span> : <Link href="/account" className="solve-text-link">Your profile</Link>}</div></header>
+      <header className="solve-topbar"><Link href="/" className="solve-mobile-wordmark">solve<span>.</span></Link><span className="solve-topbar-title">{path.startsWith("/world/") ? "Shared workspace" : homes.find(home => home.href === active)?.label || (path === "/login" ? "Welcome to solve" : "Your workspace")}</span><div>{identity && !identity.guest ? <span className="solve-private-label"><Icon name="lock" width={14} />Your workspace</span> : <Link href="/login?next=%2Fconnect" className="solve-text-link">Sign in</Link>}</div></header>
       <div id="solve-main" tabIndex={-1} className="solve-main">{children}</div>
     </div>
     <nav aria-label="Primary mobile" className="solve-mobile-nav">{links}</nav>
