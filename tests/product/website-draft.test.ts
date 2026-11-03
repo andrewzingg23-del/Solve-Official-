@@ -91,3 +91,17 @@ it("draftErrorMessage gives recoverable feedback for every reason and never clai
     assert.match(msg, /again|try|moment/i, `${reason} is recoverable`);
   }
 });
+
+// A closed HTML document is not proof the provider completed the requested output.
+it("rejects provider-truncated output even when a complete HTML document precedes the cut", async () => {
+  const { evaluateDraft } = await import("../../lib/product/website-draft");
+  const html = page("<h1>Cafe</h1><p>" + "Fresh coffee and warm pastries. ".repeat(6) + "</p>");
+  assert.deepEqual(evaluateDraft(html, "length"), { ok: false, reason: "truncated" });
+});
+
+it("rejects an apparently small draft whose escaped content cannot fit kernel attributes", async () => {
+  const { evaluateDraft } = await import("../../lib/product/website-draft");
+  const html = page('<h1>Cafe</h1><p>' + 'Fresh coffee. '.repeat(10) + '</p><style>/*' + '"'.repeat(9000) + '*/</style>');
+  assert.ok(html.length < 12000);
+  assert.deepEqual(evaluateDraft(html, "stop"), { ok: false, reason: "too_large" });
+});

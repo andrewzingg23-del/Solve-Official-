@@ -7,7 +7,7 @@
 // Prerequisites: playwright-core (already a dependency) + a cached headless Chromium
 //   (~/Library/Caches/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-mac-arm64; macOS).
 // Usage:
-//   PREVIEW_URL="https://<preview>.vercel.app" [SHOT_DIR="/abs/dir"] node scripts/verify-draft-journey.mjs
+//   PREVIEW_URL="https://<preview>.vercel.app" [SHOT_DIR="/abs/dir"] [MAX_DRAFT_ATTEMPTS=1] node scripts/verify-draft-journey.mjs
 //
 // Checks (each reported separately as RESULT_JSON): guest session, create → navigates to the project,
 // open project via the Documents control, create first draft → rendered preview (retries because the
@@ -21,7 +21,9 @@ const dir = readdirSync(base).filter((d) => /^chromium_headless_shell-\d+$/.test
 const exe = join(base, dir, "chrome-headless-shell-mac-arm64", "chrome-headless-shell");
 const BASE = process.env.PREVIEW_URL, SHOT = process.env.SHOT_DIR;
 if (!BASE) throw new Error("set PREVIEW_URL to a deployed preview");
-const r = { checks: {}, timings: {}, notes: [] };
+const maxDraftAttempts = Number(process.env.MAX_DRAFT_ATTEMPTS || 4);
+if (!Number.isInteger(maxDraftAttempts) || maxDraftAttempts < 1 || maxDraftAttempts > 4) throw new Error("MAX_DRAFT_ATTEMPTS must be 1–4");
+const r = { checks: {}, timings: {}, notes: [], maxDraftAttempts };
 const b = await chromium.launch({ executablePath: exe });
 
 async function ownerReady(page) {
@@ -65,7 +67,7 @@ try {
     let drew = false, attempts = 0, lastErr = "";
     // The free model intermittently returns empty; the error is recoverable, so retry via the button
     // (as a user would), up to 4 attempts.
-    while (!drew && attempts < 4) {
+    while (!drew && attempts < maxDraftAttempts) {
       attempts++;
       await panel.getByRole("button", { name: /create first draft/i }).first().click().catch(() => {});
       for (let i = 0; i < 16; i++) {
@@ -135,3 +137,4 @@ try {
   await ctxB.close();
 } catch (e) { r.fatal = String(e.message || e).slice(0, 200); } finally { await b.close(); }
 console.log("RESULT_JSON=" + JSON.stringify(r));
+if (r.fatal || Object.values(r.checks).some(value => /FAIL|ERROR|UNCERTAIN|CHECK|PENDING/.test(String(value)))) process.exitCode = 1;

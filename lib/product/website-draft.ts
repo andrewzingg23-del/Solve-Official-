@@ -87,10 +87,11 @@ export type DraftOutcome = { ok: true; html: string } | { ok: false; reason: Dra
  * persisted.
  */
 export function evaluateDraft(reply: unknown, finishReason: string | null, maxChars = WEBSITE_DRAFT_MAX_CHARS): DraftOutcome {
+  if (finishReason === "length") return { ok: false, reason: "truncated" };
   if (typeof reply !== "string" || !reply.trim()) return { ok: false, reason: "empty" };
   const html = stripActiveContent(extractHtmlDocument(reply) ?? "");
-  if (!isSubstantiveDraft(html)) return { ok: false, reason: finishReason === "length" ? "truncated" : "incomplete" };
-  if (html.length > maxChars) return { ok: false, reason: "too_large" };
+  if (!isSubstantiveDraft(html)) return { ok: false, reason: "incomplete" };
+  if (html.length > maxChars || JSON.stringify(html).length > 14500) return { ok: false, reason: "too_large" };
   return { ok: true, html };
 }
 

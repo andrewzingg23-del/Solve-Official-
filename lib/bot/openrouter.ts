@@ -104,7 +104,10 @@ export async function completeChat(
   let data: unknown = null;
   try {
     data = await res.json();
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
+      throw new ChatTimeoutError("The model took too long to respond.");
+    }
     data = null;
   }
   if (!res.ok) throw new Error(providerErrorMessage(res.status, data));
