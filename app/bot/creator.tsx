@@ -96,7 +96,7 @@ const ERRORS: Record<string, string> = {
   unavailable: "Couldn't confirm this save. Your edits are still here; retry or reload to check your saved persona.",
 };
 
-export function BotCreator({ initial, signedIn, version, savedAt, ownerId, machine = EMPTY_MACHINE }: { initial: Persona; signedIn: boolean; ownerId?: string; version: number; savedAt: string | null; machine?: MachineData }) {
+export function BotCreator({ initial, signedIn, loadFailed = false, version, savedAt, ownerId, machine = EMPTY_MACHINE }: { initial: Persona; signedIn: boolean; loadFailed?: boolean; ownerId?: string; version: number; savedAt: string | null; machine?: MachineData }) {
   const [persona, setPersona] = useState(initial);
   const [saved, setSaved] = useState(initial);
   const [saveInfo, setSaveInfo] = useState({ version, savedAt });
@@ -132,6 +132,12 @@ export function BotCreator({ initial, signedIn, version, savedAt, ownerId, machi
     setPersona(draft);
     setValuesText(draft.values.join(", "));
     setMessage(null);
+    if (loadFailed) {
+      // Signed in, but the account's bot could not be read. Keeping this on the device would look
+      // like a save and silently strand the persona outside the kernel, so refuse and let it retry.
+      setMessage({ tone: "error", text: "Your account could not be reached, so nothing was saved. Reload and try again." });
+      return;
+    }
     if (!signedIn) {
       // Guest: the persona is kept on this device with the profile.
       guest.save({ botPersona: draft });
@@ -141,7 +147,7 @@ export function BotCreator({ initial, signedIn, version, savedAt, ownerId, machi
         return;
       }
       setSaved(draft);
-      setMessage({ tone: "ok", text: `${draft.name} kept on this device.` });
+      setMessage({ tone: "ok", text: `${draft.name} is kept on this device only, not in your account. Sign in to keep it for good.` });
       setMood("happy");
       return;
     }
@@ -382,7 +388,7 @@ export function BotCreator({ initial, signedIn, version, savedAt, ownerId, machi
           <button type="button" onClick={() => { setPersona(saved); setValuesText(saved.values.join(", ")); setMood("idle"); }} disabled={!dirty} className={`${secondaryAction} disabled:opacity-40`}>Undo changes</button>
           {active ? (
             <button type="button" onClick={save} disabled={pending || !dirty} className={`${primaryAction} disabled:opacity-40`}>
-              {pending ? "Saving" : saveInfo.version ? "Save changes" : signedIn ? "Bring it to life" : "Keep it on this device"}
+              {pending ? "Saving" : loadFailed ? "Reload to save" : saveInfo.version ? "Save changes" : signedIn ? "Bring it to life" : "Keep it on this device"}
             </button>
           ) : (
             <Link href="/account" className={primaryAction}>Open Profile to keep it</Link>

@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { approveConnection, type ConnectionMode } from "@/lib/bot/memory";
-import { loadBot } from "@/lib/bot/store";
+import { loadBot, saveBot } from "@/lib/bot/store";
 import { getKernel } from "@/lib/kernel/server";
 import { createClient, getUser } from "@/lib/supabase/server";
 
@@ -27,7 +27,12 @@ export async function approveConsentAction(formData: FormData) {
   let failed: string | null = null;
   try {
     const kernel = await getKernel();
-    const bot = await loadBot(kernel);
+    let bot = await loadBot(kernel);
+    // Authorizing an assistant must not require building a bot by hand first. The person is signed
+    // in and has just consented, so provision their default companion through the same authenticated
+    // kernel path /bot uses — their own authority, their own ownership — and let them customize it
+    // later. `consent-<id>` keeps a retried approval from creating a second persona version.
+    if (!bot.avatar) bot = await saveBot(kernel, bot.persona, `consent-${id}`);
     if (!bot.avatar) failed = "no-bot";
     else await approveConnection(kernel, bot.ownerId, bot.avatar.agent_id, { clientId: client.id, clientName: client.name, mode }, `consent-${id}`);
   } catch {
