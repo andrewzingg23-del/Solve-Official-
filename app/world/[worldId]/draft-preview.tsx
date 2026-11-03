@@ -15,7 +15,6 @@ export function DraftPreview({ html, title }: { html: string; title: string }) {
           title={`Preview of ${title}`}
           sandbox=""
           srcDoc={html}
-          loading="lazy"
           referrerPolicy="no-referrer"
           className="h-full w-full border-0 bg-white"
         />
