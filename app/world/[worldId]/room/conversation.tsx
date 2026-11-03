@@ -62,7 +62,8 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
       setText(v => v.trim() === turn.text ? "" : v);
       const retryable = ["failed", "unavailable", "pending"].includes(data.aiStatus);
       setRetry(retryable ? turn : null);
-      setNotice(data.error || (data.aiStatus === "pending" ? "Your question is saved. An AI reply is in progress; refresh or retry shortly." : intent === "decision" ? "Your decision is recorded with your name." : "Saved to the room."));
+      const diagnosticText = data.diagnostic ? ` (stage: ${data.diagnostic.stage}, code: ${data.diagnostic.code})` : "";
+      setNotice(data.error ? `${data.error}${diagnosticText}` : (data.aiStatus === "pending" ? "Your question is saved. An AI reply is in progress; refresh or retry shortly." : intent === "decision" ? "Your decision is recorded with your name." : "Saved to the room."));
       followLatest.current = true;
       router.refresh();
     } catch (error) {
