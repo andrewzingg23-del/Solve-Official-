@@ -64,3 +64,30 @@ it("strips scripts, inline handlers, javascript: URLs, and resource embeds; keep
   assert.match(clean, /Real copy that should remain/, "visible copy preserved");
   assert.match(clean, /color:teal/, "inline CSS preserved");
 });
+
+it("evaluateDraft classifies empty, truncated, incomplete, too_large and ok — and never saves incomplete", async () => {
+  const { evaluateDraft } = await import("../../lib/product/website-draft");
+  const good = page("<header><h1>Reef Cafe</h1></header><main><p>Fresh coffee and warm pastries steps from the sand, every morning from six. Order ahead and grab a window seat.</p></main>");
+  assert.deepEqual(evaluateDraft("", "stop"), { ok: false, reason: "empty" });
+  assert.deepEqual(evaluateDraft("   ", "stop"), { ok: false, reason: "empty" });
+  assert.deepEqual(evaluateDraft(null, null), { ok: false, reason: "empty" });
+  // Opening HTML cut off (no </html>) with finish_reason length → truncated.
+  assert.deepEqual(evaluateDraft("<!DOCTYPE html><html><body><h1>Cut", "length"), { ok: false, reason: "truncated" });
+  // Not a document at all → incomplete.
+  assert.deepEqual(evaluateDraft("Sure, here is your site idea in words.", "stop"), { ok: false, reason: "incomplete" });
+  // A complete page over the size cap → too_large (never saved).
+  assert.deepEqual(evaluateDraft(good, "stop", 50), { ok: false, reason: "too_large" });
+  const ok = evaluateDraft(good, "stop");
+  assert.equal(ok.ok, true);
+  assert.ok(ok.ok && /<\/html>/i.test(ok.html) && !/<script/i.test(ok.html));
+});
+
+it("draftErrorMessage gives recoverable feedback for every reason and never claims success", async () => {
+  const { draftErrorMessage } = await import("../../lib/product/website-draft");
+  for (const reason of ["empty", "truncated", "incomplete", "too_large", "timeout", "provider"] as const) {
+    const msg = draftErrorMessage(reason);
+    assert.ok(msg.length > 10, `${reason} has a message`);
+    assert.doesNotMatch(msg, /success|saved successfully|published/i, `${reason} does not claim success`);
+    assert.match(msg, /again|try|moment/i, `${reason} is recoverable`);
+  }
+});

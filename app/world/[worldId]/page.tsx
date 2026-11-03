@@ -25,6 +25,10 @@ import { ArtifactEditor } from "./artifact-editor";
 import { DraftPreview } from "./draft-preview";
 import { generateFirstDraftAction } from "./draft-actions";
 import { looksLikeHtmlDocument, stripActiveContent } from "@/lib/product/website-draft";
+
+// First-draft generation runs as a server action on this route; give it room for the bounded
+// (~50s) model call plus a buffer to return a recoverable result.
+export const maxDuration = 60;
 import { WorldBotAccessPanel } from "./bot-access-panel";
 import { WorldAccessPanel } from "./access-panel";
 import { WorldLiveSync } from "./live-sync";

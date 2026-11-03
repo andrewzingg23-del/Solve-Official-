@@ -73,6 +73,39 @@ export function isSubstantiveDraft(html: string | null): html is string {
  * handlers, javascript:/data:text/html URLs, and resource-loading embeds. Defense-in-depth behind
  * the script-free sandboxed preview iframe, which is the authoritative boundary.
  */
+export const WEBSITE_DRAFT_MAX_CHARS = 12000;
+
+// Why a generation attempt did not yield a saveable draft. Each maps to a clear, recoverable message;
+// an incomplete draft is NEVER saved as successful.
+export type DraftReason = "empty" | "truncated" | "incomplete" | "too_large" | "timeout" | "provider";
+export type DraftOutcome = { ok: true; html: string } | { ok: false; reason: DraftReason };
+
+/**
+ * Decides whether a model response is a complete, saveable website draft. Pure: the action passes the
+ * raw reply + the provider's finish_reason. Empty content (the free model's common failure), a
+ * length-truncated response, a non-document reply, or an oversized page all fail here and are never
+ * persisted.
+ */
+export function evaluateDraft(reply: unknown, finishReason: string | null, maxChars = WEBSITE_DRAFT_MAX_CHARS): DraftOutcome {
+  if (typeof reply !== "string" || !reply.trim()) return { ok: false, reason: "empty" };
+  const html = stripActiveContent(extractHtmlDocument(reply) ?? "");
+  if (!isSubstantiveDraft(html)) return { ok: false, reason: finishReason === "length" ? "truncated" : "incomplete" };
+  if (html.length > maxChars) return { ok: false, reason: "too_large" };
+  return { ok: true, html };
+}
+
+/** Clear, recoverable, non-blaming feedback for each failure. The draft/goal is always preserved. */
+export function draftErrorMessage(reason: DraftReason): string {
+  switch (reason) {
+    case "empty": return "The model came back empty — that happens sometimes with the free model. Your idea is saved; build again.";
+    case "truncated": return "The draft was cut off before it finished. Build again, or use a shorter description.";
+    case "incomplete": return "The draft didn't come through cleanly. Build again, or add a little more detail to your idea.";
+    case "too_large": return "This draft came back larger than we can save yet. Try a simpler description or fewer sections, then build again.";
+    case "timeout": return "The model took too long this time. Your idea is saved; build again.";
+    case "provider": return "The model is busy right now. Your idea is saved; build again in a moment.";
+  }
+}
+
 export function stripActiveContent(html: string): string {
   return html
     .replace(/<script\b[\s\S]*?<\/script\s*>/gi, "")
