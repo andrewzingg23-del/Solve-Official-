@@ -7,7 +7,7 @@
 // Prerequisites: playwright-core (already a dependency) + a cached headless Chromium
 //   (~/Library/Caches/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-mac-arm64; macOS).
 // Usage:
-//   PREVIEW_URL="https://<preview>.vercel.app" [SHOT_DIR="/abs/dir"] [MAX_DRAFT_ATTEMPTS=1] node scripts/verify-draft-journey.mjs
+//   PREVIEW_URL="https://<preview>.vercel.app" [SHOT_DIR="/abs/dir"] [MAX_DRAFT_ATTEMPTS=1] [VIEWPORT_WIDTH=390] node scripts/verify-draft-journey.mjs
 //
 // Checks (each reported separately as RESULT_JSON): guest session, create → navigates to the project,
 // open project via the Documents control, create first draft → rendered preview (retries because the
@@ -23,7 +23,9 @@ const BASE = process.env.PREVIEW_URL, SHOT = process.env.SHOT_DIR;
 if (!BASE) throw new Error("set PREVIEW_URL to a deployed preview");
 const maxDraftAttempts = Number(process.env.MAX_DRAFT_ATTEMPTS || 4);
 if (!Number.isInteger(maxDraftAttempts) || maxDraftAttempts < 1 || maxDraftAttempts > 4) throw new Error("MAX_DRAFT_ATTEMPTS must be 1–4");
-const r = { checks: {}, timings: {}, notes: [], maxDraftAttempts };
+const viewportWidth = Number(process.env.VIEWPORT_WIDTH || 1280);
+if (!Number.isInteger(viewportWidth) || viewportWidth < 320 || viewportWidth > 1920) throw new Error("VIEWPORT_WIDTH must be 320–1920");
+const r = { checks: {}, timings: {}, notes: [], maxDraftAttempts, viewportWidth };
 const b = await chromium.launch({ executablePath: exe });
 
 async function ownerReady(page) {
@@ -42,7 +44,7 @@ async function createViaUI(page, title, goal) {
 
 try {
   // ---- Main journey (visible controls only) ----
-  const ctxA = await b.newContext({ viewport: { width: 1280, height: 900 } });
+  const ctxA = await b.newContext({ viewport: { width: viewportWidth, height: 900 } });
   const page = await ctxA.newPage();
   r.checks.guest_session = (await ownerReady(page)) ? "PASS" : "FAIL";
 
@@ -80,10 +82,13 @@ try {
     r.timings.draft_ms = Date.now() - t0;
     r.timings.draft_attempts = attempts;
     if (!drew) r.notes.push("draft last error after " + attempts + " tries: " + (lastErr || "timeout"));
-    r.checks.create_first_draft = drew ? `PASS (${attempts} attempt(s), ${r.timings.draft_ms}ms — free model intermittent)` : `FAIL after ${attempts} tries (free-model: ${lastErr || "timeout"})`;
+    r.checks.create_first_draft = drew ? `PASS (${attempts} attempt(s), ${r.timings.draft_ms}ms — free model intermittent)` : `FAIL after ${attempts} tries (${lastErr || "timeout"})`;
     if (drew) {
       const fr = page.locator('iframe[title^="Preview of"]').first();
-      await fr.scrollIntoViewIfNeeded(); await page.waitForTimeout(3000);
+      await fr.scrollIntoViewIfNeeded();
+      const renderedText = await fr.contentFrame().locator("body").innerText({ timeout: 15000 });
+      if (renderedText.trim().length < 80) throw new Error("preview iframe has no substantive rendered content");
+      r.previewTextChars = renderedText.trim().length;
       if (SHOT) { await fr.screenshot({ path: join(SHOT, "draft-preview.png") }); r.screenshot = "draft-preview.png"; }
       r.checks.preview_renders_promptly = "PASS (eager iframe in view)";
     }
@@ -97,14 +102,22 @@ try {
       const ed = card.locator("form:has(button:has-text('Save revision'))").first();
       const ta = ed.locator("textarea").first(); await ta.scrollIntoViewIfNeeded();
       const v = await ta.inputValue();
-      await ta.evaluate((el, val) => { Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set.call(el, val); el.dispatchEvent(new Event("input", { bubbles: true })); }, v.includes("</body>") ? v.replace("</body>", "<!-- edited --></body>") : v + "\n<!-- edited -->");
+      const cardId = await card.getAttribute("id");
+      const revised = v.includes("</body>") ? v.replace("</body>", "<!-- edited --></body>") : v + "\n<!-- edited -->";
+      if (revised.length > 12000) throw new Error("fixture revision would exceed the document limit");
+      await ta.fill(revised);
       const [resp] = await Promise.all([
         page.waitForResponse((x) => x.url().includes("/artifacts") && x.request().method() === "PATCH", { timeout: 40000 }).catch(() => null),
         ed.getByRole("button", { name: /save revision/i }).click(),
       ]);
       r.notes.push("patch " + (resp ? resp.status() : "none"));
-      await page.waitForTimeout(1500); await page.reload({ waitUntil: "networkidle", timeout: 60000 });
-      r.checks.edit_save_revision = /·\s*v2|v2\b/.test(await page.content()) ? "PASS (v2)" : "UNCERTAIN";
+      if (!resp || !resp.ok()) throw new Error("revision PATCH did not confirm success");
+      await page.reload({ waitUntil: "networkidle", timeout: 60000 });
+      const savedCard = page.locator(`[id="${cardId}"]`);
+      const savedSource = await savedCard.locator('iframe[title^="Preview of"]').getAttribute("srcdoc");
+      const versionLabel = await savedCard.locator("header p").textContent();
+      r.revisionProof = { cardId, patchStatus: resp.status(), versionLabel, sourceContainsMarker: Boolean(savedSource?.includes("<!-- edited -->")) };
+      r.checks.edit_save_revision = /·\s*v2\b/i.test(versionLabel || "") && r.revisionProof.sourceContainsMarker ? "PASS (same artifact v2 and edited source survive reload)" : "FAIL (saved revision/source missing)";
     } catch (e) { r.checks.edit_save_revision = "ERROR " + String(e.message).slice(0, 60); }
     // Reload retains.
     await page.reload({ waitUntil: "networkidle", timeout: 60000 });
