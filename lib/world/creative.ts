@@ -478,6 +478,16 @@ export async function loadCreativeWorld(kernel: Kernel, rawWorldId: string) {
   return { world, artifacts, resources };
 }
 
+// PostgreSQL stores jsonb with additional separators. Leave headroom below the kernel's 16,000
+// character constraint, including escaped content and via metadata, so create/revise fail recoverably.
+function artifactAttributes(documentType: ArtifactDocumentType, worldId: string, content: string, canvas: CreativePosition, via?: ArtifactVia) {
+  const attributes = { documentType, worldId, content, canvas, ...viaAttributes(via) };
+  if (JSON.stringify(attributes).length > 15000) {
+    throw new KernelError("invalid", "This document has too much formatting to save. Shorten it and try again.", "");
+  }
+  return attributes;
+}
+
 export async function createCreativeArtifact(kernel: Kernel, input: CreateCreativeArtifactInput): Promise<string> {
   const { worldId, scope } = requireScope(input.scope);
   await assertWorldEntity(kernel, scope, input.worldEntityId);
@@ -490,7 +500,7 @@ export async function createCreativeArtifact(kernel: Kernel, input: CreateCreati
     scope,
     title,
     summary: body.trim().slice(0, 240),
-    attributes: { documentType, worldId, content: body, canvas: position, ...viaAttributes(input.via) },
+    attributes: artifactAttributes(documentType, worldId, body, position, input.via),
     visibility: "members",
     idempotencyKey: requestKey("artifact-create", input.requestId),
   });
@@ -514,7 +524,7 @@ export async function updateCreativeArtifact(kernel: Kernel, input: UpdateCreati
     scope,
     title,
     summary: body.trim().slice(0, 240),
-    attributes: { documentType, worldId, content: body, canvas: position, ...viaAttributes(input.via) },
+    attributes: artifactAttributes(documentType, worldId, body, position, input.via),
     idempotencyKey: requestKey(`artifact-update:${input.entityId}`, input.requestId),
   });
 }

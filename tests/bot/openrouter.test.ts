@@ -166,3 +166,11 @@ it("a provider timeout surfaces as ChatTimeoutError", async () => {
     (e) => e instanceof ChatTimeoutError,
   );
 });
+
+it("classifies a timeout while reading the response body as a timeout, not empty output", async () => {
+  const { ChatTimeoutError } = await import("../../lib/bot/openrouter");
+  await assert.rejects(withFetch((async () => ({ ok: true, json: async () => {
+    throw Object.assign(new Error("Body aborted"), { name: "AbortError" });
+  } })) as unknown as typeof fetch, () => completeChat("k", { model: "m", max_tokens: 1, messages: [] }, { allowEmpty: true })),
+  e => e instanceof ChatTimeoutError);
+});
