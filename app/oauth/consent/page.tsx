@@ -47,22 +47,17 @@ export default async function ConsentPage({ searchParams }: PageProps<"/oauth/co
         <div className="flex flex-col gap-2">
           <p className={label}>Connect an assistant</p>
           <h1 className="text-2xl font-medium leading-tight tracking-tight">
-            Let {clientName} speak as {bot.avatar ? bot.persona.name : "your bot"}?
+            Let {clientName} speak as {bot.persona.name}?
           </h1>
           {client.uri ? <p className="text-xs text-muted">{client.uri}</p> : null}
         </div>
 
         {error ? <p role="alert" className="w-full rounded-md border border-negative/30 bg-negative/10 p-3 text-sm">{ERRORS[error] ?? ERRORS.kernel}</p> : null}
 
-        {!bot.avatar ? (
-          <div className="flex flex-col items-center gap-3">
-            <p className="text-sm leading-6 text-muted">You don&apos;t have a bot yet. Make one, then return to this page to finish connecting.</p>
-            <Link href="/bot" className={primaryAction}>Create your bot</Link>
-          </div>
-        ) : (
-          <form className="flex w-full flex-col gap-5 text-left">
+        <form className="flex w-full flex-col gap-5 text-left">
             <input type="hidden" name="authorization_id" value={id} />
             <ul className="flex flex-col gap-2 text-sm leading-6 text-muted">
+              {!bot.avatar ? <li>Connecting creates your AI, {bot.persona.name}, with its default persona. You can rename it and change how it looks any time on <Link href="/bot" className="text-accent">your AI&apos;s page</Link>.</li> : null}
               <li>It sees {bot.persona.name}&apos;s persona and memories, and which assistants are connected.</li>
               <li>It acts only as {bot.persona.name}, with what you have allowed {bot.persona.name}; Sovereign&apos;s kernel checks every write.</li>
               <li>It cannot pay, purchase or commit to anything.</li>
@@ -77,8 +72,7 @@ export default async function ConsentPage({ searchParams }: PageProps<"/oauth/co
               <button formAction={denyConsentAction} className={secondaryAction}>Not now</button>
             </div>
             <p className="text-xs leading-5 text-muted">You can disconnect it at any time from your bot&apos;s page.</p>
-          </form>
-        )}
+        </form>
       </section>
     </Shell>
   );
