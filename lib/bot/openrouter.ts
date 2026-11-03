@@ -65,24 +65,42 @@ export type ChatCompletionResult = {
   finishReason: string | null;
   inputTokens: number;
   outputTokens: number;
+  /** Chars the model put in a non-content "reasoning" field, if any — diagnostic only. */
+  reasoningChars: number;
 };
 
-/** POST to OpenRouter and return the assistant's text plus token usage. */
+/** Thrown when the provider call exceeds the bounded timeout; callers render recoverable feedback. */
+export class ChatTimeoutError extends Error {}
+
+/**
+ * POST to OpenRouter and return the assistant's text plus token usage.
+ * opts.timeoutMs bounds the provider call (default 60s). opts.allowEmpty returns an empty reply
+ * (with finish_reason) instead of throwing, so callers can classify empty/truncated themselves.
+ */
 export async function completeChat(
   apiKey: string,
   body: ChatCompletionBody,
+  opts: { timeoutMs?: number; allowEmpty?: boolean } = {},
 ): Promise<ChatCompletionResult> {
-  const res = await fetch(OPENROUTER_API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": OPENROUTER_REFERER,
-      "X-Title": OPENROUTER_TITLE,
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(60_000),
-  });
+  let res: Response;
+  try {
+    res = await fetch(OPENROUTER_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": OPENROUTER_REFERER,
+        "X-Title": OPENROUTER_TITLE,
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(opts.timeoutMs ?? 60_000),
+    });
+  } catch (error) {
+    if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
+      throw new ChatTimeoutError("The model took too long to respond.");
+    }
+    throw error;
+  }
   let data: unknown = null;
   try {
     data = await res.json();
@@ -90,11 +108,12 @@ export async function completeChat(
     data = null;
   }
   if (!res.ok) throw new Error(providerErrorMessage(res.status, data));
-  const choice = (data as { choices?: { finish_reason?: unknown; message?: { content?: unknown } }[] } | null)?.choices?.[0];
+  const choice = (data as { choices?: { finish_reason?: unknown; message?: { content?: unknown; reasoning?: unknown } }[] } | null)?.choices?.[0];
   const reply =
     typeof choice?.message?.content === "string" ? choice.message.content.trim() : "";
+  const reasoningChars = typeof choice?.message?.reasoning === "string" ? choice.message.reasoning.length : 0;
   const finishReason = typeof choice?.finish_reason === "string" ? choice.finish_reason : null;
-  if (!reply) throw new Error("The bot had nothing to say. Try again.");
+  if (!reply && !opts.allowEmpty) throw new Error("The bot had nothing to say. Try again.");
   const usage = (data as { usage?: { prompt_tokens?: unknown; completion_tokens?: unknown } } | null)
     ?.usage;
   const inputTokens =
@@ -105,5 +124,5 @@ export async function completeChat(
     typeof usage?.completion_tokens === "number" && usage.completion_tokens > 0
       ? Math.ceil(usage.completion_tokens)
       : 0;
-  return { reply, finishReason, inputTokens, outputTokens };
+  return { reply, finishReason, inputTokens, outputTokens, reasoningChars };
 }

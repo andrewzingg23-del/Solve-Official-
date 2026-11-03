@@ -133,3 +133,36 @@ it("reports provider truncation instead of implying a finished answer", async ()
   })) as typeof fetch, () => completeChat("k", { model: "m", max_tokens: 1, messages: [] }));
   assert.equal(result.finishReason, "length");
 });
+
+it("allowEmpty returns an empty reply with finish_reason and reasoning size instead of throwing", async () => {
+  const { ChatTimeoutError } = await import("../../lib/bot/openrouter");
+  void ChatTimeoutError;
+  const res = await withFetch(
+    (async () => jsonResponse(200, { choices: [{ finish_reason: "stop", message: { content: "", reasoning: "thinking hard" } }], usage: { prompt_tokens: 5, completion_tokens: 0 } })) as unknown as typeof fetch,
+    () => completeChat("k", buildChatCompletionBody({ model: "m", system: "s", history: [], message: "u" }), { allowEmpty: true }),
+  );
+  assert.equal(res.reply, "");
+  assert.equal(res.finishReason, "stop");
+  assert.equal(res.reasoningChars, "thinking hard".length);
+});
+
+it("without allowEmpty, an empty completion still throws (chat behavior preserved)", async () => {
+  await assert.rejects(
+    withFetch(
+      (async () => jsonResponse(200, { choices: [{ finish_reason: "stop", message: { content: "" } }] })) as unknown as typeof fetch,
+      () => completeChat("k", buildChatCompletionBody({ model: "m", system: "s", history: [], message: "u" })),
+    ),
+    /nothing to say/i,
+  );
+});
+
+it("a provider timeout surfaces as ChatTimeoutError", async () => {
+  const { ChatTimeoutError } = await import("../../lib/bot/openrouter");
+  await assert.rejects(
+    withFetch(
+      (async () => { throw Object.assign(new Error("timed out"), { name: "TimeoutError" }); }) as unknown as typeof fetch,
+      () => completeChat("k", buildChatCompletionBody({ model: "m", system: "s", history: [], message: "u" }), { timeoutMs: 10, allowEmpty: true }),
+    ),
+    (e) => e instanceof ChatTimeoutError,
+  );
+});

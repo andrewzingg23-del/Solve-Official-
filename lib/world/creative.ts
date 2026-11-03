@@ -92,6 +92,7 @@ export function isCreativeResourceStatus(value: string): value is CreativeResour
 // The assistant (Claude, ChatGPT, Codex…) a person's bot was working through when it made a revision.
 export type ArtifactVia = { clientId: string | null; clientName: string | null };
 
+export type ArtifactDocumentType = "text" | "website";
 export type CreateCreativeArtifactInput = {
   scope: string;
   worldEntityId: string;
@@ -100,6 +101,8 @@ export type CreateCreativeArtifactInput = {
   body: string;
   position: CreativePosition;
   via?: ArtifactVia;
+  /** "website" documents (generated HTML drafts) allow a larger body than plain notes. */
+  documentType?: ArtifactDocumentType;
 };
 export type UpdateCreativeArtifactInput = {
   scope: string;
@@ -127,6 +130,13 @@ export function viaOf(attributes: Record<string, unknown> | null | undefined): s
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_BODY_LENGTH = 7000;
+// A generated website draft is a whole self-contained HTML document, larger than a note. It is still
+// a kernel document (one home), just a typed one with a bigger body cap — bounded so the entity's
+// attributes stay under the kernel's 16 KB attribute limit (content is JSON-escaped inside it).
+// Larger artifacts (images, long pages) belong in object storage (the artifacts bucket) in a later
+// slice, with the kernel holding the reference.
+const WEBSITE_BODY_LENGTH = 12000;
+const bodyCapFor = (documentType: unknown) => (documentType === "website" ? WEBSITE_BODY_LENGTH : MAX_BODY_LENGTH);
 
 const RESOURCE_CATEGORY_VALUES = CREATIVE_RESOURCE_CATEGORIES.map((category) => category.value);
 
@@ -187,8 +197,8 @@ function requireTitle(title: string): string {
   return value;
 }
 
-function requireBody(body: string): string {
-  if (body.length > MAX_BODY_LENGTH) throw new KernelError("invalid", `Text must be ${MAX_BODY_LENGTH} characters or less`, "");
+function requireBody(body: string, max: number = MAX_BODY_LENGTH): string {
+  if (body.length > max) throw new KernelError("invalid", `Text must be ${max} characters or less`, "");
   if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(body)) {
     throw new KernelError("invalid", "Text contains unsupported control characters", "");
   }
@@ -223,7 +233,7 @@ function worldFromEntity(entity: WorldEntity): CreativeWorld | null {
 }
 
 function artifactFromEntity(entity: WorldEntity): CreativeArtifact | null {
-  if (entity.kind !== "document" || entity.attributes.documentType !== "text") return null;
+  if (entity.kind !== "document" || (entity.attributes.documentType !== "text" && entity.attributes.documentType !== "website")) return null;
   const canvas = entity.attributes.canvas;
   if (!canvas || typeof canvas !== "object") return null;
   const { x, y } = canvas as Record<string, unknown>;
@@ -471,15 +481,16 @@ export async function loadCreativeWorld(kernel: Kernel, rawWorldId: string) {
 export async function createCreativeArtifact(kernel: Kernel, input: CreateCreativeArtifactInput): Promise<string> {
   const { worldId, scope } = requireScope(input.scope);
   await assertWorldEntity(kernel, scope, input.worldEntityId);
+  const documentType: ArtifactDocumentType = input.documentType === "website" ? "website" : "text";
   const title = requireTitle(input.title);
-  const body = requireBody(input.body);
+  const body = requireBody(input.body, bodyCapFor(documentType));
   const position = requirePosition(input.position);
   const entityId = await kernel.upsertEntity({
     kind: "document",
     scope,
     title,
     summary: body.trim().slice(0, 240),
-    attributes: { documentType: "text", worldId, content: body, canvas: position, ...viaAttributes(input.via) },
+    attributes: { documentType, worldId, content: body, canvas: position, ...viaAttributes(input.via) },
     visibility: "members",
     idempotencyKey: requestKey("artifact-create", input.requestId),
   });
@@ -489,11 +500,13 @@ export async function createCreativeArtifact(kernel: Kernel, input: CreateCreati
 export async function updateCreativeArtifact(kernel: Kernel, input: UpdateCreativeArtifactInput): Promise<string> {
   const { worldId, scope } = requireScope(input.scope);
   const existing = (await kernel.readWorld(scope)).find((entity) => entity.entity_id === input.entityId);
-  if (!existing || existing.kind !== "document" || existing.attributes.documentType !== "text" || existing.attributes.worldId !== worldId) {
+  const existingType = existing?.attributes.documentType;
+  if (!existing || existing.kind !== "document" || (existingType !== "text" && existingType !== "website") || existing.attributes.worldId !== worldId) {
     throw new KernelError("not_found", "Text artifact not found in this World", "");
   }
+  const documentType: ArtifactDocumentType = existingType === "website" ? "website" : "text";
   const title = requireTitle(input.title);
-  const body = requireBody(input.body);
+  const body = requireBody(input.body, bodyCapFor(documentType));
   const position = requirePosition(input.position);
   return kernel.updateDocument({
     entityId: input.entityId,
@@ -501,7 +514,7 @@ export async function updateCreativeArtifact(kernel: Kernel, input: UpdateCreati
     scope,
     title,
     summary: body.trim().slice(0, 240),
-    attributes: { documentType: "text", worldId, content: body, canvas: position, ...viaAttributes(input.via) },
+    attributes: { documentType, worldId, content: body, canvas: position, ...viaAttributes(input.via) },
     idempotencyKey: requestKey(`artifact-update:${input.entityId}`, input.requestId),
   });
 }
