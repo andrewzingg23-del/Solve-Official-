@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { buildDraftPreviewDocument } from "@/lib/product/draft-preview";
 
 // Renders a generated website draft inside an isolated, script-free sandbox. The empty `sandbox`
 // attribute gives the frame a unique opaque origin with scripts disabled, so untrusted generated
 // HTML can render (layout + CSS) but cannot run code, reach the app's origin, or navigate the top
-// window. The source is also passed through stripActiveContent upstream as defense-in-depth.
+// window. A leading render-time CSP also blocks remote/application resource requests, including
+// manually revised or reopened source. Inline CSS and embedded data images remain available.
 export function DraftPreview({ html, title }: { html: string; title: string }) {
   const [expanded, setExpanded] = useState(false);
   return (
@@ -14,7 +16,7 @@ export function DraftPreview({ html, title }: { html: string; title: string }) {
         <iframe
           title={`Preview of ${title}`}
           sandbox=""
-          srcDoc={html}
+          srcDoc={buildDraftPreviewDocument(html)}
           referrerPolicy="no-referrer"
           className="h-full w-full border-0 bg-white"
         />
