@@ -2,7 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Archivo, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { getUser } from "@/lib/supabase/server";
-import { getBotAvatar } from "@/lib/bot/avatar";
+import { DEFAULT_PERSONA } from "@/lib/bot/persona";
+import { getPersonalBot } from "@/lib/product/identity-server";
+import { identityCharacter } from "@/lib/product/identity";
 import { ProductShell } from "./product/shell";
 import "./product/product.css";
 import "./world/[worldId]/room/room.css";
@@ -36,8 +38,8 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const user = await getUser();
-  const avatar = getBotAvatar(user);
-  const identity = user ? { userId: user.id, name: typeof user.user_metadata?.display_name === "string" ? user.user_metadata.display_name : "Your profile", botName: avatar.name, face: avatar.face } : null;
+  const bot = user ? await getPersonalBot().catch(() => null) : null;
+  const identity = user ? { userId: user.id, guest: user.is_anonymous === true, name: bot?.ownerLabel || (typeof user.user_metadata?.display_name === "string" ? user.user_metadata.display_name : "Your profile"), persona: identityCharacter(bot?.persona ?? DEFAULT_PERSONA) } : null;
   return (
     <html
       lang="en"

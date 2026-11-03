@@ -45,3 +45,23 @@ test("anonymous and service callers cannot change a human profile", async () => 
     await assert.rejects(kernelClient(localSupabase(db, session)).setPersonLabel("Forged", "profile-request-004"));
   }
 });
+
+
+test("identity status distinguishes browser guest from a permanent account", async () => {
+  const { workspaceIdentityLabel } = await import("../../lib/product/identity");
+  assert.equal(workspaceIdentityLabel({ is_anonymous: true }), "Guest workspace · this browser");
+  assert.equal(workspaceIdentityLabel({ is_anonymous: false }), "Permanent account");
+  assert.equal(workspaceIdentityLabel(null), "Local profile · this browser");
+});
+
+
+test("shell character strips private instructions while preserving canonical appearance", async () => {
+  const { identityCharacter } = await import("../../lib/product/identity");
+  const persona = { ...DEFAULT_PERSONA, about: "Private plans", voice: "Private instruction", values: ["Private value"], body: "orb" as const };
+  const character = identityCharacter(persona);
+  assert.equal(character.name, persona.name);
+  assert.equal(character.body, "orb");
+  assert.deepEqual(character.palette, persona.palette);
+  assert.equal(character.about, ""); assert.equal(character.voice, ""); assert.deepEqual(character.values, []);
+  assert.equal(persona.about, "Private plans", "redaction never mutates saved persona");
+});

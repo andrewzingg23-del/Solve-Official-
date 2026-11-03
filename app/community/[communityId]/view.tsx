@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { Icon } from "@/app/product/icons";
 import { COMMUNITY_LIMITS, type Community, type JoinRequest, type Member, type MyAsk, type Note, type Standing } from "@/lib/community/community";
-import { aiNotesAction, answerAskAction, askToJoinAction, letMyAiInAction, sendNoteAction } from "./actions";
+import { directoryVisibilityAction, aiNotesAction, answerAskAction, askToJoinAction, letMyAiInAction, sendNoteAction } from "./actions";
 import { AskRoom } from "./ask-room";
 import { RoomBrief } from "./room-brief";
 import styles from "@/app/communities/community.module.css";
@@ -92,7 +92,7 @@ export function CommunityView({ data, status }: { data: Loaded; status: { bad: b
             <section className={`solve-panel ${styles.section}`}>
               <details className={styles.disclosure}>
                 <summary>Owner settings</summary>
-                <div><p>Share this community page to invite people to ask to join. You can manage existing people and AI access in the project.</p><Link href={`/world/${id}#people-heading`} className="solve-button solve-button-secondary">Manage access<Icon name="arrow" width={16} /></Link></div>
+                <div><p>{c.directoryListed === false ? "Unlisted: people can still open a direct link. Members keep their access." : "Listed: this community’s name and goal appear in discovery."}</p><RecoverableForm ownerActorId={data.me} action={directoryVisibilityAction.bind(null, id)} successMessage="Directory visibility saved."><input type="hidden" name="listed" value={c.directoryListed === false ? "true" : "false"} /><button type="submit" className="solve-button solve-button-secondary">{c.directoryListed === false ? "List in directory" : "Unlist from directory"}</button></RecoverableForm><p>Unlisting is reversible. It hides the directory entry; it does not make the profile private or remove work.</p><p>Share this community page to invite people to ask to join. You can manage existing people and AI access in the project.</p><Link href={`/world/${id}#people-heading`} className="solve-button solve-button-secondary">Manage access<Icon name="arrow" width={16} /></Link></div>
               </details>
             </section>
           ) : null}

@@ -187,3 +187,20 @@ it("lets a person's AI send notes for them only after they say so, and shows it 
   await rejects(sendNote(rex, c, { to: ana.id, text: "again", requestId: "note-rex-0004" }));
 });
 
+
+
+it("only the owner can reversibly unlist a community without changing access or deleting work", async () => {
+  const { ana, ben } = await setting();
+  const c = await startCommunity(ana.k, { name: "Verification fixture", nonce: NONCE });
+  const grants = await ana.k.myGrants();
+  await assert.rejects(updateCommunity(ben.k, c, { directoryListed: false }), /Only the person who started/);
+  await updateCommunity(ana.k, c, { directoryListed: false });
+  assert.equal((await listCommunities(ben.k)).length, 0);
+  const unlisted = await readCommunity(ana.k, c.communityId);
+  assert.equal(unlisted?.directoryListed, false);
+  assert.equal((await readCommunity(ben.k, c.communityId))?.name, c.name, "unlisting is discovery control, not a claim of privacy");
+  assert.equal((await startCommunity(ana.k, { name: c.name, nonce: NONCE })).profileId, c.profileId, "retry cannot recreate an unlisted profile");
+  assert.deepEqual(await ana.k.myGrants(), grants);
+  await updateCommunity(ana.k, unlisted!, { directoryListed: true });
+  assert.equal((await listCommunities(ben.k)).length, 1);
+});

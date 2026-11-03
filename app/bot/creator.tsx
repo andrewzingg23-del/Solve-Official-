@@ -4,6 +4,7 @@
 // bot. Everything previews live; saving writes one versioned kernel record. States here are
 // previews only: on the live bot, states come from real activity.
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { loadGuestProfile, useGuestProfile } from "@/lib/guest/profile";
 import { label, primaryAction, secondaryAction } from "@/app/ui";
@@ -107,9 +108,10 @@ export function BotCreator({ initial, signedIn, version, savedAt, ownerId, machi
   const [pending, startTransition] = useTransition();
   const dirty = useMemo(() => JSON.stringify(persona) !== JSON.stringify(saved), [persona, saved]);
   const guest = useGuestProfile();
+  const router = useRouter();
   const active = signedIn || guest.active;
 
-  const update = (patch: Partial<Persona>) => setPersona((p) => validatePersona({ ...p, ...patch }, p));
+  const update = (patch: Partial<Persona>) => { setMessage(null); setPersona((p) => validatePersona({ ...p, ...patch }, p)); };
   const setTrait = (t: Trait, v: number) => setPersona((p) => validatePersona({ ...p, traits: { ...p.traits, [t]: v } }, p));
   const setColor = (key: keyof Persona["palette"], v: string) => setPersona((p) => ({ ...p, palette: { ...p.palette, [key]: v } }));
 
@@ -156,6 +158,7 @@ export function BotCreator({ initial, signedIn, version, savedAt, ownerId, machi
           setSaveInfo({ version: result.version, savedAt: result.savedAt });
           setMessage({ tone: "ok", text: `${result.persona.name} saved.` });
           setMood("happy");
+          router.refresh();
         } else {
           setMessage({ tone: "error", text: ERRORS[result.error] ?? ERRORS.unavailable });
         }
@@ -198,7 +201,7 @@ export function BotCreator({ initial, signedIn, version, savedAt, ownerId, machi
       </div>
 
       {/* Controls */}
-      <div className="flex min-w-0 flex-col gap-6">
+      <fieldset disabled={pending} className="flex min-w-0 flex-col gap-6 border-0 p-0 min-w-0">
         <div className="flex flex-wrap gap-2 border-b border-line pb-4" role="tablist" aria-label="Customize">
           {TABS.map(([t, name]) => (
             <button
@@ -381,15 +384,15 @@ export function BotCreator({ initial, signedIn, version, savedAt, ownerId, machi
           <button type="button" onClick={roll} className={secondaryAction} aria-label="Roll a random look">Roll the dice</button>
           <button type="button" onClick={() => { setPersona(saved); setValuesText(saved.values.join(", ")); setMood("idle"); }} disabled={!dirty} className={`${secondaryAction} disabled:opacity-40`}>Undo changes</button>
           {active ? (
-            <button type="button" onClick={save} disabled={pending || !dirty} className={`${primaryAction} disabled:opacity-40`}>
-              {pending ? "Saving" : saveInfo.version ? "Save changes" : signedIn ? "Bring it to life" : "Keep it on this device"}
+            <button type="button" onClick={save} disabled={pending || (!dirty && valuesText === saved.values.join(", "))} className={`${primaryAction} disabled:opacity-40`}>
+              {pending ? "Saving" : saveInfo.version ? "Save changes" : signedIn ? "Save persona" : "Keep it on this device"}
             </button>
           ) : (
             <Link href="/account" className={primaryAction}>Open Profile to keep it</Link>
           )}
         </div>
         <p role="status" className={`min-h-5 text-sm ${message?.tone === "error" ? "text-negative" : "text-positive"}`}>
-          {message?.text ??
+          {pending ? "Saving…" : message?.tone === "error" ? message.text : dirty || valuesText !== saved.values.join(", ") ? "Unsaved changes" : message?.text ??
             (signedIn
               ? saveInfo.version
                 ? `Version ${saveInfo.version}${saveInfo.savedAt ? `, saved ${new Date(saveInfo.savedAt).toLocaleString()}` : ""}. Every save is kept in its history.`
@@ -397,7 +400,7 @@ export function BotCreator({ initial, signedIn, version, savedAt, ownerId, machi
               : "")}
         </p>
         {!active ? <p className="text-xs leading-5 text-muted">You are previewing a persona. Set up your profile to keep your choices on this device.</p> : null}
-      </div>
+      </fieldset>
     </section>
   );
 }

@@ -1,0 +1,34 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { kernelClient, KernelError } from '../../lib/kernel/client';
+import { localSupabase } from '../../lib/kernel/local';
+import { createKernelDb, user } from '../kernel/harness';
+import { createCreativeWorld, createCreativeArtifact, updateCreativeArtifact, loadCreativeWorld } from '../../lib/world/creative';
+import { createStarterPlan, projectProgress } from '../../lib/world/progress';
+import { requireDisplayedActor } from '../../lib/product/account-guard';
+test('saved next actions preserve account, authority, retry and revision boundaries', async () => {
+ const db = await createKernelDb();
+ const alice = kernelClient(localSupabase(db,user('auth:steps-alice')));
+ const bob = kernelClient(localSupabase(db,user('auth:steps-bob')));
+ const aliceId = await alice.register('Alice'); const bobId = await bob.register('Bob');
+ const world = await createCreativeWorld(alice,{worldId:'00000000-0000-4000-8000-000000000901',title:'Useful steps'});
+ await assert.rejects(requireDisplayedActor(alice,bobId));
+ await assert.rejects(createStarterPlan(bob,world.worldId));
+ await createStarterPlan(alice,world.worldId);
+ await createStarterPlan(alice,world.worldId);
+ assert.equal(projectProgress((await loadCreativeWorld(alice,world.worldId)).artifacts).steps.length,3);
+ await requireDisplayedActor(alice,aliceId);
+ const input = {scope:world.scope,worldEntityId:world.entityId,requestId:'first-step',title:'Next step',body:'- [ ] Interview one user',position:{x:50,y:50}};
+ const entityId = await createCreativeArtifact(alice,input);
+ assert.equal(await createCreativeArtifact(alice,input),entityId);
+ await alice.issueGrant({grantee:bobId,capability:'kernel.read',scope:world.scope});
+ await assert.rejects(createStarterPlan(bob,world.worldId), e => e instanceof KernelError && e.name === 'forbidden');
+ const update = {scope:world.scope,entityId,requestId:'complete-step',expectedVersion:1,title:'Next step',body:'- [x] Interview one user',position:{x:50,y:50}};
+ await assert.rejects(updateCreativeArtifact(bob,update), e => e instanceof KernelError && e.name === 'forbidden');
+ await updateCreativeArtifact(alice,update);
+ await updateCreativeArtifact(alice,update);
+ const progress = projectProgress((await loadCreativeWorld(alice,world.worldId)).artifacts);
+ assert.equal(progress.steps.length,4); assert.equal(progress.completed,1);
+ await assert.rejects(updateCreativeArtifact(alice,{...update,requestId:'stale-edit',body:'- [ ] Old change'}),e => e instanceof KernelError && e.name === 'conflict');
+
+});

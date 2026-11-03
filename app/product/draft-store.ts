@@ -39,5 +39,6 @@ export function useProjectDraft(owner: string | null) {
     }
     snapshots.clear(); notify();
   };
-  return { draft, save, clear };
+  const persistent = useSyncExternalStore(subscribe, () => !temporary.has(draftKey(owner)), () => true);
+  return { draft, save, clear, persistent };
 }

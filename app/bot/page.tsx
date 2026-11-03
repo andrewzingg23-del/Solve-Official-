@@ -3,7 +3,8 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import type { Persona } from "@/lib/bot/persona";
 import { readConnections, readMemories, type Connection, type Memory } from "@/lib/bot/memory";
-import { loadBot } from "@/lib/bot/store";
+import { getPersonalBot } from "@/lib/product/identity-server";
+import { AiWork } from "./work-panel";
 import { accessFrom, botGrantsIn } from "@/lib/bot/worlds";
 import { listCreativeWorlds } from "@/lib/world/creative";
 import { KernelError, type Kernel } from "@/lib/kernel/client";
@@ -24,7 +25,8 @@ import { withPassport } from "@/lib/passport/link";
 export const metadata: Metadata = { title: "Your AI — solve" };
 
 const SECTIONS = [
-  { value: "persona", label: "Persona" },
+  { value: "work", label: "Work" },
+  { value: "persona", label: "Appearance & personality" },
   { value: "connections", label: "Connections" },
   { value: "knowledge", label: "Knowledge" },
 ] as const;
@@ -74,7 +76,7 @@ async function load(section: Section): Promise<Loaded> {
   try {
     if (!(await getUser())) return { kind: "signed-out" };
     const kernel = await getKernel();
-    const bot = await loadBot(kernel);
+    const bot = await getPersonalBot();
     let connections: Connection[] | null = null;
     let memories: Memory[] | null = null;
     let worlds: ProjectAccessWorld[] | null = null;
@@ -119,7 +121,7 @@ async function connectorUrl() {
 
 export default async function BotPage({ searchParams }: { searchParams?: Promise<{ section?: string | string[]; world_error?: string | string[]; passport?: string | string[] }> }) {
   const params = searchParams ? await searchParams : {};
-  const section: Section = params.section === "connections" || params.section === "knowledge" ? params.section : "persona";
+  const section: Section = params.section === "connections" || params.section === "knowledge" || params.section === "persona" ? params.section : "work";
   const state = await load(section);
   const retry = `/bot?section=${section}`;
 
@@ -128,7 +130,7 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
       <header className="solve-page-heading">
         <span className="solve-kicker">Your personal AI</span>
         <h1>Your AI</h1>
-        <p>Shape its persona, choose its connections and keep the knowledge that matters to you.</p>
+        <p>Move your projects forward, keep useful knowledge and choose how your AI works with you.</p>
       </header>
 
       <nav className="solve-section-nav" aria-label="Your AI sections">
@@ -147,6 +149,8 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
         <Notice title="Finish your account setup" body="You are signed in, but your account identity is not ready. Open Profile to finish setup before saving your AI or granting access." href="/account" action="Open Profile" retry={retry} />
       ) : state.kind === "unavailable" ? (
         <Notice title="Your AI could not be loaded" body="Your saved persona is unavailable right now. Retry to load it, or open Profile to check your account." href="/account" action="Open Profile" retry={retry} />
+      ) : section === "work" ? (
+        <AiWork />
       ) : section === "persona" ? (
         <RebuiltPersona
           signedIn={state.kind === "ready"}
@@ -171,7 +175,7 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
       ) : section === "connections" ? (
         <div className="solve-ai-stack">
           {state.connections ? (
-            <Connections botName={state.persona.name} connectorUrl={await connectorUrl()} connections={state.connections} />
+            <Connections ownerId={state.ownerId} botName={state.persona.name} connectorUrl={await connectorUrl()} connections={state.connections} />
           ) : (
             <Notice title="Connections could not be loaded" body="The current authorizations are unavailable. Retry to see who has access and revoke a connection." retry={retry} />
           )}
@@ -189,7 +193,6 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
         </div>
       ) : (
         <div className="solve-ai-stack">
-          <PassportPanel view={state.passport} passportUrl={passportUrl()} outcome={typeof params.passport === "string" ? params.passport : undefined} />
           {state.memories ? (
             <>
               <Knowledge botName={state.persona.name} memories={state.memories} ownerId={state.ownerId} />
@@ -206,6 +209,7 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
           ) : (
             <Notice title="Private knowledge could not be loaded" body="Your saved memories are unavailable right now. Retry to review them before adding or erasing knowledge." retry={retry} />
           )}
+          <details className="solve-ai-details"><summary>Optional Passport integration</summary><PassportPanel view={state.passport} passportUrl={passportUrl()} outcome={typeof params.passport === "string" ? params.passport : undefined} /></details>
         </div>
       )}
     </main>

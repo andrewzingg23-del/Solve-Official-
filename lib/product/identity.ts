@@ -14,3 +14,13 @@ export function validateIdentityInput(input: unknown, existing: Persona): Identi
   const persona = validatePersona(fields.persona ?? existing, existing);
   return { ok: true, name, face, persona: { ...persona, name: botName } };
 }
+
+
+export function workspaceIdentityLabel(user: { is_anonymous?: boolean } | null): string {
+  return !user ? "Local profile · this browser" : user.is_anonymous ? "Guest workspace · this browser" : "Permanent account";
+}
+
+// Shells need a character, never the person's private persona instructions.
+export function identityCharacter(persona: Persona): Persona {
+  return { ...persona, about: "", voice: "", values: [] };
+}

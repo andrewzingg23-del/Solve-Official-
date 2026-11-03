@@ -47,6 +47,7 @@ async function load(communityId: string): Promise<Loaded | "missing" | "identity
 }
 
 const DONE: Record<string, string> = {
+  directory: "Directory visibility saved. Existing project access is unchanged.",
   asked: "Request sent. The owner's answer will appear here.",
   "let-in": "Request approved. Access to the project has been granted.",
   declined: "Request declined. The person has been notified.",

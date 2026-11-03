@@ -5,6 +5,7 @@ import type { Connection, Memory } from "@/lib/bot/memory";
 import { MEMORY_LIMITS } from "@/lib/bot/memory";
 import { Icon } from "@/app/product/icons";
 import { addMemoryAction, disconnectAction, forgetMemoryAction } from "./actions";
+import { ConnectionCheck } from "./connection-check";
 import { CopyField } from "./copy-field";
 
 const ASSISTANTS = [
@@ -18,7 +19,7 @@ const ASSISTANTS = [
   },
 ];
 
-export function Connections({ botName, connectorUrl, connections }: { botName: string; connectorUrl: string; connections: Connection[] }) {
+export function Connections({ ownerId, botName, connectorUrl, connections }: { ownerId: string; botName: string; connectorUrl: string; connections: Connection[] }) {
   return (
     <div className="solve-two-columns solve-ai-connections">
       <section className="solve-panel solve-ai-card" aria-labelledby="authorized-connections">
@@ -38,21 +39,23 @@ export function Connections({ botName, connectorUrl, connections }: { botName: s
                   <p>{connection.mode === "remember" ? "Reads and adds" : "Read only"}</p>
                   <p className="solve-ai-record-meta">Authorized {new Date(connection.since).toLocaleDateString()}</p>
                 </div>
-                <form action={disconnectAction}>
+                <RecoverableForm ownerActorId={ownerId} action={disconnectAction} successMessage="Assistant access revoked.">
                   <input type="hidden" name="client_id" value={connection.clientId} />
                   <input type="hidden" name="request_id" value={randomUUID()} />
                   <button type="submit" className="solve-ai-revoke" aria-label={`Revoke ${connection.clientName} access`}>Revoke access</button>
-                </form>
+                </RecoverableForm>
               </li>
             ))}
           </ul>
         )}
-        <p className="solve-ai-fineprint">To change a mode, revoke the connection and authorize it again. Revoking stops future access; it does not remove information the assistant has already read.</p>
+        <ConnectionCheck ownerId={ownerId} />
+        <p className="solve-ai-fineprint">Authorization records do not prove an assistant is connected right now. To change a mode, revoke the connection and authorize it again. Revoking stops future access; it does not remove information the assistant has already read.</p>
       </section>
 
       <section className="solve-panel solve-ai-card" aria-labelledby="connect-assistant">
         <div className="solve-ai-card-heading"><Icon name="plus" /><h2 id="connect-assistant">Connect an assistant</h2></div>
         <p>Use this MCP connector URL in an assistant that supports remote MCP with OAuth. You choose its permissions on solve.</p>
+        <p>The built-in project room AI is separate and does not need this connector.</p>
         <CopyField value={connectorUrl} name="MCP connector URL" />
         <dl className="solve-ai-modes">
           <div><dt>Read only</dt><dd>Reads your persona, private knowledge and project context your AI is allowed to see.</dd></div>
@@ -65,6 +68,9 @@ export function Connections({ botName, connectorUrl, connections }: { botName: s
               <li key={assistant.name}><h3>{assistant.name}</h3><p>{assistant.steps}</p></li>
             ))}
           </ul>
+          <h3>Check the connection from your assistant</h3>
+          <ol><li>Add the connector URL, complete sign-in and approve only the access you want.</li><li>In that assistant, ask: “Use the solve connector to read my persona and tell me its name. Do not write or change anything.”</li><li>Compare its answer with your saved AI name here. If it cannot call the connector, check the assistant’s app settings and the authorization list above.</li></ol>
+          <p>A successful persona read checks that one read operation. It does not prove project access or writing capability. Those still depend on each project’s permissions.</p>
           <p className="solve-ai-fineprint">Custom connector availability and settings depend on your assistant&apos;s plan and workspace policy. Connecting does not import or automatically sync its chat history.</p>
         </details>
       </section>

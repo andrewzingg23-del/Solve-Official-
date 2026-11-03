@@ -14,14 +14,15 @@ import styles from "./community.module.css";
 
 export const metadata: Metadata = { title: "Communities · solve" };
 
-type Row = Community & { mine: "owner" | "member" | null };
+type Row = Community & { ownerName: string; mine: "owner" | "member" | null };
 
 async function load(): Promise<Row[] | "identity" | "unavailable"> {
   try {
     const kernel = await getKernel();
-    const [me, grants, communities] = await Promise.all([kernel.whoami(), kernel.myGrants(), listCommunities(kernel)]);
+    const [me, grants, communities] = await Promise.all([kernel.whoami(), kernel.myGrants(), listCommunities(kernel, { includeUnlisted: true })]);
     const inside = new Set(grants.filter((g) => g.capability === "kernel.read" || g.capability === "*").map((g) => g.scope));
-    return communities.map((c) => ({ ...c, mine: c.ownerId === me.actor_id ? "owner" : inside.has(c.scope) ? "member" : null }));
+    const owners = await kernel.readActors([...new Set(communities.map(c => c.ownerId))]);
+    return communities.filter(c => c.directoryListed !== false || c.ownerId === me.actor_id || inside.has(c.scope)).map((c) => ({ ...c, ownerName: owners.find(owner => owner.actor_id === c.ownerId)?.label || "Community owner", mine: c.ownerId === me.actor_id ? "owner" : inside.has(c.scope) ? "member" : null }));
   } catch (error) {
     return error instanceof KernelError && error.name === "unauthenticated" ? "identity" : "unavailable";
   }
@@ -142,7 +143,7 @@ function List({ title, rows }: { title: string; rows: Row[] }) {
           <li key={c.communityId}>
             <Link href={`/community/${c.communityId}`} className={styles.communityCard}>
               <span className={styles.iconTile}><Icon name="community" /></span>
-              <div className={styles.cardContent}><div className={styles.cardHeading}><h3>{c.name}</h3>{c.mine ? <span className={styles.badge}>{c.mine === "owner" ? "Owner" : "Member"}</span> : null}</div>{c.about ? <p>{c.about}</p> : <p>{c.mine ? "Open your community to see its people and shared work." : "Open the community to learn more and ask to join."}</p>}</div>
+              <div className={styles.cardContent}><div className={styles.cardHeading}><h3>{c.name}</h3>{c.mine ? <span className={styles.badge}>{c.mine === "owner" ? "Owner" : "Member"}</span> : null}</div>{c.about ? <p>{c.about}</p> : <p>{c.mine ? "Open your community to see its people and shared work." : "Open the community to learn more and ask to join."}</p>}<p className="solve-muted">Started by {c.ownerName} · Profile updated {new Date(c.updatedAt).toLocaleDateString("en-US")}{c.directoryListed === false ? " · Unlisted" : ""}</p><p className="solve-muted">Join to work together in a shared project room. Project activity is visible to members after approval.</p></div>
               <Icon name="arrow" width={18} className={styles.cardArrow} />
             </Link>
           </li>

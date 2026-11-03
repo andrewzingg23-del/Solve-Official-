@@ -1,0 +1,51 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { createKernelDb, user } from '../kernel/harness';
+import { localSupabase } from '../../lib/kernel/local';
+import { kernelClient } from '../../lib/kernel/client';
+import { createCreativeWorld } from '../../lib/world/creative';
+import { grantWorldAccess } from '../../lib/world/collaboration';
+import { proposeDevelopmentChange, reviewDevelopmentChange, approveDevelopmentChange, listDevelopmentChanges, developmentHandoff } from '../../lib/world/development';
+import { parseImplementationPull, readChangeEvidence } from '../../lib/github/change-evidence';
+
+test('development requests require reviewed immutable scope and human owner approval, survive reload and replay once',async()=>{
+ const db=await createKernelDb();
+ const owner=kernelClient(localSupabase(db,{role:'authenticated',sub:'dev-guest',is_anonymous:true}));
+ const editor=kernelClient(localSupabase(db,user('dev-editor'))),other=kernelClient(localSupabase(db,user('dev-other')));
+ await owner.register('Builder'); const editorId=await editor.register('Editor');await other.register('Other');
+ const world=await createCreativeWorld(owner,{worldId:'012d5538-c248-4e4d-a8d1-0c851dbdf6ce',title:'Build SOLVE',goal:'Useful development'});
+ await grantWorldAccess(owner,{scope:world.scope,granteeActorId:editorId,role:'editor',requestId:'dev-editor-access'});
+ const input={requestId:'proposal-1',title:'Readable answers',problem:'Raw Markdown is exposed',expected:'Answers have headings and lists',checks:'XSS inputs remain inert; run tests',boundaries:'Do not change permissions'};
+ const first=await proposeDevelopmentChange(owner,world.worldId,input);
+ assert.equal(await proposeDevelopmentChange(owner,world.worldId,input),first);
+ await assert.rejects(proposeDevelopmentChange(owner,world.worldId,{...input,title:'Changed replay'}));
+ await assert.rejects(approveDevelopmentChange(owner,world.worldId,first,''));
+ await assert.rejects(reviewDevelopmentChange(editor,world.worldId,first,'review-editor','Looks good'));
+ await assert.rejects(listDevelopmentChanges(other,world.worldId));
+ const reviewed=await reviewDevelopmentChange(owner,world.worldId,first,'review-1','Scope and checks are clear');
+ assert.equal(await reviewDevelopmentChange(owner,world.worldId,first,'review-1','Scope and checks are clear'),reviewed);
+ await assert.rejects(reviewDevelopmentChange(owner,world.worldId,first,'review-1','Changed notes'));
+ await assert.rejects(approveDevelopmentChange(owner,world.worldId,first,'forged-review'));
+ await approveDevelopmentChange(owner,world.worldId,first,reviewed);
+ await approveDevelopmentChange(owner,world.worldId,first,reviewed);
+ const rows=await listDevelopmentChanges(owner,world.worldId);
+ assert.equal(rows.length,1);assert.equal(rows[0].stage,'approved');
+ const handoff=developmentHandoff(rows[0],world);
+ assert.match(handoff,/Readable answers/);assert.match(handoff,/Do not change permissions/);assert.match(handoff,/Run the checks/);
+ assert.equal((await owner.readEvents(world.scope,{limit:200})).filter(e=>e.type==='development.change.approved').length,1);
+ assert.equal(rows[0].pullNumber,null);
+});
+
+test('implementation URLs are bound to the selected repository and GitHub evidence fails closed',async()=>{
+ const ref={owner:'example',repo:'solve',trunk:'main'};
+ assert.equal(parseImplementationPull('https://github.com/example/solve/pull/12',ref),12);
+ for(const url of ['https://evil.test/example/solve/pull/12','https://github.com/other/solve/pull/12','https://github.com/example/solve/pull/12/files','javascript:alert(1)'])assert.equal(parseImplementationPull(url,ref),null);
+ const calls:string[]=[];
+ const fake=async (url:string|URL|Request)=>{calls.push(String(url));if(String(url).endsWith('/pulls/12'))return Response.json({number:12,title:'Readable answers',html_url:'https://github.com/example/solve/pull/12',state:'open',merged:false,base:{ref:'main',repo:{full_name:'example/solve'}},head:{sha:'a'.repeat(40)},merge_commit_sha:null});if(String(url).includes('/check-runs?'))return Response.json({total_count:1,check_runs:[{name:'Tests',status:'completed',conclusion:'failure',html_url:'https://github.com/example/solve/actions/runs/1'}]});return Response.json({state:'success',total_count:1,statuses:[{context:'Vercel',state:'success'}]});};
+ const evidence=await readChangeEvidence(ref,12,{fetcher:fake as typeof fetch});
+ assert.equal(evidence?.checks,'failed');assert.equal(evidence?.merged,false);assert.ok(calls.every(x=>x.startsWith('https://api.github.com/repos/example/solve/')));
+ const wrongBranch=await readChangeEvidence(ref,12,{fetcher:async()=>Response.json({number:12,html_url:'https://github.com/example/solve/pull/12',head:{sha:'a'.repeat(40)},base:{ref:'other',repo:{full_name:'example/solve'}}})});
+ assert.equal(wrongBranch,null);
+ const denied=await readChangeEvidence(ref,12,{fetcher:async()=>new Response('',{status:403})});
+ assert.equal(denied,null);
+});

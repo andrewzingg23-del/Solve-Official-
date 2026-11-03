@@ -126,3 +126,10 @@ it("turns provider errors into honest plain-word errors", async () => {
     "an empty reply is honest, not a blank bubble",
   );
 });
+
+it("reports provider truncation instead of implying a finished answer", async () => {
+  const result = await withFetch((async () => jsonResponse(200, {
+    choices: [{ message: { content: "An unfinished" }, finish_reason: "length" }],
+  })) as typeof fetch, () => completeChat("k", { model: "m", max_tokens: 1, messages: [] }));
+  assert.equal(result.finishReason, "length");
+});
