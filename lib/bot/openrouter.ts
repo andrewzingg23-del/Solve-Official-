@@ -66,6 +66,18 @@ export type ChatCompletionResult = {
   outputTokens: number;
 };
 
+// Typed provider failure: the HTTP status is safe to classify and log.
+// The message is already sanitized by providerErrorMessage; raw provider
+// bodies are never attached to this error.
+export class ProviderError extends Error {
+  readonly status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ProviderError";
+    this.status = status;
+  }
+}
+
 /** POST to OpenRouter and return the assistant's text plus token usage. */
 export async function completeChat(
   apiKey: string,
@@ -88,12 +100,12 @@ export async function completeChat(
   } catch {
     data = null;
   }
-  if (!res.ok) throw new Error(providerErrorMessage(res.status, data));
+  if (!res.ok) throw new ProviderError(res.status, providerErrorMessage(res.status, data));
   const choice = (data as { choices?: { message?: { content?: unknown } }[] } | null)?.choices?.[0]
     ?.message;
   const reply =
     choice && typeof choice.content === "string" ? choice.content.trim() : "";
-  if (!reply) throw new Error("The bot had nothing to say. Try again.");
+  if (!reply) throw new ProviderError(res.status, "The bot had nothing to say. Try again.");
   const usage = (data as { usage?: { prompt_tokens?: unknown; completion_tokens?: unknown } } | null)
     ?.usage;
   const inputTokens =
