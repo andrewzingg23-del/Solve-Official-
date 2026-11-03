@@ -1,5 +1,9 @@
 # BUILD_STATUS
 
+## 2026-11-03 — Safe creation preview (Codex)
+
+Branch `codex/safe-draft-preview`, stacked on PR #39 at `2f6ae0d`. Generated/revised HTML gets a leading deny-by-default resource CSP at render time while preserving the opaque-origin script-free sandbox, inline CSS and embedded data images. Source storage, kernel and grants unchanged. Chromium reproduced five requests before the fix; the production-component regression now passes at 1280px/390px and on revised source. Local full suite: 528 passed, 1 existing skip, 0 failures; typecheck passed; lint 0 errors/9 existing warnings; production build passed, 46/46 static pages. Initial sandbox HTTP/IPC and dependency-symlink verification failures were resolved in the isolated test environment; the final runs passed. No production merge, model call, model charge or database change. Deployed creation journey and remote CI are not claimed verified. Continuation: `docs/handoff/2026-11-03-creation-preview.md`.
+
 ## One Solve run — Step 0 + Step 1 passport cache — 2026-10-31 (Claude)
 
 - **Run started.** Trunk is `main` (DECISIONS.md 2026-10-31, decision (a)). Working branch `claude/passport-link`. Progress tracked in `docs/plans/RUN-PROGRESS.md`, which carries the live WAITING ON ANDREW list.

@@ -5,8 +5,8 @@
 //
 // Generated HTML is UNTRUSTED. The real isolation boundary is the preview iframe rendered with an
 // empty `sandbox` attribute (no scripts, no same-origin) — see DraftPreview. stripActiveContent()
-// below is defense-in-depth so a draft that is ever rendered outside that sandbox still can't run
-// script or load off-document resources.
+// below is defense-in-depth, not a standalone HTML sanitizer. Render only through DraftPreview,
+// whose leading CSP also blocks off-document resources (including CSS URLs and relative images).
 
 export const WEBSITE_DRAFT = "website.draft.v1";
 export type DraftRequest = { title: string; goal: string };
@@ -69,9 +69,9 @@ export function isSubstantiveDraft(html: string | null): html is string {
 }
 
 /**
- * Strips anything that could execute or reach off-document when rendered: scripts, inline event
- * handlers, javascript:/data:text/html URLs, and resource-loading embeds. Defense-in-depth behind
- * the script-free sandboxed preview iframe, which is the authoritative boundary.
+ * Removes common active markup: scripts, inline handlers, dangerous URLs and embeds. This regex
+ * filter is not a standalone sanitizer or network boundary. DraftPreview enforces an opaque-origin,
+ * script-free sandbox and a leading restrictive CSP at render time, including for edited source.
  */
 export const WEBSITE_DRAFT_MAX_CHARS = 12000;
 
