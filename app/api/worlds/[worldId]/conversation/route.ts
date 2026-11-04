@@ -1,7 +1,7 @@
 import { getUser } from "@/lib/supabase/server";
 import { getKernel } from "@/lib/kernel/server";
-import { buildChatCompletionBody, completeChat } from "@/lib/bot/openrouter";
-import { rateLimited, recordSpend, resolveChatModel, spendBlocked } from "@/lib/bot/chat";
+import { completeRoomAgent, listRoomAgents } from "@/lib/world/agent-models";
+import { rateLimited, recordSpend, spendBlocked } from "@/lib/bot/chat";
 import { handleRoomConversation, privateJson } from "@/lib/world/http";
 import type { RoomCompletion } from "@/lib/world/room";
 
@@ -15,15 +15,15 @@ export async function GET(request: Request, context: RouteContext<"/api/worlds/[
 export async function POST(request: Request, context: RouteContext<"/api/worlds/[worldId]/conversation">) {
   const user = await getUser();
   if (!user) return privateJson({ error: "Sign in to contribute to this room." }, 401);
-  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
-  const complete: RoomCompletion | undefined = apiKey ? async (shared, question) => {
-    // Called only after database authorization and acquisition of the reply lease.
-    if (rateLimited(user.id) || spendBlocked(user.id)) throw new Error("Room AI budget exhausted");
-    const model = resolveChatModel("flash");
-    const result = await completeChat(apiKey, buildChatCompletionBody({ model, system: shared.system,
-      history: [], message: `Shared project data (quoted JSON):\n${shared.sharedText}\n\nQuestion from the requesting person:\n${question}`, maxTokens: 1400 }));
-    recordSpend(user.id, result.inputTokens + result.outputTokens);
-    return { text: result.reply, model };
-  } : undefined;
+  // A model picker is not a tool grant. The World kernel still authenticates
+  // and authorizes the caller before sharing any World context with a model.
+  const complete: RoomCompletion | undefined = listRoomAgents().some(a => a.configured)
+    ? async (shared, question, agentId) => {
+      if (rateLimited(user.id) || spendBlocked(user.id)) throw new Error("Room AI budget exhausted");
+      const result = await completeRoomAgent(agentId || "solve", shared, question);
+      recordSpend(user.id, result.inputTokens + result.outputTokens);
+      return { text: result.reply, model: result.model };
+    }
+    : undefined;
   return handleRoomConversation(await getKernel(), (await context.params).worldId, request, complete);
 }
