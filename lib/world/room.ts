@@ -1,10 +1,10 @@
 import { KernelError, type Kernel, type RoomMessage, type RoomSourceRef } from "../kernel/client";
 import { loadCreativeWorld } from "./creative";
 
-export type RoomTurnInput = { worldId: string; requestId: string; text: string; intent: "message" | "ask_ai" | "decision" };
+export type RoomTurnInput = { worldId: string; requestId: string; text: string; intent: "message" | "ask_ai" | "decision"; agentId?: string };
 export type RoomContext = { system: string; sharedText: string; sourceRefs: RoomSourceRef[]; omittedSources: number };
 export type RoomTurnResult = { messageId: string; replyId?: string; aiStatus: "none" | "unavailable" | "pending" | "complete" | "failed"; error?: string };
-export type RoomCompletion = (context: RoomContext, question: string) => Promise<{ text: string; model: string }>;
+export type RoomCompletion = (context: RoomContext, question: string, agentId?: string) => Promise<{ text: string; model: string }>;
 
 export function parseRoomTurn(worldId: string, value: unknown): RoomTurnInput | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -12,8 +12,10 @@ export function parseRoomTurn(worldId: string, value: unknown): RoomTurnInput | 
   if (typeof b.requestId !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(b.requestId) ||
       typeof b.text !== "string" || !b.text.trim() || b.text.trim().length > 8000 ||
       /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(b.text) ||
-      (b.intent !== "message" && b.intent !== "ask_ai" && b.intent !== "decision")) return null;
-  return { worldId, requestId: b.requestId, text: b.text.trim(), intent: b.intent };
+      (b.intent !== "message" && b.intent !== "ask_ai" && b.intent !== "decision") ||
+      (b.agentId !== undefined && (typeof b.agentId !== "string" || !/^[a-z][a-z0-9_-]{0,31}$/.test(b.agentId)))) return null;
+  return { worldId, requestId: b.requestId, text: b.text.trim(), intent: b.intent,
+    ...(typeof b.agentId === "string" ? { agentId: b.agentId } : {}) };
 }
 
 export async function readRoomConversation(kernel: Kernel, worldId: string, beforeSeq?: number): Promise<{ messages: RoomMessage[]; beforeSeq: number | null }> {
@@ -61,7 +63,7 @@ export async function submitRoomTurn(kernel: Kernel, input: RoomTurnInput, compl
   }
   try {
     const context = await loadRoomContext(kernel, valid.worldId);
-    const reply = await complete(context, valid.text);
+    const reply = await complete(context, valid.text, valid.agentId);
     const replyId = await kernel.finishRoomReply({ messageId, leaseToken: claim.lease_token,
       text: reply.text, model: reply.model, sourceRefs: context.sourceRefs });
     return { messageId, aiStatus: "complete", replyId };
