@@ -17,6 +17,7 @@ import { SharedConversation } from "./conversation";
 import { SourcePublisher } from "./source-publisher";
 import { CostWorksheet } from "./cost-worksheet";
 import { WorldTaskBoard } from "./task-board";
+import { WorldSurface } from "./world-surface";
 import { ago } from "./time";
 
 export type RoomLens = "build" | "pieces";
@@ -143,8 +144,10 @@ export function RoomView({ data }: { data: RoomData }) {
           </div>
         </div>
         <nav aria-label="Project sections" className="solve-room-sections">
-          <Link href={`${projectUrl}/room`} aria-current="page"><Icon name="chat" width={17} height={17} />Conversation</Link>
-          <Link href={projectUrl} className="solve-room-details-link">World details<Icon name="arrow" width={15} height={15} /></Link>
+          <a href="#world-conversation" aria-current="page"><Icon name="chat" width={17} height={17} />Conversation</a>
+          <a href="#world-work"><Icon name="projects" width={17} height={17} />Work</a>
+          <a href="#world-people"><Icon name="community" width={17} height={17} />People</a>
+          <Link href={projectUrl} className="solve-room-details-link">Workspace<Icon name="arrow" width={15} height={15} /></Link>
         </nav>
       </header>
 
@@ -156,7 +159,8 @@ export function RoomView({ data }: { data: RoomData }) {
 
       <div className="solve-room-workspace">
         <div className="solve-room-main">
-          <div className="solve-room-conversation">
+          <WorldSurface worldId={data.worldId} pieces={data.pieces} />
+          <div id="world-conversation" className="solve-room-conversation">
             {data.conversation ? (
               <SharedConversation worldId={data.worldId} {...data.conversation} agents={data.roomAgents ?? []} canWrite={data.canWrite} currentActorId={data.currentActorId} />
             ) : (
@@ -167,9 +171,9 @@ export function RoomView({ data }: { data: RoomData }) {
             )}
           </div>
 
-          <div className="mt-4 mb-4"><WorldTaskBoard worldId={data.worldId} canWrite={data.canCreateTasks ?? false} currentActorId={data.currentActorId} /></div>
+          <div id="world-work" className="solve-room-work-section"><WorldTaskBoard worldId={data.worldId} canWrite={data.canCreateTasks ?? false} currentActorId={data.currentActorId} /></div>
 
-          <details className="solve-room-extras">
+          <details id="world-tools" className="solve-room-extras">
             <summary>Tools, knowledge and saved work</summary>
             <div className="solve-room-extras-body">
               {data.canWrite ? <div className="solve-room-publish"><SourcePublisher worldId={data.worldId} /></div> : null}
@@ -256,8 +260,8 @@ export function RoomView({ data }: { data: RoomData }) {
           </details>
         </div>
 
-        <details className="solve-room-people-disclosure">
-          <summary>People and AI</summary>
+        <details id="world-people" className="solve-room-people-disclosure">
+          <summary>People and AI · {plural(data.people.length, "participant", "participants")}</summary>
           <aside aria-labelledby="room-members-heading" className="solve-room-members">
           <div className="solve-room-members-heading"><h2 id="room-members-heading">Project members</h2><span>{data.people.length}</span></div>
           {data.people.length ? (
