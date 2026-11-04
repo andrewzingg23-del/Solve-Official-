@@ -26,6 +26,7 @@ export const ONBOARDING_STEPS = [
   "profile",
   "sovid",
   "avatar",
+  "context",
   "soul",
   "location",
   "knowyou",
