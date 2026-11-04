@@ -22,6 +22,7 @@ import { getUser } from "@/lib/supabase/server";
 import { loadCreativeWorld, viaOf, type CreativeArtifact } from "@/lib/world/creative";
 import { readWorldMembers } from "@/lib/world/collaboration";
 import { readRoomConversation } from "@/lib/world/room";
+import { listRoomAgents } from "@/lib/world/agent-models";
 import { eventTitle } from "../../event-title";
 import { WorldLiveSync } from "../live-sync";
 import { addNoteAction, linkRepoAction, saveBuildAction } from "./actions";
@@ -162,6 +163,7 @@ export default async function RoomPage({ params, searchParams }: PageProps<"/wor
       <RoomView
         data={{
           ...rest,
+          roomAgents: listRoomAgents(),
           lens: chosen,
           notice: noticeFor(saved, error),
           addNote: data.canWrite ? addNoteAction.bind(null, data.worldId) : undefined,
