@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { Kernel } from "../../lib/kernel/client";
-import { proposeWorldTask, readWorldTasks } from "../../lib/world/tasks";
+import { proposeWorldTask, readWorldTasks, approveWorldTask } from "../../lib/world/tasks";
 
 const worldId = "4a862a51-0e5f-4c5d-8150-efc314ef2b87";
 const actorId = "11111111-1111-4111-8111-111111111111";
@@ -57,4 +57,30 @@ describe("Kernel-native World task boundary", () => {
       requestId:"task3",title:"Test",instructions:"",capabilityId:"https://unsafe-service",
     }));
   });
+  it("approves via native kernel transition without executing anything", async () => {
+    const taskId="33333333-3333-4333-8333-333333333333";
+    const calls: Record<string,unknown>[] = [];
+    const k = {
+      readTasks: async () => [{ task_id:taskId, scope:`world:${worldId}`, status:"created" }],
+      transitionTask: async (input: Record<string,unknown>) => {
+        calls.push(input);
+        return "ready";
+      },
+    } as unknown as Kernel;
+    const result = await approveWorldTask(k, worldId, taskId);
+    assert.equal(result.status, "ready");
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].status, "ready");
+    assert.equal(calls[0].taskId, taskId);
+  });
+
+  it("does not approve a task from another World", async () => {
+    const taskId="33333333-3333-4333-8333-333333333333";
+    const k = {
+      readTasks: async () => [{ task_id:taskId, scope:"world:11111111-1111-4111-8111-111111111111", status:"created" }],
+      transitionTask: async () => { throw new Error("must not run"); },
+    } as unknown as Kernel;
+    await assert.rejects(() => approveWorldTask(k, worldId, taskId),/Task not found/);
+  });
+
 });
