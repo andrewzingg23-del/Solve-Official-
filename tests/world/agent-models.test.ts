@@ -31,7 +31,7 @@ describe("World model adapter registry", () => {
     const parsed = parseRoomTurn("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", { ...base, agentId: "muse" });
     assert.equal(parsed?.agentId, "muse");
     assert.equal(parseRoomTurn("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", { ...base, agentId: "https://evil" }), null);
-    assert.ok(!Object.hasOwn(parseRoomTurn("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", base)!, "agentId"));
+    assert.ok(!Object.prototype.hasOwnProperty.call(parseRoomTurn("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", base), "agentId"));
   });
 
   it("reports an unconfigured model rather than sending data to another model", async () => {
