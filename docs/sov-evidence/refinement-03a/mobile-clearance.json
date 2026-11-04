@@ -1,0 +1,72 @@
+[
+  {
+    "clearance": 12,
+    "horizontalOverflow": false,
+    "mainBottom": 723,
+    "navTop": 735,
+    "newBottom": 652.1875,
+    "newFullyVisible": true,
+    "newTop": 609.1875,
+    "scrollAtEnd": true,
+    "viewport": [
+      375,
+      812
+    ]
+  },
+  {
+    "clearance": 12,
+    "horizontalOverflow": false,
+    "mainBottom": 755,
+    "navTop": 767,
+    "newBottom": 684.1875,
+    "newFullyVisible": true,
+    "newTop": 641.1875,
+    "scrollAtEnd": true,
+    "viewport": [
+      390,
+      844
+    ]
+  },
+  {
+    "clearance": 12,
+    "horizontalOverflow": false,
+    "mainBottom": 511,
+    "navTop": 523,
+    "newBottom": 440.1875,
+    "newFullyVisible": true,
+    "newTop": 397.1875,
+    "scrollAtEnd": true,
+    "viewport": [
+      375,
+      600
+    ]
+  },
+  {
+    "clearance": 12,
+    "horizontalOverflow": false,
+    "mainBottom": 479,
+    "navTop": 491,
+    "newBottom": 391.1875,
+    "newFullyVisible": true,
+    "newTop": 348.1875,
+    "scrollAtEnd": true,
+    "viewport": [
+      320,
+      568
+    ]
+  },
+  {
+    "clearance": 12,
+    "horizontalOverflow": false,
+    "mainBottom": 391,
+    "navTop": 403,
+    "newBottom": 320.1875,
+    "newFullyVisible": true,
+    "newTop": 277.1875,
+    "scrollAtEnd": true,
+    "viewport": [
+      375,
+      480
+    ]
+  }
+]

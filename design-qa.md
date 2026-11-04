@@ -30,3 +30,6 @@ Final design approval: PENDING FOUNDER REVIEW. This document does not approve th
 - Mobile is an adaptation: two-column spaces, scrollable Continue list, bottom dark-glass navigation and modal customization.
 
 No design-complete claim is made. No onboarding implementation, merge, push, migrations, live AI or production deployment.
+
+## 03A refinement — 2026-11-04
+The founder approved the overall direction and requested refinement, not redesign. Scoped material/scene refinements and a mobile scrollport clearance fix are verified. Updated normal-desktop and mobile proof is in docs/sov-evidence/refinement-03a. Five mobile sizes expose New above the dock; the architectural background retains interior details at 1440×900. Interaction source and card artwork are unchanged. New visual refinement remains available for founder review; no merge or deployment.
