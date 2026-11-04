@@ -167,7 +167,7 @@ export function RoomView({ data }: { data: RoomData }) {
             )}
           </div>
 
-          <div className="mt-4 mb-4"><WorldTaskBoard worldId={data.worldId} canWrite={data.canCreateTasks ?? false} /></div>
+          <div className="mt-4 mb-4"><WorldTaskBoard worldId={data.worldId} canWrite={data.canCreateTasks ?? false} currentActorId={data.currentActorId} /></div>
 
           <details className="solve-room-extras">
             <summary>Tools, knowledge and saved work</summary>
