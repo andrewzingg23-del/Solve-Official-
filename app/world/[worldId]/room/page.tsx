@@ -86,7 +86,7 @@ async function load(worldId: string, viewer: { id: string; email?: string | null
     const { world, artifacts, resources } = await loadCreativeWorld(kernel, worldId);
     const links = resources.filter((r) => r.status === "open" && r.sourceUrl).map((r) => r.sourceUrl);
     const repo = repoForWorld({ worldId: world.worldId, viewerEmail: viewer.email, links, rooms: deploymentRooms() });
-    const [ov, saves, events, bot, read, conversation, access, membership] = await Promise.all([
+    const [ov, saves, events, bot, read, conversation, access, taskAccess, membership] = await Promise.all([
       overview(kernel, [{ worldId: world.worldId, title: world.title, scope: world.scope }], me.actor_id),
       proofsIn(kernel, world.scope).catch(() => []),
       kernel.readEvents(world.scope, { newestFirst: true, limit: 14 }).catch(() => []),
@@ -94,6 +94,7 @@ async function load(worldId: string, viewer: { id: string; email?: string | null
       repo ? readRepo(repo.ref, { token: repo.paired ? process.env.GITHUB_TOKEN || null : null }) : Promise.resolve(null),
       readRoomConversation(kernel, worldId),
       kernel.authorize({ capability: "world.entity.write", scope: world.scope }),
+      kernel.authorize({ capability: "task.create", scope: world.scope }),
       readWorldMembers(kernel, world.scope),
     ]);
     const assistants = bot?.avatar ? await readConnections(kernel, bot.ownerId).catch(() => []) : [];
@@ -117,6 +118,7 @@ async function load(worldId: string, viewer: { id: string; email?: string | null
       conversation,
       currentActorId: me.actor_id,
       canWrite: access.decision === "ALLOW",
+      canCreateTasks: taskAccess.decision === "ALLOW",
       people: memberIds
         .map((id) => ({ id, label: id === me.actor_id ? me.label || "You" : byId.get(id)?.label || "Someone", kind: (byId.get(id)?.kind ?? "human") as "human" | "agent" | "service", you: id === me.actor_id }))
         .filter((p) => p.kind !== "service"),
