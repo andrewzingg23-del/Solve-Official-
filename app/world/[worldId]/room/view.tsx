@@ -9,6 +9,7 @@ import type { Gap } from "@/lib/bot/gaps";
 import type { Journey, WaitingItem } from "@/lib/bot/waiting";
 import type { Pull, RepoRead, RepoReadFailure, RepoRef } from "@/lib/github/repo";
 import type { RoomMessage } from "@/lib/kernel/client";
+import type { RoomAgentOption } from "@/lib/world/agent-models";
 import { Icon } from "@/app/product/icons";
 import { BuildMap, BuildMark } from "./build-map";
 import type { RoomPiece } from "./pieces-map";
@@ -38,6 +39,7 @@ export type RoomData = {
   activity: RoomActivity[];
   repo: { read: RepoRead; paired: boolean; unread?: RepoReadFailure } | null; // unread: why GitHub itself wasn't read
   conversation?: { messages: RoomMessage[]; beforeSeq: number | null };
+  roomAgents?: RoomAgentOption[];
   canWrite?: boolean;
   currentActorId?: string;
   notice?: { tone: "ok" | "error"; text: string } | null;
@@ -156,7 +158,7 @@ export function RoomView({ data }: { data: RoomData }) {
         <div className="solve-room-main">
           <div className="solve-room-conversation">
             {data.conversation ? (
-              <SharedConversation worldId={data.worldId} {...data.conversation} canWrite={data.canWrite} currentActorId={data.currentActorId} />
+              <SharedConversation worldId={data.worldId} {...data.conversation} agents={data.roomAgents ?? []} canWrite={data.canWrite} currentActorId={data.currentActorId} />
             ) : (
               <section aria-labelledby="shared-conversation-heading">
                 <h2 id="shared-conversation-heading">Shared conversation</h2>
