@@ -26,7 +26,7 @@ export default async function Home() {
       </section>
 
       {user ? (
-        projects ? <Projects projects={projects} /> : (
+        projects ? (projects.length ? <Projects projects={projects} /> : null) : (
           <section className="solve-empty" role="status">
             <h2>Your Worlds could not be loaded.</h2>
             <p>Your work hasn't been changed. Check your account or try again.</p>
