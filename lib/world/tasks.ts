@@ -74,3 +74,24 @@ export async function readWorldTasks(kernel: Kernel, worldId: string): Promise<T
     complete:true,
   };
 }
+
+/**
+ * Explicit approval moves a real kernel task to ready. It does not start an
+ * external job. The kernel authorizes this transition for the task creator
+ * (or an actor with task.manage) and preserves immutable history.
+ */
+export async function approveWorldTask(kernel: Kernel, worldId: string, taskId: string): Promise<{ taskId: string; status: "ready" }> {
+  if (!WORLD_ID.test(worldId) || !WORLD_ID.test(taskId)) throw new KernelError("invalid", "Invalid World or task ID", "");
+  const scope = "world:" + worldId.toLowerCase();
+  const task = (await kernel.readTasks(scope)).find(t => t.task_id === taskId.toLowerCase() && t.scope === scope);
+  if (!task) throw new KernelError("not_found", "Task not found in this World", "");
+  if (task.status === "ready") return { taskId, status: "ready" };
+  if (task.status !== "created") throw new KernelError("conflict", "Only newly created tasks can be approved here", "");
+  const status = await kernel.transitionTask({
+    taskId: task.task_id,
+    status: "ready",
+    detail: "Approved for execution by an authorized World participant; not yet dispatched",
+  });
+  if (status !== "ready") throw new KernelError("unavailable", "Kernel did not confirm task approval", "");
+  return { taskId: task.task_id, status: "ready" };
+}
