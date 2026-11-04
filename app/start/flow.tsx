@@ -10,6 +10,7 @@ import { ProfileStep } from "./steps/profile-step";
 import { SovidStep } from "./steps/sovid-step";
 import { AvatarStep } from "./steps/avatar-step";
 import { SoulStep } from "./steps/soul-step";
+import { ContextStep } from "./steps/context-step";
 import { LocationStep } from "./steps/location-step";
 import { KnowYouStep } from "./steps/knowyou-step";
 import { Ambient, StepPanel, TraceBeam } from "./fx";
@@ -18,6 +19,7 @@ import { primaryAction, quietLink } from "@/app/ui";
 export interface FlowProps {
   initialStep: OnboardingStep;
   signedIn: boolean;
+  botReady: boolean;
   avatar: BotAvatar;
   soul: string;
   sovLabel: string;
@@ -32,6 +34,7 @@ const TITLES: Record<OnboardingStep, string> = {
   profile: "First, you're you.",
   sovid: "Claim your SOV ID.",
   avatar: "Meet your bot.",
+  context: "Bring your context.",
   soul: "Give it a soul.",
   location: "Place your node.",
   knowyou: "Let it know you.",
@@ -49,8 +52,7 @@ export function OnboardingFlow(props: FlowProps) {
     window.scrollTo(0, 0);
   };
   const next = () => {
-    if (step === "avatar") { router.push("/"); return; }
-    if (!last) go(ONBOARDING_STEPS[idx + 1]);
+      if (!last) go(ONBOARDING_STEPS[idx + 1]);
   };
   const back = () => {
     if (idx > 0) go(ONBOARDING_STEPS[idx - 1]);
@@ -93,12 +95,13 @@ export function OnboardingFlow(props: FlowProps) {
           {step === "avatar" && (
             <AvatarStep signedIn={props.signedIn} avatar={props.avatar} faceGenReady={props.faceGenReady} onNext={next} />
           )}
+          {step === "context" && <ContextStep signedIn={props.signedIn} botReady={props.botReady} />}
           {step === "soul" && <SoulStep signedIn={props.signedIn} soul={props.soul} onNext={next} />}
           {step === "location" && <LocationStep signedIn={props.signedIn} onNext={next} />}
           {step === "knowyou" && <KnowYouStep signedIn={props.signedIn} chatReady={props.chatReady} />}
         </StepPanel>
 
-        {step === "avatar" ? <button type="button" onClick={() => go("soul")} className={quietLink}>Add personality and deeper context (optional) →</button> : null}
+        {step === "avatar" ? <Link href="/" className={quietLink}>Skip personalization and enter your studio →</Link> : null}
         <div className="mt-2 flex items-center justify-between">
           {idx > 0 ? (
             <button type="button" onClick={back} className={quietLink}>
@@ -109,7 +112,7 @@ export function OnboardingFlow(props: FlowProps) {
           )}
           {!last ? (
             <button type="button" onClick={next} className={primaryAction}>
-              {step === "avatar" ? "Enter your studio" : "Continue"}
+              {step === "avatar" ? "Bring your context" : "Continue"}
             </button>
           ) : (
             <Link href="/" className={primaryAction}>
