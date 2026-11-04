@@ -6,7 +6,7 @@ import type { TaskPlan } from "@/lib/capabilities/contracts";
 type TasksResponse = { tasks: TaskPlan[]; complete: boolean; error?: string };
 
 /** A task can be planned in SOLVE now. Execution is never simulated. */
-export function WorldTaskBoard({ worldId, canWrite }: { worldId: string; canWrite: boolean }) {
+export function WorldTaskBoard({ worldId, canWrite, currentActorId }: { worldId: string; canWrite: boolean; currentActorId?: string }) {
   const [tasks, setTasks] = useState<TaskPlan[]>([]);
   const [complete, setComplete] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -53,6 +53,19 @@ export function WorldTaskBoard({ worldId, canWrite }: { worldId: string; canWrit
     finally { setBusy(false); }
   }
 
+  async function approve(taskId: string) {
+    if (busy || !canWrite) return;
+    setBusy(true); setNotice("");
+    try {
+      const response = await fetch(`/api/worlds/${worldId}/tasks/${taskId}/approve`, { method: "POST" });
+      const result = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(result.error ?? "Task was not approved.");
+      setNotice("Task approved and marked ready in the kernel. No external worker has been dispatched.");
+      await refresh();
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Task could not be approved."); }
+    finally { setBusy(false); }
+  }
+
   return (
     <details className="rounded-xl border border-line bg-surface/60 p-4">
       <summary className="cursor-pointer text-sm font-medium">Development tasks {tasks.length ? `· ${tasks.length}` : ""}</summary>
@@ -67,6 +80,12 @@ export function WorldTaskBoard({ worldId, canWrite }: { worldId: string; canWrit
               <p className="text-sm font-medium">{t.title}</p>
               {t.instructions ? <p className="mt-1 whitespace-pre-wrap text-xs text-muted">{t.instructions}</p> : null}
               <p className="mt-2 text-xs text-muted">{t.status} · {t.status === "created" ? "Not dispatched" : "See kernel task status"} · {t.capabilityId}</p>
+              {canWrite && t.authorId === currentActorId && t.status === "created" ? (
+                <button type="button" disabled={busy} onClick={() => void approve(t.id)}
+                  className="mt-2 rounded border border-accent/50 px-3 py-2 text-xs text-accent disabled:opacity-50">
+                  Approve task for execution
+                </button>
+              ) : null}
             </li>
           ))}
         </ul>
