@@ -54,8 +54,7 @@ export async function proposeWorldTask(kernel: Kernel, worldId: string, raw: unk
 export async function readWorldTasks(kernel: Kernel, worldId: string): Promise<TaskList> {
   if (!WORLD_ID.test(worldId)) throw new KernelError("invalid", "Invalid World ID", "");
   const tasks = await kernel.readTasks("world:" + worldId.toLowerCase());
-  return {
-    tasks: tasks.map(t => ({
+  const mapped: TaskPlan[] = tasks.map(t => ({
       schema:"solve.task.v1",
       id:t.task_id,
       worldId:worldId.toLowerCase(),
@@ -70,7 +69,9 @@ export async function readWorldTasks(kernel: Kernel, worldId: string): Promise<T
       context: t.inputs.contextSnapshot && typeof t.inputs.contextSnapshot === "object" &&
         (t.inputs.contextSnapshot as { schema?: unknown }).schema === "solve.task-context.v1"
         ? t.inputs.contextSnapshot as TaskPlan["context"] : undefined,
-    })).sort((a,b) => b.updatedAt.localeCompare(a.updatedAt)),
+    }));
+  return {
+    tasks: mapped.sort((a,b) => b.updatedAt.localeCompare(a.updatedAt)),
     complete:true,
   };
 }
