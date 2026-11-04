@@ -15,6 +15,7 @@ export type ImportPreview = {
   count?: number;
   titles?: string[];
   conversations?: { index: number; title: string; at: string }[];
+  previewHash?: string;
   error?: string;
 };
 
@@ -25,10 +26,12 @@ export async function previewBotImport(formData: FormData): Promise<ImportPrevie
   if (!(file instanceof File)) return { ok: false, error: "Choose your conversations.json export." };
   if (file.size > MAX_FILE_BYTES) return { ok: false, error: "That file is over 25MB. Export a smaller date range." };
   try {
-    const json = JSON.parse(await file.text());
+    const raw = await file.text();
+    const json = JSON.parse(raw);
+    const previewHash = createHash("sha256").update(raw).digest("hex");
     const convs = parseChatGptExport(json).slice(0, MAX_IMPORT);
     if (convs.length === 0) return { ok: false, error: "No conversations found in that file." };
-    return { ok: true, count: convs.length, titles: convs.slice(0, 5).map((c) => c.title),
+    return { ok: true, previewHash, count: convs.length, titles: convs.slice(0, 5).map((c) => c.title),
       conversations: convs.map((c, index) => ({ index, title: c.title, at: c.at })) };
   } catch {
     return { ok: false, error: "That doesn't look like a ChatGPT export. It should be the conversations.json from Settings → Data controls → Export." };
@@ -53,6 +56,11 @@ export async function confirmBotImport(formData: FormData): Promise<ImportResult
     return { ok: false, error: "Could not read that export." };
   }
   if (convs.length === 0) return { ok: false, error: "No conversations found." };
+  const expectedHash = formData.get("preview_hash");
+  const digest = createHash("sha256").update(raw).digest("hex");
+  if (typeof expectedHash !== "string" || expectedHash !== digest) {
+    return { ok: false, error: "The export changed after preview. Review the file again before importing." };
+  }
 
   // Only selected conversations enter the owner's memory. The indices refer
   // to the uploaded file we have just parsed, never to an arbitrary account.
@@ -97,6 +105,9 @@ export async function confirmBotImport(formData: FormData): Promise<ImportResult
     } catch {
       // One bad conversation doesn't stop the import.
     }
+  }
+  if (imported !== selected.length) {
+    return { ok:false, imported, error:`Only ${imported} of ${selected.length} summaries were saved. Review your private memory before retrying.` };
   }
   await kernel.recordEvent({
     type: "bot.import.completed",
