@@ -16,6 +16,7 @@ import type { RoomPiece } from "./pieces-map";
 import { SharedConversation } from "./conversation";
 import { SourcePublisher } from "./source-publisher";
 import { CostWorksheet } from "./cost-worksheet";
+import { WorldTaskBoard } from "./task-board";
 import { ago } from "./time";
 
 export type RoomLens = "build" | "pieces";
@@ -174,6 +175,7 @@ export function RoomView({ data }: { data: RoomData }) {
               <h2 id="room-tools-heading">Project tools</h2>
               <p>Open what you need for the next step.</p>
             </div>
+            <WorldTaskBoard worldId={data.worldId} canWrite={data.canWrite ?? false} />
             {data.conversation ? <CostWorksheet worldId={data.worldId} canWrite={data.canWrite ?? false} /> : null}
 
             {data.repo || data.linkRepo ? (
