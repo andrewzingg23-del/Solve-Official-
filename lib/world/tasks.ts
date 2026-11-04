@@ -15,7 +15,7 @@ export async function proposeWorldTask(kernel: Kernel, worldId: string, raw: unk
   if (!input) throw new KernelError("invalid", "Give the task a title and valid details", "");
   if (!capabilityById(input.capabilityId)) throw new KernelError("invalid", "That capability is not registered", "");
   const { world } = await loadCreativeWorld(kernel, worldId);
-  const allowed = await kernel.authorize({ capability:"world.entity.write", scope:world.scope });
+  const allowed = await kernel.authorize({ capability:"task.create", scope:world.scope });
   if (allowed.decision !== "ALLOW") throw new KernelError("forbidden", "You cannot create tasks in this World", "");
 
   const taskId = await kernel.createTask({
