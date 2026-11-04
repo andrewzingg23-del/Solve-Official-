@@ -41,7 +41,7 @@ export type TaskContextSnapshot = {
   sha256: string;
 };
 
-export type TaskStatus = "proposed" | "approved" | "queued" | "running" | "blocked" | "completed" | "failed" | "cancelled";
+export type TaskStatus = "created" | "ready" | "claimed" | "in_progress" | "blocked" | "waiting_external" | "verifying" | "escalated" | "completed" | "failed" | "needs_reconciliation" | "cancelled";
 export type TaskPlan = {
   schema: "solve.task.v1";
   id: string;
