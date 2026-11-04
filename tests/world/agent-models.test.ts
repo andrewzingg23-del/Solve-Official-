@@ -82,7 +82,9 @@ describe("World model adapter registry", () => {
     const original = globalThis.fetch;
     globalThis.fetch = async (url, init) => {
       assert.equal(String(url), "https://api.meta.ai/v1/chat/completions");
-      assert.equal(JSON.parse(String(init?.body)).model, "muse-spark-1.3");
+      const body = JSON.parse(String(init?.body));
+      assert.equal(body.model, "muse-spark-1.3");
+      assert.equal(body.messages[0].role, "developer");
       return Response.json({ choices: [{ message: { content: "Muse response" } }],
         usage: { prompt_tokens: 9, completion_tokens: 3 } });
     };
