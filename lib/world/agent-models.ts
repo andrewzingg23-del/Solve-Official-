@@ -65,7 +65,7 @@ export function listRoomAgents(env: Env = process.env): RoomAgentOption[] {
     { id: "chatgpt", label: "OpenAI (ChatGPT models)", provider: "openai",
       model: env.SOLVE_OPENAI_MODEL?.trim() || "gpt-6-luna" },
     { id: "claude", label: "Claude", provider: "anthropic",
-      model: env.SOLVE_CLAUDE_MODEL?.trim() || "claude-haiku-5-5" },
+      model: env.SOLVE_CLAUDE_MODEL?.trim() || "claude-haiku-4-5-20251001" },
     { id: "muse", label: "Muse Spark (Meta)", provider: "meta",
       model: env.SOLVE_MUSE_MODEL?.trim() || "muse-spark-1.3" },
     ...extraRoomAgents(env),
