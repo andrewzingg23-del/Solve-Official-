@@ -101,3 +101,23 @@
 @media (max-width:1180px) { .solve-room-workspace { grid-template-columns:minmax(0,1fr); gap:25px; }.solve-room-members { padding:20px; }.solve-room-people { flex-direction:row; flex-wrap:wrap; gap:18px 28px; }.solve-room-personal-ai { margin-top:15px; padding-top:15px; }.solve-room-status { align-self:flex-start; } }
 @media (max-width:700px) { .solve-room { padding:17px 20px 30px; }.solve-room-breadcrumb { margin-bottom:12px; }.solve-room-heading-row { flex-direction:column; align-items:flex-start; gap:16px; margin-bottom:17px; }.solve-room-project { gap:12px; }.solve-room-project-icon { height:43px; width:43px; border-radius:9px; }.solve-room-project h1 { font-size:27px; }.solve-room-project p { font-size:11px; }.solve-room-status { flex-direction:row; align-items:center; flex-wrap:wrap; gap:15px; }.solve-room-sections { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 10px; }.solve-room-sections a { justify-content:flex-start; font-size:11px; padding:9px 0; min-height:44px; }.solve-room-sections .solve-room-details-link { margin-left:0; }.solve-room-header { margin-bottom:20px; }.solve-room-conversation>section { padding:17px; gap:13px; }.solve-room-conversation form { padding-top:16px; }.solve-room-conversation form button { flex-grow:1; padding:11px 10px; font-size:11px; }.solve-room-conversation form>p { font-size:9px; }.solve-room-conversation li { padding:12px; }.solve-room-conversation li>div:first-child { gap:5px; }.solve-room-conversation li time { width:100%; font-size:9px; }.solve-room-publish>details,.solve-room-tools>details { padding-inline:13px; }.solve-room-summary-note { display:none; }.solve-room-tools { margin-top:24px; }.solve-room-tools-heading p { width:100%; }.solve-room-activity li { flex-direction:column; gap:3px; } }
 @media (prefers-reduced-motion:reduce) { .solve-room *,.solve-room *::before,.solve-room *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
+
+/* Minimal World experience: show the conversation; keep tools and members
+   accessible under disclosures rather than competing for the first viewport. */
+.solve-room .solve-room-workspace { display:flex; flex-direction:column; align-items:stretch; gap:14px; }
+.solve-room .solve-room-main,
+.solve-room .solve-room-people-disclosure { width:100%; max-width:980px; margin-inline:auto; }
+.solve-room .solve-room-extras,
+.solve-room .solve-room-people-disclosure { border:1px solid #26364c; border-radius:12px; background:#0c1522; padding:0 18px; }
+.solve-room .solve-room-extras>summary,
+.solve-room .solve-room-people-disclosure>summary { padding:15px 0; color:#b8cadf; font-size:13px; font-weight:500; }
+.solve-room .solve-room-extras[open]>summary,
+.solve-room .solve-room-people-disclosure[open]>summary { border-bottom:1px solid #26364c; color:#edf3fa; }
+.solve-room .solve-room-extras-body { padding:16px 0 18px; }
+.solve-room .solve-room-extras .solve-room-tools { margin-top:16px; }
+.solve-room .solve-room-people-disclosure .solve-room-members { border:0; background:transparent; padding:18px 0; }
+.solve-room .solve-room-conversation ol[aria-label="Room messages"] { max-height:min(62svh,700px); }
+@media (max-width:700px) {
+  .solve-room .solve-room-extras,
+  .solve-room .solve-room-people-disclosure { padding:0 15px; }
+}
