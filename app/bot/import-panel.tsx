@@ -17,6 +17,7 @@ export function BotImport({ botName }: { botName: string }) {
   const [busy, setBusy] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
+  const [previewHash, setPreviewHash] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,6 +34,7 @@ export function BotImport({ botName }: { botName: string }) {
       const res = await previewBotImport(fd);
       if (!res.ok) { setError(res.error ?? "Couldn't read that file."); return; }
       setConversations(res.conversations ?? []);
+      setPreviewHash(res.previewHash ?? "");
       setSelected([]); // No implicit consent, even if every conversation is visible.
       setPhase("preview");
     } catch {
@@ -44,13 +46,14 @@ export function BotImport({ botName }: { botName: string }) {
 
   async function onConfirm() {
     const f = file();
-    if (!f || selected.length === 0) return;
+    if (!f || selected.length === 0 || !previewHash) return;
     setBusy(true);
     setError(null);
     try {
       const fd = new FormData();
       fd.set("file", f);
       fd.set("selected_indices", JSON.stringify(selected));
+      fd.set("preview_hash", previewHash);
       const res = await confirmBotImport(fd);
       if (!res.ok) { setError(res.error ?? "The import failed."); return; }
       setMessage(res.imported === 0
@@ -70,6 +73,7 @@ export function BotImport({ botName }: { botName: string }) {
     setError(null);
     setConversations([]);
     setSelected([]);
+    setPreviewHash("");
     if (fileRef.current) fileRef.current.value = "";
   }
 
