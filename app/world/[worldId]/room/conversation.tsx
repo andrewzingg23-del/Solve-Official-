@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { RoomMessage, RoomSourceRef } from "@/lib/kernel/client";
 import type { RoomTurnInput, RoomTurnResult } from "@/lib/world/room";
+import type { RoomAgentOption } from "@/lib/world/agent-models";
 
 function mergeMessages(saved: RoomMessage[], incoming: RoomMessage[]) {
   return [...new Map([...saved, ...incoming].map(m => [m.message_id, m])).values()].sort((a, b) => a.seq - b.seq);
@@ -20,12 +21,14 @@ function readableSourceRefs(value: unknown): RoomSourceRef[] {
   });
 }
 
-export function SharedConversation({ worldId, messages, beforeSeq, canWrite = false, currentActorId }: {
-  worldId: string; messages: RoomMessage[]; beforeSeq: number | null; canWrite?: boolean; currentActorId?: string;
+export function SharedConversation({ worldId, messages, beforeSeq, agents = [], canWrite = false, currentActorId }: {
+  worldId: string; messages: RoomMessage[]; beforeSeq: number | null; agents?: RoomAgentOption[]; canWrite?: boolean; currentActorId?: string;
 }) {
   const router = useRouter();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [agentId, setAgentId] = useState(() => agents.find(a => a.id === "solve" && a.configured)?.id ?? agents.find(a => a.configured)?.id ?? "solve");
+  const anyConfigured = agents.length === 0 || agents.some(a => a.configured);
   const [notice, setNotice] = useState("");
   const [retry, setRetry] = useState<RoomTurnInput | null>(null);
   const [history, setHistory] = useState({ window: messages, messages });
@@ -49,9 +52,10 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
     if (busy || !canWrite || (!previous && !text.trim())) return;
     let turn = previous;
     if (!turn) {
-      const signature = JSON.stringify({ text: text.trim(), intent });
+      const signature = JSON.stringify({ text: text.trim(), intent, agentId: intent === "ask_ai" ? agentId : undefined });
       if (!request.current || request.current.signature !== signature) request.current = { signature, id: crypto.randomUUID() };
-      turn = { worldId, text: text.trim(), intent, requestId: request.current.id };
+      turn = { worldId, text: text.trim(), intent, requestId: request.current.id,
+        ...(intent === "ask_ai" ? { agentId } : {}) };
     }
     setBusy(true); setNotice("");
     try {
@@ -111,7 +115,7 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
             ) : null}
             {canWrite && m.actor_id === currentActorId && m.ask_ai && m.reply_state !== "complete" ? <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted">
               <span>{m.reply_state === "pending" ? "AI reply in progress." : "Question saved; AI reply unavailable."}</span>
-              <button type="button" disabled={busy} onClick={() => void send("ask_ai", { worldId, requestId: m.request_id, text: m.text, intent: "ask_ai" })} className="text-accent underline disabled:opacity-50">Retry saved question</button>
+              <button type="button" disabled={busy} onClick={() => void send("ask_ai", { worldId, requestId: m.request_id, text: m.text, intent: "ask_ai", agentId })} className="text-accent underline disabled:opacity-50">Retry saved question</button>
             </div> : null}
           </li>
           );
@@ -122,12 +126,19 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
         <form onSubmit={event => { event.preventDefault(); void send("message"); }} className="flex flex-col gap-3">
           <label htmlFor="room-message" className="text-xs text-muted">Message or question</label>
           <textarea id="room-message" value={text} onChange={e => setText(e.target.value)} rows={3} maxLength={8000} required disabled={busy} placeholder="What should we work on?" className="min-w-0 resize-y rounded-md border border-line bg-background p-3 text-sm leading-6 outline-none focus:border-accent disabled:opacity-60" />
+          <div className="flex flex-wrap items-center gap-2">
+            <label htmlFor="room-agent" className="text-xs text-muted">Ask</label>
+            <select id="room-agent" value={agentId} onChange={e => setAgentId(e.target.value)} disabled={busy}
+              className="max-w-full rounded-md border border-line bg-background px-2 py-2 text-sm text-foreground">
+              {agents.map(agent => <option key={agent.id} value={agent.id} disabled={!agent.configured}>{agent.label}{agent.configured ? " · configured" : " · needs connection"}</option>)}
+            </select>
+          </div>
           <div className="flex flex-wrap gap-2">
             <button disabled={busy || !text.trim()} className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-background disabled:opacity-50">{busy ? "Saving…" : "Send to room"}</button>
-            <button type="button" disabled={busy || !text.trim()} onClick={() => void send("ask_ai")} className="rounded-md border border-accent/50 px-4 py-2 text-sm text-accent disabled:opacity-50">Ask AI</button>
+            <button type="button" disabled={busy || !text.trim() || !anyConfigured} onClick={() => void send("ask_ai")} className="rounded-md border border-accent/50 px-4 py-2 text-sm text-accent disabled:opacity-50">Ask AI</button>
             <button type="button" disabled={busy || !text.trim()} onClick={() => void send("decision")} className="rounded-md border border-line px-4 py-2 text-sm disabled:opacity-50">Record decision</button>
           </div>
-          <p className="text-[11px] leading-5 text-muted">Ask AI sends selected shared documents, recorded decisions and recent messages through OpenRouter to the chosen model provider. Personal memory stays private. AI replies are drafts; a recorded decision names its author.</p>
+          <p className="text-[11px] leading-5 text-muted">Ask AI shares selected World documents, decisions and recent messages with the provider you choose. Configured means a server key exists, not that a provider call has been verified. OpenAI, Claude and Muse Spark are API models, not your personal subscription sessions or autonomous coding agents. Personal memory stays private.</p>
         </form>
       ) : <p className="text-xs text-muted">You can view this room. Ask the owner for editor access to contribute.</p>}
       {notice ? <p role="status" className="text-xs leading-5 text-muted">{notice}</p> : null}
