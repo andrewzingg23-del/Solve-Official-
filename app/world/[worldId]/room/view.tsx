@@ -42,6 +42,7 @@ export type RoomData = {
   conversation?: { messages: RoomMessage[]; beforeSeq: number | null };
   roomAgents?: RoomAgentOption[];
   canWrite?: boolean;
+  canCreateTasks?: boolean;
   currentActorId?: string;
   notice?: { tone: "ok" | "error"; text: string } | null;
   addNote?: (form: FormData) => void | Promise<void>;
@@ -175,7 +176,7 @@ export function RoomView({ data }: { data: RoomData }) {
               <h2 id="room-tools-heading">Project tools</h2>
               <p>Open what you need for the next step.</p>
             </div>
-            <WorldTaskBoard worldId={data.worldId} canWrite={data.canWrite ?? false} />
+            <WorldTaskBoard worldId={data.worldId} canWrite={data.canCreateTasks ?? false} />
             {data.conversation ? <CostWorksheet worldId={data.worldId} canWrite={data.canWrite ?? false} /> : null}
 
             {data.repo || data.linkRepo ? (
