@@ -55,7 +55,8 @@ export function buildPortableContext(
   let total = 0;
   for (const entry of eligible.slice().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))) {
     const text = safe(entry.text, MAX_TEXT);
-    if (!text || selected.length >= MAX_ENTRIES || total + text.length > MAX_TOTAL) break;
+    if (selected.length >= MAX_ENTRIES) break;
+    if (!text || total + text.length > MAX_TOTAL) continue; // A large entry must not hide later relevant small entries.
     selected.push({
       id: safe(entry.id, 100), scope: entry.scope, text,
       provenance: {
