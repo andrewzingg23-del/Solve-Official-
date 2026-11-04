@@ -9,12 +9,15 @@ import type { Gap } from "@/lib/bot/gaps";
 import type { Journey, WaitingItem } from "@/lib/bot/waiting";
 import type { Pull, RepoRead, RepoReadFailure, RepoRef } from "@/lib/github/repo";
 import type { RoomMessage } from "@/lib/kernel/client";
+import type { RoomAgentOption } from "@/lib/world/agent-models";
 import { Icon } from "@/app/product/icons";
 import { BuildMap, BuildMark } from "./build-map";
 import type { RoomPiece } from "./pieces-map";
 import { SharedConversation } from "./conversation";
 import { SourcePublisher } from "./source-publisher";
 import { CostWorksheet } from "./cost-worksheet";
+import { WorldTaskBoard } from "./task-board";
+import { WorldSurface } from "./world-surface";
 import { ago } from "./time";
 
 export type RoomLens = "build" | "pieces";
@@ -38,7 +41,9 @@ export type RoomData = {
   activity: RoomActivity[];
   repo: { read: RepoRead; paired: boolean; unread?: RepoReadFailure } | null; // unread: why GitHub itself wasn't read
   conversation?: { messages: RoomMessage[]; beforeSeq: number | null };
+  roomAgents?: RoomAgentOption[];
   canWrite?: boolean;
+  canCreateTasks?: boolean;
   currentActorId?: string;
   notice?: { tone: "ok" | "error"; text: string } | null;
   addNote?: (form: FormData) => void | Promise<void>;
@@ -139,10 +144,10 @@ export function RoomView({ data }: { data: RoomData }) {
           </div>
         </div>
         <nav aria-label="Project sections" className="solve-room-sections">
-          <Link href={`${projectUrl}/room`} aria-current="page"><Icon name="chat" width={17} height={17} />Conversation</Link>
-          <Link href={`${projectUrl}#documents-heading`}><Icon name="document" width={17} height={17} />Documents</Link>
-          <Link href={`${projectUrl}#people-heading`}><Icon name="community" width={17} height={17} />People &amp; access</Link>
-          <Link href={projectUrl} className="solve-room-details-link">Project details<Icon name="arrow" width={15} height={15} /></Link>
+          <a href="#world-conversation" aria-current="page"><Icon name="chat" width={17} height={17} />Conversation</a>
+          <a href="#world-work"><Icon name="projects" width={17} height={17} />Work</a>
+          <a href="#world-people"><Icon name="community" width={17} height={17} />People</a>
+          <Link href={projectUrl} className="solve-room-details-link">Workspace<Icon name="arrow" width={15} height={15} /></Link>
         </nav>
       </header>
 
@@ -154,9 +159,10 @@ export function RoomView({ data }: { data: RoomData }) {
 
       <div className="solve-room-workspace">
         <div className="solve-room-main">
-          <div className="solve-room-conversation">
+          <WorldSurface worldId={data.worldId} pieces={data.pieces} />
+          <div id="world-conversation" className="solve-room-conversation">
             {data.conversation ? (
-              <SharedConversation worldId={data.worldId} {...data.conversation} canWrite={data.canWrite} currentActorId={data.currentActorId} />
+              <SharedConversation worldId={data.worldId} {...data.conversation} agents={data.roomAgents ?? []} canWrite={data.canWrite} currentActorId={data.currentActorId} />
             ) : (
               <section aria-labelledby="shared-conversation-heading">
                 <h2 id="shared-conversation-heading">Shared conversation</h2>
@@ -165,9 +171,13 @@ export function RoomView({ data }: { data: RoomData }) {
             )}
           </div>
 
-          {data.canWrite ? <div className="solve-room-publish"><SourcePublisher worldId={data.worldId} /></div> : null}
+          <div id="world-work" className="solve-room-work-section"><WorldTaskBoard worldId={data.worldId} canWrite={data.canCreateTasks ?? false} currentActorId={data.currentActorId} /></div>
 
-          <section aria-labelledby="room-tools-heading" className="solve-room-tools">
+          <details id="world-tools" className="solve-room-extras">
+            <summary>Tools, knowledge and saved work</summary>
+            <div className="solve-room-extras-body">
+              {data.canWrite ? <div className="solve-room-publish"><SourcePublisher worldId={data.worldId} /></div> : null}
+              <section aria-labelledby="room-tools-heading" className="solve-room-tools">
             <div className="solve-room-tools-heading">
               <h2 id="room-tools-heading">Project tools</h2>
               <p>Open what you need for the next step.</p>
@@ -245,10 +255,14 @@ export function RoomView({ data }: { data: RoomData }) {
                 ) : null}
               </div>
             </details>
-          </section>
+              </section>
+            </div>
+          </details>
         </div>
 
-        <aside aria-labelledby="room-members-heading" className="solve-room-members">
+        <details id="world-people" className="solve-room-people-disclosure">
+          <summary>People and AI · {plural(data.people.length, "participant", "participants")}</summary>
+          <aside aria-labelledby="room-members-heading" className="solve-room-members">
           <div className="solve-room-members-heading"><h2 id="room-members-heading">Project members</h2><span>{data.people.length}</span></div>
           {data.people.length ? (
             <ul className="solve-room-people">
@@ -268,7 +282,8 @@ export function RoomView({ data }: { data: RoomData }) {
             {data.live}
             <Link href="/bot">{data.botName ? "Manage your AI" : "Set up your AI"}<Icon name="arrow" width={15} height={15} /></Link>
           </section>
-        </aside>
+          </aside>
+        </details>
       </div>
     </div>
   );

@@ -8,10 +8,10 @@ import { faceSrc } from "@/lib/bot/avatar";
 import { Icon, type IconName } from "./icons";
 
 const homes: Array<{ href: string; label: string; icon: IconName }> = [
-  { href: "/", label: "Projects", icon: "projects" },
-  { href: "/communities", label: "Communities", icon: "community" },
-  { href: "/bot", label: "Your AI", icon: "ai" },
-  { href: "/account", label: "Profile", icon: "profile" },
+  { href: "/", label: "Worlds", icon: "projects" },
+  { href: "/communities", label: "Explore", icon: "community" },
+  { href: "/bot", label: "AI", icon: "ai" },
+  { href: "/account", label: "You", icon: "profile" },
 ];
 export type ShellIdentity = { userId: string; name: string; botName: string; face: string } | null;
 export function ProductShell({ children, identity }: { children: React.ReactNode; identity: ShellIdentity }) {
