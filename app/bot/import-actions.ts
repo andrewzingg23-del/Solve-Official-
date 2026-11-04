@@ -14,6 +14,7 @@ export type ImportPreview = {
   ok: boolean;
   count?: number;
   titles?: string[];
+  conversations?: { index: number; title: string; at: string }[];
   error?: string;
 };
 
@@ -27,7 +28,8 @@ export async function previewBotImport(formData: FormData): Promise<ImportPrevie
     const json = JSON.parse(await file.text());
     const convs = parseChatGptExport(json).slice(0, MAX_IMPORT);
     if (convs.length === 0) return { ok: false, error: "No conversations found in that file." };
-    return { ok: true, count: convs.length, titles: convs.slice(0, 5).map((c) => c.title) };
+    return { ok: true, count: convs.length, titles: convs.slice(0, 5).map((c) => c.title),
+      conversations: convs.map((c, index) => ({ index, title: c.title, at: c.at })) };
   } catch {
     return { ok: false, error: "That doesn't look like a ChatGPT export. It should be the conversations.json from Settings → Data controls → Export." };
   }
@@ -52,13 +54,31 @@ export async function confirmBotImport(formData: FormData): Promise<ImportResult
   }
   if (convs.length === 0) return { ok: false, error: "No conversations found." };
 
+  // Only selected conversations enter the owner's memory. The indices refer
+  // to the uploaded file we have just parsed, never to an arbitrary account.
+  const rawSelection = formData.get("selected_indices");
+  let selected: number[];
+  if (rawSelection === null) {
+    // Existing clients that do not supply a selection retain the old behavior.
+    selected = convs.map((_, i) => i);
+  } else {
+    try {
+      const decoded: unknown = JSON.parse(String(rawSelection));
+      if (!Array.isArray(decoded) || decoded.length > MAX_IMPORT ||
+          decoded.some(i => typeof i !== "number" || !Number.isInteger(i) || i < 0 || i >= convs.length))
+        return { ok: false, error: "Select valid conversations from your preview." };
+      selected = [...new Set(decoded as number[])].sort((a, b) => a - b);
+    } catch { return { ok: false, error: "Select valid conversations from your preview." }; }
+    if (selected.length === 0) return { ok: false, error: "Choose at least one conversation to import." };
+  }
+
   const kernel = await getKernel();
   const bot = await loadBot(kernel);
   if (!bot.avatar) return { ok: false, error: "Set up your bot first." };
   const ownerId = bot.ownerId;
 
   // Skip if this exact file was already imported.
-  const hash = createHash("sha256").update(raw).digest("hex");
+  const hash = createHash("sha256").update(raw).update("\\u0000").update(selected.join(",")).digest("hex");
   const recent = await kernel.readEvents(memoryScope(ownerId), { limit: 200 });
   const already = recent.some(
     (e) => e.type === "bot.import.completed" && (e.payload as Record<string, unknown>)?.hash === hash,
@@ -67,7 +87,8 @@ export async function confirmBotImport(formData: FormData): Promise<ImportResult
 
   let imported = 0;
   const via = { client_id: "chatgpt-import", client_name: "ChatGPT import" };
-  for (const conv of convs) {
+  for (const index of selected) {
+    const conv = convs[index];
     const mem = formatConversationMemory(conv);
     try {
       await noteMemory(kernel, ownerId, { text: mem.text, source: { kind: "import", title: mem.title } }, via);
@@ -79,7 +100,7 @@ export async function confirmBotImport(formData: FormData): Promise<ImportResult
   await kernel.recordEvent({
     type: "bot.import.completed",
     scope: memoryScope(ownerId),
-    payload: { hash, count: imported, source: "chatgpt" },
+    payload: { hash, count: imported, selectedCount: selected.length, source: "chatgpt" },
   });
   return { ok: true, imported };
 }
