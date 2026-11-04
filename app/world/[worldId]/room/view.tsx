@@ -167,6 +167,8 @@ export function RoomView({ data }: { data: RoomData }) {
             )}
           </div>
 
+          <div className="mt-4 mb-4"><WorldTaskBoard worldId={data.worldId} canWrite={data.canCreateTasks ?? false} /></div>
+
           <details className="solve-room-extras">
             <summary>Tools, knowledge and saved work</summary>
             <div className="solve-room-extras-body">
@@ -176,7 +178,6 @@ export function RoomView({ data }: { data: RoomData }) {
               <h2 id="room-tools-heading">Project tools</h2>
               <p>Open what you need for the next step.</p>
             </div>
-            <WorldTaskBoard worldId={data.worldId} canWrite={data.canCreateTasks ?? false} />
             {data.conversation ? <CostWorksheet worldId={data.worldId} canWrite={data.canWrite ?? false} /> : null}
 
             {data.repo || data.linkRepo ? (
