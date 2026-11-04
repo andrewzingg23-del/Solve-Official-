@@ -67,7 +67,7 @@ describe("World model adapter registry", () => {
     const original = globalThis.fetch;
     globalThis.fetch = async (url, init) => {
       assert.equal(String(url), "https://api.anthropic.com/v1/messages");
-      assert.equal(JSON.parse(String(init?.body)).model, "claude-haiku-5-5");
+      assert.equal(JSON.parse(String(init?.body)).model, "claude-haiku-4-5-20251001");
       return Response.json({ content: [{ type: "text", text: "Claude response" }],
         usage: { input_tokens: 20, output_tokens: 6 } });
     };
