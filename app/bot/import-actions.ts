@@ -59,8 +59,9 @@ export async function confirmBotImport(formData: FormData): Promise<ImportResult
   const rawSelection = formData.get("selected_indices");
   let selected: number[];
   if (rawSelection === null) {
-    // Existing clients that do not supply a selection retain the old behavior.
-    selected = convs.map((_, i) => i);
+    // A client must explicitly approve the exact conversation indices.
+    // Never silently import everything when a form field is missing.
+    return { ok: false, error: "Review and select conversations before importing." };
   } else {
     try {
       const decoded: unknown = JSON.parse(String(rawSelection));
