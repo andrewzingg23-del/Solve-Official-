@@ -178,7 +178,7 @@ export async function completeRoomAgent(
   } else {
     const data = await responseJson("https://api.meta.ai/v1/chat/completions", key, {}, {
       model: agent.model, max_tokens: 1400,
-      messages: [{ role: "system", content: context.system }, { role: "user", content: prompt }],
+      messages: [{ role: "developer", content: context.system }, { role: "user", content: prompt }],
     });
     completion = completionFromChat(data);
   }
