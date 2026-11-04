@@ -9,6 +9,7 @@ This is a factual engineering ledger, not a claim that every integration is live
 - Task creation checks the actual `task.create` grant; World write permissions do not imply executor authority.
 - Each task has an authenticated World-only context snapshot (World source IDs, versions, omitted source count, a digest of the chosen shared context), never a direct personal-memory export.
 - `GET /api/capabilities` returns a typed catalog with `available`, `configured_unverified`, `needs_connection`, or `disabled`. Credentials are never returned.
+- `solve.pack.v1` provides read-only, versioned reusable recipes bound to the existing capability registry; `GET /api/packs` reports actual readiness. One Development Pack exists, and code execution remains disabled until authorized. No Pack installation, autonomous assembly, Foundry, or marketplace is live. See `docs/architecture/solve-packs.md`.
 - `GET/POST /api/worlds/[worldId]/tasks` stores and reads real kernel tasks. Creating a task does not dispatch a worker.
 - `POST /api/worlds/[worldId]/tasks/[taskId]/approve` advances creator-owned kernel tasks from `created` to `ready` through native task transition checks; still no dispatch.
 - `.github/workflows/solve-coding-worker.yml` stages a manual approval-only Claude Code GitHub worker. It is in a draft branch; it is neither installed on the default branch nor triggered from SOLVE. GitHub Actions needs its own `ANTHROPIC_API_KEY` secret and reviewed workflow/branch permissions.
