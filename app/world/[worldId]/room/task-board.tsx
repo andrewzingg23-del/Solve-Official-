@@ -47,7 +47,7 @@ export function WorldTaskBoard({ worldId, canWrite }: { worldId: string; canWrit
       if (!response.ok) throw new Error(result.error ?? "Task could not be saved.");
       pendingId.current = null;
       setTitle(""); setInstructions("");
-      setNotice("Task proposed and saved in this World. No coding worker has been dispatched.");
+      setNotice("Task created in the kernel. No coding worker has been dispatched.");
       await refresh();
     } catch (error) { setNotice(error instanceof Error ? error.message : "The request failed; your draft remains."); }
     finally { setBusy(false); }
@@ -57,7 +57,7 @@ export function WorldTaskBoard({ worldId, canWrite }: { worldId: string; canWrit
     <details className="rounded-xl border border-line bg-surface/60 p-4">
       <summary className="cursor-pointer text-sm font-medium">Development tasks {tasks.length ? `· ${tasks.length}` : ""}</summary>
       <p className="mt-3 text-xs leading-5 text-muted">
-        Tasks are saved with the World. A task is a proposal, not an executing agent or completed code change.
+        Tasks are saved with the World. Creating a task does not dispatch an agent or claim code has been delivered.
         Connect and authorize a real coding worker to dispatch these in a later stage.
       </p>
       {loading ? <p className="mt-3 text-xs text-muted">Loading tasks…</p> : tasks.length ? (
@@ -66,11 +66,11 @@ export function WorldTaskBoard({ worldId, canWrite }: { worldId: string; canWrit
             <li key={t.id} className="rounded border border-line p-3">
               <p className="text-sm font-medium">{t.title}</p>
               {t.instructions ? <p className="mt-1 whitespace-pre-wrap text-xs text-muted">{t.instructions}</p> : null}
-              <p className="mt-2 text-xs text-muted">Proposed · Not dispatched · {t.capabilityId}</p>
+              <p className="mt-2 text-xs text-muted">{t.status} · {t.status === "created" ? "Not dispatched" : "See kernel task status"} · {t.capabilityId}</p>
             </li>
           ))}
         </ul>
-      ) : <p className="mt-3 text-xs text-muted">No tasks proposed yet.</p>}
+      ) : <p className="mt-3 text-xs text-muted">No development tasks yet.</p>}
       {!complete ? <p className="text-xs text-muted">Showing a partial history. Older records were not scanned.</p> : null}
       {canWrite ? (
         <form onSubmit={propose} className="mt-4 flex flex-col gap-2">
