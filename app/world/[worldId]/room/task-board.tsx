@@ -15,6 +15,23 @@ export function WorldTaskBoard({ worldId, canWrite, currentActorId }: { worldId:
   const [instructions, setInstructions] = useState("");
   const [notice, setNotice] = useState("");
   const pendingId = useRef<string | null>(null);
+  const pendingApprovals = tasks.filter(t => t.status === "created").length;
+  const running = tasks.filter(t => ["claimed", "in_progress", "verifying"].includes(t.status)).length;
+  const ready = tasks.filter(t => t.status === "ready").length;
+  const stateLabel = (status: TaskPlan["status"]): string => ({
+    created: "Needs approval",
+    ready: "Approved · Awaiting worker",
+    claimed: "Claimed by worker",
+    in_progress: "In progress",
+    blocked: "Blocked",
+    waiting_external: "Waiting for outside service",
+    verifying: "Verification in progress",
+    escalated: "Needs human review",
+    completed: "Completed · See evidence",
+    failed: "Failed",
+    needs_reconciliation: "Checking external result",
+    cancelled: "Cancelled",
+  })[status];
 
   const refresh = useCallback(async () => {
     try {
@@ -68,18 +85,19 @@ export function WorldTaskBoard({ worldId, canWrite, currentActorId }: { worldId:
 
   return (
     <details className="rounded-xl border border-line bg-surface/60 p-4">
-      <summary className="cursor-pointer text-sm font-medium">Development tasks {tasks.length ? `· ${tasks.length}` : ""}</summary>
+      <summary className="cursor-pointer text-sm font-medium">Work {loading ? "· Checking…" : tasks.length ? `· ${tasks.length} tasks` : "· No tasks"}{pendingApprovals ? ` · ${pendingApprovals} need approval` : ""}{running ? ` · ${running} active` : ""}{ready ? ` · ${ready} awaiting a worker` : ""}</summary>
       <p className="mt-3 text-xs leading-5 text-muted">
         Tasks are saved with the World. Creating a task does not dispatch an agent or claim code has been delivered.
         Connect and authorize a real coding worker to dispatch these in a later stage.
       </p>
+      <button type="button" onClick={() => void refresh()} disabled={busy || loading} className="mt-3 text-xs text-muted underline disabled:opacity-50">Refresh work status</button>
       {loading ? <p className="mt-3 text-xs text-muted">Loading tasks…</p> : tasks.length ? (
         <ul className="mt-3 space-y-2">
           {tasks.slice(0, 20).map(t => (
             <li key={t.id} className="rounded border border-line p-3">
               <p className="text-sm font-medium">{t.title}</p>
               {t.instructions ? <p className="mt-1 whitespace-pre-wrap text-xs text-muted">{t.instructions}</p> : null}
-              <p className="mt-2 text-xs text-muted">{t.status} · {t.status === "created" ? "Not dispatched" : "See kernel task status"} · {t.capabilityId}</p>
+              <p className="mt-2 text-xs text-muted">{stateLabel(t.status)} · {t.capabilityId}</p>
               {canWrite && t.authorId === currentActorId && t.status === "created" ? (
                 <button type="button" disabled={busy} onClick={() => void approve(t.id)}
                   className="mt-2 rounded border border-accent/50 px-3 py-2 text-xs text-accent disabled:opacity-50">
