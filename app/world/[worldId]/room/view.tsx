@@ -140,9 +140,7 @@ export function RoomView({ data }: { data: RoomData }) {
         </div>
         <nav aria-label="Project sections" className="solve-room-sections">
           <Link href={`${projectUrl}/room`} aria-current="page"><Icon name="chat" width={17} height={17} />Conversation</Link>
-          <Link href={`${projectUrl}#documents-heading`}><Icon name="document" width={17} height={17} />Documents</Link>
-          <Link href={`${projectUrl}#people-heading`}><Icon name="community" width={17} height={17} />People &amp; access</Link>
-          <Link href={projectUrl} className="solve-room-details-link">Project details<Icon name="arrow" width={15} height={15} /></Link>
+          <Link href={projectUrl} className="solve-room-details-link">World details<Icon name="arrow" width={15} height={15} /></Link>
         </nav>
       </header>
 
@@ -165,9 +163,12 @@ export function RoomView({ data }: { data: RoomData }) {
             )}
           </div>
 
-          {data.canWrite ? <div className="solve-room-publish"><SourcePublisher worldId={data.worldId} /></div> : null}
+          <details className="solve-room-extras">
+            <summary>Tools, knowledge and saved work</summary>
+            <div className="solve-room-extras-body">
+              {data.canWrite ? <div className="solve-room-publish"><SourcePublisher worldId={data.worldId} /></div> : null}
 
-          <section aria-labelledby="room-tools-heading" className="solve-room-tools">
+              <section aria-labelledby="room-tools-heading" className="solve-room-tools">
             <div className="solve-room-tools-heading">
               <h2 id="room-tools-heading">Project tools</h2>
               <p>Open what you need for the next step.</p>
@@ -245,10 +246,14 @@ export function RoomView({ data }: { data: RoomData }) {
                 ) : null}
               </div>
             </details>
-          </section>
+              </section>
+            </div>
+          </details>
         </div>
 
-        <aside aria-labelledby="room-members-heading" className="solve-room-members">
+        <details className="solve-room-people-disclosure">
+          <summary>People and AI</summary>
+          <aside aria-labelledby="room-members-heading" className="solve-room-members">
           <div className="solve-room-members-heading"><h2 id="room-members-heading">Project members</h2><span>{data.people.length}</span></div>
           {data.people.length ? (
             <ul className="solve-room-people">
@@ -268,7 +273,8 @@ export function RoomView({ data }: { data: RoomData }) {
             {data.live}
             <Link href="/bot">{data.botName ? "Manage your AI" : "Set up your AI"}<Icon name="arrow" width={15} height={15} /></Link>
           </section>
-        </aside>
+          </aside>
+        </details>
       </div>
     </div>
   );
