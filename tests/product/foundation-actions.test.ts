@@ -27,13 +27,14 @@ async function actions(){return compiled??=(async()=>{
 async function setup(){const db=await createKernelDb();const owner=kernelClient(localSupabase(db,user('step1-owner')));await owner.register();globalThis.__foundation={user:{id:'step1-owner',is_anonymous:false},kernel:owner,emails:[]};const world=await createCreativeWorld(owner,{worldId:'f75331de-f66c-40c4-bca9-eb682eea2cda',title:'Development'});return{owner,world};}
 
 test('Project adapter saves, reopens, retries once, and rejects a stale revision',async()=>{
- const {owner,world}=await setup();const a=await actions();const input={requestId:'first-document',title:'Decision',body:'Use the canonical kernel.',position:{x:50,y:50}};
+ const {owner,world}=await setup();const a=await actions();const input={requestId:'first-document',title:'Decision',body:'Use the canonical kernel.\n',position:{x:50,y:50}};
  const first=await a.save.saveProjectDocument(world.worldId,'step1-owner',input);assert.ok(first.ok);assert.equal(first.artifact.body,input.body);
  const retry=await a.save.saveProjectDocument(world.worldId,'step1-owner',input);assert.ok(retry.ok);assert.equal(retry.artifact.entityId,first.artifact.entityId);
  assert.equal((await loadCreativeWorld(owner,world.worldId)).artifacts.length,1);
  const patch={...input,requestId:'second-document',entityId:first.artifact.entityId,expectedVersion:1,body:'Revised decision.'};assert.equal((await a.save.saveProjectDocument(world.worldId,'step1-owner',patch)).ok,true);
  const stale=await a.save.saveProjectDocument(world.worldId,'step1-owner',{...patch,requestId:'stale-document',body:'Overwrite'});assert.ok(!stale.ok);assert.equal(stale.status,409);
  assert.equal((await loadCreativeWorld(owner,world.worldId)).artifacts[0].body,'Revised decision.');
+ const lateReplay=await a.save.saveProjectDocument(world.worldId,'step1-owner',input);assert.ok(!lateReplay.ok);assert.equal(lateReplay.status,409,'a later version must not be reported as an exact readback of this save');
 });
 test('Project adapter rejects account switching before it can write',async()=>{
  const {owner,world}=await setup();const a=await actions();globalThis.__foundation.user={id:'different-account',is_anonymous:false};

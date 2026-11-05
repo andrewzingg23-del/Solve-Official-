@@ -18,6 +18,8 @@ export async function saveProjectDocument(worldId:string,expectedUserId:string,i
   const {artifacts}=await loadCreativeWorld(kernel,worldId);
   const artifact=artifacts.find(a=>a.entityId===result.entityId);
   if(!artifact)return{ok:false as const,status:503,error:'Save could not be confirmed. Keep this draft and retry.'};
+  const intended=input as {title:string;body:string};
+  if(artifact.title!==intended.title.trim()||artifact.body!==intended.body)return{ok:false as const,status:409,error:'Your save was recorded, but a newer revision is now present. Your draft is still here. Export it before reopening the latest document.'};
   revalidatePath(`/projects/${worldId}`);revalidatePath('/projects');revalidatePath('/');
   return{ok:true as const,artifact};
  }catch{return{ok:false as const,status:503,error:'The store is unavailable. Your draft is still here; retry.'};}
