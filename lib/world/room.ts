@@ -4,7 +4,7 @@ import { loadCreativeWorld } from "./creative";
 export type RoomTurnInput = { worldId: string; requestId: string; text: string; intent: "message" | "ask_ai" | "decision" };
 export type RoomContext = { system: string; sharedText: string; sourceRefs: RoomSourceRef[]; omittedSources: number };
 export type RoomTurnResult = { messageId: string; replyId?: string; aiStatus: "none" | "unavailable" | "pending" | "complete" | "failed"; error?: string };
-export type RoomCompletion = (context: RoomContext, question: string) => Promise<{ text: string; model: string }>;
+export type RoomCompletion = (context: RoomContext, question: string) => Promise<{ text: string; model: string; sourceRefs?: RoomSourceRef[] } | null>;
 
 export function parseRoomTurn(worldId: string, value: unknown): RoomTurnInput | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -62,8 +62,12 @@ export async function submitRoomTurn(kernel: Kernel, input: RoomTurnInput, compl
   try {
     const context = await loadRoomContext(kernel, valid.worldId);
     const reply = await complete(context, valid.text);
+    if (!reply) {
+      await kernel.failRoomReply(messageId, claim.lease_token);
+      return { messageId, aiStatus: "unavailable", error: "Your question is saved. AI is unavailable on this deployment." };
+    }
     const replyId = await kernel.finishRoomReply({ messageId, leaseToken: claim.lease_token,
-      text: reply.text, model: reply.model, sourceRefs: context.sourceRefs });
+      text: reply.text, model: reply.model, sourceRefs: reply.sourceRefs ?? context.sourceRefs });
     return { messageId, aiStatus: "complete", replyId };
   } catch (error) {
     await kernel.failRoomReply(messageId, claim.lease_token).catch(() => undefined);

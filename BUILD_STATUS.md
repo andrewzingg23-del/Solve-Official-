@@ -634,3 +634,6 @@ Guest Auth bootstrap and additive subject-bound kernel registration implemented 
 
 ## 2026-11-04 — SOV Step 1 staging checkpoint
 Isolated codex/sov-step-one code e9a73fc is READY on preview only. Remote full suite: 508 pass, zero fail, one existing skip; compiled/build completed. Actual staging Project creation, versioned save/exact reopen, export and cross-identity denial verified; desktop/mobile screenshots captured. Existing identity/kernel retained; no migration, production promotion or PR #51 merge. Founder update and remaining release gates: docs/sov/blueprint/ACCEPTANCE.md. Personal acceptance occurs only after engineering completion; separate launch approval required. Full release remains incomplete.
+
+## 2026-11-05 — Review of Development Room evidence
+The saved Room and personal chat routes answer development questions from authorized GitHub observations. A missing source returns unavailable without inference. Shared saved replies may use private GitHub access only through a World reader pairing. Relative ages use the observation clock, and unknown runner state stays explicit. The existing Room kernel lease and retry path is reused. Forty affected tests passed, including a two-user isolation regression. Typecheck passed. Lint reported zero errors and eight warnings. Review target: codex/sov-step-one (PR #52), production promotion excluded.

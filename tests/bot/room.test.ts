@@ -53,8 +53,9 @@ it("shows the build from GitHub: builders, the trunk's latest build, and pull re
   assert.match(html, /build 137 passed · 33 min ago/);
   assert.match(html, /Review to merge[\s\S]*#9 Document agent builder MCP connections/);
   assert.match(html, /build 135 failed/);
-  assert.match(html, /Read from GitHub 1 min ago/);
-  assert.match(html, /Nothing here is anyone&#x27;s word/);
+  assert.match(html, /observed 2026-10-05T05:59:00.000Z \(1m ago\)/);
+  assert.match(html, /GitHub\/CI evidence/);
+  assert.match(html, /Runner status: unavailable/);
 });
 
 it("says plainly why a repository isn't showing, with the exact pairing to add", async () => {
@@ -126,5 +127,6 @@ it("shows the deployed trunk when GitHub can't be read, and asks only for the to
   assert.match(html, /The trunk as this app was deployed/);
   assert.match(html, /GITHUB_TOKEN=/);
   assert.doesNotMatch(html, /GITHUB_ROOMS=/, "paired already, so only the token");
-  assert.match(html, /From the code deployed/);
+  assert.match(html, /snapshot recorded 2026-10-05T05:59:00.000Z/);
+  assert.match(html, /no live GitHub/);
 });

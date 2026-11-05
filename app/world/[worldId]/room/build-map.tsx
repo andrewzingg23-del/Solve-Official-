@@ -3,6 +3,7 @@
 // here is a builder's word.
 import type { Build, BuildState, Builder, BuilderSummary, Lane, RepoView } from "@/lib/github/repo";
 import { ago } from "./time";
+import { provenanceLine, RUNNER_UNAVAILABLE } from "@/lib/github/status";
 
 const STATE_LABEL: Record<BuildState, string> = { running: "building", passed: "passed", failed: "failed", cancelled: "cancelled", other: "finished" };
 
@@ -48,7 +49,7 @@ function Station({ s, now, initials }: { s: BuilderSummary; now: string; initial
           <Monogram builder={s.builder} initials={initials} />
           <span className="text-sm font-medium">{s.builder}</span>
         </div>
-        <span className="text-[11px] leading-4 text-muted tabular-nums">{parts.join(" · ") || "nothing open"} · active {ago(s.at, now)}</span>
+        <span className="text-[11px] leading-4 text-muted tabular-nums">{parts.join(" · ") || "nothing open"} · repository activity {ago(s.at, now)}</span>
         <BuildMark build={s.build} now={now} />
       </div>
       <span aria-hidden className="h-8 w-px bg-gradient-to-b from-accent/50 to-accent/0" />
@@ -99,6 +100,7 @@ export function BuildMap({ view, now, save, savedLinks = new Set() }: { view: Re
   const initials = initialsFor([...view.builders.map((b) => b.builder), ...view.lanes.flatMap((l) => (l.builder ? [l.builder] : []))]);
   return (
     <div className="flex flex-col gap-6">
+      <p className="text-xs leading-5 text-muted">{RUNNER_UNAVAILABLE}</p>
       {view.builders.length ? (
         <ul aria-label="Builders" className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
           {view.builders.slice(0, 8).map((s) => <Station key={s.builder} s={s} now={now} initials={initials} />)}
@@ -149,7 +151,7 @@ export function BuildMap({ view, now, save, savedLinks = new Set() }: { view: Re
       ) : null}
 
       <p className="text-[11px] leading-5 text-muted">
-        {view.source === "deployment" ? `From the code deployed ${ago(view.readAt, now)}` : `Read from GitHub ${ago(view.readAt, now)}`} · <a href={view.url} target="_blank" rel="noopener noreferrer" className="hover:text-accent">{view.ref.owner}/{view.ref.repo}</a>. Builders are named by their branches. Nothing here is anyone&apos;s word.
+        {provenanceLine(view, Date.parse(now))} <a href={view.url} target="_blank" rel="noopener noreferrer" className="hover:text-accent">Open repository</a>. Builder names are inferred from branch and commit metadata; they are not verified runner identities.
       </p>
     </div>
   );

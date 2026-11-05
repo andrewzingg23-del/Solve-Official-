@@ -100,7 +100,7 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
           return (
           <li key={m.message_id} className={`rounded-lg border p-3 ${m.kind === "decision" ? "border-positive/30 bg-positive/5" : m.kind === "ai_draft" ? "border-accent/25 bg-accent/5" : "border-line bg-background/40"}`}>
             <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2 text-xs">
-              <span className="font-medium">{m.kind === "ai_draft" ? `AI draft · requested by ${m.actor_label}` : `${m.actor_label}${m.actor_kind === "agent" ? " · AI agent" : ""}${m.kind === "decision" ? " · recorded decision" : ""}`}</span>
+              <span className="font-medium">{m.kind === "ai_draft" ? `Room reply · requested by ${m.actor_label}` : `${m.actor_label}${m.actor_kind === "agent" ? " · AI agent" : ""}${m.kind === "decision" ? " · recorded decision" : ""}`}</span>
               <time dateTime={new Date(m.occurred_at).toISOString()} className="text-muted">{new Date(m.occurred_at).toLocaleString("en-US", { timeZone: "UTC", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZoneName: "short" })}</time>
             </div>
             <p className="whitespace-pre-wrap break-words text-sm leading-6">{m.text}</p>
@@ -127,7 +127,7 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
             <button type="button" disabled={busy || !text.trim()} onClick={() => void send("ask_ai")} className="rounded-md border border-accent/50 px-4 py-2 text-sm text-accent disabled:opacity-50">Ask AI</button>
             <button type="button" disabled={busy || !text.trim()} onClick={() => void send("decision")} className="rounded-md border border-line px-4 py-2 text-sm disabled:opacity-50">Record decision</button>
           </div>
-          <p className="text-[11px] leading-5 text-muted">Ask AI sends selected shared documents, recorded decisions and recent messages through OpenRouter to the chosen model provider. Personal memory stays private. AI replies are drafts; a recorded decision names its author.</p>
+          <p className="text-[11px] leading-5 text-muted">Development status uses source observations, never model inference. Other Ask AI questions send selected shared documents, recorded decisions and recent messages through OpenRouter to the chosen model provider. Personal memory stays private. AI replies are drafts; a recorded decision names its author.</p>
         </form>
       ) : <p className="text-xs text-muted">You can view this room. Ask the owner for editor access to contribute.</p>}
       {notice ? <p role="status" className="text-xs leading-5 text-muted">{notice}</p> : null}

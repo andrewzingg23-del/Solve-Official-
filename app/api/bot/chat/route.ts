@@ -10,9 +10,9 @@ import { getKernel } from "@/lib/kernel/server";
 import { passportContext } from "@/lib/passport/context";
 import { classifyTurn, WAY_REQUESTED, talkScope } from "@/lib/bot/intent";
 import { planVenture, type RoutePlan } from "@/lib/world/wayfinder";
-import { asksDevelopmentStatus, developmentRoomReply } from "@/lib/github/status";
-import { deployedView } from "@/lib/github/deployed";
-import { readRepo, repoForViewer, roomRepos, type RepoView } from "@/lib/github/repo";
+import { asksDevelopmentStatus, developmentRoomReply, DEVELOPMENT_UNAVAILABLE } from "@/lib/github/status";
+import { deploymentRooms } from "@/lib/github/rooms";
+import { readRepo, repoForViewer, type RepoView } from "@/lib/github/repo";
 import {
   OPENROUTER_MISSING_KEY_ERROR,
   buildChatCompletionBody,
@@ -68,20 +68,17 @@ export async function POST(request: Request) {
   // and works even without a chat provider key. Falls through to normal chat on anything else.
   if (asksDevelopmentStatus(chat.message).match) {
     try {
-      const paired = repoForViewer(user?.email ?? null, roomRepos(process.env.GITHUB_ROOMS));
+      const paired = repoForViewer(user?.email ?? null, deploymentRooms());
       let view: RepoView | null = null;
       if (paired) {
         const r = await readRepo(paired, { token: process.env.GITHUB_TOKEN || null });
         if (r.ok) view = r.view;
       }
-      if (!view) {
-        const [owner, repo] = (process.env.SOLVE_DEPLOYED_REPO ?? "").split("/");
-        if (owner && repo) view = deployedView({ owner, repo, trunk: process.env.SOLVE_DEPLOYED_REF ?? null });
-      }
       const devReply = developmentRoomReply(chat.message, view);
-      if (devReply) return json({ reply: devReply, source: "development-room" });
+      return json({ reply: devReply, source: "development-room", observation: view ? { source: view.source ?? 'github', at: view.readAt } : null, runner: { status: "unavailable" } });
     } catch {
-      // Never let the Development Room path break normal chat.
+      // Evidence failures are not model prompts and must never spend inference credits.
+      return json({ reply: DEVELOPMENT_UNAVAILABLE, source: "development-room", observation: null, runner: { status: "unavailable" } });
     }
   }
 
