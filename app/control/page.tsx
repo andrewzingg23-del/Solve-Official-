@@ -24,7 +24,7 @@ export default async function ControlPage() {
         <span className="solve-kicker">Connected apps · optional</span>
         <h2 className="mt-3">Bring your tools.</h2>
         <p className="my-3">Choose apps for later setup, or connect a compatible assistant using the existing SOV MCP authorization flow. Selecting an app does not grant any access.</p>
-        <div className="solve-profile-save"><Link href="/onboarding#apps" className="solve-button">Browse apps <Icon name="arrow" width={16}/></Link><Link href="/bot?section=connections" className="solve-text-link">AI connectors →</Link></div>
+        <div className="solve-profile-save"><Link href="/onboarding#apps" className="solve-button">Browse apps <Icon name="arrow" width={16}/></Link><Link href="/apps" className="solve-text-link">My app surfaces →</Link><Link href="/bot?section=connections" className="solve-text-link">AI connectors →</Link></div>
       </section>
       <section className="solve-panel">
         <span className="solve-kicker">My Agent</span><h2 className="mt-3">AI & permissions</h2>
