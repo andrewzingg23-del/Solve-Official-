@@ -30,7 +30,7 @@ export function initialsFor(names: string[]): Map<string, string> {
 
 function Monogram({ builder, initials }: { builder: Builder | null; initials: Map<string, string> }) {
   return (
-    <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-accent/40 bg-accent/10 text-xs font-semibold text-accent shadow-[0_0_24px_rgba(34,211,238,0.25)]">
+    <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-accent/40 bg-accent/10 text-xs font-semibold text-accent shadow-[0_0_16px_var(--accent-glow)]">
       {builder ? initials.get(builder) ?? builder[0] : "·"}
     </span>
   );
@@ -116,7 +116,7 @@ export function BuildMap({ view, now, save, savedLinks = new Set() }: { view: Re
           </span>
         </div>
         <div className="relative px-1 py-6">
-          <span aria-hidden className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-accent/0 via-accent/70 to-accent shadow-[0_0_18px_rgba(34,211,238,0.6)]" />
+          <span aria-hidden className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-accent/0 via-accent/70 to-accent shadow-[0_0_12px_var(--accent-glow)]" />
           <ol className="relative flex items-center justify-between gap-1">
             {commits.map((c, i) => {
               const build = buildBySha.get(c.sha);

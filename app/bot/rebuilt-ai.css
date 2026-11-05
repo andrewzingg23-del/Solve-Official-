@@ -1,16 +1,16 @@
 .solve-ai-page { max-width:1240px; padding-bottom:50px; }
 .solve-ai-stack { display:flex; flex-direction:column; gap:24px; }
 .solve-ai-card { display:flex; flex-direction:column; gap:16px; }
-.solve-ai-card-heading { display:flex; align-items:center; gap:10px; color:#82ddec; }
-.solve-ai-card-heading h2 { color:#edf3fa; }
+.solve-ai-card-heading { display:flex; align-items:center; gap:10px; color:var(--sov-gold); }
+.solve-ai-card-heading h2 { color:var(--sov-ink); }
 .solve-ai-actions { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
 .solve-ai-notice { display:flex; flex-direction:column; gap:14px; margin-bottom:24px; }
-.solve-ai-card .solve-ai-fineprint,.solve-ai-persona-status p,.solve-ai-import-note p { color:#91a6bf; font-size:12px; line-height:1.8; }
+.solve-ai-card .solve-ai-fineprint,.solve-ai-persona-status p,.solve-ai-import-note p { color:var(--sov-muted); font-size:12px; line-height:1.8; }
 .solve-ai-local-start { max-width:720px; padding:30px; }
-.solve-ai-persona-status { display:flex; align-items:center; justify-content:space-between; gap:22px; border:1px solid #25374c; border-radius:10px; background:#0b1723; padding:18px 22px; }
+.solve-ai-persona-status { display:flex; align-items:center; justify-content:space-between; gap:22px; border:1px solid var(--sov-line); border-radius:10px; background:var(--sov-panel); padding:18px 22px; }
 .solve-ai-persona-status strong { display:block; font-size:13px; font-weight:500; margin-bottom:4px; }
 .solve-ai-persona-status .solve-text-link { flex-shrink:0; }
-.solve-ai-creator { border:1px solid #26364c; border-radius:12px; background:#0c1522; padding:28px; }
+.solve-ai-creator { border:1px solid var(--sov-line); border-radius:var(--sov-inset-radius); background:var(--sov-panel); padding:28px; }
 .solve-ai-creator>section { grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr); gap:32px; }
 .solve-ai-creator>section>div:first-child { position:static; }
 .solve-ai-creator>section>div:first-child>div:first-child h2 { font-size:25px; }
@@ -21,38 +21,38 @@
 .solve-ai-creator [aria-label="Preview a state"] { display:none; }
 .solve-ai-creator [aria-label="Customize"] button { border-radius:7px; font-size:10px; padding-inline:12px; }
 .solve-ai-records { display:flex; flex-direction:column; gap:10px; margin:3px 0; }
-.solve-ai-record { display:flex; align-items:center; justify-content:space-between; gap:18px; border:1px solid #2b3b50; border-radius:8px; padding:16px; }
+.solve-ai-record { display:flex; align-items:center; justify-content:space-between; gap:18px; border:1px solid var(--sov-line); border-radius:var(--sov-control-radius); padding:16px; }
 .solve-ai-record>div { min-width:0; }
 .solve-ai-record h3,.solve-ai-record h4 { font-size:14px; font-weight:500; margin-bottom:6px; overflow-wrap:anywhere; }
-.solve-ai-card .solve-ai-record-meta { font-size:11px; color:#8196b0; line-height:1.8; overflow-wrap:anywhere; }
-.solve-ai-record-meta a { color:#8dddea; text-decoration:underline; text-underline-offset:3px; }
+.solve-ai-card .solve-ai-record-meta { font-size:11px; color:var(--sov-muted); line-height:1.8; overflow-wrap:anywhere; }
+.solve-ai-record-meta a { color:var(--sov-gold); text-decoration:underline; text-underline-offset:3px; }
 .solve-ai-record form { flex-shrink:0; }
 .solve-ai-revoke { min-height:44px; border:1px solid #484051; border-radius:7px; padding:10px 12px; color:#e7a5b0; font-size:11px; white-space:nowrap; }
 .solve-ai-revoke:hover { background:#301c2a; border-color:#ad6b7b; }
-.solve-ai-small-empty { border:1px dashed #304157; border-radius:8px; padding:20px; display:flex; flex-direction:column; gap:5px; }
-.solve-ai-modes { border-top:1px solid #26364c; padding-top:18px; display:flex; flex-direction:column; gap:15px; }
+.solve-ai-small-empty { border:1px dashed var(--sov-line); border-radius:var(--sov-control-radius); padding:20px; display:flex; flex-direction:column; gap:5px; }
+.solve-ai-modes { border-top:1px solid var(--sov-line); padding-top:18px; display:flex; flex-direction:column; gap:15px; }
 .solve-ai-modes dt { font-size:12px; font-weight:500; margin-bottom:5px; }
-.solve-ai-modes dd { font-size:12px; line-height:1.8; color:#94a7bf; }
-.solve-ai-details,.solve-ai-setup { border:1px solid #2a3a50; border-radius:9px; padding:0 20px 20px; }
+.solve-ai-modes dd { font-size:12px; line-height:1.8; color:var(--sov-muted); }
+.solve-ai-details,.solve-ai-setup { border:1px solid var(--sov-line); border-radius:var(--sov-control-radius); padding:0 20px 20px; }
 .solve-ai-details:not([open]),.solve-ai-setup:not([open]) { padding-bottom:0; }
-.solve-ai-details>summary,.solve-ai-setup>summary { min-height:54px; padding:17px 0; font-size:12px; cursor:pointer; color:#c0d3e6; }
-.solve-ai-details>summary:focus-visible,.solve-ai-setup>summary:focus-visible { outline:2px solid #22d3ee; outline-offset:4px; }
+.solve-ai-details>summary,.solve-ai-setup>summary { min-height:54px; padding:17px 0; font-size:12px; cursor:pointer; color:var(--sov-secondary); }
+.solve-ai-details>summary:focus-visible,.solve-ai-setup>summary:focus-visible { outline:2px solid var(--sov-gold); outline-offset:4px; }
 .solve-ai-setup ul { display:flex; flex-direction:column; gap:16px; padding-bottom:16px; }
 .solve-ai-setup h3 { font-size:13px; font-weight:500; margin-bottom:5px; }
 .solve-ai-setup p { font-size:12px; margin-bottom:14px; }
 .solve-ai-import-note { display:flex; flex-direction:column; gap:10px; margin-bottom:20px; max-width:750px; }
 .solve-ai-details :is(button,input[type=file]),.solve-ai-setup :is(button,a) { min-height:44px; }
 .solve-ai-access-levels { display:flex; gap:6px; flex-wrap:wrap; }
-.solve-ai-access-levels button { min-height:44px; padding:10px 12px; border:1px solid #34465b; border-radius:6px; font-size:11px; color:#a3b9cf; }
-.solve-ai-access-levels button:hover { background:#132332; }
-.solve-ai-access-levels button[aria-pressed=true] { color:#8ce8f3; border-color:#487b89; background:#12313c; }
-.solve-ai-memory-form { margin:3px 0; border-bottom:1px solid #26364c; padding-bottom:24px; }
+.solve-ai-access-levels button { min-height:44px; padding:10px 12px; border:1px solid var(--sov-line); border-radius:6px; font-size:11px; color:var(--sov-secondary); }
+.solve-ai-access-levels button:hover { background:var(--sov-raised); }
+.solve-ai-access-levels button[aria-pressed=true] { color:var(--sov-gold); border-color:var(--sov-edge); background:var(--sov-gold-wash); }
+.solve-ai-memory-form { margin:3px 0; border-bottom:1px solid var(--sov-line); padding-bottom:24px; }
 .solve-ai-memory-fields { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px; }
 .solve-ai-memory-fields label { display:block; margin-bottom:8px; }
-.solve-ai-memory-fields label span { color:#7f96b0; font-size:11px; }
-.solve-ai-knowledge-list { border-top:1px solid #26364c; padding-top:22px; display:flex; flex-direction:column; gap:12px; }
+.solve-ai-memory-fields label span { color:var(--sov-muted); font-size:11px; }
+.solve-ai-knowledge-list { border-top:1px solid var(--sov-line); padding-top:22px; display:flex; flex-direction:column; gap:12px; }
 .solve-ai-knowledge-list>h3 { font-size:15px; font-weight:500; }
 .solve-ai-memory { align-items:flex-start; }
-.solve-ai-card .solve-ai-memory-text { color:#c4d3e4; white-space:pre-wrap; overflow-wrap:anywhere; margin-bottom:12px; }
+.solve-ai-card .solve-ai-memory-text { color:var(--sov-secondary); white-space:pre-wrap; overflow-wrap:anywhere; margin-bottom:12px; }
 @media (max-width:1000px) { .solve-ai-creator>section { grid-template-columns:minmax(0,1fr); gap:28px; }.solve-ai-creator>section>div:first-child { max-width:600px; }.solve-ai-project-access { align-items:flex-start; flex-direction:column; gap:10px; } }
 @media (max-width:700px) { .solve-ai-creator { padding:20px 16px; }.solve-ai-creator>section>div:last-child { order:-1; }.solve-ai-persona-status { flex-direction:column; align-items:flex-start; gap:6px; padding:16px; }.solve-ai-record { gap:12px; padding:14px; }.solve-ai-memory { flex-direction:column; }.solve-ai-memory-fields { grid-template-columns:minmax(0,1fr); gap:12px; }.solve-ai-connections>.solve-panel { padding:20px; }.solve-ai-details { padding-inline:16px; }.solve-ai-local-start { padding:22px; } }

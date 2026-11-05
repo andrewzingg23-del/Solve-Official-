@@ -1,0 +1,39 @@
+/* Shared SOV materials. Artwork, Agent identities and semantic status colors keep their own meaning. */
+:root {
+  --sov-canvas: #131719;
+  --sov-base: #101315;
+  --sov-panel: rgba(25, 28, 31, .86);
+  --sov-raised: #282b2c;
+  --sov-line: rgba(231, 215, 187, .22);
+  --sov-edge: #706552;
+  --sov-ink: #f4f0e8;
+  --sov-muted: #b4b3af;
+  --sov-secondary: #cfcac1;
+  --sov-gold: #e8bd82;
+  --sov-gold-bright: #f4d6ab;
+  --sov-gold-wash: rgba(207, 169, 107, .12);
+  --sov-on-gold: #201c17;
+  --sov-display: Georgia, 'Times New Roman', serif;
+  --sov-radius: 18px;
+  --sov-inset-radius: 12px;
+  --sov-control-radius: 9px;
+  --sov-dock-clearance: calc(120px + env(safe-area-inset-bottom, 0px));
+  --sov-depth: inset 0 1px 0 #ffffff09, 0 14px 32px #0002;
+}
+
+/* Existing utility classes and product components resolve to the same palette in the shell. */
+.sov-foundation, .solve-minimal {
+  --background: var(--sov-canvas);
+  --surface: var(--sov-panel);
+  --surface-raise: var(--sov-raised);
+  --surface-sunken: var(--sov-base);
+  --foreground: var(--sov-ink);
+  --muted: var(--sov-muted);
+  --faint: var(--sov-muted);
+  --line: var(--sov-line);
+  --line-soft: color-mix(in srgb, var(--sov-line) 65%, transparent);
+  --accent: var(--sov-gold);
+  --accent-ink: var(--sov-on-gold);
+  --accent-dim: var(--sov-gold-wash);
+  --accent-glow: color-mix(in srgb, var(--sov-gold) 22%, transparent);
+}
