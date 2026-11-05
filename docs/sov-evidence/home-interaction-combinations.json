@@ -1,0 +1,130 @@
+[
+  {
+    "theme": "SOV Light",
+    "layout": "Simple",
+    "creations": 4,
+    "layoutId": "simple",
+    "overflow": false,
+    "skin": "standard"
+  },
+  {
+    "theme": "SOV Light",
+    "layout": "Focused",
+    "creations": 4,
+    "layoutId": "focused",
+    "overflow": false,
+    "skin": "standard"
+  },
+  {
+    "theme": "SOV Light",
+    "layout": "Studio",
+    "creations": 4,
+    "layoutId": "studio",
+    "overflow": false,
+    "skin": "standard"
+  },
+  {
+    "theme": "SOV Light",
+    "layout": "Canvas",
+    "creations": 4,
+    "layoutId": "canvas",
+    "overflow": false,
+    "skin": "standard"
+  },
+  {
+    "theme": "SOV Dark",
+    "layout": "Simple",
+    "creations": 4,
+    "layoutId": "simple",
+    "overflow": false,
+    "skin": "backstage"
+  },
+  {
+    "theme": "SOV Dark",
+    "layout": "Focused",
+    "creations": 4,
+    "layoutId": "focused",
+    "overflow": false,
+    "skin": "backstage"
+  },
+  {
+    "theme": "SOV Dark",
+    "layout": "Studio",
+    "creations": 4,
+    "layoutId": "studio",
+    "overflow": false,
+    "skin": "backstage"
+  },
+  {
+    "theme": "SOV Dark",
+    "layout": "Canvas",
+    "creations": 4,
+    "layoutId": "canvas",
+    "overflow": false,
+    "skin": "backstage"
+  },
+  {
+    "theme": "Minimal",
+    "layout": "Simple",
+    "creations": 4,
+    "layoutId": "simple",
+    "overflow": false,
+    "skin": "atelier"
+  },
+  {
+    "theme": "Minimal",
+    "layout": "Focused",
+    "creations": 4,
+    "layoutId": "focused",
+    "overflow": false,
+    "skin": "atelier"
+  },
+  {
+    "theme": "Minimal",
+    "layout": "Studio",
+    "creations": 4,
+    "layoutId": "studio",
+    "overflow": false,
+    "skin": "atelier"
+  },
+  {
+    "theme": "Minimal",
+    "layout": "Canvas",
+    "creations": 4,
+    "layoutId": "canvas",
+    "overflow": false,
+    "skin": "atelier"
+  },
+  {
+    "theme": "Creative",
+    "layout": "Simple",
+    "creations": 4,
+    "layoutId": "simple",
+    "overflow": false,
+    "skin": "creative"
+  },
+  {
+    "theme": "Creative",
+    "layout": "Focused",
+    "creations": 4,
+    "layoutId": "focused",
+    "overflow": false,
+    "skin": "creative"
+  },
+  {
+    "theme": "Creative",
+    "layout": "Studio",
+    "creations": 4,
+    "layoutId": "studio",
+    "overflow": false,
+    "skin": "creative"
+  },
+  {
+    "theme": "Creative",
+    "layout": "Canvas",
+    "creations": 4,
+    "layoutId": "canvas",
+    "overflow": false,
+    "skin": "creative"
+  }
+]

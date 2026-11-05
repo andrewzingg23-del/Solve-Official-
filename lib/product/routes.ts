@@ -31,3 +31,14 @@ export function launchRoute(pathname: string, env: Partial<NodeJS.ProcessEnv> = 
   }
   return { kind: "allow" };
 }
+
+export const PRIMARY_DESTINATIONS = [
+  { href: '/', label: 'Space' }, { href: '/projects', label: 'Projects' },
+  { href: '/communities', label: 'Communities' }, { href: '/control', label: 'Control' },
+] as const;
+export function destinationFor(path: string): string {
+  if (path === '/') return '/';
+  if (path.startsWith('/projects') || path.startsWith('/world')) return '/projects';
+  if (path.startsWith('/communit')) return '/communities';
+  return '/control';
+}

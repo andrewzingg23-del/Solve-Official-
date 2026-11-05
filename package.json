@@ -41,7 +41,8 @@
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
     "three": "^0.186.1",
-    "@dimforge/rapier3d-compat": "^0.21.0"
+    "@dimforge/rapier3d-compat": "^0.21.0",
+    "@phosphor-icons/react": "^2.1.10"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

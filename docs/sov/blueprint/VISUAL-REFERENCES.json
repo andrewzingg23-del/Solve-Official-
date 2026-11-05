@@ -1,0 +1,44 @@
+[
+  {
+    "order": 1,
+    "filename": "SOV Digital Life Hub Dashboard.png",
+    "source": "/Users/andrewz/Downloads/SOV Digital Life Hub Dashboard.png",
+    "sha256": "652a654949cf0ea4d3277cf87a7764df7fca49f0a7bf000144ec78cc912dd44f"
+  },
+  {
+    "order": 2,
+    "filename": "SOV Unified Operating Environment Blueprint.png",
+    "source": "/Users/andrewz/Downloads/SOV Unified Operating Environment Blueprint.png",
+    "sha256": "47e5086b35f8ab098c9f2a5d0dde26757c81c92c18f9560596f61164e342ecc9"
+  },
+  {
+    "order": 3,
+    "filename": "SOV Operating System Dashboard.png",
+    "source": "/Users/andrewz/Downloads/SOV Operating System Dashboard.png",
+    "sha256": "fc3ae7e0e6f5cc3b6889aa719fde59b55c39d39d371af723535f241c930aaac3"
+  },
+  {
+    "order": 4,
+    "filename": "SOV Master Blueprint Dashboard-2.png",
+    "source": "/Users/andrewz/Downloads/SOV Master Blueprint Dashboard-2.png",
+    "sha256": "2b8ad7f8ddd5311750e19908408589282fc5fca6bb0b1d2f93a9b356be9e86d0"
+  },
+  {
+    "order": 5,
+    "filename": "SOV Unified Operating Environment Blueprint-1.png",
+    "source": "/Users/andrewz/Downloads/SOV Unified Operating Environment Blueprint-1.png",
+    "sha256": "67112a9db2b22f4b66fa42def5fe122e04be6be03ac8a81bd4132bd0ad765c95"
+  },
+  {
+    "order": 6,
+    "filename": "SOV Communities Product Blueprint.png",
+    "source": "/Users/andrewz/Downloads/SOV Communities Product Blueprint.png",
+    "sha256": "ed753cc5eaa4af771868a5919834d312733e63e86a903de0e58315e8f2739744"
+  },
+  {
+    "order": 7,
+    "filename": "SOV Identity, Home & Profile Interface.png",
+    "source": "/Users/andrewz/Downloads/SOV Identity, Home & Profile Interface.png",
+    "sha256": "f7eef9a22b02406b5db5384c66d0431c7fa5139750420ee7c3cd10f8d839028e"
+  }
+]

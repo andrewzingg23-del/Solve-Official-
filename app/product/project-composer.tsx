@@ -24,7 +24,7 @@ export function ProjectComposer({ owner, worldId }: { owner: string | null; worl
         const result = await createProject(current, owner);
         if (!result.ok) { setError(result.error); return; }
         clear(result.worldId);
-        router.push(`/world/${result.worldId}/room`); router.refresh();
+        router.push(`/projects/${result.worldId}`); router.refresh();
       } catch { setError("The connection was interrupted. Your draft is still here; try again."); }
     });
   };

@@ -7,6 +7,8 @@ import { launchRoute } from "@/lib/product/routes";
 const protectedPaths = ["/account"];
 
 export async function proxy(request: NextRequest) {
+  // Isolated device-only preview: no session creation or external service calls.
+  if (request.nextUrl.pathname === "/sov-preview" || request.nextUrl.pathname.startsWith("/sov-preview/")) return NextResponse.next();
   const route = launchRoute(request.nextUrl.pathname);
   if (route.kind !== "allow") {
     if (route.kind === "deny" || !["GET", "HEAD"].includes(request.method)) {
