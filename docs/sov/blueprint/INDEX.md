@@ -5,3 +5,5 @@ The seven founder-selected images, inventoried and hashed in VISUAL-REFERENCES.j
 Private Home, future public Social Profile and internal SOV ID are separate. Four destinations: Space, Projects, Communities, Control; My Agent is persistent. Appearance never changes ownership or permissions. Existing kernel APIs remain authority.
 
 Current evidence and handoff: CURRENT-STATE.md. Screen contracts: SCREEN-ATLAS.md. Source planning/baseline: STEP-1.md. No production promotion without explicit founder launch approval. Personal acceptance is deferred until the full product is ready; use staging test identities throughout engineering.
+
+Release verification order and final personal acceptance: ACCEPTANCE.md. The latest instruction to continue approved milestones supersedes the earlier Step 1 approval pause; retain evidence and visual reporting at each milestone.

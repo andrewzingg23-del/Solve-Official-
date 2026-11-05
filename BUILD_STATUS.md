@@ -631,3 +631,6 @@ Handoff: `docs/handoff/2026-10-08-immersive-studio.md`. This is a concept creati
 
 ## 2026-11-01 — Seamless guests
 Guest Auth bootstrap and additive subject-bound kernel registration implemented on codex/seamless-guest. 495 tests pass / 1 existing skip; typecheck, lint (0 errors), production build pass. Reviewed independently. Guest provider activation and live create/save/reload verification pending.
+
+## 2026-11-04 — SOV Step 1 staging checkpoint
+Isolated codex/sov-step-one code e9a73fc is READY on preview only. Remote full suite: 508 pass, zero fail, one existing skip; compiled/build completed. Actual staging Project creation, versioned save/exact reopen, export and cross-identity denial verified; desktop/mobile screenshots captured. Existing identity/kernel retained; no migration, production promotion or PR #51 merge. Founder update and remaining release gates: docs/sov/blueprint/ACCEPTANCE.md. Personal acceptance occurs only after engineering completion; separate launch approval required. Full release remains incomplete.
