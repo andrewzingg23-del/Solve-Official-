@@ -41,7 +41,7 @@ export default async function OnboardingPage() {
       <span className="solve-kicker">03 / Connections · Optional</span>
       <h2 id="sov-apps-heading">Bring the tools you use.</h2>
       <p>Choose what interests you. A selection is never an actual connection; account authorization and Project permissions happen separately.</p>
-      <OptionalConnections />
+      <OptionalConnections /><div className="sov-onboarding-buttons"><Link href="/apps" className="solve-button solve-button-secondary">Try optional media panels →</Link></div>
     </section>
 
     <section className="sov-onboarding-end">
