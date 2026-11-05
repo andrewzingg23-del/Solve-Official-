@@ -9,6 +9,8 @@ import type { BuilderSummary, Pull, RepoView } from "./repo";
 
 const PROVENANCE_GITHUB = "GitHub/CI evidence (not live terminal activity)";
 const PROVENANCE_DEPLOY = "the deployed build's own commit log (no live GitHub — PRs and CI not visible)";
+export const RUNNER_UNAVAILABLE = "Runner status: unavailable. GitHub commits, pull requests and CI runs do not establish an agent's live execution state.";
+export const DEVELOPMENT_UNAVAILABLE = `Development status unavailable: no authorized GitHub observation is available. Connect an authorized repository reader or retry the source; no model inference is used as evidence.\n${RUNNER_UNAVAILABLE}`;
 
 function ago(iso: string, now: number): string {
   const t = Date.parse(iso);
@@ -33,13 +35,15 @@ function builderLine(b: BuilderSummary, now: number): string {
   if (b.merged) parts.push(`${b.merged} merged`);
   if (b.commits) parts.push(`${b.commits} recent commit${b.commits > 1 ? "s" : ""}`);
   const body = parts.length ? parts.join(" · ") : "no open work right now";
-  return `${b.builder}: ${body} — last active ${ago(b.at, now)}`;
+  return `${b.builder}: ${body} — repository activity ${ago(b.at, now)}`;
 }
 
 /** The source + read-time line that precedes every answer. */
-export function provenanceLine(view: RepoView): string {
+export function provenanceLine(view: RepoView, now: number = Date.now()): string {
   const src = view.source === "deployment" ? PROVENANCE_DEPLOY : PROVENANCE_GITHUB;
-  return `From ${view.ref.owner}/${view.ref.repo}, read ${ago(view.readAt, Date.parse(view.readAt) || Date.now())} · ${src}.`;
+  const at = Date.parse(view.readAt);
+  const observed = Number.isNaN(at) ? "observation time unknown" : `${new Date(at).toISOString()} (${at > now ? "timestamp ahead of current clock" : ago(view.readAt, now)})`;
+  return `From ${view.ref.owner}/${view.ref.repo}, ${view.source === "deployment" ? "snapshot recorded" : "observed"} ${observed} · ${src}.`;
 }
 
 function findBuilder(view: RepoView, name: string): BuilderSummary | undefined {
@@ -49,21 +53,21 @@ function findBuilder(view: RepoView, name: string): BuilderSummary | undefined {
 
 /** Answer "what is <builder> working on?" strictly from the RepoView. */
 export function whatIsWorkingOn(view: RepoView, builder: string, now: number = Date.now()): string {
-  const head = provenanceLine(view);
+  const head = `${provenanceLine(view, now)}\n${RUNNER_UNAVAILABLE}`;
   if (view.source === "deployment") {
     return `${head}\nI can see the trunk's recent commits, but not per-person PRs or CI until a GitHub token is connected, so I can't say what ${builder} specifically has open right now.`;
   }
   const b = findBuilder(view, builder);
   if (!b) {
     const names = view.builders.map((x) => x.builder).join(", ") || "no one";
-    return `${head}\nNo GitHub activity from ${builder} on this repo. Active right now: ${names}.`;
+    return `${head}\nNo GitHub activity from ${builder} in this observation. Observed builders: ${names}.`;
   }
   return `${head}\n${builderLine(b, now)}`;
 }
 
 /** The whole Development Room status: every active builder, plus the trunk's CI. */
 export function developmentStatus(view: RepoView, now: number = Date.now()): string {
-  const head = provenanceLine(view);
+  const head = `${provenanceLine(view, now)}\n${RUNNER_UNAVAILABLE}`;
   const lines: string[] = [];
   if (view.builders.length) {
     for (const b of view.builders) lines.push(`• ${builderLine(b, now)}`);
@@ -78,19 +82,22 @@ export function developmentStatus(view: RepoView, now: number = Date.now()): str
 /**
  * The Development Room's answer for a chat turn, or null to let normal chat handle it.
  * Deterministic and source-backed — no LLM, so it works even without a chat provider key.
- * Returns null when the message isn't a dev-status question, or when no repo view is available
- * (the caller then falls through to the normal bot).
+ * Returns null only when the message isn't a dev-status question. Missing evidence is a
+ * deterministic unavailable response, never an invitation for a model to speculate.
  */
 export function developmentRoomReply(message: string, view: RepoView | null, now: number = Date.now()): string | null {
   const q = asksDevelopmentStatus(message);
-  if (!q.match || !view) return null;
+  if (!q.match) return null;
+  if (!view) return DEVELOPMENT_UNAVAILABLE;
   return q.builder ? whatIsWorkingOn(view, q.builder, now) : developmentStatus(view, now);
 }
 
 /** Light intent match for the chat path: does this message ask about dev status / who's working on what. */
 export function asksDevelopmentStatus(message: string): { match: boolean; builder?: string } {
   const m = message.toLowerCase();
-  const about = /(working on|what('?s| is| are)\s+\w+\s+(doing|building|working)|dev(elopment)? (status|room)|what('?s| is) (claude|codex|the (ai|team|agents?))\b|ci status|open prs?|pull requests?)/.test(m);
+  const about = /(working on|what('?s| is| are)\s+\w+\s+(doing|building|working)|dev(elopment)? (status|room)|what('?s| is) (claude|codex|the (ai|team|agents?))\b|ci status|open prs?|pull requests?|runner status)/.test(m)
+    || /\b(claude|codex|manus|doris|chatgpt|gpt|agents?|runner)\b[\s\S]{0,80}\b(running|online|active|working|doing|executing|idle|finished|stopped|started|status|completed?)\b/.test(m)
+    || /\b(builds?|ci|workflow|pipeline)\b[\s\S]{0,60}\b(pass(?:ed)?|fail(?:ed)?|running|queued|finished|status|completed?|green)\b/.test(m);
   if (!about) return { match: false };
   const who = m.match(/\b(claude|codex|manus|doris|chatgpt|gpt)\b/);
   return { match: true, builder: who ? who[1] : undefined };

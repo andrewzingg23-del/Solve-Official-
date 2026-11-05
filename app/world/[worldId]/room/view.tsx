@@ -11,6 +11,7 @@ import type { Pull, RepoRead, RepoReadFailure, RepoRef } from "@/lib/github/repo
 import type { RoomMessage } from "@/lib/kernel/client";
 import { Icon } from "@/app/product/icons";
 import { BuildMap, BuildMark } from "./build-map";
+import { RUNNER_UNAVAILABLE } from "@/lib/github/status";
 import type { RoomPiece } from "./pieces-map";
 import { SharedConversation } from "./conversation";
 import { SourcePublisher } from "./source-publisher";
@@ -82,6 +83,7 @@ function RepoUnavailable({ read, paired, worldId }: { read: Extract<RepoRead, { 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface/55 p-5 text-sm leading-6">
       <p className="font-medium">{name} isn&apos;t showing yet.</p>
+      <p className="text-muted">{RUNNER_UNAVAILABLE}</p>
       {read.reason === "not_connected" ? (
         <>
           <TokenNeeded paired={paired} worldId={worldId} name={name} trunk={ref.trunk} />
@@ -100,8 +102,8 @@ function RepoUnavailable({ read, paired, worldId }: { read: Extract<RepoRead, { 
 function LinkRepoForm({ linkRepo, requestId }: { linkRepo: NonNullable<RoomData["linkRepo"]>; requestId?: string }) {
   return (
     <form action={linkRepo} className="solve-room-repo-form">
-      <p className="text-sm font-medium">Connect a GitHub repository</p>
-      <p className="text-xs leading-5 text-muted">Follow branches, pull requests and build results alongside the project. solve reads the repository and does not change its code.</p>
+      <p className="text-sm font-medium">Link a GitHub repository</p>
+      <p className="text-xs leading-5 text-muted">Save a source link alongside this Project. A saved URL does not authorize private access or connect a runner. Branches, pull requests and CI appear only when GitHub can be read.</p>
       <input type="hidden" name="requestId" value={requestId ?? ""} />
       <label htmlFor="room-repository" className="text-xs text-muted">Repository URL</label>
       <div className="flex flex-col gap-2 sm:flex-row">

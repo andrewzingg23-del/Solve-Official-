@@ -2,11 +2,20 @@
 // deployed from, and GitHub can't be read (no token yet), the room still shows the trunk's recent
 // commits and who made them, from the code that was deployed (next.config.ts records them at build).
 // It has no builds and no open pull requests: those need GitHub.
-import { buildersFrom, sameRepo, shapeCommits, type RepoRef, type RepoView } from "./repo";
+import { buildersFrom, sameRepo, shapeCommits, type RepoRef, type RepoView, type RepoRead, type RepoReadFailure } from "./repo";
 
 type Recorded = { sha?: unknown; at?: unknown; message?: unknown };
+type DeploymentRecord = { repo?: string; ref?: string; at?: string; log?: string };
 
-export function deployedView(ref: RepoRef, env: { repo?: string; ref?: string; at?: string; log?: string } = {
+// Offline history is not a connection and must retain the live-read failure. A saved URL alone
+// grants no access to this private deployment's history. Public reads still work without pairing.
+export function withDeploymentSnapshot(read:RepoRead,paired:boolean,env?:DeploymentRecord):{read:RepoRead;paired:boolean;unread?:RepoReadFailure}{
+  if(read.ok||!paired)return{read,paired};
+  const view=deployedView(read.ref,env);
+  return view?{read:{ok:true,view},paired,unread:read.reason}:{read,paired};
+}
+
+export function deployedView(ref: RepoRef, env: DeploymentRecord = {
   repo: process.env.SOLVE_DEPLOYED_REPO,
   ref: process.env.SOLVE_DEPLOYED_REF,
   at: process.env.SOLVE_DEPLOYED_AT,
@@ -42,7 +51,8 @@ export function deployedView(ref: RepoRef, env: { repo?: string; ref?: string; a
     ref: { owner, repo, trunk: branch },
     url,
     trunk: branch,
-    readAt: env.at && !Number.isNaN(Date.parse(env.at)) ? env.at : commits[0].at,
+    // Commit time establishes when code changed, not when this snapshot was recorded.
+    readAt: env.at && !Number.isNaN(Date.parse(env.at)) ? env.at : "",
     trunkBuilds: [],
     commits,
     lanes: [],

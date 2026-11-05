@@ -13,9 +13,9 @@ import { proofsIn } from "@/lib/bot/proof";
 import { parseRoutes } from "@/lib/bot/routes";
 import { loadBot } from "@/lib/bot/store";
 import { overview, waitingFrom, type Journey } from "@/lib/bot/waiting";
-import { readRepo, repoForWorld, type RepoRead } from "@/lib/github/repo";
+import { readRepo, repoForWorld } from "@/lib/github/repo";
 import { deploymentRooms } from "@/lib/github/rooms";
-import { deployedView } from "@/lib/github/deployed";
+import { withDeploymentSnapshot } from "@/lib/github/deployed";
 import { KernelError, type ActorProfile } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
@@ -35,7 +35,7 @@ const DEFAULT_SUMMARY = "A private World. Start with a blank canvas and shape it
 
 const NOTICES: Record<string, { tone: "ok" | "error"; text: string }> = {
   "saved:note": { tone: "ok", text: "Added to the room." },
-  "saved:repo": { tone: "ok", text: "Repository linked. The room reads it from GitHub and never writes to it." },
+  "saved:repo": { tone: "ok", text: "Repository link saved. GitHub observations appear only when source access is available; this does not connect a runner." },
   "saved:build": { tone: "ok", text: "Saved. solve read the build from GitHub first; the save links to the run." },
   "error:build-unseen": { tone: "error", text: "Not saved: GitHub doesn't report that build as passed right now." },
   "error:note-input": { tone: "error", text: "Write something first." },
@@ -67,13 +67,6 @@ function pieceOf(a: CreativeArtifact, journeys: Map<string, Journey>, saved: Set
   if (a.title === "Goal") return { ...base, kind: "goal", title: a.body.trim().split("\n")[0].slice(0, 160) || a.title, detail: null };
   const body = a.body.trim();
   return { ...base, kind: "text", detail: body ? (body.length > 90 ? `${body.slice(0, 88).trimEnd()}…` : body) : null };
-}
-
-// When GitHub can't be read, the deployed branch's own history still shows who did what on the trunk.
-function withDeployed(read: RepoRead, paired: boolean): NonNullable<RoomData["repo"]> {
-  if (read.ok) return { read, paired };
-  const view = deployedView(read.ref);
-  return view ? { read: { ok: true, view }, paired, unread: read.reason } : { read, paired };
 }
 
 type Loaded = Omit<RoomData, "lens" | "notice" | "addNote" | "linkRepo" | "requestId" | "live" | "sync"> & { userId: string };
@@ -129,7 +122,7 @@ async function load(worldId: string, viewer: { id: string; email?: string | null
         const via = viaOf((e.payload as { request?: { attributes?: Record<string, unknown> } } | null)?.request?.attributes);
         return { id: e.id, what: eventTitle(e.type), who: via ? `${name(e.actor_id)} via ${via}` : name(e.actor_id), at: new Date(e.occurred_at).toISOString() };
       }),
-      repo: repo && read ? withDeployed(read, repo.paired) : null,
+      repo: repo && read ? withDeploymentSnapshot(read, repo.paired) : null,
     };
   } catch (error) {
     if (error instanceof KernelError && error.name === "unauthenticated") return "identity";

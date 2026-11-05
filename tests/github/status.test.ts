@@ -47,7 +47,7 @@ it("answers what a builder is working on, with source and read time", () => {
 it("is honest when the builder has no GitHub activity", () => {
   const out = whatIsWorkingOn(view(), "Codex", NOW);
   assert.match(out, /No GitHub activity from Codex/);
-  assert.match(out, /Active right now: Claude/);
+  assert.match(out, /Observed builders: Claude/);
 });
 
 it("will not fake PR/CI detail when only the deployed commit log is available", () => {
@@ -67,7 +67,21 @@ it("developmentRoomReply answers dev questions and defers everything else", () =
   assert.match(developmentRoomReply("What is Claude working on?", v)!, /#25 wire passport/);
   assert.match(developmentRoomReply("what's the dev status", v)!, /• Claude:/);
   assert.equal(developmentRoomReply("write a poem", v), null, "not a dev question → defer");
-  assert.equal(developmentRoomReply("What is Claude working on?", null), null, "no repo view → defer to normal chat");
+  assert.match(developmentRoomReply("What is Claude working on?", null)!, /Development status unavailable/, "missing evidence must never defer to a model");
+});
+
+it("reports the actual observation age and absolute timestamp, not an always-fresh self comparison", () => {
+  const out = provenanceLine(view(), NOW + 60 * 60 * 1000);
+  assert.match(out, /2026-10-31T11:59:00/);
+  assert.match(out, /1h ago/);
+  assert.doesNotMatch(out, /just now/);
+});
+
+it("separates repository observations from unavailable runner telemetry", () => {
+  const out = developmentRoomReply("Is Codex running?", view(), NOW);
+  assert.match(out!, /Runner status: unavailable/);
+  assert.match(developmentStatus(view(), NOW), /Runner status: unavailable/);
+  assert.doesNotMatch(whatIsWorkingOn(view(), "Claude", NOW), /last active/);
 });
 
 it("recognizes development-status questions and extracts the builder", () => {
@@ -75,4 +89,8 @@ it("recognizes development-status questions and extracts the builder", () => {
   assert.equal(asksDevelopmentStatus("what's the dev status").match, true);
   assert.equal(asksDevelopmentStatus("show me open PRs").match, true);
   assert.equal(asksDevelopmentStatus("write me a poem about the ocean").match, false);
+  for(const message of ['Is Codex still running?','Is ChatGPT running?','What are the agents doing?','What is the runner doing?','Did the build pass?']){
+    assert.equal(asksDevelopmentStatus(message).match,true,message);
+    assert.match(developmentRoomReply(message,null)!,/Development status unavailable/);
+  }
 });

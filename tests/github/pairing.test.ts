@@ -2,7 +2,7 @@
 // and the deployed trunk shown when GitHub can't be read. No network.
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { deployedView } from "../../lib/github/deployed";
+import { deployedView, withDeploymentSnapshot } from "../../lib/github/deployed";
 import { repoForViewer, repoForWorld, roomsFromFile, viewerKey } from "../../lib/github/repo";
 import { deploymentRooms } from "../../lib/github/rooms";
 
@@ -48,4 +48,19 @@ it("shows the deployed trunk's history for its own repository, and nothing for a
   assert.equal(deployedView({ owner: "someone", repo: "else", trunk: null }, env), null, "never another repository");
   assert.equal(deployedView({ owner: "andrewzingg23-del", repo: "Solve-Official-", trunk: "main" }, env), null, "never another branch");
   assert.equal(deployedView({ owner: "andrewzingg23-del", repo: "Solve-Official-", trunk: null }, { ...env, repo: "" }), null, "not deployed from git");
+});
+
+it("a saved private-repository URL cannot expose the deployment snapshot without a reader pairing", () => {
+  const env={repo:'private-org/private-repo',ref:'main',at:'2026-10-31T11:59:00Z',log:JSON.stringify([{sha:'a'.repeat(40),at:'2026-10-31T11:58:00Z',message:'private change'}])};
+  const read={ok:false as const,reason:'not_connected' as const,ref:{owner:'private-org',repo:'private-repo',trunk:'main'}};
+  assert.deepEqual(withDeploymentSnapshot(read,false,env),{read,paired:false});
+  const paired=withDeploymentSnapshot(read,true,env);
+  assert.equal(paired.unread,'not_connected');assert.ok(paired.read.ok);
+  assert.equal(paired.read.view.source,'deployment');assert.equal(paired.read.view.readAt,env.at);
+  assert.deepEqual(paired.read.view.trunkBuilds,[]);
+  for(const at of [undefined,'not-a-date']){
+    const unknown=deployedView(read.ref,{...env,at})!;
+    assert.equal(unknown.readAt,'','a commit date is not an observation time');
+    assert.equal(unknown.commits[0].at,'2026-10-31T11:58:00.000Z');
+  }
 });
