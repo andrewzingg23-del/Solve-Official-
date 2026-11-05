@@ -14,7 +14,7 @@ export async function createProject(input: unknown, expectedUserId: string): Pro
   if (!checked.ok) return checked;
   try {
     const world = await createCreativeWorld(await getKernel(), { worldId: checked.draft.id, title: checked.draft.title, goal: checked.draft.goal });
-    revalidatePath("/"); revalidatePath("/worlds");
+    revalidatePath("/"); revalidatePath("/projects"); revalidatePath("/worlds");
     return { ok: true, worldId: world.worldId };
   } catch { return { ok: false, error: "Your project couldn't be saved yet. Your draft is kept here; try again." }; }
 }
