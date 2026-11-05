@@ -9,7 +9,7 @@ export const metadata = { title: "Projects — SOV" };
 export default async function ProjectsPage() {
   const user = await getUser();
   let projects: ProjectCard[] | null = null;
-  if (user) projects = await listCreativeWorlds(await getKernel()).catch(() => null);
+  if (user) { try { projects = await listCreativeWorlds(await getKernel()); } catch { projects = null; } }
   return <main className="solve-page">
     <header className="solve-page-heading">
       <span className="solve-kicker">Projects</span><h1>What you're building.</h1>
