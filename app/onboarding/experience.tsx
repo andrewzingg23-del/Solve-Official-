@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useGuestProfile } from "@/lib/guest/profile";
 import { chosenFocus, composePersonalSpace, FOCUS_AREAS, normalizeSpaceAnswers, type SpaceAnswers } from "@/lib/product/personal-space";
-import { saveKnowYou } from "@/app/start/actions";
+import { savePersonalSpace } from "./actions";
 import { OptionalConnections } from "./optional-connections";
 
 export function PersonalOnboarding({
@@ -59,7 +59,7 @@ export function PersonalOnboarding({
     const clean = normalizeSpaceAnswers(answers);
     transition(async () => {
       if (signedIn) {
-        const result = await saveKnowYou(clean);
+        const result = await savePersonalSpace(clean);
         if (!result.ok) {
           setError(result.error || "Couldn't save your Space. Try again.");
           return;
