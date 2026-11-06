@@ -22,7 +22,7 @@ export function PersonalOnboarding({
   const [draft, setDraft] = useState<SpaceAnswers | null>(null);
   const [error, setError] = useState("");
   const [busy, transition] = useTransition();
-  const answers = draft ?? normalizeSpaceAnswers(signedIn ? initialAnswers : guest.profile?.knowYou ?? initialAnswers);
+  const answers = draft ?? normalizeSpaceAnswers(signedIn ? (Object.keys(initialAnswers).length ? initialAnswers : guest.profile?.knowYou) : guest.profile?.knowYou ?? initialAnswers);
   const view = composePersonalSpace(answers);
   const selected = chosenFocus(answers);
 
