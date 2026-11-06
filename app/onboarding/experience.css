@@ -35,6 +35,10 @@
 .sov-focus-grid strong,.sov-focus-grid small{display:block}
 .sov-focus-grid strong{font-size:13px;margin-bottom:5px}
 .sov-focus-grid small{font-size:11px;color:#a3abc0}
+.sov-ai-opt-in{display:flex;align-items:flex-start;gap:12px;margin-top:22px;border:1px solid #475164;padding:15px 17px;border-radius:12px;background:#1a2030;cursor:pointer}
+.sov-ai-opt-in input{margin-top:3px;width:18px;height:18px;accent-color:#bc9ff6}
+.sov-ai-opt-in strong{display:block;font-size:13px;font-weight:600}
+.sov-ai-opt-in small{display:block;margin-top:5px;font-size:11px;line-height:1.5;color:#aeb8c9}
 .sov-error{color:#ffb3b5!important;margin-top:15px}
 .sov-preview{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px;margin-top:25px}
 .sov-preview>div{border:1px solid #454b60;border-radius:15px;background:#171d28;padding:20px;min-width:0}
