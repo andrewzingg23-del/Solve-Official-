@@ -37,8 +37,8 @@ export function SpacePublicMedia({ signedIn, initialUrl }: { signedIn: boolean; 
 
   async function save() {
     const parsed = parsePublicMedia(url);
-    if (!parsed || busy) {
-      setNotice("Load a valid public media link before saving.");
+    if (!parsed || !media || media.sourceUrl !== parsed.sourceUrl || busy) {
+      setNotice("Load and preview the public player before saving this link.");
       return;
     }
     setBusy(true);
