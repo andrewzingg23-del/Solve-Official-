@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { chosenFocus, composePersonalSpace, normalizeSpaceAnswers } from "../../lib/product/personal-space";
+import { agentSpaceBrief, chosenFocus, composePersonalSpace, normalizeSpaceAnswers } from "../../lib/product/personal-space";
 
 test("no invented activity or data in a new Space", () => {
   const result = composePersonalSpace({});
@@ -33,6 +33,16 @@ test("imported private information never becomes published profile content", () 
   assert.equal(result.publicPreview.bio, "Musician and designer");
   assert.equal(JSON.stringify(result.publicPreview).includes(source.context), false);
   assert.equal(JSON.stringify(result.publicPreview).includes(source.privacy), false);
+});
+
+test("AI personalization is opt-in and excludes imported private text", () => {
+  const p = { building: "Write songs", focus: "music", context: "A private phone number", people: "My daughter" };
+  assert.equal(agentSpaceBrief(p), "");
+  const brief = agentSpaceBrief({ ...p, aiContext: "yes" });
+  assert.ok(brief.includes("Write songs"));
+  assert.ok(brief.includes("Music & media"));
+  assert.equal(brief.includes(p.context), false);
+  assert.equal(brief.includes(p.people), false);
 });
 
 test("rejects unknown fields and focus values", () => {
