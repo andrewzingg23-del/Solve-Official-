@@ -1,12 +1,12 @@
 // Personal composition is a presentation layer, never an authorization layer.
 // The fields are intentionally small and predictable; imported text is private.
 export const FOCUS_AREAS = [
-  { id: "music", label: "Music & media", description: "Create, publish and collaborate", href: "/studio" },
+  { id: "music", label: "Music & media", description: "Create, publish and collaborate", href: "/projects" },
   { id: "family", label: "Family & life", description: "Private people and shared plans", href: "/communities" },
   { id: "engineering", label: "Engineering & making", description: "Build and develop projects", href: "/projects" },
   { id: "gaming", label: "Games & community", description: "Play, create and connect", href: "/communities" },
   { id: "business", label: "Business & work", description: "Coordinate your projects", href: "/projects" },
-  { id: "creative", label: "Art & design", description: "Make and share creations", href: "/studio" },
+  { id: "creative", label: "Art & design", description: "Make and share creations", href: "/projects" },
   { id: "learning", label: "Learning & research", description: "Collect and build knowledge", href: "/projects" },
   { id: "other", label: "Something else", description: "Make your own experience", href: "/worlds/new" },
 ] as const;
