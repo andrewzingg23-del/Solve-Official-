@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { composeCockpit, recommendedAppIds } from "../../lib/product/space-cockpit";
+import { FOCUS_AREAS } from "../../lib/product/personal-space";
 
 test("one SOLVE foundation creates genuinely different first-run cockpits", () => {
   const founder = composeCockpit({ focus: "business,learning" });
@@ -31,9 +32,11 @@ test("all visible quick actions resolve to an explicit SOLVE route", () => {
     assert.equal(layout.actions.length, 4);
     for (const action of layout.actions) {
       assert.ok(action.href.startsWith("/") && !action.href.startsWith("//"));
+      assert.ok(!["/studio","/map","/money"].includes(action.href), "No experimental-only shortcut: " + action.href);
       assert.ok(action.label.length > 0);
     }
   }
+  for (const area of FOCUS_AREAS) assert.ok(!["/studio","/map","/money"].includes(area.href));
 });
 
 test("third-party recommendations never claim an account is connected", () => {
