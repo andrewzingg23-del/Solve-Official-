@@ -6,6 +6,7 @@ import { getBotAvatar } from "@/lib/bot/avatar";
 import { ProductShell } from "./product/shell";
 import "./product/product.css";
 import "./world/[worldId]/room/room.css";
+import "./product/approved-language.css";
 
 const archivo = Archivo({
   variable: "--font-archivo",

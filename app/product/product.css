@@ -119,3 +119,26 @@
 .solve-passport-projects li { border:1px solid #26364c; border-radius:9px; padding:11px 13px; display:flex; flex-direction:column; gap:3px; }
 .solve-passport-projects strong { font-size:13px; font-weight:500; }
 .solve-passport-projects span { font-size:10px; color:#8194ab; }
+
+
+/* SOV visual foundation: warm restrained glass throughout the shared shell.
+   Do not embed fictional background dashboards or provider connection statuses. */
+.solve-shell { --solve-panel:#161c26; --solve-border:#463d43; color:#f3eef0; background:radial-gradient(ellipse at 88% 0%,#57404a39,transparent 49%),#11141c; }
+.solve-sidebar { background:linear-gradient(165deg,#171821,#111722); border-right-color:#51404b; }
+.solve-sidebar-caption { color:#ab9eaa; }
+.solve-wordmark.sov-wordmark { display:flex; align-items:center; gap:10px; font:34px/1 Georgia,serif; letter-spacing:.015em; color:#fff4e8; }
+.sov-wordmark-ring { width:25px; height:25px; display:inline-block; border:2px solid #e3b488; border-radius:50%; box-shadow:0 0 14px #dcb58f40,inset 0 0 8px #dcb58f28; }
+.solve-nav-link[aria-current=page] { background:#4b333b; color:#f2d0a9; box-shadow:inset 2px 0 #e9ba8b; }
+.solve-nav-link:hover { background:#302531; color:#fff3e6; }
+.solve-button { border-color:#e0b389; background:#e0b389; color:#16151b; }
+.solve-button:hover { background:#f0c8a3; }
+.solve-button-secondary { background:#231e2a; color:#f0dfce; border-color:#5e4c53; }
+.solve-button-secondary:hover { background:#382a34; }
+.solve-kicker { color:#e7b68c; }
+.solve-topbar { background:#171922; border-bottom-color:#4a3c44; }
+.solve-text-link { color:#dfbc9f; }
+.solve-mobile-nav { background:#171922; border-top-color:#51404b; }
+.sov-topbar-actions { display:flex; align-items:center; gap:17px; }
+.sov-topbar-actions .solve-private-label { color:#d0beae; }
+.solve-shell :is(a,button,input,textarea,select):focus-visible { outline-color:#edbb90; }
+@media(max-width:700px) { .solve-wordmark.sov-wordmark { font-size:25px; } .sov-topbar-actions { gap:11px; } }

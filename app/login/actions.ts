@@ -29,3 +29,27 @@ export async function sendMagicLink(formData: FormData) {
 function loginUrl(params: Record<string, string>) {
   return `/login?${new URLSearchParams(params)}`;
 }
+
+
+// Account sign-in is distinct from connecting a provider's data or tools to a SOV Project.
+// Each social provider must be configured in the chosen Supabase Auth project.
+export async function beginSocialSignIn(formData: FormData) {
+  const requested = String(formData.get("provider") ?? "");
+  const next = safeNextPath(formData.get("next"));
+  if (requested !== "google" && requested !== "github") {
+    redirect(loginUrl({ next, error: "Unsupported sign-in provider." }));
+  }
+
+  const h = await headers();
+  const origin = h.get("origin") ?? (h.get("x-forwarded-proto") ?? "http") + "://" + h.get("host");
+  const callback = new URL("/auth/callback", origin);
+  callback.searchParams.set("next", next);
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: requested,
+    options: { redirectTo: callback.toString() },
+  });
+  if (error || !data.url) redirect(loginUrl({ next, error: error?.message ?? "This provider is not configured yet." }));
+  redirect(data.url);
+}
