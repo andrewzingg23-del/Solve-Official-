@@ -57,8 +57,9 @@ export function proposeAppearance(message: unknown, current: unknown): Appearanc
   else if (/\b(airy|spacious|roomy|breathing room|more spacing|spread out)\b/.test(text)) next.density = "airy";
   if (/\b(square|sharp|angular|hard edge|hard corners)\b/.test(text)) next.shape = "square";
   else if (/\b(round|rounded|soft corner|softer corner)\b/.test(text)) next.shape = "soft";
+  const socialFocus = /\b(community first|friends first|people first|focus on community|prioriti[sz]e (?:my )?(?:friends|people|community)|(?:put|show) (?:my )?(?:friends|people|community) first)\b/.test(text);
   if (/\b(projects? first|focus on projects|prioriti[sz]e projects)\b/.test(text)) next.priority = "projects";
-  else if (/\b(community first|friends first|people first|focus on community|prioriti[sz]e community)\b/.test(text)) next.priority = "community";
+  else if (socialFocus) next.priority = "community";
   else if (/\b(creations? first|creative first|focus on creations?|prioriti[sz]e creations?)\b/.test(text)) next.priority = "creations";
   else if (/\b(balanced|equal emphasis|reset layout)\b/.test(text)) next.priority = "balanced";
 
@@ -66,7 +67,7 @@ export function proposeAppearance(message: unknown, current: unknown): Appearanc
     if (!/\b(mint|sage|green|violet|purple|warm|sunset|orange|blue|navy)\b/.test(text)) next.tone = "graphite";
     if (!/\b(airy|spacious|roomy)\b/.test(text)) next.density = "compact";
     if (!/\b(round|rounded)\b/.test(text)) next.shape = "square";
-    if (!/\b(projects? first|community first|friends first)\b/.test(text)) next.priority = "creations";
+    if (!socialFocus && !/\b(projects? first|focus on projects|prioriti[sz]e projects)\b/.test(text)) next.priority = "creations";
   }
   if (/\b(minimal|minimalist|quiet|calm)\b/.test(text)) {
     if (!/\b(mint|sage|violet|purple|warm|sunset|orange|blue|navy)\b/.test(text)) next.tone = "graphite";
