@@ -9,16 +9,20 @@ import { useGuestProfile } from "@/lib/guest/profile";
 import { composePersonalSpace, normalizeSpaceAnswers, spaceMood, type SpaceAnswers } from "@/lib/product/personal-space";
 import type { ProjectCard } from "@/app/product/projects";
 
+type AgentTurn = { role: "user" | "assistant"; content: string; kind: "appearance" | "conversation" };
+
 export function PersonalSpace({
   signedIn,
   initialAnswers,
   projects,
   initialAppearance,
+  botName,
 }: {
   signedIn: boolean;
   initialAnswers: SpaceAnswers;
   projects: ProjectCard[] | null;
   initialAppearance: SpaceAppearance;
+  botName: string;
 }) {
   const guest = useGuestProfile();
   const [selectedApps, setSelectedApps] = useState<string[]>([]);
@@ -28,13 +32,59 @@ export function PersonalSpace({
   const [styleStatus, setStyleStatus] = useState("");
   const [undoAppearance, setUndoAppearance] = useState<SpaceAppearance | null>(null);
   const [styleBusy, setStyleBusy] = useState(false);
+  const [chatBusy, setChatBusy] = useState(false);
+  const [agentTurns, setAgentTurns] = useState<AgentTurn[]>([]);
   const currentLook = proposal?.changes.length ? proposal.next : appearance;
+  function appendTurn(turn: AgentTurn) {
+    setAgentTurns(turns => [...turns, turn].slice(-20));
+  }
 
-  function previewStyle(event: FormEvent<HTMLFormElement>) {
+  async function sendAgentMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const draft = proposeAppearance(styleText, appearance);
-    setProposal(draft.changes.length ? draft : null);
-    setStyleStatus(draft.response);
+    const message = styleText.trim();
+    if (!message || styleBusy || chatBusy) return;
+    const priorTurns = agentTurns;
+    appendTurn({ role: "user", content: message, kind: "conversation" });
+    setStyleText("");
+    const draft = proposeAppearance(message, appearance);
+    if (draft.supported) {
+      setProposal(draft.changes.length ? draft : null);
+      setStyleStatus(draft.response);
+      appendTurn({ role: "assistant", content: draft.response, kind: "appearance" });
+      return;
+    }
+    // No appearance proposal was recognized. Ask the existing conversational AI.
+    // This endpoint returns a reply only; no client-side grant, execution or publish action.
+    setChatBusy(true);
+    setStyleStatus("");
+    setProposal(null);
+    try {
+      const response = await fetch("/api/bot/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          botName,
+          history: priorTurns.slice(-10).map(turn => ({
+            role: turn.role,
+            content: turn.content.slice(0, 2000),
+          })),
+        }),
+      });
+      const result: unknown = await response.json();
+      const value: { reply?: unknown; error?: unknown } = result && typeof result === "object" && !Array.isArray(result)
+        ? result as { reply?: unknown; error?: unknown } : {};
+      if (!response.ok || typeof value.reply !== "string") {
+        const reason = typeof value.error === "string" ? value.error : "Your AI isn't available right now.";
+        appendTurn({ role: "assistant", content: reason.slice(0, 280), kind: "conversation" });
+      } else {
+        appendTurn({ role: "assistant", content: value.reply!.slice(0, 6000), kind: "conversation" });
+      }
+    } catch {
+      appendTurn({ role: "assistant", content: "I couldn't reach your AI. Your Space hasn't changed.", kind: "conversation" });
+    } finally {
+      setChatBusy(false);
+    }
   }
 
   async function commitStyle(next: SpaceAppearance, previous: SpaceAppearance | null) {
@@ -117,13 +167,22 @@ export function PersonalSpace({
       </header>
 
       <section className="sov-space-card sov-style-editor" aria-label="Customize your Space through natural language">
-        <div className="sov-space-title"><h2>Make your Space yours</h2><span>Appearance only · Private</span></div>
-        <p>Tell your AI how this should feel. Preview any changes before they are saved.</p>
-        <form className="sov-style-form" onSubmit={previewStyle}>
-          <label htmlFor="solve-style-request">Describe the look you want</label>
+        <div className="sov-space-title"><h2>Talk to {botName}</h2><span>Private · You approve changes</span></div>
+        <p>Ask anything or tell your AI how to change the look of your Space. Appearance changes are previewed before you apply them.</p>
+        <div className="sov-agent-transcript" aria-live="polite" aria-label="Your AI conversation">
+          {agentTurns.length ? agentTurns.map((turn, index) => (
+            <div key={index} className={"sov-agent-turn sov-agent-turn--" + turn.role}>
+              <small>{turn.role === "assistant" ? botName + (turn.kind === "appearance" ? " · Appearance" : "") : "You"}</small>
+              <p>{turn.content}</p>
+            </div>
+          )) : <p className="sov-agent-prompt">Try “Make this feel like a vintage skate magazine” or “Help me plan a new creative project.”</p>}
+          {chatBusy ? <p className="sov-agent-waiting" role="status">Your AI is responding…</p> : null}
+        </div>
+        <form className="sov-style-form" onSubmit={event => void sendAgentMessage(event)}>
+          <label htmlFor="solve-style-request" className="sr-only">Talk to your AI</label>
           <div className="sov-style-input-row">
-            <input id="solve-style-request" name="appearance" value={styleText} onChange={event => setStyleText(event.target.value)} maxLength={700} placeholder="Make it feel like a vintage skate magazine, tighter and with mint accents…" />
-            <button className="solve-button" type="submit" disabled={!styleText.trim() || styleBusy}>Preview style</button>
+            <input id="solve-style-request" name="message" value={styleText} onChange={event => setStyleText(event.target.value)} maxLength={700} autoComplete="off" placeholder={"Ask " + botName + " or change your Space…"} />
+            <button className="solve-button" type="submit" disabled={!styleText.trim() || styleBusy || chatBusy}>{chatBusy ? "Thinking…" : "Send"}</button>
           </div>
         </form>
         {styleStatus ? <p className="sov-style-response" role="status">{styleStatus}</p> : null}
@@ -135,7 +194,7 @@ export function PersonalSpace({
           </div>
         </div> : null}
         {!proposal && undoAppearance ? <button type="button" className="sov-space-link sov-style-undo" disabled={styleBusy} onClick={() => void commitStyle(undoAppearance, appearance)}>↶ Undo last appearance change</button> : null}
-        <small>Style suggestions use a restricted appearance vocabulary for now. This is not permission to change data, actions, or your public Profile.</small>
+        <small>Appearance requests use a restricted local interpreter. Other messages use your existing AI connection when available. This conversation is session-only; no request here authorizes a payment, account connection, or public publishing.</small>
       </section>
       <div className="sov-personal-stack">
       <div className="sov-personal-top">

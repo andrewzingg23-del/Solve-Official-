@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getUser } from "@/lib/supabase/server";
+import { getBotAvatar } from "@/lib/bot/avatar";
 import { getKernel } from "@/lib/kernel/server";
 import { listCreativeWorlds } from "@/lib/world/creative";
 import { normalizeSpaceAnswers } from "@/lib/product/personal-space";
@@ -30,6 +31,7 @@ export default async function SpacePage() {
       initialAnswers={normalizeSpaceAnswers(signedIn ? (user?.user_metadata?.sov_personal_space ?? user?.user_metadata?.profile) : null)}
       projects={projects}
       initialAppearance={normalizeAppearance(signedIn ? user?.user_metadata?.sov_space_appearance : null)}
+      botName={getBotAvatar(user).name || "Your AI"}
     />
   );
 }
