@@ -5,6 +5,7 @@ import { chosenFocus, composePersonalSpace, normalizeSpaceAnswers } from "../../
 test("no invented activity or data in a new Space", () => {
   const result = composePersonalSpace({});
   assert.equal(result.hasContext, false);
+  assert.equal(result.modules.length, 0);
   assert.equal(result.name, "");
   assert.equal(result.goal, "");
   assert.equal(result.publicPreview.bio, "");
