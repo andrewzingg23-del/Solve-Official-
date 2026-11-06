@@ -8,7 +8,7 @@ import { faceSrc } from "@/lib/bot/avatar";
 import { Icon, type IconName } from "./icons";
 
 const homes: Array<{ href: string; label: string; icon: IconName }> = [
-  { href: "/", label: "Space", icon: "home" },
+  { href: "/space", label: "Space", icon: "home" },
   { href: "/projects", label: "Projects", icon: "projects" },
   { href: "/communities", label: "Communities", icon: "community" },
   { href: "/control", label: "Control", icon: "control" },
@@ -17,7 +17,7 @@ export type ShellIdentity = { userId: string; name: string; botName: string; fac
 export function ProductShell({ children, identity }: { children: React.ReactNode; identity: ShellIdentity }) {
   const path = usePathname();
   const { profile } = useGuestProfile();
-  const active = path === "/" ? "/" : path.startsWith("/world") || path.startsWith("/projects") ? "/projects" : path.startsWith("/community") ? "/communities" : ["/control", "/account", "/bot", "/onboarding"].some(root => path === root || path.startsWith(root + "/")) ? "/control" : path;
+  const active = path === "/" || path === "/space" ? "/space" : path.startsWith("/world") || path.startsWith("/projects") ? "/projects" : path.startsWith("/community") ? "/communities" : ["/control", "/account", "/bot", "/onboarding"].some(root => path === root || path.startsWith(root + "/")) ? "/control" : path;
   const minimal = path.startsWith("/oauth") || path.startsWith("/saved") || path.startsWith("/world-invite");
   const name = identity ? identity.name || "Your profile" : profile?.yourName || "Your profile";
   const localBotName = profile?.botPersona ? validatePersona(profile.botPersona, DEFAULT_PERSONA).name : profile?.botName;
