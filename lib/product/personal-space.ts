@@ -37,9 +37,7 @@ export function chosenFocus(answers: SpaceAnswers): FocusId[] {
 export function composePersonalSpace(input: unknown) {
   const answers = normalizeSpaceAnswers(input);
   const focus = chosenFocus(answers);
-  const modules = focus.length
-    ? FOCUS_AREAS.filter(item => focus.includes(item.id))
-    : FOCUS_AREAS.filter(item => ["creative", "business", "family"].includes(item.id));
+  const modules = FOCUS_AREAS.filter(item => focus.includes(item.id));
   const name = answers.name || "";
   const hasContext = Boolean(name || answers.building || answers.people || focus.length || answers.context);
   return {
