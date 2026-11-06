@@ -6,6 +6,7 @@ import { normalizeAppearance, proposeAppearance, type SpaceAppearance, type Appe
 import { saveSpaceAppearance } from "./actions";
 import { OPTIONAL_INTEGRATIONS } from "@/lib/product/optional-integrations";
 import { composeCockpit, recommendedAppIds } from "@/lib/product/space-cockpit";
+import { SpacePublicMedia } from "./public-media";
 import { useGuestProfile } from "@/lib/guest/profile";
 import { composePersonalSpace, normalizeSpaceAnswers, spaceMood, type SpaceAnswers } from "@/lib/product/personal-space";
 import type { ProjectCard } from "@/app/product/projects";
@@ -18,12 +19,14 @@ export function PersonalSpace({
   projects,
   initialAppearance,
   botName,
+  initialMediaUrl,
 }: {
   signedIn: boolean;
   initialAnswers: SpaceAnswers;
   projects: ProjectCard[] | null;
   initialAppearance: SpaceAppearance;
   botName: string;
+  initialMediaUrl: string;
 }) {
   const guest = useGuestProfile();
   const [selectedApps, setSelectedApps] = useState<string[]>([]);
@@ -294,7 +297,9 @@ export function PersonalSpace({
           </div>
         </section>
       </div>
-
+      {cockpit.mode === "creator" || selectedApps.includes("spotify") || selectedApps.includes("youtube") || Boolean(initialMediaUrl) ?
+        <SpacePublicMedia signedIn={signedIn} initialUrl={initialMediaUrl} /> :
+        <details className="sov-media-optional"><summary>+ Add music or video to your Space</summary><SpacePublicMedia signedIn={signedIn} initialUrl={initialMediaUrl} /></details>}
       </div>
 
       {data.goal || data.people || answers.context ? <details className="sov-private-context">
