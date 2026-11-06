@@ -1,0 +1,42 @@
+.sov-personal{max-width:1250px;margin:0 auto;color:#f7f5fa;padding-bottom:64px}
+.sov-space-intro{padding:clamp(24px,5vw,65px);background:#121824;border:1px solid #343e50;border-radius:18px;display:flex;flex-direction:column;align-items:flex-start;gap:20px}
+.sov-space-intro h1,.sov-space-header h1{font-size:clamp(34px,4vw,58px);font-weight:560;letter-spacing:-.05em;line-height:1.08}
+.sov-space-intro p,.sov-space-header p{font-size:14px;line-height:1.6;color:#adb7c6;max-width:650px}
+.sov-space-header{display:flex;justify-content:space-between;gap:24px;align-items:center;margin:16px 0 26px}
+.sov-space-header h1{margin:9px 0 12px}
+.sov-space-actions{display:flex;flex-wrap:wrap;gap:10px}
+.sov-personal-top,.sov-personal-middle,.sov-personal-bottom{display:grid;gap:14px;margin-bottom:14px}
+.sov-personal-top{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+.sov-personal-middle{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)}
+.sov-personal-bottom{grid-template-columns:repeat(2,minmax(0,1fr))}
+.sov-space-card{min-width:0;padding:clamp(18px,2.2vw,26px);border:1px solid #343d4e;background:linear-gradient(145deg,#151a26,#111824);border-radius:16px}
+.sov-space-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.sov-space-title h2{font-weight:600;font-size:19px;letter-spacing:-.03em}
+.sov-space-title>span{border:1px solid #5d5472;border-radius:30px;padding:5px 10px;font-size:11px;color:#bdaed9}
+.sov-space-title>a,.sov-space-link{color:#d6c2f4;text-decoration:none;font-size:12px;font-weight:550}
+.sov-space-card>p,.sov-empty p{font-size:12px;color:#aab4c4;line-height:1.65;margin:8px 0 13px}
+.sov-module-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:20px}
+.sov-module{position:relative;display:flex;flex-direction:column;gap:5px;min-height:92px;background:#0d1421;border:1px solid #374457;border-radius:11px;padding:15px;text-decoration:none;color:#f4f0fc}
+.sov-module:hover,.sov-real-projects>a:hover{border-color:#b89bd7;background:#262239}
+.sov-module>strong{font-size:14px}
+.sov-module small{font-size:11px;color:#a7b1c3}
+.sov-module>span{position:absolute;right:13px;top:11px;color:#bca4e0}
+.sov-agent-card{display:flex;flex-direction:column;align-items:flex-start}
+.sov-agent-symbol{width:56px;height:56px;border-radius:50%;border:3px solid #c0a0fa;background:#171525;box-shadow:0 0 20px #ac8afb35;margin:5px 0 6px}
+.sov-agent-card .sov-space-link{display:block;padding:7px 0}
+.sov-empty{background:#0d1520;border:1px dashed #3f495b;border-radius:11px;padding:18px;margin-top:13px}
+.sov-empty strong{font-size:14px}
+.sov-real-projects{display:grid;gap:8px}
+.sov-real-projects>a{position:relative;border:1px solid #343f50;border-radius:10px;background:#0c1420;color:#f5f1fb;text-decoration:none;padding:13px 35px 13px 14px;display:flex;flex-direction:column;gap:5px}
+.sov-real-projects small{color:#aab4c6;font-size:11px;line-height:1.5}
+.sov-real-projects>a>span{position:absolute;top:14px;right:13px;color:#baa4da}
+.sov-inline-actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:17px}
+.sov-profile-card>strong{display:block;margin:16px 0 5px;font-size:20px}
+.sov-private-context{border:1px solid #374356;border-radius:14px;padding:18px 22px;margin:18px 0;background:#141a25;color:#d9dce6;font-size:12px;line-height:1.7}
+.sov-private-context summary{cursor:pointer;font-weight:600;font-size:13px}
+.sov-private-context p{margin:12px 0;overflow-wrap:anywhere}
+.sov-space-foot{display:flex;justify-content:space-between;gap:10px;color:#97a0b2;font-size:11px;padding:12px 0}
+.sov-space-foot a{color:#d6c4f3}
+.sov-personal a:focus-visible{outline:2px solid #dcc8ff;outline-offset:3px}
+@media(max-width:900px){.sov-personal-top,.sov-personal-middle{grid-template-columns:1fr}}
+@media(max-width:680px){.sov-personal-bottom{grid-template-columns:1fr}.sov-space-header{align-items:flex-start;flex-direction:column}.sov-space-actions{width:100%}.sov-space-actions a{flex:1;text-align:center}.sov-module-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sov-space-foot{flex-direction:column}}
