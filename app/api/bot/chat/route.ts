@@ -6,6 +6,7 @@
 import { getUser } from "@/lib/supabase/server";
 import { loginRequired } from "@/lib/auth/gate";
 import { getBotSoul } from "@/lib/bot/soul";
+import { agentSpaceBrief } from "@/lib/product/personal-space";
 import { getKernel } from "@/lib/kernel/server";
 import { passportContext } from "@/lib/passport/context";
 import { classifyTurn, WAY_REQUESTED, talkScope } from "@/lib/bot/intent";
@@ -143,7 +144,8 @@ export async function POST(request: Request) {
     // Pack the system prompt into a fixed token budget so a rich soul.md or a
     // big passport can never blow the context or run up the cost. The bot's
     // rules are always kept; soul, then passport fill what's left (lib/ai/context.ts).
-    const system = packSystemPrompt({ rules: buildChatSystemPrompt(chat.botName), soul, passport }).text;
+    const personalBrief = user ? agentSpaceBrief(user.user_metadata?.sov_personal_space) : "";
+    const system = packSystemPrompt({ rules: buildChatSystemPrompt(chat.botName), soul, projectBrief: personalBrief, passport }).text;
     const completion = await completeChat(
       apiKey,
       buildChatCompletionBody({ model, system, history: chat.history, message: chat.message }),
