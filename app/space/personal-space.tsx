@@ -5,6 +5,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { normalizeAppearance, proposeAppearance, type SpaceAppearance, type AppearanceProposal } from "@/lib/product/appearance";
 import { saveSpaceAppearance } from "./actions";
 import { OPTIONAL_INTEGRATIONS } from "@/lib/product/optional-integrations";
+import { composeCockpit, recommendedAppIds } from "@/lib/product/space-cockpit";
 import { useGuestProfile } from "@/lib/guest/profile";
 import { composePersonalSpace, normalizeSpaceAnswers, spaceMood, type SpaceAnswers } from "@/lib/product/personal-space";
 import type { ProjectCard } from "@/app/product/projects";
@@ -140,9 +141,12 @@ export function PersonalSpace({
     name: answers.name || (!signedIn ? guest.profile?.yourName || "" : ""),
   });
   const hasSavedSpace = data.hasContext || signedIn || guest.active;
+  const cockpit = composeCockpit(answers);
+  const suggestedAppIds = recommendedAppIds(cockpit, selectedApps);
+  const preferredPriority = currentLook.priority === "balanced" ? cockpit.priority : currentLook.priority;
 
   if (!hasSavedSpace) return (
-    <main className="solve-page sov-personal" data-space-mood={spaceMood(answers)} data-style-tone={currentLook.tone} data-style-density={currentLook.density} data-style-shape={currentLook.shape} data-style-priority={currentLook.priority}>
+    <main className="solve-page sov-personal" data-space-mood={spaceMood(answers)} data-style-tone={currentLook.tone} data-style-density={currentLook.density} data-style-shape={currentLook.shape} data-style-priority={preferredPriority} data-cockpit-mode={cockpit.mode}>
       <div className="sov-space-intro">
         <span className="solve-kicker">SOLVE / Your Space</span>
         <h1>It starts with you.</h1>
@@ -153,18 +157,31 @@ export function PersonalSpace({
   );
 
   return (
-    <main className="solve-page sov-personal" data-space-mood={spaceMood(answers)} data-style-tone={currentLook.tone} data-style-density={currentLook.density} data-style-shape={currentLook.shape} data-style-priority={currentLook.priority}>
-      <header className="sov-space-header">
-        <div>
-          <span className="solve-kicker">SOLVE / Private Space</span>
+    <main className="solve-page sov-personal" data-space-mood={spaceMood(answers)} data-style-tone={currentLook.tone} data-style-density={currentLook.density} data-style-shape={currentLook.shape} data-style-priority={preferredPriority} data-cockpit-mode={cockpit.mode}>
+      <header className="sov-space-header sov-space-hero">
+        <div className="sov-space-hero-main">
+          <span className="solve-kicker">SOLVE / Private · {cockpit.title}</span>
           <h1>{data.greeting}</h1>
-          <p>{data.goal || "Create, connect, learn, and build. Your Space can change as your life changes."}</p>
+          <p>{data.goal || cockpit.subtitle}</p>
+          <div className="sov-space-hero-badges">
+            <span>Private by default</span><span>Made from your choices</span>
+          </div>
         </div>
         <div className="sov-space-actions">
-          <Link href="/onboarding" className="solve-button solve-button-secondary">Customize</Link>
+          <Link href="/onboarding" className="solve-button solve-button-secondary">Personalize</Link>
           <Link href="/worlds/new" className="solve-button">+ Create</Link>
         </div>
       </header>
+
+      <nav className="sov-action-grid" aria-label="Actions for your Space">
+        {cockpit.actions.map(action => (
+          <Link key={action.id} className="sov-action" href={action.href}>
+            <strong>{action.label}</strong>
+            <small>{action.detail}</small>
+            <span aria-hidden="true">↗</span>
+          </Link>
+        ))}
+      </nav>
 
       <section className="sov-space-card sov-style-editor" aria-label="Customize your Space through natural language">
         <div className="sov-space-title"><h2>Talk to {botName}</h2><span>Private · You approve changes</span></div>
@@ -199,8 +216,8 @@ export function PersonalSpace({
       <div className="sov-personal-stack">
       <div className="sov-personal-top">
         <section className="sov-space-card sov-focus-card">
-          <div className="sov-space-title"><h2>My Space</h2><span>Private · Yours</span></div>
-          <p>The tools and places that matter to you. Choose or change anything.</p>
+          <div className="sov-space-title"><h2>{cockpit.focusLabel}</h2><span>Private · Yours</span></div>
+          <p>Your chosen interests determine this starting layout. Add, remove or rearrange them as your life changes.</p>
           <div className="sov-module-grid">
             {data.modules.length === 0 ? <div className="sov-empty"><strong>Your canvas is yours.</strong><p>Add an interest or create your first project when you're ready.</p><Link href="/onboarding" className="sov-space-link">Choose what belongs here →</Link></div> : data.modules.map(module => (
               <Link key={module.id} href={module.href} className="sov-module">
@@ -240,7 +257,7 @@ export function PersonalSpace({
           </div>}
         </section>
         <section className="sov-space-card">
-          <div className="sov-space-title"><h2>People & Communities</h2><Link href="/communities">Explore →</Link></div>
+          <div className="sov-space-title"><h2>{cockpit.mode === "household" ? "Family & Communities" : "People & Communities"}</h2><Link href="/communities">Explore →</Link></div>
           <div className="sov-empty">
             <strong>Your people, your permissions.</strong>
             <p>Invite collaborators through a specific project or community. Nothing here is made public automatically.</p>
@@ -251,9 +268,16 @@ export function PersonalSpace({
 
       <div className="sov-personal-bottom">
         <section className="sov-space-card">
-          <div className="sov-space-title"><h2>Apps & Integrations</h2><span>Optional</span></div>
-          <p>Choose the apps you love. Each actual connection is authorized separately.</p>
-          {selectedApps.length ? <div className="sov-app-picks" aria-label="Selected apps, not connected"><small>Selected for setup · not connected</small><div>{selectedApps.map(id => { const app = OPTIONAL_INTEGRATIONS.find(item => item.id === id); return app ? <span key={id}>{app.name}</span> : null; })}</div></div> : <p className="sov-app-empty">No apps selected yet.</p>}
+          <div className="sov-space-title"><h2>Your Apps</h2><span>Connections are permissioned</span></div>
+          <p>Your existing services remain recognizable. Selecting one is never the same as granting it access.</p>
+          {selectedApps.length ? <div className="sov-app-picks" aria-label="Apps you have selected, not connected">
+            <small>Selected on this device · authorization not established</small>
+            <div className="sov-app-dock">{selectedApps.map(id => { const app = OPTIONAL_INTEGRATIONS.find(item => item.id === id); return app ? <div key={id} className="sov-app-chip"><span className="sov-app-symbol" aria-hidden="true">{app.name.slice(0,1)}</span><strong>{app.name}</strong><small>{app.setup === "public_embed" ? "Public embed supported" : app.setup === "guided_mcp" ? "Setup available" : "Connector needed"}</small></div> : null; })}</div>
+          </div> : <p className="sov-app-empty">Your app dock is empty. Add the tools you already use.</p>}
+          {suggestedAppIds.length ? <div className="sov-app-suggestions">
+            <small>Suggested for your interests · not installed</small>
+            <div>{suggestedAppIds.map(id => { const app = OPTIONAL_INTEGRATIONS.find(item => item.id === id); return app ? <Link href="/onboarding#apps" key={id}>{app.name}<span aria-hidden="true"> +</span></Link> : null; })}</div>
+          </div> : null}
           <div className="sov-inline-actions">
             <Link href="/onboarding#apps" className="sov-space-link">Choose apps →</Link>
             <Link href="/apps" className="sov-space-link">Open app surfaces →</Link>
