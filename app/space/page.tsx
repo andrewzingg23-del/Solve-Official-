@@ -26,7 +26,7 @@ export default async function SpacePage() {
   return (
     <PersonalSpace
       signedIn={signedIn}
-      initialAnswers={normalizeSpaceAnswers(signedIn ? user?.user_metadata?.profile : null)}
+      initialAnswers={normalizeSpaceAnswers(signedIn ? (user?.user_metadata?.sov_personal_space ?? user?.user_metadata?.profile) : null)}
       projects={projects}
     />
   );
