@@ -19,9 +19,9 @@ const actions = {
   projects: { id: "projects", label: "Build", detail: "Your real projects", href: "/projects" },
   people: { id: "people", label: "Collaborate", detail: "People and communities", href: "/communities" },
   agent: { id: "agent", label: "Ask your AI", detail: "Think and make", href: "/bot" },
-  studio: { id: "studio", label: "Create media", detail: "Open Studio", href: "/studio" },
+  studio: { id: "studio", label: "My creations", detail: "Saved projects", href: "/projects" },
   control: { id: "control", label: "Control", detail: "Manage access", href: "/control" },
-  profile: { id: "profile", label: "SOV Profile", detail: "Curate your identity", href: "/sov-id" },
+  profile: { id: "profile", label: "SOV ID", detail: "Review your identity", href: "/account" },
   apps: { id: "apps", label: "Add tools", detail: "Browse supported apps", href: "/apps" },
 } as const satisfies Record<string, CockpitAction>;
 
