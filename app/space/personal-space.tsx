@@ -67,12 +67,12 @@ export function PersonalSpace({
           botName,
           history: priorTurns.slice(-10).map(turn => ({
             role: turn.role,
-            content: turn.content,
+            content: turn.content.slice(0, 2000),
           })),
         }),
       });
       const result: unknown = await response.json();
-      const value = result && typeof result === "object" && !Array.isArray(result)
+      const value: { reply?: unknown; error?: unknown } = result && typeof result === "object" && !Array.isArray(result)
         ? result as { reply?: unknown; error?: unknown } : {};
       if (!response.ok || typeof value.reply !== "string") {
         const reason = typeof value.error === "string" ? value.error : "Your AI isn't available right now.";
