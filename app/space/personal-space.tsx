@@ -35,19 +35,22 @@ export function PersonalSpace({
   const [chatBusy, setChatBusy] = useState(false);
   const [agentTurns, setAgentTurns] = useState<AgentTurn[]>([]);
   const currentLook = proposal?.changes.length ? proposal.next : appearance;
+  function appendTurn(turn: AgentTurn) {
+    setAgentTurns(turns => [...turns, turn].slice(-20));
+  }
 
   async function sendAgentMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const message = styleText.trim();
     if (!message || styleBusy || chatBusy) return;
     const priorTurns = agentTurns;
-    setAgentTurns(turns => [...turns, { role: "user", content: message, kind: "conversation" }].slice(-20));
+    appendTurn({ role: "user", content: message, kind: "conversation" });
     setStyleText("");
     const draft = proposeAppearance(message, appearance);
     if (draft.supported) {
       setProposal(draft.changes.length ? draft : null);
       setStyleStatus(draft.response);
-      setAgentTurns(turns => [...turns, { role: "assistant", content: draft.response, kind: "appearance" }].slice(-20));
+      appendTurn({ role: "assistant", content: draft.response, kind: "appearance" });
       return;
     }
     // No appearance proposal was recognized. Ask the existing conversational AI.
@@ -73,12 +76,12 @@ export function PersonalSpace({
         ? result as { reply?: unknown; error?: unknown } : {};
       if (!response.ok || typeof value.reply !== "string") {
         const reason = typeof value.error === "string" ? value.error : "Your AI isn't available right now.";
-        setAgentTurns(turns => [...turns, { role: "assistant", content: reason.slice(0, 280), kind: "conversation" }].slice(-20));
+        appendTurn({ role: "assistant", content: reason.slice(0, 280), kind: "conversation" });
       } else {
-        setAgentTurns(turns => [...turns, { role: "assistant", content: value.reply!.slice(0, 6000), kind: "conversation" }].slice(-20));
+        appendTurn({ role: "assistant", content: value.reply!.slice(0, 6000), kind: "conversation" });
       }
     } catch {
-      setAgentTurns(turns => [...turns, { role: "assistant", content: "I couldn't reach your AI. Your Space hasn't changed.", kind: "conversation" }].slice(-20));
+      appendTurn({ role: "assistant", content: "I couldn't reach your AI. Your Space hasn't changed.", kind: "conversation" });
     } finally {
       setChatBusy(false);
     }
