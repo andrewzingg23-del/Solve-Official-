@@ -110,7 +110,7 @@ export function PersonalOnboarding({
           <div className="sov-choice-row" role="group" aria-label="Choose setup method">
             <button type="button" className={mode === "interview" ? "selected" : ""} onClick={() => setMode("interview")}>Short interview</button>
             <button type="button" className={mode === "import" ? "selected" : ""} onClick={() => setMode("import")}>Import context</button>
-            <button type="button" className={mode === "blank" ? "selected" : ""} onClick={() => setMode("blank")}>Start blank</button>
+            <button type="button" className={mode === "blank" ? "selected" : ""} onClick={() => { setMode("blank"); setDraft({}); }}>Start blank</button>
           </div>
           {mode !== "blank" ? (
             <div className="sov-interview-grid">
