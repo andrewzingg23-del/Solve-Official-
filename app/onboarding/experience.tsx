@@ -150,6 +150,7 @@ export function PersonalOnboarding({
               </button>)}
             </div>
           </div>
+          <label className="sov-ai-opt-in"><input type="checkbox" checked={answers.aiContext === "yes"} onChange={event => change("aiContext", event.target.checked ? "yes" : "no")} /> <span><strong>Let my AI use my goal and selected interests.</strong><small>Optional. Imported documents, private notes and external accounts are not automatically shared with the model.</small></span></label>
           {error ? <p role="alert" className="sov-error">{error}</p> : null}
           <div className="sov-onboarding-actions">
             <button type="button" className="solve-button" onClick={() => { setError(""); setStage(2); }}>Preview my Space →</button>
