@@ -21,7 +21,7 @@ export function PersonalSpace({
     ...answers,
     name: answers.name || (!signedIn ? guest.profile?.yourName || "" : ""),
   });
-  const hasSavedSpace = data.hasContext || signedIn;
+  const hasSavedSpace = data.hasContext || signedIn || guest.active;
 
   if (!hasSavedSpace) return (
     <main className="solve-page sov-personal">
@@ -53,7 +53,7 @@ export function PersonalSpace({
           <div className="sov-space-title"><h2>My Space</h2><span>Private</span></div>
           <p>The tools and places that matter to you. Choose or change anything.</p>
           <div className="sov-module-grid">
-            {data.modules.map(module => (
+            {data.modules.length === 0 ? <div className="sov-empty"><strong>Your canvas is yours.</strong><p>Add an interest or create your first project when you're ready.</p><Link href="/onboarding" className="sov-space-link">Choose what belongs here →</Link></div> : data.modules.map(module => (
               <Link key={module.id} href={module.href} className="sov-module">
                 <strong>{module.label}</strong><small>{module.description}</small><span aria-hidden="true">↗</span>
               </Link>
