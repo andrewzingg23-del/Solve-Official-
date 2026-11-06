@@ -7,6 +7,7 @@ import { useGuestProfile } from "@/lib/guest/profile";
 import { chosenFocus, composePersonalSpace, FOCUS_AREAS, normalizeSpaceAnswers, type SpaceAnswers } from "@/lib/product/personal-space";
 import { savePersonalSpace } from "./actions";
 import { OptionalConnections } from "./optional-connections";
+import { SolveBrand } from "@/app/product/solve-brand";
 
 export function PersonalOnboarding({
   signedIn,
@@ -76,6 +77,11 @@ export function PersonalOnboarding({
 
   return (
     <main className="sov-experience solve-page">
+      <div className="solve-onboarding-top">
+        <SolveBrand href="/space" />
+        <span className="solve-onboarding-top-title">One Setup. A Space That's Yours.</span>
+        <Link href="/space" className="solve-onboarding-top-exit">My Space →</Link>
+      </div>
       <header className="sov-experience-head">
         <span className="solve-kicker">SOLVE / Make it yours</span>
         <h1>One setup. A Space that&apos;s yours.</h1>
@@ -83,7 +89,7 @@ export function PersonalOnboarding({
       </header>
 
       <nav className="sov-steps" aria-label="Onboarding progress">
-        {["Meet your AI", "Bring your context", "Your Space"].map((label, i) => (
+        {["Meet AI", "Context", "Build", "Your Space"].map((label, i) => (
           <button key={label} type="button" className={stage === i ? "current" : ""} aria-current={stage === i ? "step" : undefined} onClick={() => { setError(""); setStage(i); }}>
             <span>{i + 1}</span>{label}
           </button>
@@ -153,13 +159,31 @@ export function PersonalOnboarding({
           <label className="sov-ai-opt-in"><input type="checkbox" checked={answers.aiContext === "yes"} onChange={event => change("aiContext", event.target.checked ? "yes" : "no")} /> <span><strong>Let my AI use my goal and selected interests.</strong><small>Optional. Imported documents, private notes and external accounts are not automatically shared with the model.</small></span></label>
           {error ? <p role="alert" className="sov-error">{error}</p> : null}
           <div className="sov-onboarding-actions">
-            <button type="button" className="solve-button" onClick={() => { setError(""); setStage(2); }}>Preview my Space →</button>
+            <button type="button" className="solve-button" onClick={() => { setError(""); setStage(2); }}>Build my Space →</button>
             <button type="button" className="solve-button solve-button-secondary" onClick={() => setStage(0)}>← Back</button>
+          </div>
+        </section>
+      ) : stage === 2 ? (
+        <section className="sov-experience-panel sov-build-panel">
+          <span className="solve-kicker">03 / Build your Space</span>
+          <h2>Made for what matters to you.</h2>
+          <p>Here's the structure assembled from your choices. You can change every part later; this doesn't connect or share anything.</p>
+          <div className="sov-build-preview">
+            <div className="sov-build-preview-heading"><span className="sov-build-orb" aria-hidden="true" /><div><strong>{view.greeting}</strong><small>Private Space · Your chosen starting point</small></div></div>
+            <div className="sov-preview-modules">
+              {view.modules.length ? view.modules.map(item => <div key={item.id}><strong>{item.label}</strong><small>{item.description}</small></div>) :
+                <div><strong>Blank canvas</strong><small>Make it your own as you go</small></div>}
+            </div>
+            <p>{view.goal ? "Your focus: " + view.goal : "A flexible home ready for your first idea."}</p>
+          </div>
+          <div className="sov-onboarding-actions">
+            <button type="button" className="solve-button" onClick={() => setStage(3)}>See my Space →</button>
+            <button type="button" className="solve-button solve-button-secondary" onClick={() => setStage(1)}>← Edit my choices</button>
           </div>
         </section>
       ) : (
         <section className="sov-experience-panel">
-          <span className="solve-kicker">03 / Your personalized Space</span>
+          <span className="solve-kicker">04 / Your Space is ready</span>
           <h2>{view.greeting}</h2>
           <p>{view.goal || "A private place for your interests, people, projects and connected tools. Start anywhere."}</p>
           <div className="sov-preview">
@@ -168,7 +192,7 @@ export function PersonalOnboarding({
               <div className="sov-preview-modules">
                 {view.modules.map(item => <div key={item.id}><strong>{item.label}</strong><small>{item.description}</small></div>)}
               </div>
-              <p>Projects, real updates and integrations will appear here as you create or authorize them.</p>
+              <p>Real projects, updates and integrations appear only as you create or authorize them.</p>
             </div>
             <div className="sov-preview-profile">
               <div className="sov-preview-title"><span>Public Profile</span><span className="sov-privacy-pill">Not published</span></div>
@@ -180,7 +204,7 @@ export function PersonalOnboarding({
           {error ? <p role="alert" className="sov-error">{error}</p> : null}
           <div className="sov-onboarding-actions">
             <button type="button" className="solve-button" disabled={busy} onClick={saveAndEnter}>{busy ? "Saving…" : "Save & enter my Space →"}</button>
-            <button type="button" className="solve-button solve-button-secondary" onClick={() => setStage(1)}>← Edit context</button>
+            <button type="button" className="solve-button solve-button-secondary" onClick={() => setStage(2)}>← Back to build</button>
           </div>
           <small>{signedIn ? "Your preferences are saved to your account. No integration is authorized by this step." : "Guest setup saves to this browser only. Sign in later for recovery and multi-device access."}</small>
         </section>

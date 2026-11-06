@@ -1,20 +1,88 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState, type FormEvent } from "react";
+import { normalizeAppearance, proposeAppearance, type SpaceAppearance, type AppearanceProposal } from "@/lib/product/appearance";
+import { saveSpaceAppearance } from "./actions";
+import { OPTIONAL_INTEGRATIONS } from "@/lib/product/optional-integrations";
 import { useGuestProfile } from "@/lib/guest/profile";
-import { composePersonalSpace, normalizeSpaceAnswers, type SpaceAnswers } from "@/lib/product/personal-space";
+import { composePersonalSpace, normalizeSpaceAnswers, spaceMood, type SpaceAnswers } from "@/lib/product/personal-space";
 import type { ProjectCard } from "@/app/product/projects";
 
 export function PersonalSpace({
   signedIn,
   initialAnswers,
   projects,
+  initialAppearance,
 }: {
   signedIn: boolean;
   initialAnswers: SpaceAnswers;
   projects: ProjectCard[] | null;
+  initialAppearance: SpaceAppearance;
 }) {
   const guest = useGuestProfile();
+  const [selectedApps, setSelectedApps] = useState<string[]>([]);
+  const [appearance, setAppearance] = useState<SpaceAppearance>(normalizeAppearance(initialAppearance));
+  const [styleText, setStyleText] = useState("");
+  const [proposal, setProposal] = useState<AppearanceProposal | null>(null);
+  const [styleStatus, setStyleStatus] = useState("");
+  const [undoAppearance, setUndoAppearance] = useState<SpaceAppearance | null>(null);
+  const [styleBusy, setStyleBusy] = useState(false);
+  const currentLook = proposal?.changes.length ? proposal.next : appearance;
+
+  function previewStyle(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const draft = proposeAppearance(styleText, appearance);
+    setProposal(draft.changes.length ? draft : null);
+    setStyleStatus(draft.response);
+  }
+
+  async function commitStyle(next: SpaceAppearance, previous: SpaceAppearance | null) {
+    if (styleBusy) return;
+    setStyleBusy(true);
+    try {
+      if (signedIn) {
+        const result = await saveSpaceAppearance(next);
+        if (!result.ok) {
+          setStyleStatus(result.error || "This look couldn't be saved.");
+          return;
+        }
+      } else {
+        try {
+          window.localStorage.setItem("solve.space.appearance.v1", JSON.stringify(next));
+        } catch {
+          setStyleStatus("Your browser isn't allowing preference storage. This preview hasn't been saved.");
+          return;
+        }
+      }
+      setAppearance(next);
+      setUndoAppearance(previous);
+      setProposal(null);
+      setStyleStatus("Appearance updated. Your projects, integrations, permissions, and public Profile are unchanged.");
+    } finally {
+      setStyleBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!signedIn) {
+      try {
+        const saved = window.localStorage.getItem("solve.space.appearance.v1");
+        if (saved) setAppearance(normalizeAppearance(JSON.parse(saved)));
+      } catch { /* Stay with safe defaults when storage is unavailable. */ }
+    }
+  }, [signedIn]);
+  useEffect(() => {
+    // This is a setup-interest list only; it does not contain authorization tokens.
+    try {
+      const saved: unknown = JSON.parse(window.localStorage.getItem("sov.optional-app-interests.v1") || "[]");
+      const allowed = new Set(OPTIONAL_INTEGRATIONS.map(item => item.id));
+      if (Array.isArray(saved)) {
+        const picked = saved.filter((id): id is string => typeof id === "string" && allowed.has(id));
+        setSelectedApps([...new Set(picked)]);
+      }
+    } catch { /* Browser storage may be unavailable. */ }
+  }, []);
   const localAnswers = normalizeSpaceAnswers(guest.profile?.knowYou);
   const answers = signedIn ? initialAnswers : localAnswers;
   const data = composePersonalSpace({
@@ -24,7 +92,7 @@ export function PersonalSpace({
   const hasSavedSpace = data.hasContext || signedIn || guest.active;
 
   if (!hasSavedSpace) return (
-    <main className="solve-page sov-personal">
+    <main className="solve-page sov-personal" data-space-mood={spaceMood(answers)} data-style-tone={currentLook.tone} data-style-density={currentLook.density} data-style-shape={currentLook.shape} data-style-priority={currentLook.priority}>
       <div className="sov-space-intro">
         <span className="solve-kicker">SOLVE / Your Space</span>
         <h1>It starts with you.</h1>
@@ -35,7 +103,7 @@ export function PersonalSpace({
   );
 
   return (
-    <main className="solve-page sov-personal">
+    <main className="solve-page sov-personal" data-space-mood={spaceMood(answers)} data-style-tone={currentLook.tone} data-style-density={currentLook.density} data-style-shape={currentLook.shape} data-style-priority={currentLook.priority}>
       <header className="sov-space-header">
         <div>
           <span className="solve-kicker">SOLVE / Private Space</span>
@@ -48,9 +116,31 @@ export function PersonalSpace({
         </div>
       </header>
 
+      <section className="sov-space-card sov-style-editor" aria-label="Customize your Space through natural language">
+        <div className="sov-space-title"><h2>Make your Space yours</h2><span>Appearance only · Private</span></div>
+        <p>Tell your AI how this should feel. Preview any changes before they are saved.</p>
+        <form className="sov-style-form" onSubmit={previewStyle}>
+          <label htmlFor="solve-style-request">Describe the look you want</label>
+          <div className="sov-style-input-row">
+            <input id="solve-style-request" name="appearance" value={styleText} onChange={event => setStyleText(event.target.value)} maxLength={700} placeholder="Make it feel like a vintage skate magazine, tighter and with mint accents…" />
+            <button className="solve-button" type="submit" disabled={!styleText.trim() || styleBusy}>Preview style</button>
+          </div>
+        </form>
+        {styleStatus ? <p className="sov-style-response" role="status">{styleStatus}</p> : null}
+        {proposal ? <div className="sov-style-approval">
+          <span>Previewing: {proposal.changes.join(", ")}</span>
+          <div>
+            <button type="button" className="solve-button" disabled={styleBusy} onClick={() => void commitStyle(proposal.next, appearance)}>{styleBusy ? "Saving…" : "Apply this look"}</button>
+            <button type="button" className="solve-button solve-button-secondary" disabled={styleBusy} onClick={() => { setProposal(null); setStyleStatus("Preview discarded. Your saved appearance is unchanged."); }}>Discard preview</button>
+          </div>
+        </div> : null}
+        {!proposal && undoAppearance ? <button type="button" className="sov-space-link sov-style-undo" disabled={styleBusy} onClick={() => void commitStyle(undoAppearance, appearance)}>↶ Undo last appearance change</button> : null}
+        <small>Style suggestions use a restricted appearance vocabulary for now. This is not permission to change data, actions, or your public Profile.</small>
+      </section>
+      <div className="sov-personal-stack">
       <div className="sov-personal-top">
         <section className="sov-space-card sov-focus-card">
-          <div className="sov-space-title"><h2>My Space</h2><span>Private</span></div>
+          <div className="sov-space-title"><h2>My Space</h2><span>Private · Yours</span></div>
           <p>The tools and places that matter to you. Choose or change anything.</p>
           <div className="sov-module-grid">
             {data.modules.length === 0 ? <div className="sov-empty"><strong>Your canvas is yours.</strong><p>Add an interest or create your first project when you're ready.</p><Link href="/onboarding" className="sov-space-link">Choose what belongs here →</Link></div> : data.modules.map(module => (
@@ -103,7 +193,8 @@ export function PersonalSpace({
       <div className="sov-personal-bottom">
         <section className="sov-space-card">
           <div className="sov-space-title"><h2>Apps & Integrations</h2><span>Optional</span></div>
-          <p>Use recognized services through supported connections and embeds. Selecting an app isn't permission to read it.</p>
+          <p>Choose the apps you love. Each actual connection is authorized separately.</p>
+          {selectedApps.length ? <div className="sov-app-picks" aria-label="Selected apps, not connected"><small>Selected for setup · not connected</small><div>{selectedApps.map(id => { const app = OPTIONAL_INTEGRATIONS.find(item => item.id === id); return app ? <span key={id}>{app.name}</span> : null; })}</div></div> : <p className="sov-app-empty">No apps selected yet.</p>}
           <div className="sov-inline-actions">
             <Link href="/onboarding#apps" className="sov-space-link">Choose apps →</Link>
             <Link href="/apps" className="sov-space-link">Open app surfaces →</Link>
@@ -119,6 +210,8 @@ export function PersonalSpace({
             <Link href="/sov-id" className="sov-space-link">View SOV ID →</Link>
           </div>
         </section>
+      </div>
+
       </div>
 
       {data.goal || data.people || answers.context ? <details className="sov-private-context">

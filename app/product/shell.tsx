@@ -6,6 +6,7 @@ import { useGuestProfile } from "@/lib/guest/profile";
 import { DEFAULT_PERSONA, validatePersona } from "@/lib/bot/persona";
 import { faceSrc } from "@/lib/bot/avatar";
 import { Icon, type IconName } from "./icons";
+import { SolveBrand } from "./solve-brand";
 
 const homes: Array<{ href: string; label: string; icon: IconName }> = [
   { href: "/space", label: "Space", icon: "home" },
@@ -24,13 +25,14 @@ export function ProductShell({ children, identity }: { children: React.ReactNode
   const botName = identity?.botName || (!identity ? localBotName : "") || "Your AI";
   const face = identity?.face || (!identity ? profile?.face : "") || "blank";
   const links = homes.map(home => <Link key={home.href} href={home.href} aria-current={active === home.href || active.startsWith(home.href + "/") ? "page" : undefined} className="solve-nav-link"><Icon name={home.icon} /><span>{home.label}</span></Link>);
+  if (path === "/onboarding") return <>{children}</>;
   if (path === "/studio" || path === "/map" || path === "/sov-id" || /^\/world\/[^/]+\/studio$/.test(path)) return <>{children}</>;
-  if (minimal) return <div className="solve-minimal"><Link href="/" className="solve-wordmark">solve<span>.</span></Link>{children}</div>;
+  if (minimal) return <div className="solve-minimal"><SolveBrand href="/space" />{children}</div>;
   return <div className="solve-shell">
     <a href="#solve-main" className="solve-skip">Skip to content</a>
     <aside className="solve-sidebar" aria-label="Workspace sidebar">
-      <Link href="/" className="solve-wordmark sov-wordmark" aria-label="SOV Space"><span className="sov-wordmark-ring" aria-hidden="true" />SOV</Link>
-      <div className="solve-sidebar-caption">Your digital life, connected</div>
+      <SolveBrand href="/space" />
+      <div className="solve-sidebar-caption">A Space that is yours.</div>
       <Link href="/worlds/new" className="solve-button solve-new-project"><Icon name="plus" />Create</Link>
       <nav aria-label="Primary">{links}</nav>
       <div className="solve-sidebar-bottom">
@@ -39,7 +41,7 @@ export function ProductShell({ children, identity }: { children: React.ReactNode
       </div>
     </aside>
     <div className="solve-body">
-      <header className="solve-topbar"><Link href="/" className="solve-mobile-wordmark sov-wordmark">SOV</Link><span className="solve-topbar-title">{path.startsWith("/world/") ? "Shared workspace" : path === "/onboarding" ? "Make it yours" : homes.find(home => home.href === active)?.label || (path === "/login" ? "Welcome to SOV" : "Your Space")}</span><div className="sov-topbar-actions"><Link href="/onboarding#apps" className="solve-text-link">Apps</Link>{identity ? <Link href="/account" className="solve-private-label"><Icon name="lock" width={14} />SOV ID</Link> : <Link href="/login?next=%2Fonboarding" className="solve-text-link">Sign in</Link>}</div></header>
+      <header className="solve-topbar"><SolveBrand href="/space" compact /><span className="solve-topbar-title">{path.startsWith("/world/") ? "Shared workspace" : path === "/onboarding" ? "Make it yours" : homes.find(home => home.href === active)?.label || (path === "/login" ? "Welcome to SOLVE" : "Your Space")}</span><div className="sov-topbar-actions"><Link href="/apps" className="solve-text-link">Apps</Link>{identity ? <Link href="/account" className="solve-private-label"><Icon name="lock" width={14} />SOV ID</Link> : <Link href="/login?next=%2Fonboarding" className="solve-text-link">Sign in</Link>}</div></header>
       <div id="solve-main" tabIndex={-1} className="solve-main">{children}</div>
     </div>
     <nav aria-label="Primary mobile" className="solve-mobile-nav">{links}</nav>

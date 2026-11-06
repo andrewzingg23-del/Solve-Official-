@@ -3,6 +3,7 @@ import { getUser } from "@/lib/supabase/server";
 import { getKernel } from "@/lib/kernel/server";
 import { listCreativeWorlds } from "@/lib/world/creative";
 import { normalizeSpaceAnswers } from "@/lib/product/personal-space";
+import { normalizeAppearance } from "@/lib/product/appearance";
 import type { ProjectCard } from "@/app/product/projects";
 import { PersonalSpace } from "./personal-space";
 import "./space.css";
@@ -28,6 +29,7 @@ export default async function SpacePage() {
       signedIn={signedIn}
       initialAnswers={normalizeSpaceAnswers(signedIn ? (user?.user_metadata?.sov_personal_space ?? user?.user_metadata?.profile) : null)}
       projects={projects}
+      initialAppearance={normalizeAppearance(signedIn ? user?.user_metadata?.sov_space_appearance : null)}
     />
   );
 }

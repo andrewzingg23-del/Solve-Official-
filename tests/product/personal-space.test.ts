@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { agentSpaceBrief, chosenFocus, composePersonalSpace, normalizeSpaceAnswers } from "../../lib/product/personal-space";
+import { agentSpaceBrief, chosenFocus, composePersonalSpace, normalizeSpaceAnswers, spaceMood } from "../../lib/product/personal-space";
 
 test("no invented activity or data in a new Space", () => {
   const result = composePersonalSpace({});
@@ -50,4 +50,15 @@ test("rejects unknown fields and focus values", () => {
   assert.equal(clean.context.length, 3500);
   assert.equal("secret" in clean, false);
   assert.deepEqual(chosenFocus(clean), ["music", "business"]);
+});
+
+test("personal atmospheres change presentation, never private/public data", () => {
+  assert.equal(spaceMood({ focus: "business,engineering" }), "builder");
+  assert.equal(spaceMood({ focus: "gaming,music" }), "creator");
+  assert.equal(spaceMood({ focus: "family,learning" }), "household");
+  assert.equal(spaceMood({ focus: "" }), "neutral");
+  const a = composePersonalSpace({ focus: "gaming", context: "private note A" });
+  const b = composePersonalSpace({ focus: "family", context: "private note B" });
+  assert.equal(JSON.stringify(a.publicPreview).includes("private note A"), false);
+  assert.equal(JSON.stringify(b.publicPreview).includes("private note B"), false);
 });
