@@ -5,7 +5,7 @@ export type LaunchRoute = { kind: "allow" } | { kind: "redirect"; href: string }
 const within = (pathname: string, root: string) => pathname === root || pathname.startsWith(`${root}/`);
 const experiments = ["/studio", "/map", "/arcadia", "/solar", "/insurance", "/zuber-pen", "/ventures", "/solve", "/meta-ads", "/membership"];
 const experimentalApis = ["/api/market", "/api/studio", "/api/auth/meta", "/api/avatar/generate"];
-const aliases: Record<string, string> = { "/command": "/", "/sov-id": "/account", "/claim": "/account", "/start": "/account", "/avatar": "/bot" };
+const aliases: Record<string, string> = { "/command": "/", "/sov-id": "/card", "/claim": "/account", "/start": "/account", "/avatar": "/bot" };
 
 export function experimentalFeaturesEnabled(env: Partial<NodeJS.ProcessEnv> = process.env): boolean {
   return env.ENABLE_EXPERIMENTAL_FEATURES === "true" || env.ENABLE_EXPERIMENTAL_FEATURES === "1";
@@ -17,8 +17,8 @@ export function launchRoute(pathname: string, env: Partial<NodeJS.ProcessEnv> = 
   const financialEnv: NodeJS.ProcessEnv = { ...env, NODE_ENV: env.NODE_ENV ?? "production" };
   const experimental = experimentalFeaturesEnabled(env);
   const hidden = { kind: "redirect", href: "/" } as const;
-  // The sandbox card has no per-person issuance/ownership flow. Never expose it as a launch card.
-  if (within(pathname, "/card")) return hidden;
+  // Identity Card has no payment or sandbox issuer behavior; safe to expose.
+  // Financial sandbox routes remain behind their independent launch flags.
   if (within(pathname, "/money")) return experimental && moneyEnabled(financialEnv) ? { kind: "allow" } : hidden;
   if (within(pathname, "/packs") || within(pathname, "/trading")) {
     return experimental && externalFinancialActionsEnabled(financialEnv) ? { kind: "allow" } : hidden;
