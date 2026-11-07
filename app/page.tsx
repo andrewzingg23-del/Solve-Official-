@@ -1,22 +1,75 @@
-import { randomUUID } from "node:crypto";
+import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getUser } from "@/lib/supabase/server";
-import { getKernel } from "@/lib/kernel/server";
-import { listCreativeWorlds } from "@/lib/world/creative";
-import { ProjectComposer } from "./product/project-composer";
-import { Projects, type ProjectCard } from "./product/projects";
-import { Icon } from "./product/icons";
+import "./launch.css";
 
-export default async function Home() {
+export const metadata: Metadata = {
+  title: "SOV — Yours to make",
+  description: "One living identity. Share who you are, connect, and make something real. Your AI is optional.",
+};
+
+export default async function LaunchPage() {
   const user = await getUser();
-  let projects: ProjectCard[] | null = null;
-  if (user) projects = await listCreativeWorlds(await getKernel()).catch(() => null);
-  return <main className="solve-page solve-home">
-    <section className={`solve-home-intro ${user ? "solve-home-member" : ""}`}>
-      <div className="solve-home-copy"><span className="solve-kicker">People. Ideas. Your AIs.</span><h1>{user ? "What’s next?" : <>Good ideas deserve<br />a place to <span>grow.</span></>}</h1><p>{user ? "Pick up where you left off, or make room for something new." : "Bring your people and your AIs into one shared place. Think it through, make a plan, and build something together."}</p>{!user ? <div className="solve-home-benefits"><span><Icon name="chat" width={16} />Think together</span><span><Icon name="document" width={16} />Keep the context</span><span><Icon name="ai" width={16} />Bring your own AI</span></div> : null}</div>
-      <ProjectComposer owner={user?.id ?? null} worldId={randomUUID()} />
+  if (user && !user.is_anonymous) redirect("/space");
+
+  return <main className="sov-launch">
+    <header className="sov-launch-nav">
+      <Link href="/" className="sov-launch-mark" aria-label="SOV home">sov<span>.</span></Link>
+      <nav aria-label="Explore SOLVE">
+        <Link href="/card">The card</Link>
+        <Link href="/space">Your Home</Link>
+        <Link href="/login?next=%2Fcard">Sign in</Link>
+      </nav>
+    </header>
+
+    <section className="sov-launch-hero" aria-labelledby="sov-launch-title">
+      <div className="sov-launch-story">
+        <span className="sov-launch-kicker">IDENTITY, MADE PERSONAL</span>
+        <h1 id="sov-launch-title">Yours<br/>to make.</h1>
+        <p>One living identity. A simpler way to meet people, share what matters, and make something happen.</p>
+        <div className="sov-launch-hero-actions">
+          <Link href="/card" className="sov-launch-primary">Make your card <span aria-hidden="true">↗</span></Link>
+          <Link href="/space" className="sov-launch-secondary">Explore your Home <span aria-hidden="true">→</span></Link>
+        </div>
+        <p className="sov-launch-promise">Start free. No AI required. Nothing published without your choice.</p>
+      </div>
+      <div className="sov-launch-object" aria-label="Illustration of a horizontal SOV identity card">
+        <div className="sov-launch-card">
+          <div className="sov-launch-card-head"><strong>sov.</strong><span>IDENTITY</span></div>
+          <div className="sov-launch-card-bottom">
+            <div><strong>Your name.</strong><span>However you express it.</span></div>
+            <div className="sov-launch-card-portrait" aria-hidden="true">S</div>
+          </div>
+          <div className="sov-launch-card-foot"><span>YOURS TO MAKE</span><span>01 / 02</span></div>
+        </div>
+        <p>One card. Two sides. Yours to personalize.</p>
+      </div>
     </section>
-    {user ? projects ? <Projects projects={projects} /> : <section className="solve-empty" role="status"><h2>Your projects couldn’t be loaded.</h2><p>Your work is still saved. Try again, or check your profile to finish account setup.</p><Link href="/account" className="solve-text-link">Open profile <Icon name="arrow" width={15} /></Link></section> : <section className="solve-how" aria-labelledby="how-heading"><div className="solve-section-heading"><h2 id="how-heading">From “what if” to working on it.</h2><span>A shared place for any kind of idea</span></div><div className="solve-how-grid">{[{ icon: "projects" as const, title: "Make a space for it", text: "Start with the thing you want to do. Your project keeps the conversation, documents and decisions together." }, { icon: "community" as const, title: "Bring your people", text: "Invite a friend, your team or your community. Choose who can view and who can contribute." }, { icon: "ai" as const, title: "Put your AIs to work", text: "Ask about the shared work. Bring selected knowledge or connect an assistant you already use." }].map((step, index) => <article key={step.title}><div><Icon name={step.icon} /><span>0{index + 1}</span></div><h3>{step.title}</h3><p>{step.text}</p></article>)}</div></section>}
-    <footer className="solve-page-footer"><span>Ideas become shared work.</span><Link href="/space">Open my Space <Icon name="arrow" width={14}/></Link><Link href="/onboarding">Make your Space yours · optional apps <Icon name="arrow" width={14} /></Link><Link href="/apps">My app surfaces <Icon name="arrow" width={14}/></Link><Link href="/bot">My Agent <Icon name="arrow" width={14} /></Link></footer>
+
+    <section className="sov-launch-value" aria-labelledby="sov-launch-value-title">
+      <div className="sov-launch-section-head"><span className="sov-launch-kicker">START WITH WHAT MATTERS</span><h2 id="sov-launch-value-title">Simple enough to use.<br/>Powerful enough to grow.</h2></div>
+      <div className="sov-launch-value-grid">
+        <article><span>01 / MEET</span><h3>Show who you are.</h3><p>Share a personal identity with a tap or a link. Let the other person save your approved contact details.</p></article>
+        <article><span>02 / CONNECT</span><h3>Make the connection.</h3><p>Give someone a direct way to reach you without handing over more information than you choose.</p></article>
+        <article><span>03 / MAKE</span><h3>Do something together.</h3><p>Go from an introduction to a project, a creation or a shared place in SOLVE when you're ready.</p></article>
+      </div>
+    </section>
+
+    <section className="sov-launch-freedom" aria-labelledby="sov-launch-freedom-title">
+      <div><span className="sov-launch-kicker">YOUR WAY, ALWAYS</span><h2 id="sov-launch-freedom-title">Make it feel like you.</h2></div>
+      <div className="sov-launch-freedom-copy"><p>Start with a beautiful, usable default. Choose a second look. Change the details yourself—or ask Your AI to help when you want it.</p><p>AI is a shortcut, not a requirement. Privacy, contact sharing and payment approvals are never decided by visual customization.</p></div>
+    </section>
+
+    <section className="sov-launch-physical" aria-labelledby="sov-launch-physical-title">
+      <div><span className="sov-launch-kicker">COMING TO YOUR POCKET</span><h2 id="sov-launch-physical-title">A card you can carry.</h2><p>We are developing an NFC SOV Card that opens your living identity. Target introductory price: $10, plus fulfillment. It's not yet for sale and is not a bank or payment card.</p></div>
+      <Link href="/card">Try the digital card <span aria-hidden="true">↗</span></Link>
+    </section>
+
+    <footer className="sov-launch-footer">
+      <span>sov. / by SOLVE</span>
+      <span>Simple to use. Free to express. Yours to control.</span>
+      <Link href="/bot">Your AI · optional</Link>
+    </footer>
   </main>;
 }
