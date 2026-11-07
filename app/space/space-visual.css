@@ -1,0 +1,216 @@
+/*
+ * SOLVE / private Space — founder-approved scenic composition, Nov 7 2026.
+ * Design-only extension of space.css; no project data, authorization or AI
+ * execution is inferred from the image. All interactive state stays in the
+ * existing PersonalSpace component and its server/kernel-backed actions.
+ *
+ * Materials: approved graphite / silver glass / white action / calm-blue focus.
+ * This module honors user-controlled density/shape/priority from space.css.
+ */
+.sov-personal {
+  --space-landscape: url("/brand/solve-space-horizon.svg");
+  --space-scene-vignette:
+    linear-gradient(90deg, rgba(7, 12, 22, .88) 0%, rgba(8, 14, 24, .72) 42%, rgba(8, 14, 24, .25) 72%, rgba(7, 12, 22, .35) 100%),
+    linear-gradient(0deg, rgba(7, 12, 22, .88), transparent 55%);
+}
+
+.sov-personal .sov-space-header,
+.sov-personal .sov-space-intro {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  color: var(--solve-v-ink);
+  border: 1px solid rgba(235, 241, 252, .23);
+  border-radius: var(--space-radius, var(--solve-v-radius));
+  background-color: #19243a;
+  background-image: var(--space-scene-vignette), var(--space-landscape);
+  background-position: center, center, center 49%;
+  background-size: cover, cover, cover;
+  background-repeat: no-repeat;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .31), inset 0 1px rgba(255, 255, 255, .12);
+}
+
+.sov-personal .sov-space-header {
+  min-height: clamp(300px, 31vw, 395px);
+  margin: 0 0 23px;
+  padding: clamp(26px, 3.8vw, 50px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.sov-personal .sov-space-intro {
+  min-height: 355px;
+  justify-content: center;
+  padding: clamp(25px, 5vw, 60px);
+}
+
+.sov-personal .sov-space-header::after,
+.sov-personal .sov-space-intro::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(ellipse 65% 85% at 100% 18%, rgba(255, 210, 177, .09), transparent 80%);
+  pointer-events: none;
+}
+
+.sov-personal .sov-space-header > div:first-child {
+  flex: 1 1 380px;
+  min-width: 0;
+  max-width: 610px;
+}
+
+.sov-personal .sov-space-header .solve-kicker,
+.sov-personal .sov-space-intro .solve-kicker {
+  display: inline-block;
+  margin-bottom: 5px;
+  color: rgba(244, 246, 252, .86);
+  letter-spacing: .18em;
+}
+
+.sov-personal .sov-space-header h1,
+.sov-personal .sov-space-intro h1 {
+  color: #fff;
+  font-size: clamp(37px, 4.5vw, 62px);
+  font-weight: 570;
+  line-height: 1.06;
+  letter-spacing: -.055em;
+  text-wrap: balance;
+  margin: 8px 0 14px;
+  text-shadow: 0 3px 24px rgba(0, 0, 0, .22);
+}
+
+.sov-personal .sov-space-header p,
+.sov-personal .sov-space-intro p {
+  color: rgba(249, 250, 253, .88);
+  font-size: clamp(13px, 1.2vw, 15px);
+  line-height: 1.68;
+  max-width: 560px;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, .34);
+}
+
+.sov-personal .sov-space-header .sov-space-actions {
+  flex: 0 1 310px;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.sov-personal :is(.sov-space-header, .sov-space-intro) .solve-button {
+  min-height: 44px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.sov-personal :is(.sov-space-header, .sov-space-intro) .solve-button-secondary {
+  background: rgba(14, 19, 31, .56);
+  color: #fff;
+  border-color: rgba(240, 245, 255, .40);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.sov-personal :is(.sov-space-header, .sov-space-intro) .solve-button-secondary:hover {
+  background: rgba(28, 37, 56, .85);
+  border-color: rgba(245, 249, 255, .76);
+}
+
+.sov-personal .sov-space-card {
+  background: linear-gradient(150deg, rgba(32, 38, 54, .92), rgba(14, 18, 29, .96));
+  border-color: var(--solve-v-line);
+  border-radius: var(--space-radius, var(--solve-v-radius));
+}
+
+.sov-personal .sov-space-title h2 {
+  font-size: clamp(16px, 1.55vw, 19px);
+  font-weight: 590;
+}
+
+.sov-personal .sov-module {
+  min-height: 102px;
+  background: linear-gradient(160deg, rgba(28, 34, 48, .88), rgba(11, 16, 27, .92));
+  border-color: rgba(215, 226, 245, .17);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .045);
+}
+
+.sov-personal .sov-module:hover {
+  background: linear-gradient(160deg, rgba(50, 58, 77, .88), rgba(19, 27, 42, .96));
+  border-color: rgba(238, 245, 255, .50);
+}
+
+.sov-personal .sov-agent-symbol {
+  border-color: rgba(238, 245, 255, .90);
+  background: radial-gradient(circle at 30% 25%, rgba(215, 231, 255, .23), rgba(24, 34, 57, .34) 41%, rgba(8, 13, 24, .98) 75%);
+  box-shadow: 0 0 0 5px rgba(231, 239, 255, .04), 0 0 26px rgba(120, 151, 222, .16);
+}
+
+.sov-personal .sov-empty,
+.sov-personal .sov-real-projects > a {
+  background: rgba(9, 14, 24, .56);
+  border-color: rgba(221, 229, 248, .18);
+}
+
+.sov-personal .sov-space-card :is(a, button, input, summary):focus-visible,
+.sov-personal :is(.sov-space-header, .sov-space-intro) a:focus-visible {
+  outline: 2px solid var(--solve-v-blue);
+  outline-offset: 3px;
+}
+
+@media (max-width: 960px) {
+  .sov-personal .sov-space-header {
+    min-height: 330px;
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .sov-personal .sov-space-header > div:first-child { flex: none; }
+  .sov-personal .sov-space-header .sov-space-actions {
+    flex: none;
+    width: 100%;
+    justify-content: flex-start;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 700px) {
+  .sov-personal .sov-space-header,
+  .sov-personal .sov-space-intro {
+    min-height: 320px;
+    padding: 30px 20px 26px;
+    background-position: center, center, 67% center;
+  }
+  .sov-personal .sov-space-header h1,
+  .sov-personal .sov-space-intro h1 {
+    font-size: clamp(34px, 8.7vw, 48px);
+  }
+  .sov-personal .sov-space-header .sov-space-actions {
+    gap: 9px;
+  }
+  .sov-personal .sov-space-header .sov-space-actions .solve-button {
+    min-width: 0;
+    flex: 1 1 auto;
+    white-space: normal;
+    padding-inline: 12px;
+    text-align: center;
+  }
+}
+
+@media (max-width: 390px) {
+  .sov-personal .sov-space-header {
+    min-height: 355px;
+    padding-inline: 18px;
+  }
+  .sov-personal .sov-space-header .sov-space-actions .solve-button {
+    font-size: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sov-personal .sov-space-header,
+  .sov-personal .sov-space-intro,
+  .sov-personal .sov-module {
+    transition: none !important;
+    animation: none !important;
+  }
+}
