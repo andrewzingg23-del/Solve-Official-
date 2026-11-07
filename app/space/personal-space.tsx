@@ -1,15 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { normalizeAppearance, proposeAppearance, type SpaceAppearance, type AppearanceProposal } from "@/lib/product/appearance";
 import { saveSpaceAppearance } from "./actions";
 import { OPTIONAL_INTEGRATIONS } from "@/lib/product/optional-integrations";
 import { useGuestProfile } from "@/lib/guest/profile";
 import { composePersonalSpace, normalizeSpaceAnswers, spaceMood, type SpaceAnswers } from "@/lib/product/personal-space";
 import type { ProjectCard } from "@/app/product/projects";
+import { useDeviceText, writeDeviceText } from "@/lib/client/device-storage";
 
 type AgentTurn = { role: "user" | "assistant"; content: string; kind: "appearance" | "conversation" };
+
+const APPEARANCE_KEY = "solve.space.appearance.v1";
+const APP_INTERESTS_KEY = "sov.optional-app-interests.v1";
 
 export function PersonalSpace({
   signedIn,
@@ -25,8 +29,29 @@ export function PersonalSpace({
   botName: string;
 }) {
   const guest = useGuestProfile();
-  const [selectedApps, setSelectedApps] = useState<string[]>([]);
-  const [appearance, setAppearance] = useState<SpaceAppearance>(normalizeAppearance(initialAppearance));
+  // This is a setup-interest list only; it does not contain authorization tokens.
+  const appInterestsText = useDeviceText(APP_INTERESTS_KEY);
+  const selectedApps = useMemo(() => {
+    try {
+      const saved: unknown = JSON.parse(appInterestsText || "[]");
+      if (!Array.isArray(saved)) return [];
+      const allowed = new Set(OPTIONAL_INTEGRATIONS.map(item => item.id));
+      return [...new Set(saved.filter((id): id is string => typeof id === "string" && allowed.has(id)))];
+    } catch { return []; } // Browser storage may be unavailable.
+  }, [appInterestsText]);
+  // A signed-in person's appearance comes from their account. A guest's is kept
+  // on this device only; either way an applied change in this session wins.
+  const appearanceText = useDeviceText(APPEARANCE_KEY);
+  const savedAppearance = useMemo(() => {
+    if (signedIn || !appearanceText) return normalizeAppearance(initialAppearance);
+    try {
+      return normalizeAppearance(JSON.parse(appearanceText) as SpaceAppearance);
+    } catch {
+      return normalizeAppearance(initialAppearance); // Stay with safe defaults when storage is unreadable.
+    }
+  }, [signedIn, appearanceText, initialAppearance]);
+  const [appliedAppearance, setAppliedAppearance] = useState<SpaceAppearance | null>(null);
+  const appearance = appliedAppearance ?? savedAppearance;
   const [styleText, setStyleText] = useState("");
   const [proposal, setProposal] = useState<AppearanceProposal | null>(null);
   const [styleStatus, setStyleStatus] = useState("");
@@ -97,15 +122,11 @@ export function PersonalSpace({
           setStyleStatus(result.error || "This look couldn't be saved.");
           return;
         }
-      } else {
-        try {
-          window.localStorage.setItem("solve.space.appearance.v1", JSON.stringify(next));
-        } catch {
-          setStyleStatus("Your browser isn't allowing preference storage. This preview hasn't been saved.");
-          return;
-        }
+      } else if (!writeDeviceText(APPEARANCE_KEY, JSON.stringify(next))) {
+        setStyleStatus("Your browser isn't allowing preference storage. This preview hasn't been saved.");
+        return;
       }
-      setAppearance(next);
+      setAppliedAppearance(next);
       setUndoAppearance(previous);
       setProposal(null);
       setStyleStatus("Appearance updated. Your projects, integrations, permissions, and public Profile are unchanged.");
@@ -114,25 +135,6 @@ export function PersonalSpace({
     }
   }
 
-  useEffect(() => {
-    if (!signedIn) {
-      try {
-        const saved = window.localStorage.getItem("solve.space.appearance.v1");
-        if (saved) setAppearance(normalizeAppearance(JSON.parse(saved)));
-      } catch { /* Stay with safe defaults when storage is unavailable. */ }
-    }
-  }, [signedIn]);
-  useEffect(() => {
-    // This is a setup-interest list only; it does not contain authorization tokens.
-    try {
-      const saved: unknown = JSON.parse(window.localStorage.getItem("sov.optional-app-interests.v1") || "[]");
-      const allowed = new Set(OPTIONAL_INTEGRATIONS.map(item => item.id));
-      if (Array.isArray(saved)) {
-        const picked = saved.filter((id): id is string => typeof id === "string" && allowed.has(id));
-        setSelectedApps([...new Set(picked)]);
-      }
-    } catch { /* Browser storage may be unavailable. */ }
-  }, []);
   const localAnswers = normalizeSpaceAnswers(guest.profile?.knowYou);
   const answers = signedIn ? initialAnswers : localAnswers;
   const data = composePersonalSpace({
@@ -202,7 +204,7 @@ export function PersonalSpace({
           <div className="sov-space-title"><h2>My Space</h2><span>Private · Yours</span></div>
           <p>The tools and places that matter to you. Choose or change anything.</p>
           <div className="sov-module-grid">
-            {data.modules.length === 0 ? <div className="sov-empty"><strong>Your canvas is yours.</strong><p>Add an interest or create your first project when you're ready.</p><Link href="/onboarding" className="sov-space-link">Choose what belongs here →</Link></div> : data.modules.map(module => (
+            {data.modules.length === 0 ? <div className="sov-empty"><strong>Your canvas is yours.</strong><p>Add an interest or create your first project when you&apos;re ready.</p><Link href="/onboarding" className="sov-space-link">Choose what belongs here →</Link></div> : data.modules.map(module => (
               <Link key={module.id} href={module.href} className="sov-module">
                 <strong>{module.label}</strong><small>{module.description}</small><span aria-hidden="true">↗</span>
               </Link>
@@ -226,7 +228,7 @@ export function PersonalSpace({
             <p>Guest preferences are saved only in this browser. Sign in to keep shared work across devices.</p>
             <Link href="/login?next=%2Fworlds%2Fnew" className="sov-space-link">Save my work with an account →</Link>
           </div> : projects === null ? <div className="sov-empty" role="status">
-            <strong>Projects couldn't be loaded.</strong>
+            <strong>Projects couldn&apos;t be loaded.</strong>
             <p>Your saved projects have not been changed. Try again after the connection returns.</p>
           </div> : projects.length === 0 ? <div className="sov-empty">
             <strong>Nothing here yet.</strong>

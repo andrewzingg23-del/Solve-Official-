@@ -1,5 +1,14 @@
 # BUILD_STATUS
 
+## Main's code gate repaired — 2026-11-07 (Claude)
+
+- **Verified blocker.** GitHub Actions Build run [42300370113](https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/42300370113) on main `36cd019` failed at **Lint** with 11 errors. Test and Typecheck passed in that run; Build never ran. Run [42296661400](https://github.com/andrewzingg23-del/Solve-Official-/actions/runs/42296661400) on main `b8b13f8` failed the same way. Reproduced locally at `36cd019`: 11 errors / 9 warnings, identical list.
+- **Fixed.** Six `react/no-unescaped-entities` errors (raw `'` in JSX text) and five `react-hooks/set-state-in-effect` errors from three components that read a device-local preference in a mount effect. New `lib/client/device-storage.ts` is the single home for device-local preference reads, using the same `useSyncExternalStore` convention as `lib/guest/profile.ts`; `writeDeviceText` returns false when the browser refuses storage, so the two views that reported that refusal still do. A change applied in the current session still takes precedence over the stored value, so behavior with blocked storage is unchanged.
+- **Not weakened.** No authority, permission, grant, identity or canonical-state path was touched. These preferences (chosen appearance, optional-app interest list, saved public media panels) were already device-local and non-authoritative; no lint rule was disabled and no test was skipped or quarantined.
+- **Checks run on `claude/dreamy-einstein-lq2bik`:** `npm test` 517 tests, 516 pass, 0 fail, 1 pre-existing skip (`tests/e2e/arcadia.test.ts`); `npm run typecheck` ok; `npm run lint` 0 errors, 9 pre-existing warnings; `npm run build` ok. New `tests/client/device-storage.test.ts` 3/3.
+- **Not claimed.** GitHub Actions runs only on pushes to `main`, so this branch has no Actions result yet; no green CI and no deployment is claimed. Nothing was merged to main, no remote database change, no secret handled.
+- **Next:** PR #64 is Vercel-green on `fad701d`, but it removes `20261107081500_sov_public_identity.sql` from both the embedded test kernel and the browser kernel, leaving that migration's public-identity exposure boundary unverified by any automated check. Closing that verification gap is the next slice.
+
 ## One Solve run — Step 0 + Step 1 passport cache — 2026-10-31 (Claude)
 
 - **Run started.** Trunk is `main` (DECISIONS.md 2026-10-31, decision (a)). Working branch `claude/passport-link`. Progress tracked in `docs/plans/RUN-PROGRESS.md`, which carries the live WAITING ON ANDREW list.
