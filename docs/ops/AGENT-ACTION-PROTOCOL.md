@@ -12,6 +12,8 @@ There are **two distinct systems**:
 
 **Non-negotiable:** AI can reason freely but not grant itself authority. Real consequences require scoped human authorization, server-side enforcement, independent provider confirmation when external, and a durable outcome record. The frontend and LLM output cannot be sources of authority.
 
+**Mandatory visual + technical companion:** Every packet affecting a screen, a journey or a visible action must satisfy [SOLVE Visual + Technical Experience Contract](../design/EXPERIENCE-IMPLEMENTATION-CONTRACT.md). The visual hierarchy, personalization, accessibility, and feedback states are part of the executable specification, not optional styling. The design and backend must describe the *same* real behavior. See the current Nov 7 founder-approved private Space atmosphere, but do not present scenic illustrations or design mockups as project or identity evidence.
+
 ## A. Assemble a fresh prompt from six layers
 
 1. **Mission (stable):** one-sentence founder intention and links to authoritative `DIRECTIVES.md`, `VISION-CANON.md`, `DECISIONS.md`, `SECURITY-INVARIANTS.md` and visual refs; honor exact founder decisions. Do **not** duplicate the entire canon in every prompt.
