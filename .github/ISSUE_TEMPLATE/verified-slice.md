@@ -1,3 +1,11 @@
+---
+name: Verified SOLVE slice
+about: Propose a bounded, independently useful feature or fix with concrete acceptance evidence
+title: "[Slice] "
+labels: []
+assignees: ""
+---
+
 # SOLVE vertical slice
 
 **User outcome:** <!-- One real task an unfamiliar person can complete. -->
