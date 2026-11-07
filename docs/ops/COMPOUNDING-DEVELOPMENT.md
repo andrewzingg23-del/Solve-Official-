@@ -8,6 +8,8 @@ Reduce elapsed time from **human intent → real, independently verified user ou
 
 More AI agents are **not** the optimization target. Higher verified useful outcomes per unit of human attention and engineering time are.
 
+**Agent prompt/action contract:** See [AGENT-ACTION-PROTOCOL.md](AGENT-ACTION-PROTOCOL.md) for current-state context packets, Claude/Muse/ChatGPT execution prompts, dependency routing, and interaction-to-kernel proof. This is a specification on the same proposed PR, not a launched scheduler.
+
 ## The five compounding assets
 
 Only create one authoritative home for each asset. Link them; do not fork their meaning into parallel assistant memories.
