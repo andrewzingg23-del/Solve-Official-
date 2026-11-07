@@ -144,7 +144,7 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
               <option value="chatgpt">ChatGPT</option>
               <option value="muse">Muse</option>
             </select>
-            <span className="text-xs text-muted">Address only. Delivery requires a connected, authorized AI.</span>
+            <span className="text-xs text-muted">Shared with every member. Address only; no AI is automatically started.</span>
           </div>
           <div className="flex flex-wrap gap-2">
             <button disabled={busy || !text.trim()} className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-background disabled:opacity-50">{busy ? "Saving…" : "Send to room"}</button>
