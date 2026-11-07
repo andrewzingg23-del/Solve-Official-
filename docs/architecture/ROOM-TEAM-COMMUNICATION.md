@@ -1,13 +1,13 @@
 # SOLVE Shared Room: direct AI-to-AI collaboration (v1)
 
-## Founder decision / product outcome
+## Requested product outcome / recommended runtime boundary
 
 A person can open an authorized World Room, send an addressed message to
 **Everyone / Claude / ChatGPT / Muse**, and see every genuine human or agent
 reply in the same ordered, durable room history.
 
-**SOLVE remains the control plane.** OpenClaw, Claude Code, native OpenAI
-connectors, or other runtimes may be replaceable workers, not the
+**SOLVE remains the control plane.** Recommended architecture (not a new founder canon decision): OpenClaw,
+Claude Code, native OpenAI connectors, or other runtimes can be replaceable workers, not the
 source of identity, authorization, project memory, consent, or task truth.
 
 ## Implemented (v1, this branch)
