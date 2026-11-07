@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 import { useGuestProfile } from "@/lib/guest/profile";
 import { createSovVCard, safeContactEmail, safeSovLink } from "@/lib/product/sov-contact";
+import { publishSovCard, unpublishSovCard } from "./actions";
 
 type CardDraft = {
   line: string;
@@ -73,9 +74,11 @@ function writeDraft(next: CardDraft): boolean {
   }
 }
 
-export function SovCard({ accountName = "", accountHandle = "" }: {
+export function SovCard({ accountName = "", accountHandle = "", canPublish = false, initialPublicId = null }: {
   accountName?: string;
   accountHandle?: string;
+  canPublish?: boolean;
+  initialPublicId?: string | null;
 }) {
   const { profile } = useGuestProfile();
   const draft = useSyncExternalStore(subscribe, readDraft, () => EMPTY);
@@ -83,6 +86,8 @@ export function SovCard({ accountName = "", accountHandle = "" }: {
   const [expanded, setExpanded] = useState(false);
   const [edit, setEdit] = useState(false);
   const [notice, setNotice] = useState("");
+  const [publishBusy, setPublishBusy] = useState(false);
+  const [publicId, setPublicId] = useState(initialPublicId);
 
   const name = (accountName || profile?.yourName || "").trim();
   const handle = (accountHandle || profile?.sovName || "").trim().replace(/^@/, "");
@@ -95,6 +100,35 @@ export function SovCard({ accountName = "", accountHandle = "" }: {
 
   function change(patch: Partial<CardDraft>) {
     setNotice(writeDraft({ ...draft, ...patch }) ? "Saved on this device." : "Couldn't save on this device. Your change isn't persistent.");
+  }
+
+  async function publish() {
+    if (publishBusy) return;
+    setPublishBusy(true);
+    try {
+      const result = await publishSovCard({ name, handle, tagline: draft.line, about: draft.about, email: draft.email, website: draft.website, featured: draft.featured, appearance: draft.appearance });
+      if (result.ok) { setPublicId(result.publicId); setNotice("Published. Only the details you chose for your public card are visible."); }
+      else setNotice(result.error);
+    } catch { setNotice("Couldn\u0027t publish right now. Your private draft remains unchanged."); }
+    finally { setPublishBusy(false); }
+  }
+
+  async function unpublish() {
+    if (publishBusy) return;
+    setPublishBusy(true);
+    try {
+      const result = await unpublishSovCard();
+      if (result.ok) { setPublicId(null); setNotice("Unpublished. Your public card link no longer shows your identity."); }
+      else setNotice(result.error || "Unable to unpublish right now.");
+    } catch { setNotice("Unable to unpublish right now."); }
+    finally { setPublishBusy(false); }
+  }
+
+  function copyPublicLink() {
+    if (!publicId) return;
+    void navigator.clipboard.writeText(new URL(`/id/${publicId}`, window.location.origin).toString())
+      .then(() => setNotice("Public link copied."))
+      .catch(() => setNotice("Copy your link from the opened public card."));
   }
 
   function downloadContact() {
@@ -222,8 +256,20 @@ export function SovCard({ accountName = "", accountHandle = "" }: {
         </div> : null}
       </section>
 
+      <section className="sov-publish" aria-labelledby="sov-publish-title">
+        <div><span className="sov-overline">SHARING</span><h2 id="sov-publish-title">Ready when you are.</h2>
+          <p>Only your explicitly chosen card details are published. Your private Home, AI context and projects stay separate.</p>
+        </div>
+        {canPublish ? <div className="sov-publish-actions">
+          <button type="button" className="sov-primary-action" disabled={publishBusy || !name} onClick={() => void publish()}>{publishBusy ? "Working…" : publicId ? "Update public card" : "Publish card"}</button>
+          {publicId ? <><Link href={`/id/${publicId}`} target="_blank" rel="noopener noreferrer">View public card ↗</Link>
+            <button type="button" disabled={publishBusy} onClick={copyPublicLink}>Copy link</button>
+            <button type="button" disabled={publishBusy} onClick={() => void unpublish()}>Unpublish</button></> : null}
+        </div> : <div className="sov-publish-actions"><Link href="/login?next=%2Fcard" className="sov-primary-action">Sign in to publish</Link><span className="sov-muted-disclosure">You can design and export your card without signing in.</span></div>}
+        <p className="sov-muted-disclosure">Published changes take effect only when you select Publish or Update. Publication requires the SOV public-profile database feature to be available.</p>
+      </section>
       {notice ? <p className="sov-card-notice" role="status">{notice}</p> : null}
-      <p className="sov-card-disclosure">On-device draft. Not published. No payment credential issued. No blockchain transaction initiated.</p>
+      <p className="sov-card-disclosure">Your editor is an on-device draft. {publicId ? "Your last explicitly published version is public." : "No public card is currently published."} No payment credential issued. No blockchain transaction initiated.</p>
       <footer className="sov-experience-footer">
         <span>sov. / by SOLVE</span>
         <Link href="/space">Your Home ↗</Link>
