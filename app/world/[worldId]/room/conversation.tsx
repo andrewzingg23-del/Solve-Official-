@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { RoomMessage, RoomSourceRef } from "@/lib/kernel/client";
 import type { RoomTurnInput, RoomTurnResult } from "@/lib/world/room";
+import { formatTeamMessage, parseTeamMessage, teamRecipient, TEAM_RECIPIENT_LABELS, type TeamRecipient } from "@/lib/world/team-messages";
 
 function mergeMessages(saved: RoomMessage[], incoming: RoomMessage[]) {
   return [...new Map([...saved, ...incoming].map(m => [m.message_id, m])).values()].sort((a, b) => a.seq - b.seq);
@@ -25,6 +26,7 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
 }) {
   const router = useRouter();
   const [text, setText] = useState("");
+  const [recipient, setRecipient] = useState<TeamRecipient>("team");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [retry, setRetry] = useState<RoomTurnInput | null>(null);
@@ -47,11 +49,21 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
 
   async function send(intent: RoomTurnInput["intent"], previous?: RoomTurnInput) {
     if (busy || !canWrite || (!previous && !text.trim())) return;
+    const draft = text.trim();
     let turn = previous;
     if (!turn) {
-      const signature = JSON.stringify({ text: text.trim(), intent });
+      let outgoing: string;
+      try {
+        // An addressed send stays a normal authorized World message. Ask AI
+        // still uses the existing in-app provider, NOT the addressed teammate.
+        outgoing = intent === "message" ? formatTeamMessage(recipient, draft) : draft;
+      } catch (error) {
+        setNotice(error instanceof Error ? error.message : "Check your message and try again.");
+        return;
+      }
+      const signature = JSON.stringify({ text: outgoing, intent });
       if (!request.current || request.current.signature !== signature) request.current = { signature, id: crypto.randomUUID() };
-      turn = { worldId, text: text.trim(), intent, requestId: request.current.id };
+      turn = { worldId, text: outgoing, intent, requestId: request.current.id };
     }
     setBusy(true); setNotice("");
     try {
@@ -59,7 +71,7 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
       const data = await res.json() as RoomTurnResult & { error?: string };
       if (!res.ok) throw new Error(data.error || "Your message could not be saved.");
       if (!previous) request.current = null;
-      setText(v => v.trim() === turn.text ? "" : v);
+      setText(v => v.trim() === draft ? "" : v);
       const retryable = ["failed", "unavailable", "pending"].includes(data.aiStatus);
       setRetry(retryable ? turn : null);
       setNotice(data.error || (data.aiStatus === "pending" ? "Your question is saved. An AI reply is in progress; refresh or retry shortly." : intent === "decision" ? "Your decision is recorded with your name." : "Saved to the room."));
@@ -97,13 +109,15 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
       <ol ref={list} aria-label="Room messages" onScroll={e => { const el = e.currentTarget; followLatest.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60; }} className="flex max-h-96 flex-col gap-3 overflow-y-auto overscroll-contain">
         {all.map(m => {
           const refs = readableSourceRefs(m.source_refs);
+          const addressed = parseTeamMessage(m.text);
           return (
           <li key={m.message_id} className={`rounded-lg border p-3 ${m.kind === "decision" ? "border-positive/30 bg-positive/5" : m.kind === "ai_draft" ? "border-accent/25 bg-accent/5" : "border-line bg-background/40"}`}>
             <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2 text-xs">
               <span className="font-medium">{m.kind === "ai_draft" ? `AI draft · requested by ${m.actor_label}` : `${m.actor_label}${m.actor_kind === "agent" ? " · AI agent" : ""}${m.kind === "decision" ? " · recorded decision" : ""}`}</span>
+              {addressed.addressed ? <span className="text-accent">To {TEAM_RECIPIENT_LABELS[addressed.recipient]}</span> : null}
               <time dateTime={new Date(m.occurred_at).toISOString()} className="text-muted">{new Date(m.occurred_at).toLocaleString("en-US", { timeZone: "UTC", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZoneName: "short" })}</time>
             </div>
-            <p className="whitespace-pre-wrap break-words text-sm leading-6">{m.text}</p>
+            <p className="whitespace-pre-wrap break-words text-sm leading-6">{addressed.body}</p>
             {refs.length ? (
               <details className="mt-2 text-xs text-muted"><summary className="cursor-pointer">Shared sources used · {refs.length}</summary>
                 <ul className="mt-2 space-y-1">{refs.map(s => <li key={s.entityId}><a href={`/world/${worldId}#piece-${s.entityId}`} className="text-accent underline">{s.title} · v{s.version}</a></li>)}</ul>
@@ -121,13 +135,23 @@ export function SharedConversation({ worldId, messages, beforeSeq, canWrite = fa
       {canWrite ? (
         <form onSubmit={event => { event.preventDefault(); void send("message"); }} className="flex flex-col gap-3">
           <label htmlFor="room-message" className="text-xs text-muted">Message or question</label>
-          <textarea id="room-message" value={text} onChange={e => setText(e.target.value)} rows={3} maxLength={8000} required disabled={busy} placeholder="What should we work on?" className="min-w-0 resize-y rounded-md border border-line bg-background p-3 text-sm leading-6 outline-none focus:border-accent disabled:opacity-60" />
+          <textarea id="room-message" value={text} onChange={e => setText(e.target.value)} rows={3} maxLength={7800} required disabled={busy} placeholder="What should we work on together?" className="min-w-0 resize-y rounded-md border border-line bg-background p-3 text-sm leading-6 outline-none focus:border-accent disabled:opacity-60" />
+          <div className="flex flex-wrap items-center gap-3">
+            <label htmlFor="room-recipient" className="text-xs text-muted">Send to</label>
+            <select id="room-recipient" value={recipient} onChange={event => setRecipient(teamRecipient(event.target.value) ?? "team")} disabled={busy} className="min-h-11 rounded-md border border-line bg-background px-3 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+              <option value="team">Everyone in this room</option>
+              <option value="claude">Claude</option>
+              <option value="chatgpt">ChatGPT</option>
+              <option value="muse">Muse</option>
+            </select>
+            <span className="text-xs text-muted">Address only. Delivery requires a connected, authorized AI.</span>
+          </div>
           <div className="flex flex-wrap gap-2">
             <button disabled={busy || !text.trim()} className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-background disabled:opacity-50">{busy ? "Saving…" : "Send to room"}</button>
             <button type="button" disabled={busy || !text.trim()} onClick={() => void send("ask_ai")} className="rounded-md border border-accent/50 px-4 py-2 text-sm text-accent disabled:opacity-50">Ask AI</button>
             <button type="button" disabled={busy || !text.trim()} onClick={() => void send("decision")} className="rounded-md border border-line px-4 py-2 text-sm disabled:opacity-50">Record decision</button>
           </div>
-          <p className="text-[11px] leading-5 text-muted">Ask AI sends selected shared documents, recorded decisions and recent messages through OpenRouter to the chosen model provider. Personal memory stays private. AI replies are drafts; a recorded decision names its author.</p>
+          <p className="text-[11px] leading-5 text-muted">Send to room stores an addressed message in this World; the selected AI must be connected and authorized to read and respond. This does not start an agent or give it access. Ask AI separately uses the current in-app model through OpenRouter. Personal memory remains private. AI responses are drafts and only people can record their own decisions.</p>
         </form>
       ) : <p className="text-xs text-muted">You can view this room. Ask the owner for editor access to contribute.</p>}
       {notice ? <p role="status" className="text-xs leading-5 text-muted">{notice}</p> : null}
