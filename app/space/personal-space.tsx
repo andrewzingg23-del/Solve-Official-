@@ -146,8 +146,8 @@ export function PersonalSpace({
       <div className="sov-space-intro">
         <span className="solve-kicker">SOLVE / Your Space</span>
         <h1>It starts with you.</h1>
-        <p>Meet your AI, tell us a little about what matters, and build a useful personal environment. No account connections or public sharing required.</p>
-        <Link href="/onboarding" className="solve-button">Create my Space →</Link>
+        <p>Begin with a card, a project, or a private Home. Add Your AI only when you want help. No account connections or public sharing required.</p>
+        <div className="sov-space-actions"><Link href="/card" className="solve-button">Make my card →</Link><Link href="/onboarding" className="solve-button solve-button-secondary">Set up Home</Link></div>
       </div>
     </main>
   );
@@ -161,41 +161,11 @@ export function PersonalSpace({
           <p>{data.goal || "Create, connect, learn, and build. Your Space can change as your life changes."}</p>
         </div>
         <div className="sov-space-actions">
-          <Link href="/onboarding" className="solve-button solve-button-secondary">Customize</Link>
+          <Link href="/onboarding" className="solve-button solve-button-secondary">Customize Home</Link>\n          <Link href="/card" className="solve-button solve-button-secondary">My card</Link>
           <Link href="/worlds/new" className="solve-button">+ Create</Link>
         </div>
       </header>
 
-      <section className="sov-space-card sov-style-editor" aria-label="Customize your Space through natural language">
-        <div className="sov-space-title"><h2>Talk to {botName}</h2><span>Private · You approve changes</span></div>
-        <p>Ask anything or tell your AI how to change the look of your Space. Appearance changes are previewed before you apply them.</p>
-        <div className="sov-agent-transcript" aria-live="polite" aria-label="Your AI conversation">
-          {agentTurns.length ? agentTurns.map((turn, index) => (
-            <div key={index} className={"sov-agent-turn sov-agent-turn--" + turn.role}>
-              <small>{turn.role === "assistant" ? botName + (turn.kind === "appearance" ? " · Appearance" : "") : "You"}</small>
-              <p>{turn.content}</p>
-            </div>
-          )) : <p className="sov-agent-prompt">Try “Make this feel like a vintage skate magazine” or “Help me plan a new creative project.”</p>}
-          {chatBusy ? <p className="sov-agent-waiting" role="status">Your AI is responding…</p> : null}
-        </div>
-        <form className="sov-style-form" onSubmit={event => void sendAgentMessage(event)}>
-          <label htmlFor="solve-style-request" className="sr-only">Talk to your AI</label>
-          <div className="sov-style-input-row">
-            <input id="solve-style-request" name="message" value={styleText} onChange={event => setStyleText(event.target.value)} maxLength={700} autoComplete="off" placeholder={"Ask " + botName + " or change your Space…"} />
-            <button className="solve-button" type="submit" disabled={!styleText.trim() || styleBusy || chatBusy}>{chatBusy ? "Thinking…" : "Send"}</button>
-          </div>
-        </form>
-        {styleStatus ? <p className="sov-style-response" role="status">{styleStatus}</p> : null}
-        {proposal ? <div className="sov-style-approval">
-          <span>Previewing: {proposal.changes.join(", ")}</span>
-          <div>
-            <button type="button" className="solve-button" disabled={styleBusy} onClick={() => void commitStyle(proposal.next, appearance)}>{styleBusy ? "Saving…" : "Apply this look"}</button>
-            <button type="button" className="solve-button solve-button-secondary" disabled={styleBusy} onClick={() => { setProposal(null); setStyleStatus("Preview discarded. Your saved appearance is unchanged."); }}>Discard preview</button>
-          </div>
-        </div> : null}
-        {!proposal && undoAppearance ? <button type="button" className="sov-space-link sov-style-undo" disabled={styleBusy} onClick={() => void commitStyle(undoAppearance, appearance)}>↶ Undo last appearance change</button> : null}
-        <small>Appearance requests use a restricted local interpreter. Other messages use your existing AI connection when available. This conversation is session-only; no request here authorizes a payment, account connection, or public publishing.</small>
-      </section>
       <div className="sov-personal-stack">
       <div className="sov-personal-top">
         <section className="sov-space-card sov-focus-card">
@@ -210,7 +180,7 @@ export function PersonalSpace({
           </div>
         </section>
         <section className="sov-space-card sov-agent-card">
-          <div className="sov-space-title"><h2>Your AI</h2><span>Permissioned</span></div>
+          <div className="sov-space-title"><h2>Your AI</h2><span>Optional · Permissioned</span></div>
           <span className="sov-agent-symbol" aria-hidden="true" />
           <p>Ask for help with what you are building. Your AI only gets access to the context and tools you authorize.</p>
           <Link href="/bot" className="sov-space-link">Open your AI →</Link>
@@ -266,14 +236,41 @@ export function PersonalSpace({
           <p>{data.publicPreview.bio || "Your creations and chosen identity can be shared with the world. Your private Space stays private."}</p>
           <div className="sov-inline-actions">
             <Link href="/account" className="sov-space-link">Manage identity →</Link>
-            <Link href="/sov-id" className="sov-space-link">View SOV ID →</Link>
+            <Link href="/card" className="sov-space-link">View my card →</Link>
           </div>
         </section>
       </div>
 
-      </div>
-
-      {data.goal || data.people || answers.context ? <details className="sov-private-context">
+      </div>\n\n      <details className="sov-space-card sov-style-editor" aria-label="Optional AI assistance">\n        <summary className="sov-optional-ai-toggle">Your AI · Get help, ideas, or change the look (optional)</summary>
+        <div className="sov-space-title"><h2>Talk to {botName}</h2><span>Private · You approve changes</span></div>
+        <p>Ask anything or tell your AI how to change the look of your Space. Appearance changes are previewed before you apply them.</p>
+        <div className="sov-agent-transcript" aria-live="polite" aria-label="Your AI conversation">
+          {agentTurns.length ? agentTurns.map((turn, index) => (
+            <div key={index} className={"sov-agent-turn sov-agent-turn--" + turn.role}>
+              <small>{turn.role === "assistant" ? botName + (turn.kind === "appearance" ? " · Appearance" : "") : "You"}</small>
+              <p>{turn.content}</p>
+            </div>
+          )) : <p className="sov-agent-prompt">Try “Make this feel like a vintage skate magazine” or “Help me plan a new creative project.”</p>}
+          {chatBusy ? <p className="sov-agent-waiting" role="status">Your AI is responding…</p> : null}
+        </div>
+        <form className="sov-style-form" onSubmit={event => void sendAgentMessage(event)}>
+          <label htmlFor="solve-style-request" className="sr-only">Talk to your AI</label>
+          <div className="sov-style-input-row">
+            <input id="solve-style-request" name="message" value={styleText} onChange={event => setStyleText(event.target.value)} maxLength={700} autoComplete="off" placeholder={"Ask " + botName + " or change your Space…"} />
+            <button className="solve-button" type="submit" disabled={!styleText.trim() || styleBusy || chatBusy}>{chatBusy ? "Thinking…" : "Send"}</button>
+          </div>
+        </form>
+        {styleStatus ? <p className="sov-style-response" role="status">{styleStatus}</p> : null}
+        {proposal ? <div className="sov-style-approval">
+          <span>Previewing: {proposal.changes.join(", ")}</span>
+          <div>
+            <button type="button" className="solve-button" disabled={styleBusy} onClick={() => void commitStyle(proposal.next, appearance)}>{styleBusy ? "Saving…" : "Apply this look"}</button>
+            <button type="button" className="solve-button solve-button-secondary" disabled={styleBusy} onClick={() => { setProposal(null); setStyleStatus("Preview discarded. Your saved appearance is unchanged."); }}>Discard preview</button>
+          </div>
+        </div> : null}
+        {!proposal && undoAppearance ? <button type="button" className="sov-space-link sov-style-undo" disabled={styleBusy} onClick={() => void commitStyle(undoAppearance, appearance)}>↶ Undo last appearance change</button> : null}
+        <small>Appearance requests use a restricted local interpreter. Other messages use your existing AI connection when available. This conversation is session-only; no request here authorizes a payment, account connection, or public publishing.</small>
+      </details>\n\n      {data.goal || data.people || answers.context ? <details className="sov-private-context">
         <summary>Private setup context</summary>
         {data.goal ? <p><strong>Objective:</strong> {data.goal}</p> : null}
         {data.people ? <p><strong>People:</strong> {data.people}</p> : null}
