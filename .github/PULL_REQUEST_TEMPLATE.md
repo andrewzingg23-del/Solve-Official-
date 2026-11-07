@@ -2,6 +2,15 @@
 
 <!-- What can a real person do now that was previously impossible or unreliable? -->
 
+# Visual + technical experience contract (required for UI changes)
+
+- [ ] **Visual:** approved language/tokens and visual hierarchy, phone/desktop, user-controlled expression, empty/loading/error/success/revoked, accessibility/reduced motion (or explain why not applicable)
+- [ ] **Mechanics:** actor and authority, existing source of truth/API, actual mutation/persistence/readback, failure/retry/revoke/undo, privacy (or explain why not applicable)
+- [ ] **Coupling:** every visible control corresponds to real supported behavior, truthful unavailable state, or clearly marked concept
+- [ ] **Evidence:** screenshots/device check and positive/negative tests where applicable, clearly distinguishing verified from unverified
+
+Reference: [Experience Implementation Contract](docs/design/EXPERIENCE-IMPLEMENTATION-CONTRACT.md).
+
 # What changed
 
 <!-- Paths/behavior; which existing primitives were reused? What was deliberately not rebuilt? -->
