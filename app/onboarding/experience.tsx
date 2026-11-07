@@ -79,7 +79,7 @@ export function PersonalOnboarding({
     <main className="sov-experience solve-page">
       <div className="solve-onboarding-top">
         <SolveBrand href="/space" />
-        <span className="solve-onboarding-top-title">One Setup. A Space That's Yours.</span>
+        <span className="solve-onboarding-top-title">One Setup. A Space That&apos;s Yours.</span>
         <Link href="/space" className="solve-onboarding-top-exit">My Space →</Link>
       </div>
       <header className="sov-experience-head">
@@ -167,7 +167,7 @@ export function PersonalOnboarding({
         <section className="sov-experience-panel sov-build-panel">
           <span className="solve-kicker">03 / Build your Space</span>
           <h2>Made for what matters to you.</h2>
-          <p>Here's the structure assembled from your choices. You can change every part later; this doesn't connect or share anything.</p>
+          <p>Here&apos;s the structure assembled from your choices. You can change every part later; this doesn&apos;t connect or share anything.</p>
           <div className="sov-build-preview">
             <div className="sov-build-preview-heading"><span className="sov-build-orb" aria-hidden="true" /><div><strong>{view.greeting}</strong><small>Private Space · Your chosen starting point</small></div></div>
             <div className="sov-preview-modules">

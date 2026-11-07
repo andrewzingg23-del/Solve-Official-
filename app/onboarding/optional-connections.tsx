@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   OPTIONAL_INTEGRATIONS,
   OPTIONAL_INTEGRATION_CATEGORIES,
   connectionStateLabel,
 } from "@/lib/product/optional-integrations";
+import { useDeviceText, useHydrated, writeDeviceText } from "@/lib/client/device-storage";
 
 const STORAGE_KEY = "sov.optional-app-interests.v1";
 
-function readSelected(): string[] {
+function parseSelected(raw: string | null): string[] {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
     const values: unknown = raw ? JSON.parse(raw) : [];
     const valid = new Set(OPTIONAL_INTEGRATIONS.map(item => item.id));
     return Array.isArray(values) ? values.filter((value): value is string => typeof value === "string" && valid.has(value)) : [];
@@ -20,18 +20,19 @@ function readSelected(): string[] {
 }
 
 export function OptionalConnections() {
-  const [selected, setSelected] = useState<string[]>([]);
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    // A saved preference is only an interest list; it never stores API tokens or implies auth.
-    setSelected(readSelected());
-    setReady(true);
-  }, []);
+  // A saved preference is only an interest list; it never stores API tokens or implies auth.
+  const storedText = useDeviceText(STORAGE_KEY);
+  const stored = useMemo(() => parseSelected(storedText), [storedText]);
+  const ready = useHydrated();
+  // What this person has changed in this session takes precedence, so the list
+  // still responds when the browser refuses to keep the preference.
+  const [chosen, setChosen] = useState<string[] | null>(null);
+  const selected = chosen ?? stored;
 
   function toggle(id: string) {
     const next = selected.includes(id) ? selected.filter(value => value !== id) : [...selected, id];
-    setSelected(next);
-    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* optional preferences may not persist */ }
+    setChosen(next);
+    writeDeviceText(STORAGE_KEY, JSON.stringify(next)); // optional preferences may not persist
   }
 
   return <div className="sov-integration-picker">
@@ -39,8 +40,8 @@ export function OptionalConnections() {
       <strong>{ready ? selected.length : "—"} selected</strong>
       <span>Saved to this device as setup preferences. No account has been connected.</span>
       {selected.length ? <button type="button" onClick={() => {
-        setSelected([]);
-        try { window.localStorage.removeItem(STORAGE_KEY); } catch { /* best effort */ }
+        setChosen([]);
+        writeDeviceText(STORAGE_KEY, null); // best effort
       }} className="solve-text-link">Clear</button> : null}
     </div>
 

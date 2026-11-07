@@ -12,7 +12,7 @@ export default async function ProjectsPage() {
   if (user) { try { projects = await listCreativeWorlds(await getKernel()); } catch { projects = null; } }
   return <main className="solve-page">
     <header className="solve-page-heading">
-      <span className="solve-kicker">Projects</span><h1>What you're building.</h1>
+      <span className="solve-kicker">Projects</span><h1>What you&apos;re building.</h1>
       <p>Your work and its history stay in the Project. Connections and Agent permissions are separate.</p>
     </header>
     {user ? projects ? <Projects projects={projects} /> : <section className="solve-empty"><h2>Projects are temporarily unavailable.</h2><p>Your work has not been deleted. Try again when the connection returns.</p></section> :

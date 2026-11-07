@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { parsePublicEmbed } from "@/lib/product/public-embeds";
+import { useDeviceText, useHydrated, writeDeviceText } from "@/lib/client/device-storage";
 
 type SavedSurface = { id: string; url: string };
 const STORAGE_KEY = "sov.public-app-surfaces.v1";
 
-function restore(): SavedSurface[] {
+function restore(text: string | null): SavedSurface[] {
   try {
-    const raw: unknown = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "[]");
+    const raw: unknown = JSON.parse(text ?? "[]");
     if (!Array.isArray(raw)) return [];
     return raw.filter((row): row is SavedSurface =>
       typeof row === "object" && row !== null &&
@@ -18,20 +19,21 @@ function restore(): SavedSurface[] {
 }
 
 export function AppDock() {
-  const [items, setItems] = useState<SavedSurface[]>([]);
+  const storedText = useDeviceText(STORAGE_KEY);
+  const stored = useMemo(() => restore(storedText), [storedText]);
+  // Panels added in this session stay on screen even if the browser refuses to
+  // keep them, so the person is told the truth rather than losing their work.
+  const [added, setAdded] = useState<SavedSurface[] | null>(null);
+  const items = added ?? stored;
   const [url, setUrl] = useState("");
-  const [ready, setReady] = useState(false);
+  const ready = useHydrated();
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setItems(restore());
-    setReady(true);
-  }, []);
-
   function commit(next: SavedSurface[]) {
-    setItems(next);
-    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); }
-    catch { setError("This browser cannot persist app panels. Keep the page open until your preferences can be saved."); }
+    setAdded(next);
+    if (!writeDeviceText(STORAGE_KEY, JSON.stringify(next))) {
+      setError("This browser cannot persist app panels. Keep the page open until your preferences can be saved.");
+    }
   }
 
   function add(event: React.FormEvent<HTMLFormElement>) {
@@ -56,7 +58,7 @@ export function AppDock() {
       <label htmlFor="app-url">Add a public media app</label>
       <div><input id="app-url" type="url" required inputMode="url" placeholder="Paste a YouTube or Spotify URL" value={url} onChange={event => setUrl(event.target.value)} disabled={!ready} />
       <button className="solve-button" type="submit" disabled={!ready}>Add player</button></div>
-      <p>These official public players work without connecting an account. Playback remains governed by each provider's availability and policies.</p>
+      <p>These official public players work without connecting an account. Playback remains governed by each provider&apos;s availability and policies.</p>
       {error ? <p role="alert" className="solve-error">{error}</p> : null}
     </form>
     {items.length ? <div className="sov-app-surface-grid">
