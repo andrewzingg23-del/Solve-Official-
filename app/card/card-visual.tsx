@@ -74,11 +74,12 @@ function writeDraft(next: CardDraft): boolean {
   }
 }
 
-export function SovCard({ accountName = "", accountHandle = "", canPublish = false, initialPublicId = null }: {
+export function SovCard({ accountName = "", accountHandle = "", canPublish = false, initialPublicId = null, invitedBy = "" }: {
   accountName?: string;
   accountHandle?: string;
   canPublish?: boolean;
   initialPublicId?: string | null;
+  invitedBy?: string;
 }) {
   const { profile } = useGuestProfile();
   const draft = useSyncExternalStore(subscribe, readDraft, () => EMPTY);
@@ -131,6 +132,13 @@ export function SovCard({ accountName = "", accountHandle = "", canPublish = fal
       .catch(() => setNotice("Copy your link from the opened public card."));
   }
 
+  function copyInviteLink() {
+    if (!publicId) return;
+    void navigator.clipboard.writeText(new URL(`/card?via=${encodeURIComponent(publicId)}`, window.location.origin).toString())
+      .then(() => setNotice("Your invitation link is copied. Rewards are not active yet."))
+      .catch(() => setNotice("Couldn\u0027t copy automatically. Open your public card to share it."));
+  }
+
   function downloadContact() {
     const content = createSovVCard({ name, email, website });
     if (!content) {
@@ -158,6 +166,7 @@ export function SovCard({ accountName = "", accountHandle = "", canPublish = fal
     </header>
 
     <div className="sov-experience-body">
+      {invitedBy ? <p className="sov-invite-context">Invited by {invitedBy}. Make yours next.</p> : null}
       <section className="sov-card-intro" aria-labelledby="sov-card-heading">
         <span className="sov-overline">SOV ID / YOUR CARD</span>
         <h1 id="sov-card-heading">Yours to make.</h1>
@@ -264,6 +273,7 @@ export function SovCard({ accountName = "", accountHandle = "", canPublish = fal
           <button type="button" className="sov-primary-action" disabled={publishBusy || !name} onClick={() => void publish()}>{publishBusy ? "Working…" : publicId ? "Update public card" : "Publish card"}</button>
           {publicId ? <><Link href={`/id/${publicId}`} target="_blank" rel="noopener noreferrer">View public card ↗</Link>
             <button type="button" disabled={publishBusy} onClick={copyPublicLink}>Copy link</button>
+            <button type="button" disabled={publishBusy} onClick={copyInviteLink}>Invite someone</button>
             <button type="button" disabled={publishBusy} onClick={() => void unpublish()}>Unpublish</button></> : null}
         </div> : <div className="sov-publish-actions"><Link href="/login?next=%2Fcard" className="sov-primary-action">Sign in to publish</Link><span className="sov-muted-disclosure">You can design and export your card without signing in.</span></div>}
         <p className="sov-muted-disclosure">Published changes take effect only when you select Publish or Update. Publication requires the SOV public-profile database feature to be available.</p>
