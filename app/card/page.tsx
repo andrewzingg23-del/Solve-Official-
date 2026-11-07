@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getUser, createClient } from "@/lib/supabase/server";
 import { SovCard } from "./card-visual";
 import "./sov-card.css";
+import "./publish.css";
 
 export const metadata: Metadata = {
   title: "Your SOV Card — SOLVE",
