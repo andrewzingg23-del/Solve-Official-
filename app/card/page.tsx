@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function CardPage() {
+export default async function CardPage({ searchParams }: { searchParams?: Promise<{ via?: string | string[] }> }) {
   // Account metadata is used only for the owner's preview. No profile is
   // published just because an owner opens this route.
   const user = await getUser();
@@ -32,6 +32,20 @@ export default async function CardPage() {
       // Owner can still edit locally while publication infrastructure is unavailable.
     }
   }
+  // An invitation is just context, not a purchase or a payable referral.
+  const params = searchParams ? await searchParams : {};
+  const via = typeof params.via === "string" ? params.via : "";
+  let invitedBy = "";
+  if (/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(via)) {
+    try {
+      const supabase = await createClient();
+      const { data } = await supabase.from("sov_public_profiles")
+        .select("display_name").eq("public_id", via).eq("published", true).maybeSingle();
+      if (typeof data?.display_name === "string") invitedBy = data.display_name;
+    } catch {
+      // Invalid or unavailable invitations never block creating a personal card.
+    }
+  }
   return <SovCard accountName={accountName} accountHandle={accountHandle}
-    canPublish={canPublish} initialPublicId={publicId} />;
+    canPublish={canPublish} initialPublicId={publicId} invitedBy={invitedBy} />;
 }
