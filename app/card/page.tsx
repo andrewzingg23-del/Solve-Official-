@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getUser } from "@/lib/supabase/server";
+import { getUser, createClient } from "@/lib/supabase/server";
 import { SovCard } from "./card-visual";
 import "./sov-card.css";
 
@@ -18,5 +18,19 @@ export default async function CardPage() {
   const accountHandle = typeof user?.user_metadata?.sov_label === "string"
     ? user.user_metadata.sov_label : "";
 
-  return <SovCard accountName={accountName} accountHandle={accountHandle} />;
+  let publicId: string | null = null;
+  const canPublish = Boolean(user && !user.is_anonymous);
+  if (canPublish) {
+    try {
+      const supabase = await createClient();
+      const { data } = await supabase.from("sov_public_profiles")
+        .select("public_id, published")
+        .eq("owner_id", user!.id).maybeSingle();
+      if (data?.published && typeof data.public_id === "string") publicId = data.public_id;
+    } catch {
+      // Owner can still edit locally while publication infrastructure is unavailable.
+    }
+  }
+  return <SovCard accountName={accountName} accountHandle={accountHandle}
+    canPublish={canPublish} initialPublicId={publicId} />;
 }
