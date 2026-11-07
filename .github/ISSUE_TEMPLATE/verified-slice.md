@@ -10,6 +10,14 @@ assignees: ""
 
 **User outcome:** <!-- One real task an unfamiliar person can complete. -->
 
+**Visual acceptance:** <!-- Exact user surface, approved brand tokens, first five seconds, phone/desktop states, personalization, accessibility. -->
+
+**Mechanics acceptance:** <!-- Identity/scope, source of truth, permissions, real API/operation, persistence, denial/revoke/error/retry. -->
+
+**Experience-to-action proof:** <!-- For each visible control: what user sees, what actually happens, where proof lives, independent device check. -->
+
+**Design system:** <!-- Link docs/design/EXPERIENCE-IMPLEMENTATION-CONTRACT.md and existing target. -->
+
 **Before:** <!-- Grounded current behavior; include evidence/URL, not assumptions. -->
 
 **Owner / scope:** <!-- One agent, branch, affected paths. -->
