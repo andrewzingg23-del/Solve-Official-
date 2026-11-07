@@ -14,8 +14,12 @@ const nodeRuntime: KernelRuntime = {
   create: async () => new PGlite() as unknown as PGliteLike,
   migrations: async () => {
     const dir = join(process.cwd(), "supabase/migrations");
+    // The embedded kernel has no Supabase-managed auth.users or API roles.
+    // Keep its migration list aligned with the browser's offline kernel assets.
+    const scope = JSON.parse(readFileSync(join(process.cwd(), "supabase/migration-scope.json"), "utf8")) as { supabaseOnly: string[] };
+    const supabaseOnly = new Set(scope.supabaseOnly);
     return readdirSync(dir)
-      .filter((f) => f.endsWith(".sql"))
+      .filter((f) => f.endsWith(".sql") && !supabaseOnly.has(f))
       .sort()
       .map((f) => readFileSync(join(dir, f), "utf8"));
   },
