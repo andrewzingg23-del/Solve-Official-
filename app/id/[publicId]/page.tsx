@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { safeContactEmail, safeSovLink } from "@/lib/product/sov-contact";
 import { PublicSovCard, type PublicSovIdentity } from "./public-sov-card";
 import "@/app/card/sov-card.css";
+import "@/app/card/publish.css";
 
 export const metadata: Metadata = {
   title: "SOV ID — SOLVE",
