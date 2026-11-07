@@ -9,10 +9,18 @@
  */
 .sov-personal {
   --space-landscape: url("/brand/solve-space-horizon.svg");
+  --space-scene-glow: rgba(255, 210, 177, .09);
   --space-scene-vignette:
     linear-gradient(90deg, rgba(7, 12, 22, .88) 0%, rgba(8, 14, 24, .72) 42%, rgba(8, 14, 24, .25) 72%, rgba(7, 12, 22, .35) 100%),
     linear-gradient(0deg, rgba(7, 12, 22, .88), transparent 55%);
 }
+
+/* The already-approved appearance setting also changes the scenic atmosphere;
+   this is presentation only and never changes what a project or visitor can read. */
+.sov-personal[data-style-tone="ocean"] { --space-scene-glow: rgba(100, 175, 239, .19); }
+.sov-personal[data-style-tone="mint"] { --space-scene-glow: rgba(113, 202, 170, .17); }
+.sov-personal[data-style-tone="sunset"] { --space-scene-glow: rgba(252, 173, 133, .22); }
+.sov-personal[data-style-tone="violet"] { --space-scene-glow: rgba(179, 136, 236, .17); }
 
 .sov-personal .sov-space-header,
 .sov-personal .sov-space-intro {
@@ -52,7 +60,7 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: radial-gradient(ellipse 65% 85% at 100% 18%, rgba(255, 210, 177, .09), transparent 80%);
+  background: radial-gradient(ellipse 65% 85% at 100% 18%, var(--space-scene-glow), transparent 80%);
   pointer-events: none;
 }
 
