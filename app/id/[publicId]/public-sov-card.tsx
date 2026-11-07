@@ -108,7 +108,7 @@ export function PublicSovCard({ identity }: { identity: PublicSovIdentity }) {
         <span className="sov-overline">MAKE IT YOURS</span>
         <h2 id="sov-public-invitation-heading">Everyone has a story.</h2>
         <p>Create your own digital SOV ID. You can start without AI or a physical card.</p>
-        <Link href="/card" className="sov-primary-action">Create your card ↗</Link>
+        <Link href={`/card?via=${encodeURIComponent(identity.publicId)}`} className="sov-primary-action">Create your card ↗</Link>
       </section>
       <footer className="sov-experience-footer"><span>sov. / by SOLVE</span><span>Public details chosen by the owner</span></footer>
     </div>
