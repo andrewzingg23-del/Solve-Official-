@@ -29,5 +29,5 @@ test("scenic Space design stays decorative, responsive, and visually reversible"
   assert.match(css, /prefers-reduced-motion: reduce/);
   assert.match(css, /focus-visible/);
   assert.match(landscape, /<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
-  assert.doesNotMatch(landscape, /<script|<foreignObject|<image\b|https?:\/\//i);
+  assert.doesNotMatch(landscape, /<script|<foreignObject|<image\b|(?:href|src)\s*=\s*["']https?:\/\//i);
 });
