@@ -8,6 +8,7 @@ import { normalizeAppearance } from "@/lib/product/appearance";
 import type { ProjectCard } from "@/app/product/projects";
 import { PersonalSpace } from "./personal-space";
 import "./space.css";
+import "./space-visual.css";
 
 export const metadata: Metadata = {
   title: "Your Space — SOLVE",
