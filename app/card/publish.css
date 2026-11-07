@@ -14,6 +14,9 @@
   border-radius:999px; text-decoration:none; font-size:12px; font-weight:650;
 }
 .sov-experience .sov-primary-action:hover { filter:brightness(.85); }
+/* SOLVE is the product mark; sov. remains the identity/card imprint.
+   Match the owner-selected card light/dark contrast without changing the brand shape. */
+.sov-public-identity .sov-experience-header .solve-brand { color:var(--sov-ink); }
 .sov-public-label { color:var(--sov-muted); font-size:11px; }
 .sov-public-identity .sov-experience-body { padding-top:58px; }
 .sov-public-identity .sov-card-intro h1 { overflow-wrap:anywhere; }
