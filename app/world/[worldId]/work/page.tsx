@@ -90,7 +90,7 @@ export default async function WorldWorkPage({ params, searchParams }: PageProps<
         <div className="space-y-2">
           <span className="solve-kicker">01 · Intention</span>
           <h2 id="new-work-title" className="text-xl font-medium">What needs to happen?</h2>
-          <p className="text-sm leading-6 text-muted">A task is a real record. It can later be claimed only by someone you have authorized.</p>
+          <p className="text-sm leading-6 text-muted">A task is a real record, not an instruction to execute. Any real-world action needs a separate risk assessment and permission.</p>
         </div>
         {work.canCreate ? <form action={createWorkTaskAction.bind(null, work.worldId)} className="space-y-4">
           <input type="hidden" name="requestId" value={randomUUID()} />
@@ -111,7 +111,7 @@ export default async function WorldWorkPage({ params, searchParams }: PageProps<
             <span>Require another authorized person or agent to verify completion.</span>
           </label>
           <SaveWorkButton />
-          <p className="text-xs leading-5 text-muted">Nothing is executed, assigned, published or spent by saving a task. You control who can act next.</p>
+          <p className="text-xs leading-5 text-muted">Saving does not launch AI, assign a worker, publish anything, or spend money. Execution risks and permissions are assessed separately.</p>
         </form> : <div role="status" className="rounded-lg border border-line bg-background/60 p-4 text-sm leading-6 text-muted">
           {work.tasks === null
             ? "Task records could not be read. No new action is available until the connection is restored."
