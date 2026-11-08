@@ -38,6 +38,7 @@ export async function createWorkTaskAction(worldId: string, formData: FormData) 
   }
 
   let code: string | null = null;
+  let createdTaskId: string | null = null;
   try {
     const kernel = await getKernel();
     const { world } = await loadCreativeWorld(kernel, worldId);
@@ -45,7 +46,7 @@ export async function createWorkTaskAction(worldId: string, formData: FormData) 
     if (decision.decision !== "ALLOW") {
       code = "access";
     } else {
-      await kernel.createTask({
+      createdTaskId = await kernel.createTask({
         scope: world.scope,
         title: intent.title,
         objective: intent.objective,
@@ -62,6 +63,8 @@ export async function createWorkTaskAction(worldId: string, formData: FormData) 
   }
 
   if (code) redirect(`${path}?error=${code}`);
+  if (!createdTaskId) redirect(`${path}?error=unavailable`);
   revalidatePath(path);
-  redirect(`${path}?saved=task`);
+  // The UI must read this exact kernel task back before showing a saved receipt.
+  redirect(`${path}?saved=${encodeURIComponent(createdTaskId)}`);
 }
