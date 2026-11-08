@@ -4,6 +4,7 @@ import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { loadCreativeWorld } from "@/lib/world/creative";
+import { normalizeAppearance } from "@/lib/product/appearance";
 import { isRealityMode } from "@/app/reality/mode";
 import { Workbench } from "./workbench";
 import "@/app/reality/reality.css";
@@ -30,6 +31,7 @@ export default async function WorldWorkbenchPage({ params }: PageProps<"/world/[
     title={data.world.title}
     summary={data.world.summary}
     mode={isRealityMode(candidate) ? candidate : "base"}
+    tone={normalizeAppearance(user.user_metadata?.sov_space_appearance).tone}
     pieces={data.artifacts.map(piece => ({
       id: piece.entityId, title: piece.title, body: piece.body,
       x: piece.position.x, y: piece.position.y, version: piece.version,

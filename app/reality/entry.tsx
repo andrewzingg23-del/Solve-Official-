@@ -7,8 +7,10 @@ import { createProject } from "@/app/product/project-actions";
 import { useProjectDraft } from "@/app/product/draft-store";
 import type { ProjectCard } from "@/app/product/projects";
 import { Icon } from "@/app/product/icons";
+import { isInstagramStyleRequest, instagramHandleInRequest } from "@/lib/product/instagram-style";
 import { saveRealityMode } from "./actions";
 import type { RealityMode } from "./mode";
+import type { SpaceAppearance } from "@/lib/product/appearance";
 import "./reality.css";
 
 const modes: Array<{ id: RealityMode; name: string; detail: string }> = [
@@ -22,9 +24,10 @@ function titleFromIntention(input: string): string {
   return first.length > 100 ? first.slice(0, 97).trimEnd() + "…" : first;
 }
 
-export function RealityEntry({ owner, initialMode, worldId, projects, name }: {
+export function RealityEntry({ owner, initialMode, initialAppearance, worldId, projects, name }: {
   owner: string | null;
   initialMode: RealityMode;
+  initialAppearance: SpaceAppearance;
   worldId: string;
   projects: ProjectCard[] | null;
   name: string;
@@ -66,6 +69,14 @@ export function RealityEntry({ owner, initialMode, worldId, projects, name }: {
     event.preventDefault();
     const intention = currentText.trim();
     if (!intention || pending) return;
+    // This is a personalization action, not a project titled "search my Instagram".
+    if (isInstagramStyleRequest(intention)) {
+      clear(draft?.id ?? worldId);
+      setTyped(null);
+      const handle = instagramHandleInRequest(intention);
+      router.push("/personalize/instagram" + (handle ? "?profile=" + encodeURIComponent(handle) : ""));
+      return;
+    }
     const input = { id: draft?.id ?? worldId, title: titleFromIntention(intention), goal: intention };
     // Device storage is only required to carry a guest draft through sign-in.
     // A signed-in person can save directly to the kernel even when local storage is disabled.
@@ -90,7 +101,7 @@ export function RealityEntry({ owner, initialMode, worldId, projects, name }: {
     });
   }
 
-  return <main className={"reality reality--" + mode}>
+  return <main className={"reality reality--" + mode} data-style-tone={initialAppearance.tone} data-style-density={initialAppearance.density} data-style-shape={initialAppearance.shape}>
     <a href="#reality-main" className="reality-skip">Skip to content</a>
     <header className="reality-head">
       <Link href="/" className="reality-wordmark" aria-label="SOLVE home"><span className="reality-mark" aria-hidden="true">S</span><span>SOLVE</span></Link>

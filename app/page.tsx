@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { getUser } from "@/lib/supabase/server";
 import { getKernel } from "@/lib/kernel/server";
 import { listCreativeWorlds } from "@/lib/world/creative";
+import { normalizeAppearance } from "@/lib/product/appearance";
 import { isRealityMode } from "./reality/mode";
 import { RealityEntry } from "./reality/entry";
 
@@ -15,6 +16,7 @@ export default async function Home() {
   return <RealityEntry
     owner={signedIn ? user!.id : null}
     initialMode={isRealityMode(modeCandidate) ? modeCandidate : "base"}
+    initialAppearance={normalizeAppearance(signedIn ? user?.user_metadata?.sov_space_appearance : null)}
     worldId={randomUUID()}
     projects={projects}
     name={name}
