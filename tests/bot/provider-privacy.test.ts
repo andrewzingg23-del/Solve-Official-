@@ -38,4 +38,7 @@ test("server controls stricter privacy setting; browser cannot inject it through
   const route = readFileSync("app/api/bot/chat/route.ts", "utf8");
   assert.match(route, /requireZeroRetention: process\.env\.OPENROUTER_ZDR_REQUIRED === "true"/);
   assert.doesNotMatch(route, /requireZeroRetention: body\./);
+  const shared = readFileSync("app/api/worlds/[worldId]/conversation/route.ts", "utf8");
+  assert.match(shared, /requireZeroRetention: process\.env\.OPENROUTER_ZDR_REQUIRED === "true"/);
+  assert.doesNotMatch(shared, /requireZeroRetention: body\./);
 });
