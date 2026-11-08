@@ -216,3 +216,20 @@
 .reality--personal[data-style-density="airy"] .reality-project-grid{gap:23px}
 .reality--personal[data-style-density="compact"] .reality-project-grid{gap:8px}
 .reality--personal[data-style-density="compact"] .reality-project{min-height:150px;padding:17px}
+
+/* Shared identity surfaces: Base starts in the approved graphite monochrome
+   rather than introducing a competing cream app theme. Personal expression
+   remains available through appearance controls. */
+.reality--base {
+  --r-bg: var(--solve-v-bg);
+  --r-ink: var(--solve-v-ink);
+  --r-muted: var(--solve-v-muted);
+  --r-line: var(--solve-v-line);
+  --r-panel: rgba(27,32,43,.84);
+  --r-field: rgba(27,32,43,.93);
+  --r-accent: var(--solve-v-ink);
+  --r-shadow: var(--solve-v-depth);
+  color-scheme: dark;
+}
+.reality--base .reality-intro::after { content: none; }
+.reality .solve-brand { color: var(--r-ink); }
