@@ -181,3 +181,38 @@
  .reality-workbench-mobile a{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:57px;min-height:45px;font-size:10px;color:var(--r-muted)}
 }
 @media(prefers-reduced-motion:reduce){.reality-spinner{animation:none}.reality-starters button:hover,.reality-project:hover{transform:none}}
+
+
+
+/* The same approved visual preference follows the person across all three surfaces.
+   It affects presentation only, never permissions, access or work state. */
+.reality--personal[data-style-tone="graphite"],
+.reality-workbench--personal[data-style-tone="graphite"] { --reality-theme-glow:rgba(165,172,184,.14);--reality-theme-veil:rgba(10,14,22,.28); }
+.reality--personal[data-style-tone="ocean"],
+.reality-workbench--personal[data-style-tone="ocean"] { --reality-theme-glow:rgba(75,160,219,.27);--reality-theme-veil:rgba(4,39,63,.35); }
+.reality--personal[data-style-tone="mint"],
+.reality-workbench--personal[data-style-tone="mint"] { --reality-theme-glow:rgba(81,184,150,.23);--reality-theme-veil:rgba(12,47,40,.33); }
+.reality--personal[data-style-tone="sunset"],
+.reality-workbench--personal[data-style-tone="sunset"] { --reality-theme-glow:rgba(235,154,111,.27);--reality-theme-veil:rgba(67,36,44,.30); }
+.reality--personal[data-style-tone="violet"],
+.reality-workbench--personal[data-style-tone="violet"] { --reality-theme-glow:rgba(168,121,219,.26);--reality-theme-veil:rgba(47,25,67,.34); }
+.reality--personal[data-style-tone] {
+  background-image:radial-gradient(ellipse at 75% 17%,var(--reality-theme-glow),transparent 42%),
+    linear-gradient(180deg,var(--reality-theme-veil) 0%,rgba(10,13,20,.86) 63%,#080d16 100%),
+    url("/brand/solve-reality-horizon.svg");
+  background-position:center top,center top,center top;
+  background-size:cover,cover,auto 94vh;
+  background-repeat:no-repeat;
+}
+.reality-workbench--personal[data-style-tone] {
+  background-image:radial-gradient(ellipse at 75% 0%,var(--reality-theme-glow),transparent 47%),
+    linear-gradient(180deg,var(--reality-theme-veil),#0c1018 63%),
+    url("/brand/solve-reality-horizon.svg");
+  background-position:center top,center top,center top;
+  background-size:cover,cover,100% auto;
+  background-repeat:no-repeat;
+}
+.reality--personal[data-style-shape="square"] :is(.reality-project,.reality-starters button,.reality-mode){border-radius:5px}
+.reality--personal[data-style-density="airy"] .reality-project-grid{gap:23px}
+.reality--personal[data-style-density="compact"] .reality-project-grid{gap:8px}
+.reality--personal[data-style-density="compact"] .reality-project{min-height:150px;padding:17px}
