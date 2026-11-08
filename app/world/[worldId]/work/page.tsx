@@ -8,6 +8,7 @@ import { getUser } from "@/lib/supabase/server";
 import { loadCreativeWorld } from "@/lib/world/creative";
 import { workStatusLabel } from "@/lib/work/intent";
 import { createWorkTaskAction } from "./actions";
+import { SaveWorkButton } from "./save-button";
 
 export const metadata: Metadata = { title: "Work · SOLVE" };
 
@@ -64,6 +65,10 @@ export default async function WorldWorkPage({ params, searchParams }: PageProps<
 
   const room = `/world/${encodeURIComponent(work.worldId)}/room`;
   const notice = typeof error === "string" ? notices[error] : null;
+  // A URL parameter alone is not a receipt; confirm that the exact task exists
+  // in the kernel before telling a person the operation succeeded.
+  const confirmedSaved = typeof saved === "string" && work.tasks?.some(task => task.task_id === saved) === true;
+  const recentTasks = work.tasks?.slice(-50).reverse() ?? [];
 
   return <main className="solve-page mx-auto w-full max-w-6xl space-y-6">
     <header className="solve-page-heading space-y-2">
@@ -77,7 +82,7 @@ export default async function WorldWorkPage({ params, searchParams }: PageProps<
       </nav>
     </header>
 
-    {saved === "task" ? <p role="status" className="rounded-lg border border-line bg-surface p-4 text-sm">Task saved in this project. No AI has been started or given new permissions.</p> : null}
+    {confirmedSaved ? <p role="status" className="rounded-lg border border-line bg-surface p-4 text-sm">Task saved and confirmed in this project. No AI has been started or given new permissions.</p> : null}
     {notice ? <p role="alert" className="rounded-lg border border-line bg-surface p-4 text-sm">{notice}</p> : null}
 
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
@@ -105,7 +110,7 @@ export default async function WorldWorkPage({ params, searchParams }: PageProps<
             <input type="checkbox" name="review" value="yes" className="mt-1.5 size-4 accent-white" />
             <span>Require another authorized person or agent to verify completion.</span>
           </label>
-          <button type="submit" className="solve-button min-h-11 w-full">Save this work</button>
+          <SaveWorkButton />
           <p className="text-xs leading-5 text-muted">Nothing is executed, assigned, published or spent by saving a task. You control who can act next.</p>
         </form> : <div role="status" className="rounded-lg border border-line bg-background/60 p-4 text-sm leading-6 text-muted">
           {work.tasks === null
@@ -128,8 +133,10 @@ export default async function WorldWorkPage({ params, searchParams }: PageProps<
             <p className="text-sm leading-6 text-muted">Describe your first outcome. It will remain here when you return.</p>
           </div>
         ) : (
+          <>
+          {work.tasks.length > 50 ? <p className="text-xs text-muted">Showing the 50 most recent tasks of {work.tasks.length}. All task history remains in this World.</p> : null}
           <ul className="space-y-3">
-            {work.tasks.map(task => <li key={task.task_id} className="solve-panel space-y-3 p-5">
+            {recentTasks.map(task => <li key={task.task_id} className="solve-panel space-y-3 p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <h3 className="min-w-0 flex-1 break-words font-medium">{task.title}</h3>
                 <span className="rounded-full border border-line bg-background/50 px-3 py-1 text-xs text-muted">{workStatusLabel(task.status)}</span>
@@ -143,6 +150,7 @@ export default async function WorldWorkPage({ params, searchParams }: PageProps<
                 <p role="status" className="text-sm">This task requires attention. Return to the shared project to coordinate the next step.</p> : null}
             </li>)}
           </ul>
+          </>
         )}
         <p className="text-xs leading-5 text-muted">Assignment, execution and external actions require separate grants and evidence. SOLVE never treats an addressed message as proof that a worker acted.</p>
       </section>
