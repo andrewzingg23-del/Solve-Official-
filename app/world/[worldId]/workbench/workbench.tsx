@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 import { Icon } from "@/app/product/icons";
 import { addWorkbenchNote } from "./actions";
-import type { RealityMode } from "@/app/reality/actions";
+import type { RealityMode } from "@/app/reality/mode";
 
 type WorkPiece = { id: string; title: string; body: string; x: number; y: number; version: number };
 type View = "list" | "canvas";
