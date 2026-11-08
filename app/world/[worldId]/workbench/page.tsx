@@ -4,7 +4,7 @@ import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { loadCreativeWorld } from "@/lib/world/creative";
-import { isRealityMode } from "@/app/reality/actions";
+import { isRealityMode } from "@/app/reality/mode";
 import { Workbench } from "./workbench";
 import "@/app/reality/reality.css";
 
