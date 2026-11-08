@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { isInstagramStyleRequest } from "@/lib/product/instagram-style";
 import { useMemo, useState, type FormEvent } from "react";
 import { normalizeAppearance, proposeAppearance, type SpaceAppearance, type AppearanceProposal } from "@/lib/product/appearance";
 import { saveSpaceAppearance } from "./actions";
@@ -28,6 +30,7 @@ export function PersonalSpace({
   initialAppearance: SpaceAppearance;
   botName: string;
 }) {
+  const router = useRouter();
   const guest = useGuestProfile();
   // This is a setup-interest list only; it does not contain authorization tokens.
   const appInterestsText = useDeviceText(APP_INTERESTS_KEY);
@@ -71,6 +74,11 @@ export function PersonalSpace({
     const priorTurns = agentTurns;
     appendTurn({ role: "user", content: message, kind: "conversation" });
     setStyleText("");
+    if (isInstagramStyleRequest(message)) {
+      appendTurn({ role: "assistant", content: "I'll help you use your own Instagram content as a real source. You'll review the photos and approve the look before SOLVE changes.", kind: "conversation" });
+      router.push("/personalize/instagram");
+      return;
+    }
     const draft = proposeAppearance(message, appearance);
     if (draft.supported) {
       setProposal(draft.changes.length ? draft : null);
@@ -177,7 +185,7 @@ export function PersonalSpace({
               <small>{turn.role === "assistant" ? botName + (turn.kind === "appearance" ? " · Appearance" : "") : "You"}</small>
               <p>{turn.content}</p>
             </div>
-          )) : <p className="sov-agent-prompt">Try “Make this feel like a vintage skate magazine” or “Help me plan a new creative project.”</p>}
+          )) : <p className="sov-agent-prompt">Try “Make SOLVE look like my Instagram” or “Make this feel like a vintage skate magazine.”</p>}
           {chatBusy ? <p className="sov-agent-waiting" role="status">Your AI is responding…</p> : null}
         </div>
         <form className="sov-style-form" onSubmit={event => void sendAgentMessage(event)}>
