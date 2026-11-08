@@ -12,12 +12,13 @@ export const metadata: Metadata = {
 };
 
 export default async function InstagramPersonalizePage({ searchParams }: PageProps<"/personalize/instagram">) {
-  const user = await getUser();
-  if (!user || user.is_anonymous) {
-    redirect("/login?next=%2Fpersonalize%2Finstagram");
-  }
   const params = await searchParams;
   const handle = typeof params.profile === "string" && instagramProfileUrl(params.profile) ? params.profile : "";
+  const user = await getUser();
+  if (!user || user.is_anonymous) {
+    const next = "/personalize/instagram" + (handle ? "?profile=" + encodeURIComponent(handle) : "");
+    redirect("/login?next=" + encodeURIComponent(next));
+  }
   return <InstagramStyleStudio
     initialHandle={handle}
     initialAppearance={normalizeAppearance(user.user_metadata?.sov_space_appearance)}
