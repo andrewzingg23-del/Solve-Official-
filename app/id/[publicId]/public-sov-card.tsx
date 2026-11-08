@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createSovVCard } from "@/lib/product/sov-contact";
+import { SolveBrand } from "@/app/product/solve-brand";
 
 export type PublicSovIdentity = {
   publicId: string;
@@ -39,7 +40,7 @@ export function PublicSovCard({ identity }: { identity: PublicSovIdentity }) {
 
   return <main className={`sov-experience sov-public-identity sov-look-${identity.appearance}`}>
     <header className="sov-experience-header">
-      <Link href="/" className="sov-identity-mark" aria-label="SOLVE home">sov<span className="sov-identity-period">.</span></Link>
+      <SolveBrand href="/" compact />
       <span className="sov-public-label">A person's public SOV ID</span>
     </header>
     <div className="sov-experience-body">
