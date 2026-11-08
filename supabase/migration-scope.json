@@ -1,5 +1,6 @@
 {
   "supabaseOnly": [
-    "20261107081500_sov_public_identity.sql"
+    "20261108074034_sov_public_identity.sql",
+    "20261108074837_sov_card_permanent_account_publishing.sql"
   ]
 }
