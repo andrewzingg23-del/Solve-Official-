@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { isInstagramStyleRequest, instagramProfileUrl, suggestInstagramAppearance } from "../../lib/product/instagram-style";
+import { extractInstagramProfileMatches, sourceWordsFromProfile } from "../../lib/product/instagram-public-search";
 import { DEFAULT_APPEARANCE } from "../../lib/product/appearance";
 
 const read = (path: string) => readFileSync(path, "utf8");
@@ -28,6 +29,7 @@ test("an Instagram personalization request becomes an action rather than a gener
 
 test("Instagram profile URLs are fixed to the real profile origin", () => {
   assert.equal(instagramProfileUrl("@hello_world"), "https://www.instagram.com/hello_world/");
+  assert.equal(instagramProfileUrl("instagram.com/hello_world"), "https://www.instagram.com/hello_world/");
   assert.equal(instagramProfileUrl("https://www.instagram.com/good.photo/?hl=en"), "https://www.instagram.com/good.photo/");
   for (const invalid of [
     "https://evil.com/hello_world",
@@ -69,4 +71,52 @@ test("source content is processed on-device and the account saves only reviewed 
   assert.match(actions, /sov_space_appearance: next/);
   assert.match(actions, /solve_reality_mode_v1: "personal"/);
   assert.doesNotMatch(actions, /access_token|post_media|captionText|instagram_password/);
+});
+
+
+test("public Instagram search only trusts citations on the exact requested Instagram profile", () => {
+  const body = {
+    choices: [{
+      message: {
+        content: "The model can say anything but it isn't accepted as evidence.",
+        annotations: [
+          { type:"url_citation", url_citation: {
+            url: "https://www.instagram.com/real.creator/?hl=en",
+            title:"real.creator Instagram",content:"Photography, vintage cars and ocean landscapes"
+          }},
+          { type:"url_citation", url_citation: {
+            url: "https://instagram.com/otherperson/", title:"Other",content:"Private details"
+          }},
+          { type:"url_citation", url_citation: {
+            url: "https://instagram.com/p/secret-post/", title:"Unattributed post", content:"ignore"
+          }},
+          { type:"url_citation", url_citation: {
+            url: "https://instagram.com.evil.net/real.creator/", title:"Spoof", content:"ignore"
+          }},
+          { type:"url_citation", url_citation: {
+            url: "http://www.instagram.com/real.creator/", title:"Insecure",content:"ignore"
+          }},
+        ]
+      }
+    }]
+  };
+  const matches = extractInstagramProfileMatches(body,"real.creator");
+  assert.equal(matches.length,1);
+  assert.equal(matches[0].url,"https://www.instagram.com/real.creator/");
+  assert.match(sourceWordsFromProfile(matches),/vintage cars/);
+  assert.deepEqual(extractInstagramProfileMatches({ choices:[{message:{ content:"I found Instagram." }}]},"real.creator"),[]);
+  assert.deepEqual(extractInstagramProfileMatches(body,"someoneelse"),[]);
+});
+
+test("search uses real OpenRouter web search and never invents an account", () => {
+  const search = read("app/personalize/instagram/search.ts");
+  assert.match(search, /openrouter:web_search/);
+  assert.match(search, /OPENROUTER_API_KEY/);
+  assert.match(search, /instagramProfileUrl\(rawProfile\)/);
+  assert.match(search, /extractInstagramProfileMatches\(result, handle\)/);
+  assert.match(search, /getUser/);
+  const studio = read("app/personalize/instagram/studio.tsx");
+  assert.match(studio, /searchPublicInstagram\(handle\)/);
+  assert.match(studio, /Publicly indexed match/);
+  assert.match(studio, /Not account verification/);
 });
