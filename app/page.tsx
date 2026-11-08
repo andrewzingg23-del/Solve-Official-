@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { getUser } from "@/lib/supabase/server";
 import { getKernel } from "@/lib/kernel/server";
 import { listCreativeWorlds } from "@/lib/world/creative";
-import { isRealityMode } from "./reality/actions";
+import { isRealityMode } from "./reality/mode";
 import { RealityEntry } from "./reality/entry";
 
 export default async function Home() {
