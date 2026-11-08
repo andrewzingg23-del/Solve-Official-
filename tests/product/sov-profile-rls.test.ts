@@ -16,11 +16,14 @@ const visitorId = "10000000-0000-4000-8000-000000000003";
 type Role = "anon" | "authenticated";
 
 async function asRole<T extends Record<string, unknown>>(
-  db: PGlite, role: Role, sub: string | null, sql: string, params: unknown[] = [],
+  db: PGlite, role: Role, sub: string | null, sql: string, params: unknown[] = [], options: { isAnonymous?: boolean } = {},
 ): Promise<T[]> {
   return db.transaction(async tx => {
     await tx.exec("set local role " + role);
     await tx.query("select set_config('request.jwt.claim.sub', $1, true)", [sub ?? ""]);
+    await tx.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({
+      sub: sub ?? "", role, is_anonymous: options.isAnonymous === true,
+    })]);
     return (await tx.query<T>(sql, params)).rows;
   });
 }
@@ -34,15 +37,20 @@ async function fixture() {
     "create function auth.uid() returns uuid language sql stable as $$",
     "  select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid",
     "$$;",
+    "create function auth.jwt() returns jsonb language sql stable as $",
+    "  select nullif(current_setting('request.jwt.claims', true), '')::jsonb",
+    "$;",
     "create role anon nologin;",
     "create role authenticated nologin;",
     "grant usage on schema public to anon, authenticated;",
     "grant usage on schema auth to authenticated;",
     "grant execute on function auth.uid() to authenticated;",
+    "grant execute on function auth.jwt() to authenticated;",
   ].join("\n"));
 
-  const migration = readFileSync("supabase/migrations/20261107081500_sov_public_identity.sql", "utf8");
+  const migration = readFileSync("supabase/migrations/20261108074034_sov_public_identity.sql", "utf8");
   await db.exec(migration);
+  await db.exec(readFileSync("supabase/migrations/20261108074837_sov_card_permanent_account_publishing.sql", "utf8"));
   await db.query("insert into auth.users (id) values ($1), ($2), ($3)", [
     ownerId, hiddenOwnerId, visitorId,
   ]);
@@ -131,6 +139,40 @@ test("owners can revoke; strangers cannot mutate or see unpublished cards", asyn
     const ownerStillCanRead = await asRole(db, "authenticated", ownerId,
       "select public_id from public.sov_public_profiles where public_id = $1", [publishedId]);
     assert.equal(ownerStillCanRead.length, 1);
+  } finally {
+    await db.close();
+  }
+});
+
+
+test("signed-in anonymous users cannot directly publish, edit or revoke an identity", async () => {
+  const db = await fixture();
+  try {
+    const anonymous = { isAnonymous: true };
+    await assert.rejects(
+      asRole(db, "authenticated", visitorId,
+        "insert into public.sov_public_profiles (owner_id, display_name, published) values ($1, 'Bypass', true)",
+        [visitorId], anonymous),
+      (error: unknown) => (error as { code?: string }).code === "42501",
+    );
+
+    // Guests may still read an explicitly published card, but cannot change one.
+    const publicRead = await asRole(db, "authenticated", ownerId,
+      "select public_id from public.sov_public_profiles where public_id = $1", [publishedId], anonymous);
+    assert.equal(publicRead.length, 1);
+    const unauthorizedEdit = await asRole(db, "authenticated", ownerId,
+      "update public.sov_public_profiles set published = false where public_id = $1 returning public_id",
+      [publishedId], anonymous);
+    assert.deepEqual(unauthorizedEdit, []);
+    const unauthorizedDelete = await asRole(db, "authenticated", ownerId,
+      "delete from public.sov_public_profiles where public_id = $1 returning public_id",
+      [publishedId], anonymous);
+    assert.deepEqual(unauthorizedDelete, []);
+
+    const permanentOwner = await asRole(db, "authenticated", ownerId,
+      "update public.sov_public_profiles set published = false where public_id = $1 returning public_id",
+      [publishedId]);
+    assert.equal(permanentOwner.length, 1);
   } finally {
     await db.close();
   }
