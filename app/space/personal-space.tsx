@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { isInstagramStyleRequest } from "@/lib/product/instagram-style";
+import { isInstagramStyleRequest, instagramHandleInRequest } from "@/lib/product/instagram-style";
 import { useMemo, useState, type FormEvent } from "react";
 import { normalizeAppearance, proposeAppearance, type SpaceAppearance, type AppearanceProposal } from "@/lib/product/appearance";
 import { saveSpaceAppearance } from "./actions";
@@ -76,7 +76,8 @@ export function PersonalSpace({
     setStyleText("");
     if (isInstagramStyleRequest(message)) {
       appendTurn({ role: "assistant", content: "I'll help you use your own Instagram content as a real source. You'll review the photos and approve the look before SOLVE changes.", kind: "conversation" });
-      router.push("/personalize/instagram");
+      const handle = instagramHandleInRequest(message);
+      router.push("/personalize/instagram" + (handle ? "?profile=" + encodeURIComponent(handle) : ""));
       return;
     }
     const draft = proposeAppearance(message, appearance);
