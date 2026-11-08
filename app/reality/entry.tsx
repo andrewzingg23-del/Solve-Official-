@@ -67,8 +67,10 @@ export function RealityEntry({ owner, initialMode, worldId, projects, name }: {
     const intention = currentText.trim();
     if (!intention || pending) return;
     const input = { id: draft?.id ?? worldId, title: titleFromIntention(intention), goal: intention };
-    if (!save(input)) {
-      setError("Your browser can't keep this draft. Keep this tab open until it is saved.");
+    // Device storage is only required to carry a guest draft through sign-in.
+    // A signed-in person can save directly to the kernel even when local storage is disabled.
+    if (!save(input) && !owner) {
+      setError("Your browser can't keep this guest draft. Enable storage before signing in, or copy your idea.");
       return;
     }
     if (!owner) {
