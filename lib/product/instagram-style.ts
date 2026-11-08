@@ -35,6 +35,17 @@ export function instagramProfileUrl(value: unknown): string | null {
   return "https://www.instagram.com/" + candidate + "/";
 }
 
+
+export function instagramHandleInRequest(value: unknown): string | null {
+  if (typeof value !== "string" || value.length > 7000) return null;
+  const explicit = /@([a-zA-Z0-9._]{1,30})(?![a-zA-Z0-9._])/.exec(value);
+  if (explicit && instagramProfileUrl(explicit[1])) return explicit[1];
+  const link = /https?:\/\/(?:www\.)?instagram\.com\/[a-zA-Z0-9._]{1,30}(?:\/|\b)/i.exec(value);
+  if (!link) return null;
+  const safe = instagramProfileUrl(link[0]);
+  return safe ? new URL(safe).pathname.split("/").filter(Boolean)[0] : null;
+}
+
 // Pure and stable: no guessed Instagram activity, identity or personality.
 export function suggestInstagramAppearance(
   current: SpaceAppearance,
