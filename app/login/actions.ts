@@ -26,6 +26,24 @@ export async function sendMagicLink(formData: FormData) {
   redirect(loginUrl({ next, sent: email }));
 }
 
+// A one-time email code can be entered in the original browser or another device.
+// This does not depend on the browser-local PKCE verifier used by magic links.
+// Requires the staging Supabase Magic Link email template to include {{ .Token }}.
+export async function verifyEmailCode(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim();
+  const token = String(formData.get("token") ?? "").trim().replace(/\\s+/g, "");
+  const next = safeNextPath(formData.get("next"));
+  if (!email || !/^\\d{6,8}$/.test(token)) {
+    redirect(loginUrl({ next, sent: email, error: "Enter the numeric code from your latest sign-in email." }));
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({ email, token, type: "email" });
+  if (error) {
+    redirect(loginUrl({ next, sent: email, error: "That code is invalid or expired. Request a new sign-in email and try again." }));
+  }
+  redirect(next);
+}
+
 function loginUrl(params: Record<string, string>) {
   return `/login?${new URLSearchParams(params)}`;
 }
