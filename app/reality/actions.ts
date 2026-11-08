@@ -2,11 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 
-export type RealityMode = "base" | "adaptive" | "personal";
-
-export function isRealityMode(value: unknown): value is RealityMode {
-  return value === "base" || value === "adaptive" || value === "personal";
-}
+import { isRealityMode } from "./mode";
 
 // Account appearance only. This does not affect identity, publications, grants or World data.
 export async function saveRealityMode(value: unknown): Promise<{ ok: true } | { ok: false; error: string }> {
