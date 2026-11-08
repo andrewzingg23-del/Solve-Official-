@@ -1,0 +1,66 @@
+/* SOLVE ID uses the same approved product materials and navigation as Space and Workbench.
+   Card personalization may change the card; it must not alter the SOLVE shell or permissions. */
+.sv-app--product {
+  --sv-ink: var(--solve-v-ink);
+  --sv-dim: var(--solve-v-muted);
+  --sv-line: var(--solve-v-line);
+  --sv-cyan: var(--solve-v-blue);
+  --sv-surface: var(--solve-v-panel);
+  width: 100%;
+  min-height: calc(100svh - 66px);
+  background: transparent;
+  color: var(--solve-v-ink);
+  font-family: var(--font-archivo), Arial, sans-serif;
+}
+.sv-app--product .sv-main { min-width: 0; width: 100%; }
+.sv-app--product .sv-content { max-width: 1320px; padding: 42px clamp(20px, 3.5vw, 54px) 40px; }
+.sv-app--product .sv-welcome h1 { font-weight: 530; letter-spacing: -.04em; }
+.sv-app--product .sv-welcome h1 span { color: inherit; font-family: inherit; font-style: normal; font-weight: inherit; }
+.sv-app--product .sv-dot { background: var(--solve-v-blue); box-shadow: none; }
+.sv-app--product .sv-button { border-radius: 999px; min-height: 44px; }
+.sv-app--product .sv-button:not(.sv-button-secondary) {
+  color: #10151f;
+  background: #f7f8fc;
+  border: 1px solid rgba(255,255,255,.6);
+}
+.sv-app--product .sv-button-secondary { color: var(--solve-v-ink); background: rgba(28,32,44,.73); border: 1px solid var(--solve-v-line); }
+.sv-app--product .sv-button:hover { transform: none; filter: brightness(1.12); }
+.sv-app--product .sv-id-layout { width: 100%; max-width: none; }
+.sv-app--product .sv-id-card {
+  background: var(--solve-v-glass);
+  border: 1px solid var(--solve-v-line);
+  border-radius: var(--solve-v-radius);
+  box-shadow: var(--solve-v-depth);
+}
+.sv-app--product .sv-id-card::after { display: none; }
+.sv-app--product .sv-id-card-top span:first-child { color: var(--solve-v-ink); }
+.sv-app--product .sv-human-portrait { filter: grayscale(1); opacity: .57; }
+.sv-app--product .sv-id-info p { color: var(--solve-v-muted); }
+.sv-app--product .sv-id-editor,
+.sv-app--product .sv-id-module {
+  background: var(--solve-v-glass);
+  border: 1px solid var(--solve-v-line);
+  border-radius: var(--solve-v-radius);
+  box-shadow: var(--solve-v-depth);
+}
+.sv-app--product .sv-field input,
+.sv-app--product .sv-field textarea {
+  background: rgba(13,17,27,.75);
+  border: 1px solid var(--solve-v-line);
+  color: var(--solve-v-ink);
+}
+.sv-app--product .sv-id-module textarea { color: var(--solve-v-ink); }
+.sv-app--product .sv-id-portraits button[aria-pressed="true"] { border-color: var(--solve-v-blue); box-shadow: 0 0 0 2px var(--solve-v-blue-wash); }
+.sv-app--product .sv-context-note { color: var(--solve-v-muted); }
+.sv-app--product :is(a, button, input, textarea):focus-visible { outline: 2px solid var(--solve-v-blue); outline-offset: 3px; }
+@media (max-width: 760px) {
+  .sv-app--product { min-height: 0; padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+  .sv-app--product .sv-content { padding: 25px 16px 24px; }
+  .sv-app--product .sv-welcome { flex-wrap: wrap; }
+  .sv-app--product .sv-welcome .sv-button { min-height: 44px; margin-top: 0; }
+  .sv-app--product .sv-id-layout { grid-template-columns: minmax(0,1fr); }
+  .sv-app--product .sv-id-editor { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sv-app--product .sv-button:hover { transform: none; }
+}
