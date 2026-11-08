@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { isInstagramStyleRequest, instagramProfileUrl, suggestInstagramAppearance } from "../../lib/product/instagram-style";
+import { isInstagramStyleRequest, instagramProfileUrl, instagramHandleInRequest, suggestInstagramAppearance } from "../../lib/product/instagram-style";
 import { extractInstagramProfileMatches, sourceWordsFromProfile } from "../../lib/product/instagram-public-search";
 import { DEFAULT_APPEARANCE } from "../../lib/product/appearance";
 
@@ -22,14 +22,16 @@ test("an Instagram personalization request becomes an action rather than a gener
   const home = read("app/reality/entry.tsx");
   const space = read("app/space/personal-space.tsx");
   assert.match(home, /isInstagramStyleRequest\(intention\)/);
-  assert.match(home, /router\.push\("\/personalize\/instagram"\)/);
+  assert.match(home, /router\.push\("\/personalize\/instagram" \+/);
   assert.match(space, /isInstagramStyleRequest\(message\)/);
-  assert.match(space, /router\.push\("\/personalize\/instagram"\)/);
+  assert.match(space, /router\.push\("\/personalize\/instagram" \+/);
 });
 
 test("Instagram profile URLs are fixed to the real profile origin", () => {
   assert.equal(instagramProfileUrl("@hello_world"), "https://www.instagram.com/hello_world/");
   assert.equal(instagramProfileUrl("instagram.com/hello_world"), "https://www.instagram.com/hello_world/");
+  assert.equal(instagramHandleInRequest("Please search my Instagram @hello_world and personalize SOLVE"), "hello_world");
+  assert.equal(instagramHandleInRequest("Style SOLVE from https://instagram.com/hello_world/"), "hello_world");
   assert.equal(instagramProfileUrl("https://www.instagram.com/good.photo/?hl=en"), "https://www.instagram.com/good.photo/");
   for (const invalid of [
     "https://evil.com/hello_world",
