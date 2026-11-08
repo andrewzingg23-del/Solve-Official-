@@ -21,7 +21,7 @@ export async function POST(request: Request, context: RouteContext<"/api/worlds/
     if (rateLimited(user.id) || spendBlocked(user.id)) throw new Error("Room AI budget exhausted");
     const model = resolveChatModel("flash");
     const result = await completeChat(apiKey, buildChatCompletionBody({ model, system: shared.system,
-      history: [], message: `Shared project data (quoted JSON):\n${shared.sharedText}\n\nQuestion from the requesting person:\n${question}`, maxTokens: 1400 }));
+      history: [], message: `Shared project data (quoted JSON):\n${shared.sharedText}\n\nQuestion from the requesting person:\n${question}`, maxTokens: 1400, requireZeroRetention: process.env.OPENROUTER_ZDR_REQUIRED === "true" }));
     recordSpend(user.id, result.inputTokens + result.outputTokens);
     return { text: result.reply, model };
   } : undefined;
