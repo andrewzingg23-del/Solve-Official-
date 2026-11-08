@@ -148,7 +148,8 @@ export async function POST(request: Request) {
     const system = packSystemPrompt({ rules: buildChatSystemPrompt(chat.botName), soul, projectBrief: personalBrief, passport }).text;
     const completion = await completeChat(
       apiKey,
-      buildChatCompletionBody({ model, system, history: chat.history, message: chat.message }),
+      buildChatCompletionBody({ model, system, history: chat.history, message: chat.message,
+        requireZeroRetention: process.env.OPENROUTER_ZDR_REQUIRED === "true" }),
     );
     recordSpend(limiterKey, completion.inputTokens + completion.outputTokens);
     return json({
