@@ -6,12 +6,13 @@ import { useState, useTransition, type FormEvent } from "react";
 import { Icon } from "@/app/product/icons";
 import { addWorkbenchNote } from "./actions";
 import type { RealityMode } from "@/app/reality/mode";
+import type { SpaceAppearance } from "@/lib/product/appearance";
 
 type WorkPiece = { id: string; title: string; body: string; x: number; y: number; version: number };
 type View = "list" | "canvas";
 
-export function Workbench({ worldId, title, summary, pieces, mode }: {
-  worldId: string; title: string; summary: string; pieces: WorkPiece[]; mode: RealityMode;
+export function Workbench({ worldId, title, summary, pieces, mode, tone }: {
+  worldId: string; title: string; summary: string; pieces: WorkPiece[]; mode: RealityMode; tone: SpaceAppearance["tone"];
 }) {
   const router = useRouter();
   const [view, setView] = useState<View>("list");
@@ -39,7 +40,7 @@ export function Workbench({ worldId, title, summary, pieces, mode }: {
     });
   }
 
-  return <main className={"reality-workbench" + (mode === "personal" ? " reality-workbench--personal" : "")}>
+  return <main className={"reality-workbench" + (mode === "personal" ? " reality-workbench--personal" : "")} data-style-tone={tone}>
     <a href="#workbench-content" className="reality-skip">Skip to work</a>
     <header className="reality-workbench-head">
       <Link href="/" aria-label="SOLVE home">SOLVE</Link>
