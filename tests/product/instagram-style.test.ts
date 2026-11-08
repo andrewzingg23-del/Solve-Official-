@@ -114,6 +114,9 @@ test("search uses real OpenRouter web search and never invents an account", () =
   const search = read("app/personalize/instagram/search.ts");
   assert.match(search, /openrouter:web_search/);
   assert.match(search, /OPENROUTER_API_KEY/);
+  assert.match(search, /max_tool_calls: 1/);
+  assert.match(search, /max_uses: 1/);
+  assert.match(search, /allowed_domains: \["instagram.com"\]/);
   assert.match(search, /instagramProfileUrl\(rawProfile\)/);
   assert.match(search, /extractInstagramProfileMatches\(result, handle\)/);
   assert.match(search, /getUser/);
