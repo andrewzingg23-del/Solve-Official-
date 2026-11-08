@@ -27,7 +27,9 @@ create table if not exists public.sov_public_profiles (
 alter table public.sov_public_profiles enable row level security;
 revoke all on public.sov_public_profiles from anon, authenticated;
 grant select, insert, update, delete on public.sov_public_profiles to authenticated;
-grant select (public_id, handle, display_name, tagline, about, public_email, website, featured_url, appearance, updated_at) on public.sov_public_profiles to anon;
+-- The true anon request also filters by published=true; column privileges cover WHERE predicates.
+-- RLS still hides every unpublished row. owner_id remains unavailable to anon.
+grant select (public_id, handle, display_name, tagline, about, public_email, website, featured_url, appearance, published, updated_at) on public.sov_public_profiles to anon;
 
 create policy "sov_profile_guest_reads_published"
 on public.sov_public_profiles for select to anon
