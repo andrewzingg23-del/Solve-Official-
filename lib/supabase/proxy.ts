@@ -3,6 +3,7 @@ import { kernelClient } from "@/lib/kernel/client";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured, supabasePublishableKey, supabaseUrl } from "./config";
+import { needsGuestContext } from "./guest-page";
 
 // Refreshes the auth session cookie on every request and reports whether a
 // session is present. This is an optimistic check for redirects only; pages
@@ -32,10 +33,7 @@ export async function updateSession(request: NextRequest) {
   // Establish the cookie before rendering; Server Components cannot persist it.
   // Keep callback/API traffic and asset requests free of implicit account creation.
   const path = request.nextUrl.pathname;
-  const guestPage = ["GET", "POST"].includes(request.method)
-    && !path.startsWith("/api/") && !path.startsWith("/auth/")
-    && path !== "/login" && !path.startsWith("/_next/")
-    && !/\.[a-z0-9]+$/i.test(path);
+  const guestPage = needsGuestContext(path, request.method);
   if (!signedIn && !loginRequired() && guestPage) {
     const { data: guest, error } = await supabase.auth.signInAnonymously();
     signedIn = !error && Boolean(guest.session);
