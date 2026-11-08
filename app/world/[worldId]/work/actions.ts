@@ -51,10 +51,12 @@ export async function createWorkTaskAction(worldId: string, formData: FormData) 
         title: intent.title,
         objective: intent.objective,
         requiredCapability: "task.perform",
-        risk: "low",
-        reversible: true,
+        // Free text has not been classified for execution risk or reversibility.
+        // Never pre-authorize a potentially costly, public or irreversible act.
+        risk: "medium",
+        reversible: false,
         verification: intent.independentReview ? "distinct_actor" : "none",
-        inputs: { origin: "solve.world.work.v1" },
+        inputs: { origin: "solve.world.work.v1", riskAssessment: "unclassified", aiDispatch: "off" },
         idempotencyKey: intent.requestId,
       });
     }
