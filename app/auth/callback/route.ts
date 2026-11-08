@@ -14,7 +14,15 @@ export async function GET(request: NextRequest) {
 
   const supabase = await createClient();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error) return redirectTo(loginWithError(error.message));
+  if (error) {
+    // PKCE verifier cookies are bound to the browser that requested the link.
+    // A link opened from a mail app in another browser cannot be exchanged safely.
+    // Never expose Supabase's raw implementation error to the consumer.
+    const verifierMissing = /code verifier.*not found|code verifier.*storage|code_verifier/i.test(error.message);
+    return redirectTo(loginWithError(verifierMissing
+      ? "This sign-in link was opened in a different browser or its session expired. Open SOLVE in the same browser where you requested the link, then request a new link."
+      : "This sign-in link could not be completed. Please request a new link."));
+  }
 
   // Link the session to its canonical kernel actor. Sign-in still succeeds if the kernel is
   // unreachable; the account page shows that state and can retry.
