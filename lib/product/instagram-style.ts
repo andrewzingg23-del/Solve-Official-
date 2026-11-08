@@ -63,8 +63,9 @@ export function suggestInstagramAppearance(
   }
   const sorted = (Object.entries(counts) as Array<[Exclude<InstagramTone,"graphite">,number]>).sort((a,b) => b[1]-a[1]);
   const captionCount = caption ? caption.split(/\n+/).filter(Boolean).length : 0;
-  if (sorted[0][1] === 0 || (!hues.length && !captionCount)) return { next:current, analysis:null };
-  const tone = sorted[0][0];
+  if (!hues.length && !captionCount) return { next:current, analysis:null };
+  // Monochrome source photos have no dominant chromatic hue. Honor them as graphite.
+  const tone: InstagramTone = sorted[0][1] === 0 ? "graphite" : sorted[0][0];
   const next = { ...current, tone };
   const source = hues.length && captionCount ? "photos-and-captions" : hues.length ? "photos" : "captions";
   const explanation = hues.length
