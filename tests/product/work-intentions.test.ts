@@ -57,6 +57,10 @@ test("the app consumes kernel authority and tasks without a parallel task store"
   assert.match(action, /decision\.decision !== "ALLOW"/);
   assert.match(action, /kernel\.createTask\(/);
   assert.match(action, /requiredCapability: "task\.perform"/);
+  assert.match(action, /risk: "medium"/);
+  assert.match(action, /reversible: false/);
+  assert.match(action, /riskAssessment: "unclassified"/);
+  assert.match(action, /aiDispatch: "off"/);
   assert.match(action, /idempotencyKey: intent\.requestId/);
   assert.match(action, /verification: intent\.independentReview \? "distinct_actor" : "none"/);
   assert.match(page, /kernel\.readTasks\(world\.scope\)/);
