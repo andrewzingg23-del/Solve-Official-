@@ -71,9 +71,9 @@ const toneColors: Record<SpaceAppearance["tone"], [string,string]> = {
   violet: ["#2a2343","#cab8e9"]
 };
 
-export function InstagramStyleStudio({ initialAppearance }: { initialAppearance: SpaceAppearance }) {
+export function InstagramStyleStudio({ initialAppearance, initialHandle = "" }: { initialAppearance: SpaceAppearance; initialHandle?: string }) {
   const router = useRouter();
-  const [handle, setHandle] = useState("");
+  const [handle, setHandle] = useState(initialHandle);
   const [files, setFiles] = useState<File[]>([]);
   const [captions, setCaptions] = useState("");
   const [publicMatches, setPublicMatches] = useState<PublicInstagramMatch[]>([]);
