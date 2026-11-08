@@ -25,6 +25,8 @@ export function ProductShell({ children, identity }: { children: React.ReactNode
   const botName = identity?.botName || (!identity ? localBotName : "") || "Your AI";
   const face = identity?.face || (!identity ? profile?.face : "") || "blank";
   const links = homes.map(home => <Link key={home.href} href={home.href} aria-current={active === home.href || active.startsWith(home.href + "/") ? "page" : undefined} className="solve-nav-link"><Icon name={home.icon} /><span>{home.label}</span></Link>);
+  // Reality and Workbench own the full viewport; the existing shell continues to serve other routes.
+  if (path === "/" || path === "/workbench" || /^\/world\/[^/]+\/workbench$/.test(path)) return <>{children}</>;
   if (path === "/onboarding") return <>{children}</>;
   if (path === "/studio" || path === "/map" || path === "/sov-id" || /^\/world\/[^/]+\/studio$/.test(path)) return <>{children}</>;
   if (minimal) return <div className="solve-minimal"><SolveBrand href="/space" />{children}</div>;
