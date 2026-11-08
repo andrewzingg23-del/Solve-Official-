@@ -10,6 +10,8 @@ import {
   type InstagramAnalysis
 } from "@/lib/product/instagram-style";
 import { applyInstagramInspiredLook } from "./actions";
+import { searchPublicInstagram } from "./search";
+import { sourceWordsFromProfile, type PublicInstagramMatch } from "@/lib/product/instagram-public-search";
 
 type ProposedLook = { next: SpaceAppearance; analysis: InstagramAnalysis };
 
@@ -74,6 +76,8 @@ export function InstagramStyleStudio({ initialAppearance }: { initialAppearance:
   const [handle, setHandle] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [captions, setCaptions] = useState("");
+  const [publicMatches, setPublicMatches] = useState<PublicInstagramMatch[]>([]);
+  const [searching, setSearching] = useState(false);
   const [proposal, setProposal] = useState<ProposedLook | null>(null);
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -92,9 +96,44 @@ export function InstagramStyleStudio({ initialAppearance }: { initialAppearance:
     setFiles(selected);
   }
 
+  async function lookup() {
+    if (!profileUrl || searching || saving || busy) return;
+    setSearching(true);
+    setNotice("");
+    setPublicMatches([]);
+    setProposal(null);
+    try {
+      const result = await searchPublicInstagram(handle);
+      if (!result.ok) { setNotice(result.error); return; }
+      setPublicMatches(result.matches);
+      if (!result.matches.length) {
+        setNotice("No cited public search result could confirm that exact profile. Select your own photos for a reliable visual preview.");
+        return;
+      }
+      // Public captions are text-only and often incomplete; never present this as reading the feed.
+      const publicWords = sourceWordsFromProfile(result.matches);
+      const draft = suggestInstagramAppearance(initialAppearance, [], publicWords);
+      if (draft.analysis) {
+        setProposal({ next: draft.next, analysis: {
+          ...draft.analysis,
+          source: "public-profile",
+          explanation: "A tentative look using only publicly indexed text from the cited profile. SOLVE has not read your Instagram photos or private feed."
+        } });
+        setNotice("Public profile match found. Review the cited source and suggested look before applying.");
+      } else {
+        setNotice("Public profile found, but the indexed text doesn't describe its visual style. Select a few photos for a useful preview.");
+      }
+    } catch {
+      setNotice("Public search couldn't finish. You can still choose your own photos.");
+    } finally {
+      setSearching(false);
+    }
+  }
+
   async function preview() {
     if (busy || saving) return;
-    if (!files.length && !captions.trim()) {
+    const indexedText = sourceWordsFromProfile(publicMatches);
+    if (!files.length && !captions.trim() && !indexedText) {
       setNotice("Choose photos from your Instagram posts or paste captions to make a real style preview.");
       return;
     }
@@ -104,11 +143,19 @@ export function InstagramStyleStudio({ initialAppearance }: { initialAppearance:
     try {
       const photoHues: number[] = [];
       for (const file of files) photoHues.push(await samplePhotoHue(file));
-      const result = suggestInstagramAppearance(initialAppearance, photoHues, captions);
+      const combinedText = [captions, indexedText].filter(Boolean).join("\n");
+      const result = suggestInstagramAppearance(initialAppearance, photoHues, combinedText);
       if (!result.analysis) {
         setNotice("There wasn't enough visible source information to propose a look. Try adding photos.");
       } else {
-        setProposal({ next: result.next, analysis: result.analysis });
+        const indexedSource = indexedText ? files.length ? "photos-and-public" : captions.trim() ? "captions-and-public" : "public-profile" : result.analysis.source;
+        setProposal({ next: result.next, analysis: {
+          ...result.analysis,
+          source: indexedSource,
+          explanation: indexedText && !files.length
+            ? "A tentative mood based on indexed public profile text. Add photos for a stronger visual match."
+            : result.analysis.explanation
+        } });
       }
     } catch {
       setNotice("One of the selected photos couldn't be read on this device. Try a JPG or PNG.");
@@ -150,9 +197,17 @@ export function InstagramStyleStudio({ initialAppearance }: { initialAppearance:
         <div className="ig-source">
           <h2>1. Find your Instagram</h2>
           <label htmlFor="ig-profile">Your username or profile link</label>
-          <input id="ig-profile" type="text" autoComplete="off" placeholder="@yourinstagram" maxLength={250} value={handle} onChange={event => setHandle(event.target.value)}/>
+          <input id="ig-profile" type="text" autoComplete="off" placeholder="@yourinstagram" maxLength={250} value={handle} onChange={event => { setHandle(event.target.value); setPublicMatches([]); setProposal(null); setNotice(""); }}/>
           <p>{profileUrl ? <a href={profileUrl} target="_blank" rel="noopener noreferrer">Open this profile on Instagram ↗</a>
-            : "Enter your handle to open the right profile. SOLVE won't assume someone else's account belongs to you."}</p>
+            : "Enter your handle to find the public profile. SOLVE won't assume someone else's account belongs to you."}</p>
+          <button className="ig-public-search" type="button" disabled={!profileUrl || searching || busy || saving} onClick={() => void lookup()}>{searching ? "Searching public web…" : "Search public Instagram"}</button>
+          {publicMatches.length ? <div className="ig-search-evidence" aria-label="Cited public Instagram sources">
+            <strong>Publicly indexed match · Not account verification</strong>
+            {publicMatches.map(match => <div key={match.url}>
+              <a href={match.url} target="_blank" rel="noopener noreferrer">{match.title || "View indexed profile"} ↗</a>
+              {match.excerpt ? <p>{match.excerpt.slice(0,320)}{match.excerpt.length > 320 ? "…" : ""}</p> : null}
+            </div>)}
+          </div> : null}
         </div>
         <div className="ig-source">
           <h2>2. Choose content to use</h2>
@@ -186,14 +241,14 @@ export function InstagramStyleStudio({ initialAppearance }: { initialAppearance:
           <div className="ig-analysis">
             <strong>{proposal.next.tone[0].toUpperCase() + proposal.next.tone.slice(1)} · Suggested mood</strong>
             <p>{proposal.analysis.explanation}</p>
-            <small>{proposal.analysis.photosRead} selected photos · {proposal.analysis.captionsRead} caption lines</small>
+            <small>{proposal.analysis.photosRead} selected photos · {proposal.analysis.captionsRead} text lines · Source: {proposal.analysis.source.replaceAll("-", " ")}</small>
           </div>
           <div className="ig-buttons">
             <button type="button" className="ig-action" disabled={saving} onClick={() => void save()}>{saving ? "Applying…" : "Apply to my SOLVE"}</button>
             <button type="button" className="ig-discard" disabled={saving} onClick={() => { setProposal(null); setNotice("Preview discarded. Your Space is unchanged."); }}>Discard</button>
           </div>
         </> : <p className="ig-await">A real preview appears here after you choose content. Nothing changes automatically.</p>}
-        <div className="ig-boundary"><strong>About Instagram access</strong><p>Official direct reading requires a supported Instagram Creator or Business connection. Personal accounts cannot currently be read through Meta's professional API. This version uses your explicitly selected photos and captions instead—never a simulated search.</p></div>
+        <div className="ig-boundary"><strong>About Instagram access</strong><p>Public search checks indexed web results and shows citations, not a complete Instagram feed. Official direct reading requires a supported Creator/Business connection; Meta's professional API cannot read consumer-account feeds. Photos you select stay on this device.</p></div>
       </aside>
     </div>
   </main>;
