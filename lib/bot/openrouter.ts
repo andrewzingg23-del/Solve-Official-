@@ -23,6 +23,11 @@ export type ChatCompletionBody = {
   model: string;
   max_tokens: number;
   messages: OpenRouterMessage[];
+  provider: {
+    data_collection: "deny";
+    allow_fallbacks: true;
+    zdr?: true;
+  };
 };
 
 /** Build the exact JSON the chat-completions endpoint expects. */
@@ -32,10 +37,18 @@ export function buildChatCompletionBody(args: {
   history: { role: "user" | "assistant"; content: string }[];
   message: string;
   maxTokens?: number;
+  requireZeroRetention?: boolean;
 }): ChatCompletionBody {
   return {
     model: args.model,
     max_tokens: args.maxTokens ?? 1024,
+    // Restrict eligible upstream providers to those reporting no data collection.
+    // Provider fallback preserves availability among those eligible providers.
+    provider: {
+      data_collection: "deny",
+      allow_fallbacks: true,
+      ...(args.requireZeroRetention ? { zdr: true as const } : {}),
+    },
     messages: [
       { role: "system", content: args.system },
       ...args.history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
