@@ -57,3 +57,17 @@
  .ig-look{min-height:280px}
 }
 @media(prefers-reduced-motion:reduce){.ig-look{transition:none}}
+
+
+.ig-public-search{
+  border:1px solid var(--ig-border);border-radius:100px;background:#fff;color:var(--ig-ink);
+  min-height:44px;padding:10px 20px;font-size:12px;font-weight:620;align-self:flex-start;cursor:pointer
+}
+.ig-public-search:disabled{opacity:.5;cursor:not-allowed}
+.ig-search-evidence{
+  border:1px solid var(--ig-border);background:#fff;border-radius:12px;
+  display:flex;flex-direction:column;gap:10px;padding:15px;overflow-wrap:anywhere
+}
+.ig-search-evidence strong{font-size:11px;color:#3c4759}
+.ig-search-evidence a{font-size:12px;font-weight:600;text-decoration:underline}
+.ig-search-evidence p{font-size:11px;line-height:1.6;color:var(--ig-soft);margin-top:5px}
