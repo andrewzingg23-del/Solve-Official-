@@ -12,7 +12,7 @@ export async function applyInstagramInspiredLook(
   rawSource: unknown
 ): Promise<InstagramStyleSave> {
   const source = rawSource;
-  if (source !== "photos" && source !== "captions" && source !== "photos-and-captions") {
+  if (source !== "photos" && source !== "captions" && source !== "photos-and-captions" && source !== "public-profile" && source !== "photos-and-public" && source !== "captions-and-public") {
     return { ok: false, error: "Select actual source content before saving your look." };
   }
   if (!input || typeof input !== "object" || Array.isArray(input)) {
