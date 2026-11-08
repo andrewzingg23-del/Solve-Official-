@@ -7,6 +7,7 @@ import { createProject } from "@/app/product/project-actions";
 import { useProjectDraft } from "@/app/product/draft-store";
 import type { ProjectCard } from "@/app/product/projects";
 import { Icon } from "@/app/product/icons";
+import { SolveBrand } from "@/app/product/solve-brand";
 import { isInstagramStyleRequest, instagramHandleInRequest } from "@/lib/product/instagram-style";
 import { saveRealityMode } from "./actions";
 import type { RealityMode } from "./mode";
@@ -104,7 +105,7 @@ export function RealityEntry({ owner, initialMode, initialAppearance, worldId, p
   return <main className={"reality reality--" + mode} data-style-tone={initialAppearance.tone} data-style-density={initialAppearance.density} data-style-shape={initialAppearance.shape}>
     <a href="#reality-main" className="reality-skip">Skip to content</a>
     <header className="reality-head">
-      <Link href="/" className="reality-wordmark" aria-label="SOLVE home"><span className="reality-mark" aria-hidden="true">S</span><span>SOLVE</span></Link>
+      <SolveBrand href="/" />
       <nav className="reality-head-links" aria-label="Your environment">
         <Link href="/space">Space</Link>
         <Link href={hasSavedProjects ? "/world/" + recent[0].worldId + "/workbench" : "/worlds/new"}>Workbench</Link>
@@ -164,7 +165,7 @@ export function RealityEntry({ owner, initialMode, initialAppearance, worldId, p
       <Link href="/" aria-current="page"><Icon name="home"/>Home</Link>
       <Link href={hasSavedProjects ? "/world/" + recent[0].worldId + "/workbench" : "/worlds/new"}><Icon name="projects"/>Work</Link>
       <Link href="/space"><Icon name="community"/>Space</Link>
-      <Link href="/account"><Icon name="profile"/>ID</Link>
+      <Link href="/sov-id"><Icon name="profile"/>ID</Link>
     </nav>
   </main>;
 }
