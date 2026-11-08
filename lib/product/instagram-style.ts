@@ -5,7 +5,7 @@ export type InstagramAnalysis = {
   tone: InstagramTone;
   photosRead: number;
   captionsRead: number;
-  source: "photos" | "captions" | "photos-and-captions";
+  source: "photos" | "captions" | "photos-and-captions" | "public-profile" | "photos-and-public" | "captions-and-public";
   explanation: string;
 };
 
