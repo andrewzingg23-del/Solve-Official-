@@ -7,6 +7,7 @@ import { createProject } from "@/app/product/project-actions";
 import { useProjectDraft } from "@/app/product/draft-store";
 import type { ProjectCard } from "@/app/product/projects";
 import { Icon } from "@/app/product/icons";
+import { isInstagramStyleRequest } from "@/lib/product/instagram-style";
 import { saveRealityMode } from "./actions";
 import type { RealityMode } from "./mode";
 import "./reality.css";
@@ -66,6 +67,13 @@ export function RealityEntry({ owner, initialMode, worldId, projects, name }: {
     event.preventDefault();
     const intention = currentText.trim();
     if (!intention || pending) return;
+    // This is a personalization action, not a project titled "search my Instagram".
+    if (isInstagramStyleRequest(intention)) {
+      clear(draft?.id ?? worldId);
+      setTyped(null);
+      router.push("/personalize/instagram");
+      return;
+    }
     const input = { id: draft?.id ?? worldId, title: titleFromIntention(intention), goal: intention };
     // Device storage is only required to carry a guest draft through sign-in.
     // A signed-in person can save directly to the kernel even when local storage is disabled.
