@@ -72,6 +72,7 @@ export default async function WorldWorkPage({ params, searchParams }: PageProps<
       <p>Start with an outcome. SOLVE keeps the work, permissions and history together in this project.</p>
       <nav aria-label="Project workspace" className="flex flex-wrap gap-4 text-sm">
         <Link href={room} className="solve-text-link">Conversation and people</Link>
+        <Link href="/bot" className="solve-text-link">AI and permissions</Link>
         <Link href={`/world/${encodeURIComponent(work.worldId)}`} className="solve-text-link">Project details</Link>
       </nav>
     </header>
