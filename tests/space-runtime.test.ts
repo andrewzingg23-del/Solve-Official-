@@ -40,3 +40,16 @@ test("personal overrides cannot change shared components", () => {
   assert.equal(view.components.length,0);
   assert.equal(document.components.length,1);
 });
+
+test("invalid persisted documents fail closed before applying a proposal", () => {
+  const invalid = base();
+  invalid.components.push({...invalid.components[0]});
+  assert.throws(() => applySpaceProposal(invalid,{spaceId:"agency",baseRevision:0,operations:[]}),SpaceValidationError);
+  const injected = base();
+  injected.expression.accent = "url(https://evil.test)";
+  assert.throws(() => applySpaceProposal(injected,{spaceId:"agency",baseRevision:0,operations:[]}),SpaceValidationError);
+});
+test("personal view rejects malformed actor and hidden component identifiers", () => {
+  assert.throws(() => resolvePersonalView(base(),{spaceId:"agency",actorId:"",hiddenComponentIds:[]}),SpaceValidationError);
+  assert.throws(() => resolvePersonalView(base(),{spaceId:"agency",actorId:"a",hiddenComponentIds:["<script>"]}),SpaceValidationError);
+});
