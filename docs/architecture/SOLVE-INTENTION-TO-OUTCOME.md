@@ -47,11 +47,11 @@ The new Work page reuses the existing World, kernel and appearance tokens.
 
 - Person enters an outcome and optional success criteria.
 - Optional **independent review required** before completed state.
-- Server reloads World from kernel, checks `task.create` in that scope, and creates a low-risk, reversible task requiring `task.perform`. It grants nobody `task.perform`.
+- Server reloads World from kernel, checks `task.create` in that scope, and creates a conservatively classified, not-yet-assessed medium-risk task with reversibility **not assumed**, requiring `task.perform`. It grants nobody `task.perform`.
 - A stable user request ID makes retries idempotent.
 - Readback uses `read_tasks`, displaying actual statuses and assigned-worker presence only when recorded.
 - The interface distinguishes `no tasks` from `unable to read tasks`, and errors do not pretend a successful write.
-- New tasks are **not** automatically assigned, sent to a provider, published, or executed. A user's saved intention is not a completed outcome.
+- New tasks are **not** automatically assigned, sent to a provider, published, or executed. Free-text intent has `riskAssessment=unclassified` and `aiDispatch=off` until the owner separately authorizes an assessed capability. A user's saved intention is not a completed outcome.
 - Signed-out and unauthorized people cannot create tasks through the server action. Server-side `kernel_api` remains the security gate.
 
 This is the same intake needed for consumer projects and the SOLVE build team. It is a first slice, not a complete autonomous agent team.
