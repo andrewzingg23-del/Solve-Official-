@@ -44,7 +44,13 @@ export function applySpaceProposal(document: SpaceDocument, proposal: SpacePropo
   if (document.schemaVersion !== 1 || !safeId(document.spaceId) || !Number.isSafeInteger(document.revision) || document.revision < 0) {
     throw new SpaceValidationError("Unsupported Space document");
   }
-  if (!safeText(document.name) || !Array.isArray(document.components) || document.components.length > 100 ||\n      document.components.some(c => { try { validateComponent(c); return false; } catch { return true; } }) ||\n      new Set(document.components.map(c => c.id)).size !== document.components.length) {\n    throw new SpaceValidationError("Invalid existing Space components");\n  }\n  validateExpressionPatch(document.expression);\n  if (proposal.spaceId !== document.spaceId || proposal.baseRevision !== document.revision) {
+  if (!safeText(document.name) || !Array.isArray(document.components) || document.components.length > 100 ||
+      document.components.some(c => { try { validateComponent(c); return false; } catch { return true; } }) ||
+      new Set(document.components.map(c => c.id)).size !== document.components.length) {
+    throw new SpaceValidationError("Invalid existing Space components");
+  }
+  validateExpressionPatch(document.expression);
+  if (proposal.spaceId !== document.spaceId || proposal.baseRevision !== document.revision) {
     throw new SpaceValidationError("Stale or mismatched Space revision");
   }
   if (!Array.isArray(proposal.operations) || proposal.operations.length > 32) {
@@ -85,7 +91,12 @@ export function resolvePersonalView(document: SpaceDocument, view?: PersonalView
   if (view && view.spaceId !== document.spaceId) throw new SpaceValidationError("View belongs to another Space");
   const override = view?.expression || {};
   validateExpressionPatch(override);
-  if (view && (!safeId(view.actorId) || !Array.isArray(view.hiddenComponentIds ?? []) ||\n      (view.hiddenComponentIds ?? []).length > 100 ||\n      (view.hiddenComponentIds ?? []).some(id => !safeId(id)))) {\n    throw new SpaceValidationError("Invalid personal view");\n  }\n  const hidden = new Set(view?.hiddenComponentIds || []);
+  if (view && (!safeId(view.actorId) || !Array.isArray(view.hiddenComponentIds ?? []) ||
+      (view.hiddenComponentIds ?? []).length > 100 ||
+      (view.hiddenComponentIds ?? []).some(id => !safeId(id)))) {
+    throw new SpaceValidationError("Invalid personal view");
+  }
+  const hidden = new Set(view?.hiddenComponentIds || []);
   return {
     spaceId: document.spaceId,
     revision: document.revision,
