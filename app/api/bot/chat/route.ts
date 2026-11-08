@@ -4,6 +4,7 @@
 // "switch anthropic with open router"). Response contract is full JSON —
 // the Talk panel reads data.reply via res.json(); keep it that way.
 import { getUser } from "@/lib/supabase/server";
+import { isInstagramStyleRequest, instagramHandleInRequest } from "@/lib/product/instagram-style";
 import { loginRequired } from "@/lib/auth/gate";
 import { getBotSoul } from "@/lib/bot/soul";
 import { agentSpaceBrief } from "@/lib/product/personal-space";
@@ -63,6 +64,18 @@ export async function POST(request: Request) {
     typeof rawMessage === "string" ? parseTier(rawMessage) : { tier: "flash" as ChatTier, message: "" };
   const chat = validateChatBody({ ...(body as object), message: tieredMessage });
   if (!chat) return json({ error: "Send a message, your bot's name, and up to 20 history items." }, 422);
+
+  // Capability routing is deterministic and does not spend tokens on a fictional action.
+  // A real provider search happens only in the authorized personalization workflow.
+  if (isInstagramStyleRequest(chat.message)) {
+    const requestedHandle = instagramHandleInRequest(chat.message);
+    const href = "/personalize/instagram" + (requestedHandle ? "?profile=" + encodeURIComponent(requestedHandle) : "");
+    return json({
+      reply: "I can search public Instagram evidence and help you preview a personal SOLVE look. Open the Instagram personalization workflow to choose the profile and review what is actually found. Private posts need authorized access.",
+      source: "instagram-personalization",
+      action: { kind: "navigate", href, label: "Personalize from Instagram" }
+    });
+  }
 
   // Development Room: a dev-status question ("what is Claude working on?") is answered
   // deterministically from connected GitHub/CI evidence — never the LLM, never fabricated,
