@@ -23,9 +23,10 @@ export function instagramProfileUrl(value: unknown): string | null {
   const trimmed = value.trim();
   const handle = trimmed.startsWith("@") ? trimmed.slice(1) : trimmed;
   let candidate = handle;
-  if (/^https?:\/\//i.test(handle)) {
+  const profileInput = /^(?:www\.)?instagram\.com\//i.test(handle) ? "https://" + handle : handle;
+  if (/^https?:\/\//i.test(profileInput)) {
     try {
-      const url = new URL(handle);
+      const url = new URL(profileInput);
       if (!["instagram.com","www.instagram.com"].includes(url.hostname.toLowerCase()) || url.username || url.password || url.port) return null;
       candidate = url.pathname.split("/").filter(Boolean)[0] || "";
     } catch { return null; }
