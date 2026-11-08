@@ -17,7 +17,11 @@
   --r-shadow:0 16px 40px rgba(0,0,0,.22);color-scheme:dark;
 }
 .reality--personal {
-  background:#0b111b linear-gradient(180deg,rgba(9,13,21,.26) 0%,rgba(10,13,20,.85) 63%,#080d16 100%),url("/brand/solve-reality-horizon.svg") center top/auto 94vh no-repeat;
+  background-color:#0b111b;
+  background-image:linear-gradient(180deg,rgba(9,13,21,.26) 0%,rgba(10,13,20,.85) 63%,#080d16 100%),url("/brand/solve-reality-horizon.svg");
+  background-position:center top,center top;
+  background-size:cover,auto 94vh;
+  background-repeat:no-repeat;
 }
 .reality-skip{position:absolute;top:-100px;left:10px;z-index:100;background:#fff;color:#101010;padding:12px}
 .reality-skip:focus{top:10px}
@@ -78,7 +82,7 @@
 
 /* Full-screen Workbench: project data is retained, navigation falls away. */
 .reality-workbench{display:flex;flex-direction:column;background:#0c1018;color:#f6f7fb}
-.reality-workbench--personal{background:linear-gradient(180deg,rgba(9,12,21,.65),#0c1018 63%),url("/brand/solve-reality-horizon.svg") center top/100% auto no-repeat}
+.reality-workbench--personal{background-color:#0c1018;background-image:linear-gradient(180deg,rgba(9,12,21,.65),#0c1018 63%),url("/brand/solve-reality-horizon.svg");background-position:center top;background-size:cover,100% auto;background-repeat:no-repeat}
 .reality-workbench-head{min-height:77px;border-bottom:1px solid var(--r-line);display:flex;align-items:center;gap:22px;padding:14px clamp(20px,4vw,58px)}
 .reality-workbench-head>a:first-child{font-size:17px;letter-spacing:.25em;font-weight:600}
 .reality-workbench-head>span{font-size:12px;color:var(--r-muted)}
