@@ -7,7 +7,8 @@ import { createProject } from "@/app/product/project-actions";
 import { useProjectDraft } from "@/app/product/draft-store";
 import type { ProjectCard } from "@/app/product/projects";
 import { Icon } from "@/app/product/icons";
-import { saveRealityMode, type RealityMode } from "./actions";
+import { saveRealityMode } from "./actions";
+import type { RealityMode } from "./mode";
 import "./reality.css";
 
 const modes: Array<{ id: RealityMode; name: string; detail: string }> = [
