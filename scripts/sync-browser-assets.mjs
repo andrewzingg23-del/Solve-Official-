@@ -17,8 +17,12 @@ for (const file of readdirSync(pgliteSrc)) {
 }
 
 const migrationsDir = join(root, "supabase/migrations");
+// Supabase-hosted identity projections rely on auth.users and must not run
+// inside the standalone browser PGlite kernel.
+const scope = JSON.parse(readFileSync(join(root, "supabase/migration-scope.json"), "utf8"));
+const supabaseOnly = new Set(scope.supabaseOnly);
 const migrations = readdirSync(migrationsDir)
-  .filter((f) => f.endsWith(".sql"))
+  .filter((f) => f.endsWith(".sql") && !supabaseOnly.has(f))
   .sort()
   .map((name) => ({ name, sql: readFileSync(join(migrationsDir, name), "utf8") }));
 mkdirSync(join(root, "public/kernel"), { recursive: true });

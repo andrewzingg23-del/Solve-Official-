@@ -1,0 +1,5 @@
+{
+  "supabaseOnly": [
+    "20261107081500_sov_public_identity.sql"
+  ]
+}
