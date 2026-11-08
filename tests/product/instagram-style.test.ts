@@ -122,3 +122,12 @@ test("search uses real OpenRouter web search and never invents an account", () =
   assert.match(studio, /Publicly indexed match/);
   assert.match(studio, /Not account verification/);
 });
+
+
+test("the central AI conversation returns a typed capability action without pretending to fetch Instagram", () => {
+  const chat = read("app/api/bot/chat/route.ts");
+  assert.match(chat, /isInstagramStyleRequest\(chat\.message\)/);
+  assert.match(chat, /source: "instagram-personalization"/);
+  assert.match(chat, /action: \{ kind: "navigate", href, label: "Personalize from Instagram" \}/);
+  assert.ok(chat.indexOf("if (isInstagramStyleRequest(chat.message))") < chat.indexOf("const apiKey = process.env.OPENROUTER_API_KEY"));
+});
