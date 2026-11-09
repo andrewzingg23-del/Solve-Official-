@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
@@ -22,7 +23,7 @@ export default async function WorldWorkbenchPage({ params }: PageProps<"/world/[
     if (error instanceof KernelError && (error.name === "forbidden" || error.name === "not_found" || error.name === "invalid")) notFound();
     return <main className="reality-workbench" style={{ padding: "clamp(25px,5vw,80px)" }}>
       <h1>Workbench is temporarily unavailable.</h1><p>Your World was not deleted. Please reopen it when the connection is restored.</p>
-      <a href="/">Return to SOLVE</a>
+      <Link href="/">Return to SOLVE</Link>
     </main>;
   }
   const candidate: unknown = user.user_metadata?.solve_reality_mode_v1;

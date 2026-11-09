@@ -248,7 +248,7 @@ export function InstagramStyleStudio({ initialAppearance, initialHandle = "" }: 
             <button type="button" className="ig-discard" disabled={saving} onClick={() => { setProposal(null); setNotice("Preview discarded. Your Space is unchanged."); }}>Discard</button>
           </div>
         </> : <p className="ig-await">A real preview appears here after you choose content. Nothing changes automatically.</p>}
-        <div className="ig-boundary"><strong>About Instagram access</strong><p>Public search checks indexed web results and shows citations, not a complete Instagram feed. Official direct reading requires a supported Creator/Business connection; Meta's professional API cannot read consumer-account feeds. Photos you select stay on this device.</p></div>
+        <div className="ig-boundary"><strong>About Instagram access</strong><p>Public search checks indexed web results and shows citations, not a complete Instagram feed. Official direct reading requires a supported Creator/Business connection; Meta&apos;s professional API cannot read consumer-account feeds. Photos you select stay on this device.</p></div>
       </aside>
     </div>
   </main>;
