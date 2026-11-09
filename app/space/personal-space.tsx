@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { createProject } from "@/app/product/project-actions";
+import { projectCreationIntent } from "@/lib/product/project-intent";
 import { useRouter } from "next/navigation";
 import { isInstagramStyleRequest, instagramHandleInRequest } from "@/lib/product/instagram-style";
 import { useMemo, useState, type FormEvent } from "react";
@@ -19,12 +21,14 @@ const APP_INTERESTS_KEY = "sov.optional-app-interests.v1";
 
 export function PersonalSpace({
   signedIn,
+  ownerId,
   initialAnswers,
   projects,
   initialAppearance,
   botName,
 }: {
   signedIn: boolean;
+  ownerId: string | null;
   initialAnswers: SpaceAnswers;
   projects: ProjectCard[] | null;
   initialAppearance: SpaceAppearance;
@@ -78,6 +82,31 @@ export function PersonalSpace({
       appendTurn({ role: "assistant", content: "I'll help you use your own Instagram content as a real source. You'll review the photos and approve the look before SOLVE changes.", kind: "conversation" });
       const handle = instagramHandleInRequest(message);
       router.push("/personalize/instagram" + (handle ? "?profile=" + encodeURIComponent(handle) : ""));
+      return;
+    }
+    const createIntent = projectCreationIntent(message);
+    if (createIntent) {
+      if (!signedIn || !ownerId) {
+        appendTurn({ role: "assistant", content: "Sign in before creating a saved project. Nothing was created.", kind: "conversation" });
+        return;
+      }
+      setChatBusy(true);
+      setStyleStatus("");
+      setProposal(null);
+      try {
+        const result = await createProject({ id: crypto.randomUUID(), ...createIntent }, ownerId);
+        if (!result.ok) {
+          appendTurn({ role: "assistant", content: result.error + " No project creation was confirmed.", kind: "conversation" });
+          return;
+        }
+        appendTurn({ role: "assistant", content: "Your project was saved. Opening its Workbench.", kind: "conversation" });
+        router.push("/world/" + encodeURIComponent(result.worldId) + "/workbench");
+        router.refresh();
+      } catch {
+        appendTurn({ role: "assistant", content: "The project save could not be confirmed. Check Projects before retrying.", kind: "conversation" });
+      } finally {
+        setChatBusy(false);
+      }
       return;
     }
     const draft = proposeAppearance(message, appearance);
