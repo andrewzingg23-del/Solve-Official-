@@ -19,3 +19,28 @@ test("multiline goal retained, title bounded", () => {
   assert.equal(result?.title.length, 160);
   assert.equal(result?.goal, goal);
 });
+
+test("natural explicit creation variants preserve bounded goal", () => {
+  const examples = [
+    ["Create a project called My insurance agency", "My insurance agency"],
+    ["Start a project for my daughter's reading plan", "my daughter's reading plan"],
+    ["Make me a project to organize the launch", "organize the launch"],
+    ["Set up a project about my community", "my community"],
+    ["Build a project: New client onboarding", "New client onboarding"],
+  ];
+  for (const [request, goal] of examples) {
+    assert.deepEqual(projectCreationIntent(request), { title: goal, goal }, request);
+  }
+});
+
+test("questions and unrelated instructions never cause project writes", () => {
+  for (const request of [
+    "Can you start a project for me?",
+    "What projects should I build?",
+    "Build my insurance agency",
+    "Start a project?",
+    "Make a project for me: should we launch?",
+    "Create a project called Planning?",
+    "Delete a project called Planning",
+  ]) assert.equal(projectCreationIntent(request), null, request);
+});
