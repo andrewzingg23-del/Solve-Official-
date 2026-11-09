@@ -28,6 +28,7 @@ export default async function SpacePage() {
   return (
     <PersonalSpace
       signedIn={signedIn}
+      ownerId={signedIn ? user!.id : null}
       initialAnswers={normalizeSpaceAnswers(signedIn ? (user?.user_metadata?.sov_personal_space ?? user?.user_metadata?.profile) : null)}
       projects={projects}
       initialAppearance={normalizeAppearance(signedIn ? user?.user_metadata?.sov_space_appearance : null)}
