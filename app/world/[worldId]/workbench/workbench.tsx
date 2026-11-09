@@ -46,7 +46,8 @@ export function Workbench({ worldId, title, summary, pieces, mode, tone }: {
       <Link href="/" aria-label="SOLVE home">SOLVE</Link>
       <span>/</span><span>Workbench</span>
       <nav className="reality-workbench-head-links" aria-label="Workbench actions">
-        <Link href={root + "/room"}><Icon name="community" width={16}/>People & AI</Link>
+        <Link href="/bot"><Icon name="chat" width={16}/>Your AI</Link>
+        <Link href={root + "/room"}><Icon name="community" width={16}/>Shared room</Link>
         <Link href="/space">Leave Workbench <Icon name="arrow" width={15}/></Link>
       </nav>
     </header>
@@ -54,7 +55,7 @@ export function Workbench({ worldId, title, summary, pieces, mode, tone }: {
       <nav className="reality-workbench-rail" aria-label="Workspace shortcuts">
         <Link href="/" aria-label="Home"><Icon name="home"/></Link>
         <Link href={root} aria-label="World details"><Icon name="projects"/></Link>
-        <Link href={root + "/room"} aria-label="Shared room"><Icon name="chat"/></Link>
+        <Link href="/bot" aria-label="Your AI"><Icon name="chat"/></Link>
         <Link href="/space" aria-label="Your Space"><Icon name="community"/></Link>
       </nav>
       <div className="reality-workbench-body" id="workbench-content">
@@ -97,7 +98,8 @@ export function Workbench({ worldId, title, summary, pieces, mode, tone }: {
             </form>
             {result ? <p className="reality-action-message" role="status">{result}</p> : null}
             <div className="reality-inspector-links">
-              <Link href={root + "/room"}><Icon name="chat" width={19}/>Conversation & AI</Link>
+              <Link href="/bot"><Icon name="chat" width={19}/>Your AI and its permissions</Link>
+              <Link href={root + "/room"}><Icon name="community" width={19}/>Project conversation</Link>
               <Link href={root}><Icon name="community" width={19}/>People, access & files</Link>
               <Link href="/space"><Icon name="home" width={19}/>Customize your Space</Link>
             </div>
@@ -108,7 +110,7 @@ export function Workbench({ worldId, title, summary, pieces, mode, tone }: {
     <nav className="reality-workbench-mobile" aria-label="Mobile Workbench navigation">
       <Link href="/"><Icon name="home"/>Home</Link>
       <Link href={root}><Icon name="projects"/>World</Link>
-      <Link href={root + "/room"}><Icon name="chat"/>Together</Link>
+      <Link href="/bot"><Icon name="chat"/>Your AI</Link>
       <Link href="/space"><Icon name="community"/>Space</Link>
     </nav>
   </main>;
