@@ -1012,6 +1012,35 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
       things: Array<{ id: string; type: string; scope: string; title: string; data: Record<string, unknown>; version: number }>;
       history: Array<{ seq: number; at: string; type: string; scope: string }> }>("export_mine", { ...as }),
 
+    // Counterparty confirmation. The owner asks one named person about one thing; the bearer
+    // token itself never reaches the kernel, only its SHA-256 hash.
+    requestConfirmation: (input: { entityId: string; tokenHash: string; askedOf?: string; question?: string; requestId: string }) =>
+      call<{ request_id: string; expires_at: string }[]>("request_confirmation", {
+        p_entity_id: input.entityId, p_token_hash: input.tokenHash,
+        p_asked_of: input.askedOf ?? "", p_question: input.question ?? "",
+        p_request_id: input.requestId, ...as }),
+
+    // What the person holding the link may see: that one thing, and nothing else.
+    readConfirmationRequest: (tokenHash: string) =>
+      call<{ thing: { title: string; summary: string; type: string; data: Record<string, unknown> };
+        asked_by: string; asked_of: string; question: string; expires_at: string; expired: boolean;
+        answered: boolean; decision: "confirmed" | "disputed" | null; answered_at: string | null }>(
+        "read_confirmation_request", { p_token_hash: tokenHash, ...as }),
+
+    answerConfirmation: (input: { tokenHash: string; decision: "confirmed" | "disputed"; note?: string; requestId: string }) =>
+      call<string>("answer_confirmation", { p_token_hash: input.tokenHash, p_decision: input.decision,
+        p_note: input.note ?? "", p_request_id: input.requestId, ...as }),
+
+    cancelConfirmation: (confirmationId: string) =>
+      call<null>("cancel_confirmation", { p_confirmation_id: confirmationId, ...as }),
+
+    // An unanswered request is a state, not a gap, so the owner's surface can say so.
+    readConfirmations: (entityId: string) =>
+      call<Array<{ confirmation_id: string; asked_of: string; question: string; expires_at: string;
+        state: "awaiting" | "confirmed" | "disputed" | "expired" | "withdrawn";
+        answered_at: string | null; answered_by: string | null }>>(
+        "read_confirmations", { p_entity_id: entityId, ...as }),
+
     readRelations: (scope: string, includeEnded = false) =>
       call<WorldRelation[]>("read_relations", { p_scope: scope, p_include_ended: includeEnded, ...as }),
 

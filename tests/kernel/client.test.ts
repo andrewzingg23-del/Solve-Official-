@@ -108,6 +108,11 @@ async function exerciseEveryMethod(supabase: SupabaseClient, actAs?: string) {
   await k.defineType({ type: "candidate", scope: "world:x", fields: { name: { type: "text", required: true } }, label: "l", idempotencyKey: "k" });
   await k.putObject({ type: "candidate", scope: "world:x", title: "t", data: { name: "n" }, objectId: id, visibility: "private", idempotencyKey: "k" });
   await k.exportMine();
+  await k.requestConfirmation({ entityId: id, tokenHash: "a".repeat(64), askedOf: "The homeowner", question: "Done?", requestId: "r" });
+  await k.readConfirmationRequest("a".repeat(64));
+  await k.answerConfirmation({ tokenHash: "a".repeat(64), decision: "confirmed", note: "yes", requestId: "r" });
+  await k.cancelConfirmation(id);
+  await k.readConfirmations(id);
   await k.readActors([id]);
 }
 
