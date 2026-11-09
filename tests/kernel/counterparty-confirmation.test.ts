@@ -217,3 +217,35 @@ it("a withdrawn request cannot be answered, and an answer already given stays", 
   assert.equal(states.find(s => s.asked_of === "Wrong person")?.state, "withdrawn");
   assert.equal(states.find(s => s.asked_of === "Right person")?.state, "confirmed");
 });
+
+it("names people by their chosen name, and tells the answerer it was them", async () => {
+  // Regression from the 2026-11-09 staging acceptance run: the readers used the raw label column,
+  // so an asker who had named themselves appeared as "Someone".
+  const { thing, ownerApi, otherApi } = await twoSides();
+  await ownerApi.rpc("set_person_label", { p_label: "Ana the holder", p_request_id: "label-owner" });
+  await otherApi.rpc("set_person_label", { p_label: "Dana who was asked", p_request_id: "label-other" });
+  const token = randomUUID();
+  await ownerApi.rpc("request_confirmation", {
+    p_entity_id: thing, p_token_hash: tokenHash(token), p_asked_of: "Dana", p_question: "",
+    p_request_id: "ask-names", p_as_actor: null,
+  });
+
+  const before = (await otherApi.rpc("read_confirmation_request", { p_token_hash: tokenHash(token), p_as_actor: null })) as
+    { asked_by: string; answered_by_you: boolean };
+  assert.equal(before.asked_by, "Ana the holder", "the asker's chosen name, not their registration label");
+  assert.equal(before.answered_by_you, false);
+
+  await otherApi.rpc("answer_confirmation", {
+    p_token_hash: tokenHash(token), p_decision: "confirmed", p_note: "", p_request_id: "ans-names", p_as_actor: null,
+  });
+  const mine = (await otherApi.rpc("read_confirmation_request", { p_token_hash: tokenHash(token), p_as_actor: null })) as
+    { answered_by_you: boolean };
+  assert.equal(mine.answered_by_you, true, "the person who answered is told it was them");
+  const theirs = (await ownerApi.rpc("read_confirmation_request", { p_token_hash: tokenHash(token), p_as_actor: null })) as
+    { answered_by_you: boolean };
+  assert.equal(theirs.answered_by_you, false, "nobody else is told it was them");
+
+  const states = (await ownerApi.rpc("read_confirmations", { p_entity_id: thing, p_as_actor: null })) as
+    { answered_by: string }[];
+  assert.equal(states[0].answered_by, "Dana who was asked", "the holder sees who confirmed it, by name");
+});

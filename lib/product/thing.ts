@@ -249,3 +249,28 @@ export function accessFrom(
     grantId: g.id,
   }));
 }
+
+/** A confirmation request as its owner sees it. */
+export type ThingConfirmation = {
+  id: string;
+  askedOf: string;
+  question: string;
+  state: "awaiting" | "confirmed" | "disputed" | "expired" | "withdrawn";
+  answeredBy: string | null;
+  answeredAt: string | null;
+};
+
+/**
+ * Each state in plain words. Awaiting is a state, not a gap: asking is not the same as being
+ * answered, and the owner must never be shown a request as if it had been confirmed.
+ */
+export function confirmationWording(c: Pick<ThingConfirmation, "state" | "answeredBy">): string {
+  const who = c.answeredBy?.trim() || "the person asked";
+  switch (c.state) {
+    case "awaiting": return "Waiting for an answer";
+    case "confirmed": return `Confirmed by ${who}`;
+    case "disputed": return `Disputed by ${who}`;
+    case "expired": return "Expired without an answer";
+    case "withdrawn": return "Withdrawn";
+  }
+}

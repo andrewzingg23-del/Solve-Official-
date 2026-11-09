@@ -35,7 +35,8 @@ export function ProductShell({ children, identity }: { children: React.ReactNode
   const path = usePathname();
   const { profile } = useGuestProfile();
   const active = destinationOf(path);
-  const minimal = path.startsWith("/oauth") || path.startsWith("/saved") || path.startsWith("/world-invite");
+  // Pages a person reaches from a link someone else sent them: no one's navigation, only SOLVE's mark.
+  const minimal = path.startsWith("/oauth") || path.startsWith("/saved") || path.startsWith("/world-invite") || path.startsWith("/confirm/");
   const name = identity ? identity.name || "Your profile" : profile?.yourName || "Your profile";
   const localBotName = profile?.botPersona ? validatePersona(profile.botPersona, DEFAULT_PERSONA).name : profile?.botName;
   const botName = identity?.botName || (!identity ? localBotName : "") || "Your AI";

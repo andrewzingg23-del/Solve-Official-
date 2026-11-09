@@ -7,7 +7,8 @@ import { getUser } from "@/lib/supabase/server";
 import { loadCreativeWorld } from "@/lib/world/creative";
 import { readWorldMembers } from "@/lib/world/collaboration";
 import { ThingInspector } from "@/app/product/thing-inspector";
-import { fieldsFromType, proofOf, actsFrom, accessFrom, nameFor, type ActorNames } from "@/lib/product/thing";
+import { fieldsFromType, proofOf, actsFrom, accessFrom, nameFor, type ActorNames, type ThingConfirmation } from "@/lib/product/thing";
+import { AskForConfirmation } from "./ask";
 
 export const metadata: Metadata = { title: "Record · SOLVE" };
 
@@ -82,12 +83,21 @@ export default async function WorldRecordPage({ params }: PageProps<"/world/[wor
   const ownerActorId = membership?.ownerActorId;
   const ownerLabel = ownerActorId ? nameFor(ownerActorId, names) : "Not recorded";
 
-  // Only an action that exists. Asking for confirmation has a kernel behind it but no surface
-  // yet, so nothing here offers it.
+  // Only an action that exists, offered only to someone who could take it. The holder of a thing
+  // that nothing proves yet is offered the one act that changes that: asking someone else.
   const durable = Boolean(user && !user.is_anonymous);
+  const isHolder = Boolean(ownerActorId && me?.actor_id === ownerActorId);
+  const proof = proofOf(evidence, confirmations ?? []);
+  const nextAction = isHolder && (proof.status === "none" || proof.status === "claimed")
+    ? <AskForConfirmation worldId={world.worldId} entityId={world.entityId} />
+    : undefined;
   const next = durable
     ? { label: "Open the workbench", href: `/world/${encodeURIComponent(world.worldId)}/workbench` }
     : null;
+  const asked: ThingConfirmation[] = (confirmations ?? []).map(c => ({
+    id: c.confirmation_id, askedOf: c.asked_of, question: c.question, state: c.state,
+    answeredBy: c.answered_by, answeredAt: c.answered_at,
+  }));
 
   return <ThingInspector
     title={world.title}
@@ -101,8 +111,10 @@ export default async function WorldRecordPage({ params }: PageProps<"/world/[wor
       ? `Shared with ${collaborators.length} ${collaborators.length === 1 ? "person" : "people"}`
       : collaborators === null ? "Who else holds this could not be read" : "Kept privately"}
     acts={actsFrom(events ?? [], names)}
-    proof={proofOf(evidence, confirmations ?? [])}
+    proof={proof}
     next={next}
+    nextAction={nextAction}
+    confirmations={asked}
     access={accessFrom(grants, names, granteeOf)}
   />;
 }

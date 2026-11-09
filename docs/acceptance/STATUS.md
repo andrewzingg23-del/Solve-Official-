@@ -5,7 +5,7 @@ acceptance run changes what is known. A capability is **complete only when its h
 been executed, its result independently read back, its authority verified, and its failure modes
 tested** (founder directive, 2026-11-09).
 
-Last updated from acceptance run `acc-202611092323-yxh1` against **solve-staging**
+Last updated from acceptance run `acc-202611092349-qtdh` (74/74) against **solve-staging**
 (`taeikshnbcsjlgbattyp`), commit on `main` recorded in `BUILD-STREAM.md`.
 
 ## How to read this
@@ -65,7 +65,11 @@ a real person and none touches production.
 |---|---|---|
 | A person's things are listed in Space | **Verified automatically** | Same thing appears; opens its record; no word or id of ours |
 | The guaranteed six-part record | **Verified automatically** | All six parts in order; holder shown as You; every act has a real name; no internal id; "Nothing proves this yet" |
-| Counterparty confirmation | **Verified in kernel tests; backend only** | `tests/kernel/counterparty-confirmation.test.ts` 4/4, applied to staging, **zero call sites** |
+| Ask someone to confirm a thing | **Verified automatically** | The holder asks from the record; a link is shown once and never stored; the record shows the request as waiting, never as confirmed |
+| Answer from a link, with no account | **Verified automatically** | A stranger to SOLVE opens it, sees the asker's chosen name, the one thing and the question — nothing else of the holder's — and confirms or disputes |
+| Both sides see the outcome | **Verified automatically** | The kernel records the answer and its evidence as authored by the person asked; the holder sees "Confirmed by someone other than its owner" and who; a returning answerer is told "You answered" |
+| Confirmation cannot be abused | **Verified automatically** | The holder cannot confirm their own record; a changed answer is refused in the app and in the kernel; a tampered or malformed link reveals nothing; answering grants no access to the holder's thing |
+| Withdraw a request | **Backend only** | `cancel_confirmation` exists and is kernel-tested; no control in the app yet |
 | A person's own types and vocabulary | **Verified in kernel tests; backend only** | `define_type`, `put_object`, applied to staging, zero call sites |
 | Invite someone into a thing; grant and revoke | **Implemented, unverified here** | `access-panel.tsx` and invitations exist and are World-scoped; needs signed-in fixtures |
 | "Talk to Your AI" panel | **UI only, unverified** | Renders with a Send button; nothing has exercised it |
@@ -104,6 +108,11 @@ real visitor would have seen.
    questions — a prerequisite in front of what they already owned.
 5. **Space told a guest their work was "saved only in this browser"** and called things "projects".
 
+Then on confirmation, two more: the confirmation readers named people from the raw label column
+instead of their chosen name (the asker appeared as "Someone"; fixed in the kernel by
+`20261110010000_confirmation_names.sql`, applied to staging), and the answer re-rendered its own page
+and unmounted the message telling the person their answer was recorded.
+
 And two defects in the harness itself, fixed rather than tolerated: an ambiguous `alert` selector
 (Next.js renders an invisible route announcer with the same role), and fixture labels that were
 trusted on write instead of read back.
@@ -127,6 +136,6 @@ trusted on write instead of read back.
    code side is mine; the template is a dashboard setting.
 3. **A storage bucket**, for photographs and files.
 
-Not blocked, and next on my side: **reconciling the staging migration drift** (read-only extraction
-of the three staging-only migrations into this repo), and **making confirmation usable** — which can
-be fully automated *now*, because the counterparty can be an anonymous identity and needs no email.
+Not blocked, and next on my side: **the SOV card** — the founder's direction is that the visual
+language is the value and the card is its reference — built on a versioned appearance record, and
+**reconciling the staging migration drift**, which the card's public side depends on.

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
-  SIX_PARTS, actWording, proofWording, provenanceLine,
-  type ThingAccess, type ThingAct, type ThingField, type ThingProof,
+  SIX_PARTS, actWording, confirmationWording, proofWording, provenanceLine,
+  type ThingAccess, type ThingAct, type ThingConfirmation, type ThingField, type ThingProof,
 } from "@/lib/product/thing";
 
 // The one view every thing is guaranteed to have. Specialised editors may show the same thing as
@@ -22,6 +22,10 @@ export type ThingInspectorProps = {
   acts: ThingAct[];
   proof: ThingProof;
   next: { label: string; href: string } | null;
+  /** A working control for the next action, rendered in place of the link when present. */
+  nextAction?: React.ReactNode;
+  /** Who was asked to confirm this, and what happened. Part of what's proven. */
+  confirmations?: ThingConfirmation[];
   access: ThingAccess[];
   /** Set only for a design fixture, which must never be mistaken for a real record. */
   fixture?: boolean;
@@ -46,7 +50,7 @@ function Part({ name, children }: { name: string; children: React.ReactNode }) {
 }
 
 export function ThingInspector(props: ThingInspectorProps) {
-  const { title, typeName, fields, ownerLabel, context, acts, proof, next, access, fixture } = props;
+  const { title, typeName, fields, ownerLabel, context, acts, proof, next, nextAction, confirmations = [], access, fixture } = props;
   const [whatItIs, whoseItIs, whatHappened, whatsProven, whatsNext, whoCanReach] = SIX_PARTS;
 
   return <main className="solve-page">
@@ -85,6 +89,15 @@ export function ThingInspector(props: ThingInspectorProps) {
 
     <Part name={whatsProven}>
       <p>{proofWording(proof)}</p>
+      {confirmations.length > 0
+        ? <ul className="solve-confirmations" aria-label="Asked to confirm">
+            {confirmations.map(c => <li key={c.id} data-state={c.state}>
+              <strong>{c.askedOf || "Someone"}</strong>
+              {c.question ? <span className="solve-muted"> · “{c.question}”</span> : null}
+              <span> — {confirmationWording(c)}</span>
+            </li>)}
+          </ul>
+        : null}
       {proof.items.length > 0
         ? <ul className="solve-evidence">
             {proof.items.map((item, index) => <li key={`${item.basis}-${index}`}>
@@ -96,9 +109,10 @@ export function ThingInspector(props: ThingInspectorProps) {
     </Part>
 
     <Part name={whatsNext}>
-      {next
-        ? <Link href={next.href} className="solve-button">{next.label}</Link>
-        : <p className="solve-muted">Nothing is waiting on you here.</p>}
+      {nextAction
+        ?? (next
+          ? <Link href={next.href} className="solve-button">{next.label}</Link>
+          : <p className="solve-muted">Nothing is waiting on you here.</p>)}
     </Part>
 
     <Part name={whoCanReach}>

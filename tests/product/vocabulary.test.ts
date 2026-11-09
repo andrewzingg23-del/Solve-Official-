@@ -23,6 +23,9 @@ const SURFACES = [
   "app/workbench/page.tsx",
   "app/product/shell.tsx",
   "app/space/personal-space.tsx",
+  "app/world/[worldId]/record/ask.tsx",
+  "app/confirm/[token]/page.tsx",
+  "app/confirm/[token]/answer.tsx",
 ];
 
 /**

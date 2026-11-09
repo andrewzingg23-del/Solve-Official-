@@ -1024,7 +1024,7 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
     readConfirmationRequest: (tokenHash: string) =>
       call<{ thing: { title: string; summary: string; type: string; data: Record<string, unknown> };
         asked_by: string; asked_of: string; question: string; expires_at: string; expired: boolean;
-        answered: boolean; decision: "confirmed" | "disputed" | null; answered_at: string | null }>(
+        answered: boolean; answered_by_you: boolean; decision: "confirmed" | "disputed" | null; answered_at: string | null }>(
         "read_confirmation_request", { p_token_hash: tokenHash, ...as }),
 
     answerConfirmation: (input: { tokenHash: string; decision: "confirmed" | "disputed"; note?: string; requestId: string }) =>
