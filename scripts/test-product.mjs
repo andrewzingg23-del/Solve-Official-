@@ -39,7 +39,10 @@ try {
   // Anchored to the form's accessible name and the field's id, not to headline copy:
   // the words on the home surface are expected to change, the mechanism is not.
   await page.getByRole("form", { name: "Start new work" }).waitFor();
-  assert.deepEqual(await page.getByRole("navigation", { name: "Your environment", exact: true }).getByRole("link").allTextContents(), ["Space", "Workbench", "ID"]);
+  // One shell, five destinations, on Home as everywhere else. Home used to draw its own separate
+  // chrome, which made SOLVE two applications.
+  assert.deepEqual(await page.getByRole("navigation", { name: "Primary", exact: true }).getByRole("link").allTextContents(), ["Home", "ID", "Space", "Bench", "Control"]);
+  assert.equal(await page.getByRole("navigation", { name: "Primary", exact: true }).getByRole("link", { name: "Home" }).getAttribute("aria-current"), "page");
   assert.equal(await page.getByRole("link", { name: /trading|payment card|packs|studio|coming soon/i }).count(), 0);
   await fit(page);
   await page.getByRole("textbox", { name: "What do you want to accomplish?" }).fill("My brother and I want to develop our idea with our AIs.");
@@ -77,7 +80,8 @@ try {
     await page.setViewportSize({ width, height: 844 });
     // Home carries its own mobile navigation; the product shell supplies the rest.
     for (const [path, ready, navName, shot] of [
-      ["/", page.getByRole("form", { name: "Start new work" }), "Mobile navigation", "home"],
+      ["/", page.getByRole("form", { name: "Start new work" }), "Primary mobile", "home"],
+      ["/workbench", page.getByRole("heading", { name: "Make something, or keep making it.", exact: true }), "Primary mobile", "bench"],
       ["/account", page.getByRole("heading", { name: "Your profile. Your AI.", exact: true }), "Primary mobile", "account"],
       ["/communities", page.getByRole("heading", { name: "Build with people who share your goal.", exact: true }), "Primary mobile", "communities"],
       ["/bot", page.getByRole("heading", { name: "Your AI", exact: true }), "Primary mobile", "bot"],
@@ -85,14 +89,21 @@ try {
       await page.goto(url + path); await ready.waitFor(); await fit(page);
       const navigation = page.getByRole("navigation", { name: navName, exact: true });
       assert.ok(await navigation.isVisible(), `${path} has mobile navigation`);
-      for (const link of await navigation.getByRole("link").all()) { const box = await link.boundingBox(); assert.ok(box && box.height >= 44 && box.width >= 44, "Mobile navigation has touch targets"); }
+      const rows = new Set();
+      for (const link of await navigation.getByRole("link").all()) {
+        const box = await link.boundingBox();
+        assert.ok(box && box.height >= 44 && box.width >= 44, "Mobile navigation has touch targets");
+        rows.add(Math.round(box.y));
+      }
+      // Every destination on one row: a wrapped bar hides a destination below the fold.
+      assert.equal(rows.size, 1, `${path} at ${width}px: mobile navigation wrapped onto ${rows.size} rows`);
       if (path === "/account") await page.waitForFunction(() => [...document.querySelectorAll(".solve-profile-preview img,.solve-portrait-grid img")].every(img => img.complete && img.naturalWidth > 0));
       await page.screenshot({ path: join(out, `${shot}-${width}.png`), fullPage: true });
     }
   }
   await page.goto(url); await page.keyboard.press("Tab");
   assert.equal(await page.evaluate(() => document.activeElement?.textContent), "Skip to content");
-  await page.keyboard.press("Enter"); assert.equal(await page.evaluate(() => document.activeElement?.id), "reality-main");
+  await page.keyboard.press("Enter"); assert.equal(await page.evaluate(() => document.activeElement?.id), "solve-main");
   for (const [path, location] of [["/card", "/"], ["/packs/trading/argus", "/"], ["/money", "/"], ["/studio", "/"], ["/world/example/studio", "/"], ["/sov-id", "/account"], ["/start", "/account"], ["/command", "/"]]) {
     const result = await fetch(url + path, { redirect: "manual" }); assert.equal(result.status, 307, path); assert.equal(new URL(result.headers.get("location"), url).pathname, location, path);
     const post = await fetch(url + path, { method: "POST", redirect: "manual" }); assert.equal(post.status, 404, `POST ${path}`);

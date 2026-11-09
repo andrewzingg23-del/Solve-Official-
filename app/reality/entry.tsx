@@ -25,14 +25,13 @@ function titleFromIntention(input: string): string {
   return first.length > 100 ? first.slice(0, 97).trimEnd() + "…" : first;
 }
 
-export function RealityEntry({ owner, durable, initialMode, initialAppearance, worldId, projects, name }: {
+export function RealityEntry({ owner, durable, initialMode, initialAppearance, worldId, projects }: {
   owner: string | null;
   durable: boolean;
   initialMode: RealityMode;
   initialAppearance: SpaceAppearance;
   worldId: string;
   projects: ProjectCard[] | null;
-  name: string;
 }) {
   const router = useRouter();
   const { draft, save, clear } = useProjectDraft(owner);
@@ -116,21 +115,8 @@ export function RealityEntry({ owner, durable, initialMode, initialAppearance, w
   }
 
   return <main className={"reality reality--" + mode} data-style-tone={initialAppearance.tone} data-style-density={initialAppearance.density} data-style-shape={initialAppearance.shape}>
-    <a href="#reality-main" className="reality-skip">Skip to content</a>
-    <header className="reality-head">
-      <Link href="/" className="reality-wordmark" aria-label="SOLVE home"><span className="reality-mark" aria-hidden="true">S</span><span>SOLVE</span></Link>
-      <nav className="reality-head-links" aria-label="Your environment">
-        <Link href="/space">Space</Link>
-        <Link href={hasSavedProjects ? openWorld(recent[0].worldId) : "/worlds/new"}>Workbench</Link>
-        <Link href="/sov-id">ID</Link>
-      </nav>
-      <div className="reality-head-account">
-        {durable ? <Link href="/account" aria-label="Account" className="reality-avatar">{name.trim().slice(0, 1).toUpperCase() || "S"}</Link>
-          : <Link href="/login?next=%2F" className="reality-account-link">Sign in</Link>}
-      </div>
-    </header>
-    {/* tabIndex -1 so the skip link actually moves focus here, as the product shell does. */}
-    <div id="reality-main" tabIndex={-1} className="reality-main">
+    {/* The shell owns navigation, identity and the skip link; Home is content inside it. */}
+    <div className="reality-main">
       <section className="reality-intro" aria-labelledby="reality-title">
         <div className="reality-kicker">{mode === "personal" ? "Your Space" : mode === "adaptive" ? "Your environment" : "A Space for anything"}</div>
         <h1 id="reality-title">{mode === "personal" ? "Make it yours." : mode === "adaptive" && hasSavedProjects ? "Your things, in motion." : "What do you want to do?"}</h1>
@@ -175,11 +161,5 @@ export function RealityEntry({ owner, durable, initialMode, initialAppearance, w
         {mode === "personal" ? <Link href="/space" className="reality-customize">Customize your Space <Icon name="arrow" width={14}/></Link> : null}
       </section>
     </div>
-    <nav className="reality-mobile-nav" aria-label="Mobile navigation">
-      <Link href="/" aria-current="page"><Icon name="home"/>Home</Link>
-      <Link href={hasSavedProjects ? openWorld(recent[0].worldId) : "/worlds/new"}><Icon name="projects"/>Work</Link>
-      <Link href="/space"><Icon name="community"/>Space</Link>
-      <Link href="/account"><Icon name="profile"/>ID</Link>
-    </nav>
   </main>;
 }

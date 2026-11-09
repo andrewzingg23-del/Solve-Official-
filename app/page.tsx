@@ -14,8 +14,6 @@ export default async function Home() {
   const durable = Boolean(user && !user.is_anonymous);
   const projects = user ? await listCreativeWorlds(await getKernel()).catch(() => null) : [];
   const modeCandidate: unknown = user?.user_metadata?.solve_reality_mode_v1;
-  const name = typeof user?.user_metadata?.display_name === "string" ? user.user_metadata.display_name :
-    typeof user?.user_metadata?.full_name === "string" ? user.user_metadata.full_name : "";
   return <RealityEntry
     owner={user ? user.id : null}
     durable={durable}
@@ -23,6 +21,5 @@ export default async function Home() {
     initialAppearance={normalizeAppearance(user?.user_metadata?.sov_space_appearance)}
     worldId={randomUUID()}
     projects={projects}
-    name={name}
   />;
 }

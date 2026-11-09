@@ -20,6 +20,8 @@ const SURFACES = [
   "app/reality/entry.tsx",
   "app/product/thing-inspector.tsx",
   "app/world/[worldId]/record/page.tsx",
+  "app/workbench/page.tsx",
+  "app/product/shell.tsx",
 ];
 
 /**

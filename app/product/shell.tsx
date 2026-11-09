@@ -8,32 +8,50 @@ import { faceSrc } from "@/lib/bot/avatar";
 import { Icon, type IconName } from "./icons";
 import { SolveBrand } from "./solve-brand";
 
+// The five destinations (DECISIONS.md, 2026-11-09). Projects, communities and the AI are not
+// destinations of their own: things and people live in Space, the AI is an actor, and both are
+// reached from where they belong rather than given permanent tabs.
 const homes: Array<{ href: string; label: string; icon: IconName }> = [
-  { href: "/space", label: "Space", icon: "home" },
-  { href: "/projects", label: "Projects", icon: "projects" },
-  { href: "/communities", label: "Communities", icon: "community" },
+  { href: "/", label: "Home", icon: "home" },
+  { href: "/account", label: "ID", icon: "profile" },
+  { href: "/space", label: "Space", icon: "projects" },
+  { href: "/workbench", label: "Bench", icon: "document" },
   { href: "/control", label: "Control", icon: "control" },
 ];
+
+const within = (path: string, root: string) => path === root || path.startsWith(root + "/");
+
+/** Which destination a route belongs to, so the right one is marked current. */
+export function destinationOf(path: string): string {
+  if (path === "/") return "/";
+  if (/^\/world\/[^/]+\/workbench$/.test(path) || within(path, "/workbench")) return "/workbench";
+  if (["/account", "/sov-id", "/bot", "/onboarding", "/claim"].some(root => within(path, root))) return "/account";
+  if (["/control", "/apps"].some(root => within(path, root))) return "/control";
+  if (["/space", "/projects", "/communities", "/community", "/world", "/worlds"].some(root => within(path, root))) return "/space";
+  return path;
+}
 export type ShellIdentity = { userId: string; name: string; botName: string; face: string } | null;
 export function ProductShell({ children, identity }: { children: React.ReactNode; identity: ShellIdentity }) {
   const path = usePathname();
   const { profile } = useGuestProfile();
-  const active = path === "/" || path === "/space" ? "/space" : path.startsWith("/world") || path.startsWith("/projects") ? "/projects" : path.startsWith("/community") ? "/communities" : ["/control", "/account", "/bot", "/onboarding"].some(root => path === root || path.startsWith(root + "/")) ? "/control" : path;
+  const active = destinationOf(path);
   const minimal = path.startsWith("/oauth") || path.startsWith("/saved") || path.startsWith("/world-invite");
   const name = identity ? identity.name || "Your profile" : profile?.yourName || "Your profile";
   const localBotName = profile?.botPersona ? validatePersona(profile.botPersona, DEFAULT_PERSONA).name : profile?.botName;
   const botName = identity?.botName || (!identity ? localBotName : "") || "Your AI";
   const face = identity?.face || (!identity ? profile?.face : "") || "blank";
-  const links = homes.map(home => <Link key={home.href} href={home.href} aria-current={active === home.href || active.startsWith(home.href + "/") ? "page" : undefined} className="solve-nav-link"><Icon name={home.icon} /><span>{home.label}</span></Link>);
-  // Reality and Workbench own the full viewport; the existing shell continues to serve other routes.
-  if (path === "/" || path === "/workbench" || path.startsWith("/personalize/instagram") || /^\/world\/[^/]+\/workbench$/.test(path)) return <>{children}</>;
+  const links = homes.map(home => <Link key={home.href} href={home.href} aria-current={active === home.href ? "page" : undefined} className="solve-nav-link"><Icon name={home.icon} /><span>{home.label}</span></Link>);
+  // One shell. Only a real working surface — an editor or studio — takes the full screen, which
+  // is focus mode rather than a second application. Home is not one of those: it was drawing its
+  // own separate chrome, which made SOLVE two shells. It now lives inside this one.
+  if (path.startsWith("/personalize/instagram") || /^\/world\/[^/]+\/workbench$/.test(path)) return <>{children}</>;
   if (path === "/onboarding") return <>{children}</>;
   if (path === "/studio" || path === "/map" || path === "/sov-id" || /^\/world\/[^/]+\/studio$/.test(path)) return <>{children}</>;
-  if (minimal) return <div className="solve-minimal"><SolveBrand href="/space" />{children}</div>;
+  if (minimal) return <div className="solve-minimal"><SolveBrand href="/" />{children}</div>;
   return <div className="solve-shell">
     <a href="#solve-main" className="solve-skip">Skip to content</a>
     <aside className="solve-sidebar" aria-label="Workspace sidebar">
-      <SolveBrand href="/space" />
+      <SolveBrand href="/" />
       <div className="solve-sidebar-caption">A Space that is yours.</div>
       <Link href="/worlds/new" className="solve-button solve-new-project"><Icon name="plus" />Create</Link>
       <nav aria-label="Primary">{links}</nav>
@@ -43,7 +61,7 @@ export function ProductShell({ children, identity }: { children: React.ReactNode
       </div>
     </aside>
     <div className="solve-body">
-      <header className="solve-topbar"><SolveBrand href="/space" compact /><span className="solve-topbar-title">{path.startsWith("/world/") ? "Shared workspace" : path === "/onboarding" ? "Make it yours" : homes.find(home => home.href === active)?.label || (path === "/login" ? "Welcome to SOLVE" : "Your Space")}</span><div className="sov-topbar-actions"><Link href="/apps" className="solve-text-link">Apps</Link>{identity ? <Link href="/account" className="solve-private-label"><Icon name="lock" width={14} />SOV ID</Link> : <Link href="/login?next=%2Fonboarding" className="solve-text-link">Sign in</Link>}</div></header>
+      <header className="solve-topbar"><SolveBrand href="/" compact /><span className="solve-topbar-title">{path.startsWith("/world/") ? "Shared workspace" : path === "/onboarding" ? "Make it yours" : homes.find(home => home.href === active)?.label || (path === "/login" ? "Welcome to SOLVE" : "SOLVE")}</span><div className="sov-topbar-actions"><Link href="/apps" className="solve-text-link">Apps</Link>{identity ? <Link href="/account" className="solve-private-label"><Icon name="lock" width={14} />SOV ID</Link> : <Link href="/login?next=%2Fonboarding" className="solve-text-link">Sign in</Link>}</div></header>
       <div id="solve-main" tabIndex={-1} className="solve-main">{children}</div>
     </div>
     <nav aria-label="Primary mobile" className="solve-mobile-nav">{links}</nav>
