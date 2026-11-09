@@ -22,6 +22,7 @@ const SURFACES = [
   "app/world/[worldId]/record/page.tsx",
   "app/workbench/page.tsx",
   "app/product/shell.tsx",
+  "app/space/personal-space.tsx",
 ];
 
 /**

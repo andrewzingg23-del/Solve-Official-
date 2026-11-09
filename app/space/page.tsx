@@ -18,7 +18,8 @@ export default async function SpacePage() {
   const user = await getUser();
   const signedIn = Boolean(user && !user.is_anonymous);
   let projects: ProjectCard[] | null = null;
-  if (signedIn) {
+  // Listed for any identity: a visitor's things are theirs in the kernel, exactly as on Home.
+  if (user) {
     try {
       projects = await listCreativeWorlds(await getKernel());
     } catch {
@@ -30,6 +31,7 @@ export default async function SpacePage() {
       signedIn={signedIn}
       initialAnswers={normalizeSpaceAnswers(signedIn ? (user?.user_metadata?.sov_personal_space ?? user?.user_metadata?.profile) : null)}
       projects={projects}
+      hasIdentity={Boolean(user)}
       initialAppearance={normalizeAppearance(signedIn ? user?.user_metadata?.sov_space_appearance : null)}
       botName={getBotAvatar(user).name || "Your AI"}
     />

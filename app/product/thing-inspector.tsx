@@ -14,8 +14,11 @@ export type ThingInspectorProps = {
   /** The person's own word for what this is. Null when no type has been declared yet. */
   typeName: string | null;
   fields: ThingField[];
+  /** Kept for callers; never rendered. A scope id is ours, not the person's. */
   scope: string;
   ownerLabel: string;
+  /** Plain words for where this lives — kept privately, or shared with how many people. */
+  context: string;
   acts: ThingAct[];
   proof: ThingProof;
   next: { label: string; href: string } | null;
@@ -43,7 +46,7 @@ function Part({ name, children }: { name: string; children: React.ReactNode }) {
 }
 
 export function ThingInspector(props: ThingInspectorProps) {
-  const { title, typeName, fields, scope, ownerLabel, acts, proof, next, access, fixture } = props;
+  const { title, typeName, fields, ownerLabel, context, acts, proof, next, access, fixture } = props;
   const [whatItIs, whoseItIs, whatHappened, whatsProven, whatsNext, whoCanReach] = SIX_PARTS;
 
   return <main className="solve-page">
@@ -66,7 +69,7 @@ export function ThingInspector(props: ThingInspectorProps) {
 
     <Part name={whoseItIs}>
       <p>{ownerLabel}</p>
-      <p className="solve-muted">{scope}</p>
+      <p className="solve-muted">{context}</p>
     </Part>
 
     <Part name={whatHappened}>
@@ -75,7 +78,7 @@ export function ThingInspector(props: ThingInspectorProps) {
         : <ol className="solve-history">
             {acts.map((act, index) => <li key={`${act.at}-${index}`}>
               <strong>{actWording(act.type)}</strong>
-              <span className="solve-muted"> {provenanceLine(act)}</span>
+              <span className="solve-muted"> — {provenanceLine(act)}</span>
             </li>)}
           </ol>}
     </Part>

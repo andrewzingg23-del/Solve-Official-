@@ -7,7 +7,7 @@ import { getUser } from "@/lib/supabase/server";
 import { loadCreativeWorld } from "@/lib/world/creative";
 import { readWorldMembers } from "@/lib/world/collaboration";
 import { ThingInspector } from "@/app/product/thing-inspector";
-import { fieldsFromType, proofOf, actsFrom, accessFrom } from "@/lib/product/thing";
+import { fieldsFromType, proofOf, actsFrom, accessFrom, nameFor, type ActorNames } from "@/lib/product/thing";
 
 export const metadata: Metadata = { title: "Record · SOLVE" };
 
@@ -59,6 +59,11 @@ export default async function WorldRecordPage({ params }: PageProps<"/world/[wor
   ]));
   const actors = actorIds.length ? await kernel.readActors(actorIds).catch(() => []) : [];
   const labels = Object.fromEntries(actors.map(actor => [actor.actor_id, actor.label]));
+  const names: ActorNames = {
+    labels,
+    kinds: Object.fromEntries(actors.map(actor => [actor.actor_id, actor.kind])),
+    viewerId: me?.actor_id ?? null,
+  };
 
   const granteeOf: Record<string, string> = {};
   const grants: Array<{ id: string; capability: string; scope: string; issued_by: string }> = [];
@@ -75,8 +80,7 @@ export default async function WorldRecordPage({ params }: PageProps<"/world/[wor
 
   // Who holds it is read, not inferred. If it is the viewer, say so plainly.
   const ownerActorId = membership?.ownerActorId;
-  const ownerName = ownerActorId ? labels[ownerActorId] ?? "Someone" : "Not recorded";
-  const ownerLabel = ownerActorId && me?.actor_id === ownerActorId ? `${ownerName} (you)` : ownerName;
+  const ownerLabel = ownerActorId ? nameFor(ownerActorId, names) : "Not recorded";
 
   // Only an action that exists. Asking for confirmation has a kernel behind it but no surface
   // yet, so nothing here offers it.
@@ -93,9 +97,12 @@ export default async function WorldRecordPage({ params }: PageProps<"/world/[wor
     fields={fields}
     scope={scope}
     ownerLabel={ownerLabel}
-    acts={actsFrom(events ?? [], labels)}
+    context={collaborators && collaborators.length
+      ? `Shared with ${collaborators.length} ${collaborators.length === 1 ? "person" : "people"}`
+      : collaborators === null ? "Who else holds this could not be read" : "Kept privately"}
+    acts={actsFrom(events ?? [], names)}
     proof={proofOf(evidence, confirmations ?? [])}
     next={next}
-    access={accessFrom(grants, labels, granteeOf)}
+    access={accessFrom(grants, names, granteeOf)}
   />;
 }

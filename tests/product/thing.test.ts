@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { it } from "node:test";
 import {
-  SIX_PARTS, fieldsFromType, proofOf, proofWording, actsFrom, actWording, provenanceLine,
+  SIX_PARTS, fieldsFromType, proofOf, proofWording, actsFrom, actWording, nameFor, provenanceLine,
 } from "../../lib/product/thing";
 
 // ---------------------------------------------------------------------------------------------
@@ -146,4 +146,23 @@ it("says what happened in words a person has, never a dotted event type", () => 
   assert.equal(actWording("kernel.something.brand_new"), "Brand new");
   assert.ok(!actWording("kernel.something.brand_new").includes("."), "no dotted path reaches a person");
   assert.equal(actWording(""), "Something happened");
+});
+
+it("names every actor truthfully: the viewer is You, the system is SOLVE, the unnamed are Someone", () => {
+  // Regression from the 2026-11-09 staging acceptance run: an ordinary visitor's label is empty,
+  // and the kernel's own service actor is labelled "kernel".
+  const names = { labels: { me: "", sys: "kernel", ana: "Ana", nobody: "   " }, kinds: { sys: "service" }, viewerId: "me" };
+  assert.equal(nameFor("me", names), "You", "the person looking is never shown a blank");
+  assert.equal(nameFor("sys", names), "SOLVE", "our word 'kernel' never reaches a person");
+  assert.equal(nameFor("ana", names), "Ana");
+  assert.equal(nameFor("nobody", names), "Someone", "whitespace is not a name");
+  assert.equal(nameFor("unknown", names), "Someone");
+
+  const acts = actsFrom([
+    { occurred_at: "2026-11-09T10:00:00Z", type: "kernel.scope.claimed", actor_id: "me", grant_id: null, on_behalf_of: null },
+    { occurred_at: "2026-11-09T10:00:01Z", type: "kernel.grant.issued", actor_id: "sys", grant_id: null, on_behalf_of: null },
+  ], names);
+  assert.equal(provenanceLine(acts[0]), "You · on your own authority · 2026-11-09");
+  assert.equal(provenanceLine(acts[1]), "SOLVE · as the system · 2026-11-09");
+  for (const act of acts) assert.ok(!/kernel/i.test(provenanceLine(act)), "no internal word in any provenance line");
 });

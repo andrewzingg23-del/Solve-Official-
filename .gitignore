@@ -51,3 +51,4 @@ next-env.d.ts
 
 # Personal Claude Code settings (permission allowlist) stay local to each builder.
 .claude/settings.local.json
+/.next-acceptance/

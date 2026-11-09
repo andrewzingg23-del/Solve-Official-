@@ -17,6 +17,9 @@ function recentCommits(): string {
 }
 
 const nextConfig: NextConfig = {
+  // The acceptance suite builds against solve-staging into its own directory, so it never overwrites
+  // the database-free build that scripts/test-product.mjs runs against (scripts/acceptance/run.mjs).
+  distDir: process.env.SOLVE_DIST_DIR || ".next",
   env: {
     // Which Vercel environment this is (preview runs on solve-staging; lib/supabase/config.ts).
     NEXT_PUBLIC_SOLVE_DEPLOY: process.env.VERCEL_ENV ?? "",

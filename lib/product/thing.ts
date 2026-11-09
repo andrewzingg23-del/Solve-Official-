@@ -179,23 +179,53 @@ export function actWording(type: string): string {
   return spaced ? spaced.charAt(0).toUpperCase() + spaced.slice(1) : "Something happened";
 }
 
+/** Who an actor is, in words a person can read. */
+export type ActorNames = {
+  /** Display labels from the kernel. An empty label means the person never named themselves. */
+  labels?: Record<string, string>;
+  /** Actor kinds, so the system's own acts are attributed to SOLVE rather than to "kernel". */
+  kinds?: Record<string, string>;
+  /** The person looking. Their own acts are "You", which is the truest name there is. */
+  viewerId?: string | null;
+};
+
+/**
+ * The name shown for an actor.
+ *
+ * Found by the staging acceptance run, not by reasoning: an ordinary visitor who never named
+ * themselves has an empty label, and the record was rendering their own acts with a blank name;
+ * and the kernel's own service actor is labelled "kernel", which is our word on a person's thing.
+ * So: the viewer is "You", the system is "SOLVE" (the brand, which is on the card), a real label is
+ * used as given, and anyone else unnamed is "Someone" — never blank, never an internal id.
+ */
+export function nameFor(actorId: string, names: ActorNames = {}): string {
+  if (names.viewerId && actorId === names.viewerId) return "You";
+  if (names.kinds?.[actorId] === "service") return "SOLVE";
+  const label = names.labels?.[actorId]?.trim();
+  return label ? label : "Someone";
+}
+
 export function actsFrom(
   events: Array<{ occurred_at: string; type: string; actor_id: string; grant_id: string | null; on_behalf_of: string | null }>,
-  actorLabels: Record<string, string> = {},
+  names: ActorNames | Record<string, string> = {},
 ): ThingAct[] {
+  // Accept a bare label map for callers that have nothing more to say about who is who.
+  const resolved: ActorNames = "labels" in names || "kinds" in names || "viewerId" in names
+    ? names as ActorNames : { labels: names as Record<string, string> };
   return events.map(e => ({
     at: e.occurred_at,
     type: e.type,
-    actorLabel: actorLabels[e.actor_id] ?? "Someone",
+    actorLabel: nameFor(e.actor_id, resolved),
     authority: e.grant_id ? "granted" : "own",
-    onBehalfOf: e.on_behalf_of ? (actorLabels[e.on_behalf_of] ?? "someone else") : null,
+    onBehalfOf: e.on_behalf_of ? nameFor(e.on_behalf_of, resolved) : null,
   }));
 }
 
 /** One provenance line, used wherever an act is shown. Never claims more than the act carried. */
 export function provenanceLine(act: ThingAct, proof?: ThingProof): string {
   const who = act.onBehalfOf ? `${act.actorLabel}, for ${act.onBehalfOf}` : act.actorLabel;
-  const how = act.authority === "granted" ? "under a grant" : act.authority === "own" ? "on their own authority" : "authority unknown";
+  const own = act.actorLabel === "You" ? "on your own authority" : act.actorLabel === "SOLVE" ? "as the system" : "on their own authority";
+  const how = act.authority === "granted" ? "under a grant" : act.authority === "own" ? own : "authority unknown";
   const when = act.at ? ` · ${act.at.slice(0, 10)}` : "";
   const proven = proof && proof.status !== "none" ? ` · ${proofWording(proof)}` : "";
   return `${who} · ${how}${when}${proven}`;
@@ -207,11 +237,13 @@ export function provenanceLine(act: ThingAct, proof?: ThingProof): string {
  */
 export function accessFrom(
   grants: Array<{ id: string; capability: string; scope: string; issued_by: string }>,
-  actorLabels: Record<string, string> = {},
+  names: ActorNames | Record<string, string> = {},
   granteeOf: Record<string, string> = {},
 ): ThingAccess[] {
+  const resolved: ActorNames = "labels" in names || "kinds" in names || "viewerId" in names
+    ? names as ActorNames : { labels: names as Record<string, string> };
   return grants.map(g => ({
-    actorLabel: actorLabels[granteeOf[g.id] ?? ""] ?? "Someone",
+    actorLabel: granteeOf[g.id] ? nameFor(granteeOf[g.id], resolved) : "Someone",
     capability: g.capability,
     scope: g.scope,
     grantId: g.id,

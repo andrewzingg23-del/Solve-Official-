@@ -9,6 +9,8 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    // The acceptance suite builds against staging into its own directory (scripts/acceptance/run.mjs).
+    ".next-acceptance/**",
     "out/**",
     "build/**",
     "next-env.d.ts",

@@ -10,6 +10,7 @@ import { OPTIONAL_INTEGRATIONS } from "@/lib/product/optional-integrations";
 import { useGuestProfile } from "@/lib/guest/profile";
 import { composePersonalSpace, normalizeSpaceAnswers, spaceMood, type SpaceAnswers } from "@/lib/product/personal-space";
 import type { ProjectCard } from "@/app/product/projects";
+import { custodyNotice, openWorldHref, openWorldLabel } from "@/lib/product/custody";
 import { useDeviceText, writeDeviceText } from "@/lib/client/device-storage";
 
 type AgentTurn = { role: "user" | "assistant"; content: string; kind: "appearance" | "conversation" };
@@ -21,12 +22,15 @@ export function PersonalSpace({
   signedIn,
   initialAnswers,
   projects,
+  hasIdentity,
   initialAppearance,
   botName,
 }: {
   signedIn: boolean;
   initialAnswers: SpaceAnswers;
   projects: ProjectCard[] | null;
+  /** Any identity at all, anonymous or signed in. A visitor owns what they recorded. */
+  hasIdentity: boolean;
   initialAppearance: SpaceAppearance;
   botName: string;
 }) {
@@ -138,7 +142,7 @@ export function PersonalSpace({
       setAppliedAppearance(next);
       setUndoAppearance(previous);
       setProposal(null);
-      setStyleStatus("Appearance updated. Your projects, integrations, permissions, and public Profile are unchanged.");
+      setStyleStatus("Appearance updated. Your things, connections, permissions and public profile are unchanged.");
     } finally {
       setStyleBusy(false);
     }
@@ -150,7 +154,10 @@ export function PersonalSpace({
     ...answers,
     name: answers.name || (!signedIn ? guest.profile?.yourName || "" : ""),
   });
-  const hasSavedSpace = data.hasContext || signedIn || guest.active;
+  // Owning something is reason enough to see Space. The intro is only the empty state for a person
+  // with nothing yet — never a gate in front of things they already made (staging acceptance run,
+  // 2026-11-09: a visitor's thing was hidden behind "Create my Space").
+  const hasSavedSpace = data.hasContext || signedIn || guest.active || (projects?.length ?? 0) > 0;
 
   if (!hasSavedSpace) return (
     <main className="solve-page sov-personal" data-space-mood={spaceMood(answers)} data-style-tone={currentLook.tone} data-style-density={currentLook.density} data-style-shape={currentLook.shape} data-style-priority={currentLook.priority}>
@@ -213,7 +220,7 @@ export function PersonalSpace({
           <div className="sov-space-title"><h2>My Space</h2><span>Private · Yours</span></div>
           <p>The tools and places that matter to you. Choose or change anything.</p>
           <div className="sov-module-grid">
-            {data.modules.length === 0 ? <div className="sov-empty"><strong>Your canvas is yours.</strong><p>Add an interest or create your first project when you&apos;re ready.</p><Link href="/onboarding" className="sov-space-link">Choose what belongs here →</Link></div> : data.modules.map(module => (
+            {data.modules.length === 0 ? <div className="sov-empty"><strong>Your canvas is yours.</strong><p>Add an interest or make your first thing when you&apos;re ready.</p><Link href="/onboarding" className="sov-space-link">Choose what belongs here →</Link></div> : data.modules.map(module => (
               <Link key={module.id} href={module.href} className="sov-module">
                 <strong>{module.label}</strong><small>{module.description}</small><span aria-hidden="true">↗</span>
               </Link>
@@ -231,22 +238,26 @@ export function PersonalSpace({
 
       <div className="sov-personal-middle">
         <section className="sov-space-card">
-          <div className="sov-space-title"><h2>Projects</h2><Link href="/projects">View all →</Link></div>
-          {!signedIn ? <div className="sov-empty">
-            <strong>Make your first project.</strong>
-            <p>Guest preferences are saved only in this browser. Sign in to keep shared work across devices.</p>
-            <Link href="/login?next=%2Fworlds%2Fnew" className="sov-space-link">Save my work with an account →</Link>
+          <div className="sov-space-title"><h2>Your things</h2><Link href="/projects">View all →</Link></div>
+          {/* Same custody rule as Home (lib/product/custody.ts): a visitor already owns what they
+              recorded, so they see it here too. Only a person with no identity at all has nothing. */}
+          {!hasIdentity ? <div className="sov-empty">
+            <strong>Make your first thing.</strong>
+            <p>{custodyNotice("device")}</p>
+            <Link href="/" className="sov-space-link">Start something →</Link>
           </div> : projects === null ? <div className="sov-empty" role="status">
-            <strong>Projects couldn&apos;t be loaded.</strong>
-            <p>Your saved projects have not been changed. Try again after the connection returns.</p>
+            <strong>Your things couldn&apos;t be loaded.</strong>
+            <p>Nothing of yours has been changed. Try again after the connection returns.</p>
           </div> : projects.length === 0 ? <div className="sov-empty">
             <strong>Nothing here yet.</strong>
-            <p>Projects you create will appear here with their actual saved state.</p>
-            <Link href="/worlds/new" className="sov-space-link">Start a project →</Link>
+            <p>What you make will appear here, exactly as it is saved.</p>
+            <Link href="/" className="sov-space-link">Start something →</Link>
           </div> : <div className="sov-real-projects">
             {projects.slice(0, 5).map(project =>
-              <Link key={project.worldId} href={"/world/" + project.worldId + "/room"}>
-                <strong>{project.title}</strong><small>{project.summary || "Open shared workspace"}</small><span aria-hidden="true">↗</span>
+              // A signed-in person keeps the shared workspace link they had. A visitor opens the
+              // record of what they own, since the workspace needs an account beyond this browser.
+              <Link key={project.worldId} href={signedIn ? "/world/" + project.worldId + "/room" : openWorldHref(project.worldId, false)}>
+                <strong>{project.title}</strong><small>{project.summary || (signedIn ? "Open shared workspace" : openWorldLabel(false))}</small><span aria-hidden="true">↗</span>
               </Link>)}
           </div>}
         </section>
@@ -254,7 +265,7 @@ export function PersonalSpace({
           <div className="sov-space-title"><h2>People & Communities</h2><Link href="/communities">Explore →</Link></div>
           <div className="sov-empty">
             <strong>Your people, your permissions.</strong>
-            <p>Invite collaborators through a specific project or community. Nothing here is made public automatically.</p>
+            <p>Invite people through something you share or a community. Nothing here is made public automatically.</p>
             <Link href="/communities" className="sov-space-link">Find or start a community →</Link>
           </div>
         </section>
@@ -292,7 +303,7 @@ export function PersonalSpace({
         <p>These notes are not part of your public Profile. Change or clear them through onboarding.</p>
       </details> : null}
       <footer className="sov-space-foot">
-        <span>{signedIn ? "Account preferences saved; projects use their own permissions." : "Saved on this device only."}</span>
+        <span>{signedIn ? "Account preferences saved; each of your things keeps its own permissions." : "Saved on this device only."}</span>
         <Link href="/control">Privacy & control →</Link>
       </footer>
     </main>
