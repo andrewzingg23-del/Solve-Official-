@@ -33,6 +33,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       </div>
       <p className="solve-muted mt-4">These options require Google/GitHub to be enabled in your Supabase Auth settings.</p>
     </section> : null}
-    <Link href={nextPath === "/worlds/new" ? "/worlds/new" : "/"} className="solve-text-link mt-6 inline-block">← Back to {nextPath === "/worlds/new" ? "your idea" : "Projects"}</Link>
+    {/* Home is where a guest's unsent idea is kept, so both paths go back to the same thing. */}
+    <Link href={nextPath === "/worlds/new" ? "/worlds/new" : "/"} className="solve-text-link mt-6 inline-block">← Back to your idea</Link>
   </main>;
 }

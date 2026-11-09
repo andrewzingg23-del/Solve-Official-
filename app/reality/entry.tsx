@@ -115,7 +115,8 @@ export function RealityEntry({ owner, initialMode, initialAppearance, worldId, p
           : <Link href="/login?next=%2F" className="reality-account-link">Sign in</Link>}
       </div>
     </header>
-    <div id="reality-main" className="reality-main">
+    {/* tabIndex -1 so the skip link actually moves focus here, as the product shell does. */}
+    <div id="reality-main" tabIndex={-1} className="reality-main">
       <section className="reality-intro" aria-labelledby="reality-title">
         <div className="reality-kicker">{mode === "personal" ? "Your Space" : mode === "adaptive" ? "Your environment" : "A Space for anything"}</div>
         <h1 id="reality-title">{mode === "personal" ? "Make it yours." : mode === "adaptive" && hasSavedProjects ? "Your work, in motion." : "What do you want to do?"}</h1>
