@@ -10,7 +10,6 @@ import { ThingInspector } from "@/app/product/thing-inspector";
 import { fieldsFromType, proofOf, actsFrom, accessFrom } from "@/lib/product/thing";
 
 export const metadata: Metadata = { title: "Record · SOLVE" };
-export const instant = false;
 
 // The guaranteed record of one thing. Readable by anyone the kernel lets read it, including a
 // visitor holding an anonymous identity: they own what they recorded, so they can inspect it.
