@@ -200,7 +200,12 @@ const PRICE_PER_MTOK = {
 
 export function estimateCostUsd(model: string, inputTokens: number, outputTokens: number): number {
   const id = model.toLowerCase();
-  const tier = id.includes("haiku") ? "haiku" : id.includes("sonnet") ? "sonnet" : "opus";
+  // OpenRouter ":free" models cost nothing. Only the Claude families have a known price table;
+  // for any other model we don't guess (that wrongly showed free models as "opus"-priced) — tokens
+  // are the enforced unit, this is only a readout.
+  if (id.endsWith(":free")) return 0;
+  const tier = id.includes("haiku") ? "haiku" : id.includes("sonnet") ? "sonnet" : id.includes("opus") ? "opus" : null;
+  if (!tier) return 0;
   const p = PRICE_PER_MTOK[tier];
   const cost = (inputTokens / 1_000_000) * p.input + (outputTokens / 1_000_000) * p.output;
   return Math.round(cost * 1_000_000) / 1_000_000;
