@@ -25,22 +25,19 @@ it("never tells a guest their work reaches further than this browser", () => {
   assert.match(custodyNotice("durable"), /Private/);
 });
 
-it("sends a person without a durable account to sign in for the thing they asked for", () => {
+it("lets a person without a durable account open the record of what they own", () => {
   assert.equal(openWorldHref("w1", true), "/world/w1/workbench");
   assert.equal(
     openWorldHref("w1", false),
-    "/login?next=%2Fworld%2Fw1%2Fworkbench",
-    "the destination is carried through sign-in rather than lost",
+    "/world/w1/record",
+    "reading your own record needs no account that outlives the browser",
   );
-  assert.equal(openWorldLabel(false), "Sign in to open", "no dead end is presented as an open door");
+  assert.equal(openWorldLabel(false), "Open its record", "no dead end is presented as an open door");
   assert.equal(openWorldLabel(true), "Private workspace");
 });
 
 it("encodes a world id that would otherwise break the path", () => {
   const nasty = "a/b?c#d";
   assert.equal(openWorldHref(nasty, true), "/world/a%2Fb%3Fc%23d/workbench");
-  assert.ok(
-    openWorldHref(nasty, false).startsWith("/login?next=%2Fworld%2Fa%252Fb"),
-    "double-encoded once as a path segment and once as a query value",
-  );
+  assert.equal(openWorldHref(nasty, false), "/world/a%2Fb%3Fc%23d/record");
 });

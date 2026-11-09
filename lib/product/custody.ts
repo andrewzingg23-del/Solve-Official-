@@ -30,14 +30,17 @@ export function custodyNotice(custody: Custody): string {
 }
 
 /**
- * Where "open this thing" goes. The workbench needs an account that outlives the browser, so a
- * person without one is sent to sign in *for that thing* rather than bounced by a guard.
+ * Where "open this thing" goes.
+ *
+ * The record is the view every thing is guaranteed to have, and reading it needs nothing more
+ * than the authority to read the thing — so a visitor can open what they own. The workbench is
+ * where a thing is changed, and that needs an account that outlives the browser.
  */
 export function openWorldHref(worldId: string, durable: boolean): string {
-  const workbench = `/world/${encodeURIComponent(worldId)}/workbench`;
-  return durable ? workbench : `/login?next=${encodeURIComponent(workbench)}`;
+  const id = encodeURIComponent(worldId);
+  return durable ? `/world/${id}/workbench` : `/world/${id}/record`;
 }
 
 export function openWorldLabel(durable: boolean): string {
-  return durable ? "Private workspace" : "Sign in to open";
+  return durable ? "Private workspace" : "Open its record";
 }
