@@ -85,3 +85,10 @@ Prod `Solve-Official-` schema is a **broken partial-migration state** (objects f
 
 ## Next action
 Merge #25 (route wiring). Then the live path waits on you: (1) choose the DB path (clean rebuild recommended) + resume staging; (2) paste `OPENROUTER_API_KEY` + `SUPABASE_SECRET_KEY` in Vercel + add the Auth redirect URL. With those, I run staging → verify → your go → production, then prove the live app on your phone, and build Step 3 synth/brief + Step 7 morning brief (cron/push) against the live services.
+
+---
+## 2026-11-01 — live chat + integration stack
+- **OpenRouter key added** (prod+preview); production redeployed; **live chat confirmed answering** ("hi" → 200, reply from the model). Then set **free-model defaults** (`OPENROUTER_MODEL=nvidia/nemotron-3.5-lightning:free`, `_SMART=nvidia/nemotron-3.5-super-vl:free`) to honor "no budget" — NVIDIA `:free` models respond (Gemma `:free` is rate-limited); redeploy in progress to pick them up.
+- **"Your AI's brain"** per-person model choice shipped (PR #33) + `docs/how-to/connect-your-ai.md`.
+- **Integration stack plan**: `docs/plans/integration-stack.md` (Inngest, Web Push, pgvector, brains, Supabase Realtime, Nango/n8n, Upstash/Sentry/UptimeRobot/PostHog; accounts/keys list; order). **Next implementation: Inngest + Web Push morning brief — blocked on the founder creating the Inngest account + VAPID keys.**
+- Prod kernel rebuilt + `kernel_api` exposed earlier today (both verified).
