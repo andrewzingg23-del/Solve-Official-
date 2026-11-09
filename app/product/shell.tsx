@@ -13,6 +13,7 @@ const homes: Array<{ href: string; label: string; icon: IconName }> = [
   { href: "/projects", label: "Projects", icon: "projects" },
   { href: "/communities", label: "Communities", icon: "community" },
   { href: "/control", label: "Control", icon: "control" },
+  { href: "/sov-id", label: "ID", icon: "profile" },
 ];
 export type ShellIdentity = { userId: string; name: string; botName: string; face: string } | null;
 export function ProductShell({ children, identity }: { children: React.ReactNode; identity: ShellIdentity }) {
@@ -28,7 +29,7 @@ export function ProductShell({ children, identity }: { children: React.ReactNode
   // Reality and Workbench own the full viewport; the existing shell continues to serve other routes.
   if (path === "/" || path === "/workbench" || path.startsWith("/personalize/instagram") || /^\/world\/[^/]+\/workbench$/.test(path)) return <>{children}</>;
   if (path === "/onboarding") return <>{children}</>;
-  if (path === "/studio" || path === "/map" || path === "/sov-id" || /^\/world\/[^/]+\/studio$/.test(path)) return <>{children}</>;
+  if (path === "/studio" || path === "/map" || /^\/world\/[^/]+\/studio$/.test(path)) return <>{children}</>;
   if (minimal) return <div className="solve-minimal"><SolveBrand href="/space" />{children}</div>;
   return <div className="solve-shell">
     <a href="#solve-main" className="solve-skip">Skip to content</a>
