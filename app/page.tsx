@@ -8,15 +8,19 @@ import { RealityEntry } from "./reality/entry";
 
 export default async function Home() {
   const user = await getUser();
-  const signedIn = Boolean(user && !user.is_anonymous);
-  const projects = signedIn ? await listCreativeWorlds(await getKernel()).catch(() => null) : [];
+  // A visitor already has a kernel identity (proxy.ts registers an anonymous one), so their
+  // first line can be recorded as theirs straight away. `durable` is the narrower question of
+  // whether that identity survives this browser — which is what signing in actually buys.
+  const durable = Boolean(user && !user.is_anonymous);
+  const projects = user ? await listCreativeWorlds(await getKernel()).catch(() => null) : [];
   const modeCandidate: unknown = user?.user_metadata?.solve_reality_mode_v1;
   const name = typeof user?.user_metadata?.display_name === "string" ? user.user_metadata.display_name :
     typeof user?.user_metadata?.full_name === "string" ? user.user_metadata.full_name : "";
   return <RealityEntry
-    owner={signedIn ? user!.id : null}
+    owner={user ? user.id : null}
+    durable={durable}
     initialMode={isRealityMode(modeCandidate) ? modeCandidate : "base"}
-    initialAppearance={normalizeAppearance(signedIn ? user?.user_metadata?.sov_space_appearance : null)}
+    initialAppearance={normalizeAppearance(user?.user_metadata?.sov_space_appearance)}
     worldId={randomUUID()}
     projects={projects}
     name={name}

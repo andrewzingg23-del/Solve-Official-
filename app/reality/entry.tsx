@@ -8,6 +8,7 @@ import { useProjectDraft } from "@/app/product/draft-store";
 import type { ProjectCard } from "@/app/product/projects";
 import { Icon } from "@/app/product/icons";
 import { isInstagramStyleRequest, instagramHandleInRequest } from "@/lib/product/instagram-style";
+import { custodyOf, custodyNotice, openWorldHref, openWorldLabel } from "@/lib/product/custody";
 import { saveRealityMode } from "./actions";
 import type { RealityMode } from "./mode";
 import type { SpaceAppearance } from "@/lib/product/appearance";
@@ -24,8 +25,9 @@ function titleFromIntention(input: string): string {
   return first.length > 100 ? first.slice(0, 97).trimEnd() + "…" : first;
 }
 
-export function RealityEntry({ owner, initialMode, initialAppearance, worldId, projects, name }: {
+export function RealityEntry({ owner, durable, initialMode, initialAppearance, worldId, projects, name }: {
   owner: string | null;
+  durable: boolean;
   initialMode: RealityMode;
   initialAppearance: SpaceAppearance;
   worldId: string;
@@ -40,20 +42,28 @@ export function RealityEntry({ owner, initialMode, initialAppearance, worldId, p
   const [typed, setTyped] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [appearanceError, setAppearanceError] = useState("");
+  // A fresh id for the next thing. Reusing the id of one already recorded would write a second
+  // version of it instead of recording something new.
+  const [nextId, setNextId] = useState(worldId);
   const currentText = typed === null ? (draft?.goal || "") : typed;
   const recent = projects?.slice(0, 6) || [];
   const hasSavedProjects = projects !== null && recent.length > 0;
+  // One source for who is holding this and what the person is told: lib/product/custody.ts.
+  const custody = custodyOf(owner, durable);
+  const openWorld = (id: string) => openWorldHref(id, durable);
 
   function changeText(next: string) {
     setTyped(next);
     setError("");
-    save({ id: draft?.id ?? worldId, title: titleFromIntention(next), goal: next });
+    save({ id: draft?.id ?? nextId, title: titleFromIntention(next), goal: next });
   }
 
   function changeMode(next: RealityMode) {
     if (next === mode || modePending) return;
     setAppearanceError("");
-    if (!owner) { setMode(next); return; }
+    // Appearance is stored on the account, and an anonymous one cannot keep it across devices,
+    // so a guest's choice applies here without claiming it was saved anywhere.
+    if (!durable) { setMode(next); return; }
     startModeTransition(async () => {
       const result = await saveRealityMode(next);
       if (result.ok) {
@@ -71,17 +81,17 @@ export function RealityEntry({ owner, initialMode, initialAppearance, worldId, p
     if (!intention || pending) return;
     // This is a personalization action, not a project titled "search my Instagram".
     if (isInstagramStyleRequest(intention)) {
-      clear(draft?.id ?? worldId);
+      clear(draft?.id ?? nextId);
       setTyped(null);
       const handle = instagramHandleInRequest(intention);
       router.push("/personalize/instagram" + (handle ? "?profile=" + encodeURIComponent(handle) : ""));
       return;
     }
-    const input = { id: draft?.id ?? worldId, title: titleFromIntention(intention), goal: intention };
-    // Device storage is only required to carry a guest draft through sign-in.
-    // A signed-in person can save directly to the kernel even when local storage is disabled.
+    const input = { id: draft?.id ?? nextId, title: titleFromIntention(intention), goal: intention };
+    // The device copy is a fallback for carrying words through a reload, not the record itself.
+    // It only has to work when there is no identity to record under.
     if (!save(input) && !owner) {
-      setError("Your browser can't keep this guest draft. Enable storage before signing in, or copy your idea.");
+      setError("Your browser can't keep this. Enable storage, or copy your words before reloading.");
       return;
     }
     if (!owner) {
@@ -93,10 +103,14 @@ export function RealityEntry({ owner, initialMode, initialAppearance, worldId, p
         const result = await createProject(input, owner);
         if (!result.ok) { setError(result.error); return; }
         clear(result.worldId);
-        router.push("/world/" + encodeURIComponent(result.worldId) + "/workbench");
+        setTyped("");
+        setNextId(crypto.randomUUID());
+        // A guest holds this already, so they stay here and see it. The workbench needs an
+        // account that outlives this browser, so only a signed-in person is sent there.
+        if (durable) router.push("/world/" + encodeURIComponent(result.worldId) + "/workbench");
         router.refresh();
       } catch {
-        setError("Your project wasn't confirmed. Your words are still here; retry when connected.");
+        setError("It wasn't recorded. Your words are still here; retry when connected.");
       }
     });
   }
@@ -107,11 +121,11 @@ export function RealityEntry({ owner, initialMode, initialAppearance, worldId, p
       <Link href="/" className="reality-wordmark" aria-label="SOLVE home"><span className="reality-mark" aria-hidden="true">S</span><span>SOLVE</span></Link>
       <nav className="reality-head-links" aria-label="Your environment">
         <Link href="/space">Space</Link>
-        <Link href={hasSavedProjects ? "/world/" + recent[0].worldId + "/workbench" : "/worlds/new"}>Workbench</Link>
+        <Link href={hasSavedProjects ? openWorld(recent[0].worldId) : "/worlds/new"}>Workbench</Link>
         <Link href="/sov-id">ID</Link>
       </nav>
       <div className="reality-head-account">
-        {owner ? <Link href="/account" aria-label="Account" className="reality-avatar">{name.trim().slice(0, 1).toUpperCase() || "S"}</Link>
+        {durable ? <Link href="/account" aria-label="Account" className="reality-avatar">{name.trim().slice(0, 1).toUpperCase() || "S"}</Link>
           : <Link href="/login?next=%2F" className="reality-account-link">Sign in</Link>}
       </div>
     </header>
@@ -129,7 +143,7 @@ export function RealityEntry({ owner, initialMode, initialAppearance, worldId, p
             {pending ? <span className="reality-spinner" aria-hidden="true"/> : <Icon name="arrow" width={19} />}
           </button>
         </form>
-        <div className="reality-privacy"><Icon name="lock" width={13}/><span>{owner ? "Private until you choose to share." : "Your draft stays on this device until you sign in."}</span></div>
+        <div className="reality-privacy"><Icon name="lock" width={13}/><span>{custodyNotice(custody)}</span></div>
         {error ? <p className="reality-error" role="alert">{error}</p> : null}
       </section>
       <section className="reality-work" aria-labelledby="reality-work-title">
@@ -137,11 +151,11 @@ export function RealityEntry({ owner, initialMode, initialAppearance, worldId, p
         {projects === null && owner ? <p className="reality-load-error" role="status">Projects could not be loaded. Your work has not been deleted; retry shortly.</p> : null}
         {hasSavedProjects ?
           <div className="reality-project-grid">{recent.map(project =>
-            <Link className="reality-project" key={project.worldId} href={"/world/" + encodeURIComponent(project.worldId) + "/workbench"}>
+            <Link className="reality-project" key={project.worldId} href={openWorld(project.worldId)}>
               <span className="reality-project-symbol"><Icon name="projects" width={22}/></span>
               <strong>{project.title}</strong>
               <span>{project.summary || "Open your working environment"}</span>
-              <small>Private workspace <Icon name="arrow" width={13}/></small>
+              <small>{openWorldLabel(durable)} <Icon name="arrow" width={13}/></small>
             </Link>
           )}</div>
           : <div className="reality-starters">
@@ -163,7 +177,7 @@ export function RealityEntry({ owner, initialMode, initialAppearance, worldId, p
     </div>
     <nav className="reality-mobile-nav" aria-label="Mobile navigation">
       <Link href="/" aria-current="page"><Icon name="home"/>Home</Link>
-      <Link href={hasSavedProjects ? "/world/" + recent[0].worldId + "/workbench" : "/worlds/new"}><Icon name="projects"/>Work</Link>
+      <Link href={hasSavedProjects ? openWorld(recent[0].worldId) : "/worlds/new"}><Icon name="projects"/>Work</Link>
       <Link href="/space"><Icon name="community"/>Space</Link>
       <Link href="/account"><Icon name="profile"/>ID</Link>
     </nav>

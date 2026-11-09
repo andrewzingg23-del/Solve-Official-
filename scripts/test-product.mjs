@@ -104,7 +104,7 @@ try {
   await failure.getByRole("textbox", { name: "What do you want to accomplish?" }).fill("Keep this idea");
   await failure.getByRole("button", { name: "Begin", exact: true }).click();
   // Refused storage is told plainly and the guest's words are still on screen.
-  await failure.getByRole("alert").filter({ hasText: "can't keep this guest draft" }).waitFor();
+  await failure.getByRole("alert").filter({ hasText: "can't keep this" }).waitFor();
   assert.equal(new URL(failure.url()).pathname, "/");
   assert.equal(await failure.getByRole("textbox", { name: "What do you want to accomplish?" }).inputValue(), "Keep this idea");
   await failure.goto(url + "/account"); await failure.getByRole("textbox", { name: "Your name", exact: true }).fill("Storage test");

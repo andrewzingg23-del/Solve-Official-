@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { isRealityMode } from "../../app/reality/mode";
+import { custodyNotice } from "../../lib/product/custody";
 
 const read = (path: string) => readFileSync(path, "utf8");
 
@@ -20,7 +21,10 @@ test("the signed-in entry and focus route share the existing owner-backed World"
   assert.match(entry, /createProject\(input, owner\)/);
   assert.match(entry, /useProjectDraft\(owner\)/);
   assert.match(entry, /\/workbench/);
-  assert.match(entry, /Private until you choose to share/);
+  // The custody notice moved into lib/product/custody.ts so the rule could be tested as
+  // behaviour (tests/product/custody.test.ts) rather than asserted against source text.
+  assert.match(entry, /custodyNotice\(custody\)/);
+  assert.equal(custodyNotice("durable"), "Private until you choose to share.");
 });
 
 test("Workbench preserves real World data and verifies a saved artifact", () => {
