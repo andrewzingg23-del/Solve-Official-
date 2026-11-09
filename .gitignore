@@ -48,3 +48,6 @@ next-env.d.ts
 /.browser-tests
 /public/cesium
 /public/arcadia
+
+# Personal Claude Code settings (permission allowlist) stay local to each builder.
+.claude/settings.local.json
