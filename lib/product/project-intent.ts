@@ -3,7 +3,9 @@
  * Ambiguous questions and general AI conversation must not trigger writes.
  */
 export function projectCreationIntent(message: string): { title: string; goal: string } | null {
-  const match = /^\s*(?:please\s+)?(?:create|start|make|set\s+up|build)\s+(?:(?:me\s+)?(?:a\s+|my\s+|new\s+))?project(?:\s+(?:for\s+me|called|named))?\s*(?::\s*|\s+(?:to|for|about)\s+)([\s\S]+)$/i.exec(message);
+  // Require an explicit project noun and an explicit purpose. Do not let
+  // "for me" be consumed as a generic "for <goal>" separator.
+  const match = /^\\s*(?:please\\s+)?(?:create|start|make|set\\s+up|build)\\s+(?:(?:me\\s+)?(?:a\\s+|my\\s+|new\\s+))?project(?:\\s+for\\s+me)?(?:\\s+(?:called|named|to|for|about)\\s+|\\s*:\\s*)([\\s\\S]+)$/i.exec(message);
   if (!match) return null;
   const goal = match[1].trim();
   // "for me" without a stated purpose is not a project goal. The generic
