@@ -152,6 +152,33 @@ export function proofWording(proof: ThingProof): string {
   }
 }
 
+/**
+ * A kernel event type, said in words a person has.
+ *
+ * Event types are our vocabulary — `kernel.confirmation.answered` is a fact about our schema, not
+ * something anyone should have to read. Anything unrecognised falls back to its last segment,
+ * humanised, so a new event type degrades into plain English rather than leaking a dotted path.
+ */
+export function actWording(type: string): string {
+  const known: Record<string, string> = {
+    "kernel.scope.claimed": "Started this",
+    "world.entity.recorded": "Recorded",
+    "world.entity.revised": "Changed",
+    "kernel.grant.issued": "Gave access",
+    "kernel.grant.revoked": "Took access back",
+    "kernel.evidence.attached": "Attached proof",
+    "kernel.confirmation.requested": "Asked for confirmation",
+    "kernel.confirmation.answered": "Answered",
+    "kernel.confirmation.cancelled": "Withdrew the request",
+    "kernel.world.invitation.created": "Invited someone",
+    "kernel.world.invitation.accepted": "Joined",
+  };
+  if (known[type]) return known[type];
+  const last = type.split(".").pop() ?? type;
+  const spaced = last.replace(/[_-]+/g, " ").trim();
+  return spaced ? spaced.charAt(0).toUpperCase() + spaced.slice(1) : "Something happened";
+}
+
 export function actsFrom(
   events: Array<{ occurred_at: string; type: string; actor_id: string; grant_id: string | null; on_behalf_of: string | null }>,
   actorLabels: Record<string, string> = {},

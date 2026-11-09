@@ -1,6 +1,6 @@
 import Link from "next/link";
 import {
-  SIX_PARTS, proofWording, provenanceLine,
+  SIX_PARTS, actWording, proofWording, provenanceLine,
   type ThingAccess, type ThingAct, type ThingField, type ThingProof,
 } from "@/lib/product/thing";
 
@@ -11,7 +11,8 @@ import {
 
 export type ThingInspectorProps = {
   title: string;
-  typeName: string;
+  /** The person's own word for what this is. Null when no type has been declared yet. */
+  typeName: string | null;
   fields: ThingField[];
   scope: string;
   ownerLabel: string;
@@ -48,7 +49,7 @@ export function ThingInspector(props: ThingInspectorProps) {
   return <main className="solve-page">
     <header className="solve-page-heading">
       {fixture ? <p role="note" className="solve-kicker">Design fixture — not a real record</p> : null}
-      <span className="solve-kicker">{typeName}</span>
+      <span className="solve-kicker">{typeName ?? "No type yet"}</span>
       <h1>{title}</h1>
     </header>
 
@@ -73,7 +74,7 @@ export function ThingInspector(props: ThingInspectorProps) {
         ? <p className="solve-muted">Nothing has happened to this yet.</p>
         : <ol className="solve-history">
             {acts.map((act, index) => <li key={`${act.at}-${index}`}>
-              <strong>{act.type}</strong>
+              <strong>{actWording(act.type)}</strong>
               <span className="solve-muted"> {provenanceLine(act)}</span>
             </li>)}
           </ol>}

@@ -87,7 +87,9 @@ export default async function WorldRecordPage({ params }: PageProps<"/world/[wor
 
   return <ThingInspector
     title={world.title}
-    typeName="World"
+    /* No type has been declared for this yet, and "World" is our word for a scope, not
+       the person's word for their thing. Absence is shown instead of invented. */
+    typeName={null}
     fields={fields}
     scope={scope}
     ownerLabel={ownerLabel}

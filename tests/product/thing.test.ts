@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { it } from "node:test";
 import {
-  SIX_PARTS, fieldsFromType, proofOf, proofWording, actsFrom, provenanceLine,
+  SIX_PARTS, fieldsFromType, proofOf, proofWording, actsFrom, actWording, provenanceLine,
 } from "../../lib/product/thing";
 
 // ---------------------------------------------------------------------------------------------
@@ -136,4 +136,14 @@ it("an act says who acted and under what authority, and admits when it does not 
 
   // The proof status rides along on the same line when there is one.
   assert.match(provenanceLine(acts[0], proofOf([{ basis: "witnessed" }])), /other than its owner/);
+});
+
+it("says what happened in words a person has, never a dotted event type", () => {
+  assert.equal(actWording("kernel.confirmation.answered"), "Answered");
+  assert.equal(actWording("world.entity.recorded"), "Recorded");
+  assert.equal(actWording("kernel.grant.revoked"), "Took access back");
+  // An event type nobody has mapped yet degrades to plain English rather than leaking a path.
+  assert.equal(actWording("kernel.something.brand_new"), "Brand new");
+  assert.ok(!actWording("kernel.something.brand_new").includes("."), "no dotted path reaches a person");
+  assert.equal(actWording(""), "Something happened");
 });

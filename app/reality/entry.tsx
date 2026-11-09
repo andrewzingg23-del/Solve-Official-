@@ -133,7 +133,7 @@ export function RealityEntry({ owner, durable, initialMode, initialAppearance, w
     <div id="reality-main" tabIndex={-1} className="reality-main">
       <section className="reality-intro" aria-labelledby="reality-title">
         <div className="reality-kicker">{mode === "personal" ? "Your Space" : mode === "adaptive" ? "Your environment" : "A Space for anything"}</div>
-        <h1 id="reality-title">{mode === "personal" ? "Make it yours." : mode === "adaptive" && hasSavedProjects ? "Your work, in motion." : "What do you want to do?"}</h1>
+        <h1 id="reality-title">{mode === "personal" ? "Make it yours." : mode === "adaptive" && hasSavedProjects ? "Your things, in motion." : "What do you want to do?"}</h1>
         <p className="reality-intro-sub">{mode === "base" ? "Begin with an idea. Make something real." : mode === "adaptive" ? "Pick up where you left off, or begin something new." : "One foundation. A world that grows with you."}</p>
         <form className="reality-intent" onSubmit={submit} aria-label="Start new work">
           <label htmlFor="reality-intention" className="reality-sr">What do you want to accomplish?</label>
@@ -147,14 +147,14 @@ export function RealityEntry({ owner, durable, initialMode, initialAppearance, w
         {error ? <p className="reality-error" role="alert">{error}</p> : null}
       </section>
       <section className="reality-work" aria-labelledby="reality-work-title">
-        <div className="reality-work-head"><h2 id="reality-work-title">{hasSavedProjects ? "Your work" : "Start anywhere"}</h2>{hasSavedProjects ? <Link href="/projects">View all <Icon name="arrow" width={14}/></Link> : null}</div>
-        {projects === null && owner ? <p className="reality-load-error" role="status">Projects could not be loaded. Your work has not been deleted; retry shortly.</p> : null}
+        <div className="reality-work-head"><h2 id="reality-work-title">{hasSavedProjects ? "Your things" : "Start anywhere"}</h2>{hasSavedProjects ? <Link href="/projects">View all <Icon name="arrow" width={14}/></Link> : null}</div>
+        {projects === null && owner ? <p className="reality-load-error" role="status">Your things could not be loaded. Nothing of yours has been deleted; retry shortly.</p> : null}
         {hasSavedProjects ?
           <div className="reality-project-grid">{recent.map(project =>
             <Link className="reality-project" key={project.worldId} href={openWorld(project.worldId)}>
               <span className="reality-project-symbol"><Icon name="projects" width={22}/></span>
               <strong>{project.title}</strong>
-              <span>{project.summary || "Open your working environment"}</span>
+              <span>{project.summary || "No description yet"}</span>
               <small>{openWorldLabel(durable)} <Icon name="arrow" width={13}/></small>
             </Link>
           )}</div>
