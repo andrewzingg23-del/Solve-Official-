@@ -31,6 +31,7 @@ export default async function SpacePage() {
       initialAnswers={normalizeSpaceAnswers(signedIn ? (user?.user_metadata?.sov_personal_space ?? user?.user_metadata?.profile) : null)}
       projects={projects}
       initialAppearance={normalizeAppearance(signedIn ? user?.user_metadata?.sov_space_appearance : null)}
+      initialMediaUrl={signedIn && typeof user?.user_metadata?.sov_space_public_media === "string" ? user.user_metadata.sov_space_public_media : ""}
       botName={getBotAvatar(user).name || "Your AI"}
     />
   );
