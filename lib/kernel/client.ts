@@ -995,6 +995,23 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
 
     publicWorld: () => call<WorldEntity[]>("public_world", { ...as }),
 
+    // A domain's own vocabulary. A type is an ordinary scoped record, so declaring one needs the
+    // same authority as any other write there, and a thing is checked against it before it is kept.
+    defineType: (input: { type: string; scope: string; fields: Record<string, { type?: "text" | "number" | "boolean" | "date" | "list"; required?: boolean }>; label?: string; idempotencyKey?: string }) =>
+      call<string>("define_type", { p_type: input.type, p_scope: input.scope, p_fields: input.fields,
+        p_label: input.label ?? null, p_idempotency_key: input.idempotencyKey ?? null, ...as }),
+
+    putObject: (input: { type: string; scope: string; title: string; data: Record<string, unknown>; objectId?: string; visibility?: Visibility; idempotencyKey?: string }) =>
+      call<string>("put_object", { p_type: input.type, p_scope: input.scope, p_title: input.title,
+        p_data: input.data, p_object_id: input.objectId ?? null, p_visibility: input.visibility ?? "private",
+        p_idempotency_key: input.idempotencyKey ?? null, ...as }),
+
+    // Everything this actor holds authority over, as one document they can take away.
+    exportMine: () => call<{ exported_at: string; actor: { actor_id: string; label: string }; scopes: string[];
+      grants: Array<{ capability: string; scope: string }>;
+      things: Array<{ id: string; type: string; scope: string; title: string; data: Record<string, unknown>; version: number }>;
+      history: Array<{ seq: number; at: string; type: string; scope: string }> }>("export_mine", { ...as }),
+
     readRelations: (scope: string, includeEnded = false) =>
       call<WorldRelation[]>("read_relations", { p_scope: scope, p_include_ended: includeEnded, ...as }),
 

@@ -105,6 +105,9 @@ async function exerciseEveryMethod(supabase: SupabaseClient, actAs?: string) {
   await k.createAvatar({ type: "ai_companion", name: "Nova", relationship: "assist", seed: {}, representation: "abstract" });
   await k.setAvatarRepresentation(id, "pixel", "sov-1", "ref");
   await k.myAvatars();
+  await k.defineType({ type: "candidate", scope: "world:x", fields: { name: { type: "text", required: true } }, label: "l", idempotencyKey: "k" });
+  await k.putObject({ type: "candidate", scope: "world:x", title: "t", data: { name: "n" }, objectId: id, visibility: "private", idempotencyKey: "k" });
+  await k.exportMine();
   await k.readActors([id]);
 }
 
