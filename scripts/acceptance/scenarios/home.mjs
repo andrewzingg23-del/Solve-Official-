@@ -24,17 +24,17 @@ export async function home({ browser, base, evidence }) {
     evidence.record(S, ana.role, "an unsent line survives a refresh", (await field.inputValue()) === words,
       `field held "${await field.inputValue()}"`);
 
-    // --- They press Begin. A guest stays on Home and the thing is listed as theirs.
+    // --- They press Begin. A guest is taken straight into the thing they started.
     await page.getByRole("button", { name: "Begin", exact: true }).click();
-    const card = page.locator("a[data-thing]", { hasText: title });
-    const listed = await card.waitFor({ timeout: 20000 }).then(() => true, () => false);
-    evidence.record(S, ana.role, "pressing Begin records the thing and lists it on Home", listed,
-      (await page.getByRole("alert").textContent().catch(() => "")) || "card never appeared");
+    const arrived = await page.waitForURL(/\/world\/[0-9a-f-]{36}$/, { timeout: 20000 }).then(() => true, () => false);
+    evidence.record(S, ana.role, "pressing Begin records the thing and takes her into it", arrived,
+      (await page.getByRole("alert").textContent().catch(() => "")) || page.url());
     await evidence.shot(page, "home-01-created-390");
-    if (!listed) return;
-    const href = await card.getAttribute("href");
-    const worldId = decodeURIComponent(href?.match(/^\/world\/([^/]+)$/)?.[1] ?? "");
-    evidence.record(S, ana.role, "a guest's thing opens itself, not a sign-in wall", Boolean(worldId), `href was ${href}`);
+    if (!arrived) return;
+    const href = new URL(page.url()).pathname;
+    const worldId = decodeURIComponent(href.split("/")[2] ?? "");
+    evidence.record(S, ana.role, "a guest's thing opens itself, not a sign-in wall",
+      (await page.getByRole("heading", { level: 1 }).textContent().catch(() => ""))?.trim() === title, `heading at ${href}`);
     const recordHref = `${href}/record`;
     if (!worldId) return;
     const scope = `world:${worldId}`;
@@ -57,21 +57,21 @@ export async function home({ browser, base, evidence }) {
       Array.isArray(events) && events.some(e => e.actor_id === ana.actorId) && systemOnly,
       events instanceof Error ? events.message : `others: ${others.map(e => e.type).join(",")}`);
 
-    // --- Find: the same thing is in Space, which is where things live, not only on Home.
-    await page.goto(base + "/space");
-    const inSpace = page.locator("main a[data-thing]", { hasText: title });
-    evidence.record(S, ana.role, "it is also found in Space, where her things live",
-      await inSpace.waitFor({ timeout: 15000 }).then(() => true, () => false));
-    evidence.record(S, ana.role, "and opening it from Space goes to the same thing",
-      (await inSpace.getAttribute("href").catch(() => "")) === href, `href ${await inSpace.getAttribute("href").catch(() => "")}`);
-    const spaceText = await page.locator("main").first().innerText().catch(() => "");
-    evidence.record(S, ana.role, "Space shows her no word or id of ours", !OUR_WORDS.test(spaceText) && !INTERNAL_IDS.test(spaceText),
-      spaceText.match(OUR_WORDS)?.[0] ?? spaceText.match(INTERNAL_IDS)?.[0] ?? "");
-    await evidence.shot(page, "home-02a-space-390");
+    // --- Find: Bench is the one place her things are listed.
+    await page.goto(base + "/workbench");
+    const onBench = page.locator("main a[data-thing]", { hasText: title });
+    evidence.record(S, ana.role, "it is listed on Bench, where all her things live",
+      await onBench.waitFor({ timeout: 15000 }).then(() => true, () => false));
+    evidence.record(S, ana.role, "and opening it from Bench goes to the same thing",
+      (await onBench.getAttribute("href").catch(() => "")) === href, `href ${await onBench.getAttribute("href").catch(() => "")}`);
+    const benchText = await page.locator("main").first().innerText().catch(() => "");
+    evidence.record(S, ana.role, "Bench shows her no word or id of ours", !OUR_WORDS.test(benchText) && !INTERNAL_IDS.test(benchText),
+      benchText.match(OUR_WORDS)?.[0] ?? benchText.match(INTERNAL_IDS)?.[0] ?? "");
+    await evidence.shot(page, "home-02a-bench-390");
 
-    // --- Returning: a fresh load still lists it, and the record shows all six parts in order.
+    // --- Returning: Home offers it among her recent things, and the record shows all six parts in order.
     await page.goto(base + "/");
-    evidence.record(S, ana.role, "returning later, it is still there",
+    evidence.record(S, ana.role, "returning later, it is among her recent things on Home",
       await page.locator("a[data-thing]", { hasText: title }).waitFor({ timeout: 15000 }).then(() => true, () => false));
     await page.goto(base + recordHref);
     const heading = await page.getByRole("heading", { level: 1 }).textContent().catch(() => "");
@@ -131,8 +131,9 @@ export async function home({ browser, base, evidence }) {
     await evidence.shot(page, "home-05-offline-390");
     await ana.context.setOffline(false);
     await page.getByRole("button", { name: "Begin", exact: true }).click();
-    evidence.record(S, ana.role, "retrying once the network returns records it",
-      await page.locator("a[data-thing]", { hasText: second }).waitFor({ timeout: 20000 }).then(() => true, () => false));
+    evidence.record(S, ana.role, "retrying once the network returns records it, and takes her into it",
+      await page.waitForURL(/\/world\/[0-9a-f-]{36}$/, { timeout: 20000 }).then(() => true, () => false)
+      && (await page.getByRole("heading", { level: 1 }).textContent().catch(() => ""))?.trim() === second);
 
     // --- Nothing was thrown in the browser along the way.
     for (const p of [ana, other, stranger]) {

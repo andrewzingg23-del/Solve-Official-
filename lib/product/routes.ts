@@ -6,7 +6,7 @@ const within = (pathname: string, root: string) => pathname === root || pathname
 // someone kept still lands somewhere real — the place that thing lives now — instead of a dead end.
 // Nothing here can be switched back on: there is nothing left behind these addresses to expose.
 const retired: Record<string, string> = {
-  "/projects": "/space", "/communities": "/space", "/community": "/space", "/worlds": "/", "/saved": "/",
+  "/projects": "/workbench", "/communities": "/", "/community": "/", "/worlds": "/workbench", "/saved": "/",
   "/bot": "/account", "/onboarding": "/account", "/personalize": "/account", "/sov-id": "/account",
   "/claim": "/account", "/start": "/account", "/avatar": "/account",
   "/apps": "/control",

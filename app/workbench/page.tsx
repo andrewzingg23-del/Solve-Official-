@@ -8,18 +8,16 @@ import { Things } from "@/app/ui/things";
 
 export const metadata: Metadata = { title: "Bench · SOLVE" };
 
-// Bench: where a person makes things, or picks up what they were making. Rebuilt from zero
-// (2026-11-10). It offers nothing it cannot yet do: making starts from Home, and each thing opens
-// with everything about it.
+// Bench: everything a person has made or joined, in one place — the only list of their things.
+// Starting something happens anywhere; each thing opens with everything about it.
 export default async function BenchPage() {
   const user = await getUser();
   const things = user ? await myThings(await getKernel()) : [];
   return <div>
-    <PageHead label="Bench" title="Make something, or keep making it.">
-      Every change you make is kept, so nothing is ever lost.
+    <PageHead label="Bench" title="Your things.">
+      Everything you&apos;ve made or joined. Every change is kept, so nothing is ever lost.
     </PageHead>
     <p style={{ marginBottom: 40 }}><Link href="/" className="s-button">Start something</Link></p>
-    <h2 style={{ marginBottom: 12 }}>Pick up where you left off</h2>
-    <Things things={things} empty="Nothing to pick up yet. What you start will be here." action="Pick it up" />
+    <Things things={things} empty="Nothing yet. What you start will be here." action="Open it" />
   </div>;
 }

@@ -1,15 +1,12 @@
 // Control: a person sees what they can reach, in their own words, and can take everything with them
 // — and the file they take contains everything of theirs and nothing of anyone else's.
 import { readFile } from "node:fs/promises";
-import { INTERNAL_IDS, MARK, OUR_WORDS, VIEWPORTS, close, persona } from "../lib.mjs";
+import { INTERNAL_IDS, MARK, OUR_WORDS, VIEWPORTS, beginThing, close, persona } from "../lib.mjs";
 
 const S = "control";
 
 async function makeThing(who, base, words) {
-  await who.page.goto(base + "/");
-  await who.page.getByRole("textbox", { name: "What do you want to do?" }).fill(words);
-  await who.page.getByRole("button", { name: "Begin", exact: true }).click();
-  return who.page.locator("a[data-thing]", { hasText: words }).waitFor({ timeout: 20000 }).then(() => true, () => false);
+  return Boolean(await beginThing(who.page, base, words));
 }
 
 export async function control({ browser, base, evidence }) {

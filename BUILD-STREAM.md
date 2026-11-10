@@ -1407,3 +1407,20 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
     - `npm test` 237 / 237, and no live file lost its only test.
     - `test:product` passed (now including the consent screen); in-browser kernel tests 73/73.
     - **All seven acceptance scenarios on staging: 237/237** (`acc-202611100743-01wh`).
+
+- 2026-11-10 — **Simple: only what is structurally needed and has integrity** (branch `solve/remove-dead-code`, **not merged**). Founder, choosing among the open proposals: "Simple — just what is structurally needed and has integrity." Recorded in `DECISIONS.md`.
+  - **One concept, one home:**
+    - **Home** is the doorway: starting something takes you into it, and three recent things are offered to reopen.
+    - **Bench** is the one list of a person's things.
+    - **Space** is MySpace: sharing, its preview and the link moved there from ID.
+    - **ID** is the card.
+    - Navigation highlights Bench inside a thing. Old addresses for lists of things (`/projects`, `/worlds`) now land on Bench.
+    - Acceptance scenarios gained one shared step, "begin and land in it" (`beginThing`).
+  - **Kept whole:** the kernel, money included. It is verified, and removing capabilities would be redesigning it.
+  - **Docs:** cut to what governs the build — the direction, `DECISIONS.md`, `AGENTS.md` (rewritten, short), `SECURITY-INVARIANTS.md` (rewritten so every guarantee names a test that exists), `docs/acceptance/STATUS.md` (rewritten to the new structure and to what's true), the real-person test, the README (rewritten), and this log. Everything else in `docs/` and the root canon files is removed on the founder's word. The GitHub templates were repointed. Comments in applied migrations still mention old docs; applied migrations are never edited.
+  - **Size:** `app/` and `lib/` 105 files, about 7,900 lines; repository 271 files; 10 Markdown files.
+  - **Checks:**
+    - typecheck 0, lint 0, build ok, `npm test` 237/237.
+    - `test:product` passed; in-browser kernel tests 73/73.
+    - **All seven acceptance scenarios on staging: 237/237** (`acc-202611100758-rjsu`).
+    - The Space panel heading was renamed after that run (no repeat of the page title), and `space` was rerun and passed (`acc-202611100801-wrd5`).

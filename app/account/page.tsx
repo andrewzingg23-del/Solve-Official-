@@ -6,9 +6,6 @@ import { readLook, type StoredLook } from "@/lib/product/look-store";
 import { identityEventWording } from "@/lib/product/thing";
 import { SovCard } from "@/app/ui/sov-card";
 import { Studio } from "./studio";
-import { SpaceShare } from "./space-share";
-import { readSpaceShared } from "@/lib/product/page";
-import { myThings } from "@/lib/product/my-things";
 import { signOut } from "./id-actions";
 import styles from "./id.module.css";
 
@@ -19,7 +16,6 @@ export default async function IdPage() {
   let look: StoredLook | null = null;
   let history: { at: string; what: string }[] = [];
   let unavailable = false;
-  let space: { shared: boolean; path: string | null; pages: Array<{ id: string; title: string }> } | null = null;
   if (user) {
     try {
       const kernel = await getKernel();
@@ -29,19 +25,6 @@ export default async function IdPage() {
       look = await readLook(kernel, me.actor_id);
       const events = await kernel.readEvents(`actor:${me.actor_id}`, { newestFirst: true, limit: 8 }).catch(() => []);
       history = events.map(e => ({ at: e.occurred_at, what: identityEventWording(e) }));
-      // What a visitor to this person's Space would see: the things they've shared as pages.
-      const [mine, things, shared] = await Promise.all([
-        kernel.readWorld(`actor:${me.actor_id}`).catch(() => []),
-        myThings(kernel).catch(() => null),
-        readSpaceShared(kernel, me.actor_id).catch(() => ({ entityId: null, shared: false })),
-      ]);
-      const titles = new Map((things ?? []).map(t => [t.id.toLowerCase(), t.title]));
-      const pages = mine
-        .filter(e => e.attributes?.sov === "solve.page" && e.attributes?.published === true && typeof e.attributes?.worldId === "string")
-        .map(e => String(e.attributes.worldId).toLowerCase())
-        .filter(id => titles.has(id))
-        .map(id => ({ id, title: titles.get(id)! }));
-      space = { shared: shared.shared, path: shared.shared ? `/s/${me.actor_id}` : null, pages };
     } catch {
       unavailable = true;
     }
@@ -64,7 +47,6 @@ export default async function IdPage() {
             : "Your card appears here as soon as your identity is ready."}</p>
         </div>}
 
-    {space && look ? <SpaceShare name={name} look={look.look} shared={space.shared} path={space.path} pages={space.pages} /> : null}
 
     <section className={styles.facts} aria-label="About your SOV ID">
       <div className="s-surface s-stack">

@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import type { CardLook } from "@/lib/product/card";
 import { SovCard } from "@/app/ui/sov-card";
 import { shareSpace } from "./space-actions";
-import styles from "./id.module.css";
+import styles from "./space.module.css";
 
 // Your Space: your card, and the things you've shared as pages, at one link anyone can open.
 // The preview is built from exactly what visitors will see.
@@ -29,7 +29,7 @@ export function SpaceShare({ name, look, shared, path, pages }: {
 
   return <section className={`s-surface s-stack ${styles.space}`} aria-labelledby="space-title" data-space-share>
     <div className="s-stack" style={{ "--gap": "8px" } as React.CSSProperties}>
-      <h2 id="space-title">Your Space</h2>
+      <h2 id="space-title">Sharing</h2>
       <p className="s-muted">{shared
         ? "Shared. Anyone with the link sees your card and what you've shared as pages — and can save or screenshot it."
         : "Your card and the things you've shared as pages, at one link — for a bio, a message, or someday the back of your card. No account needed to look."}</p>

@@ -9,13 +9,13 @@ it("has exactly the five destinations, in order", () => {
   assert.deepEqual(DESTINATIONS.map(d => d.label), ["Home", "ID", "Space", "Bench", "Control"]);
 });
 
-it("places every route under one of the five destinations", () => {
+it("places every live route under exactly one of the five destinations", () => {
   const cases: Array<[string, string]> = [
     ["/", "/"],
-    ["/account", "/account"], ["/sov-id", "/account"], ["/bot", "/account"],
-    ["/space", "/space"], ["/world/abc/record", "/space"], ["/communities", "/space"],
-    ["/workbench", "/workbench"], ["/world/abc/workbench", "/workbench"],
-    ["/control", "/control"], ["/apps", "/control"],
+    ["/account", "/account"],
+    ["/space", "/space"],
+    ["/workbench", "/workbench"], ["/world/abc", "/workbench"], ["/world/abc/record", "/workbench"],
+    ["/control", "/control"],
   ];
   for (const [path, destination] of cases) assert.equal(destinationOf(path), destination, path);
 });

@@ -13,7 +13,7 @@ it("lets every live address through untouched", () => {
 
 it("sends every retired address to where that thing lives now", () => {
   for (const [path, to] of [
-    ["/projects", "/space"], ["/communities", "/space"], ["/community/abc", "/space"], ["/worlds/new", "/"],
+    ["/projects", "/workbench"], ["/communities", "/"], ["/community/abc", "/"], ["/worlds/new", "/workbench"],
     ["/bot", "/account"], ["/onboarding", "/account"], ["/sov-id", "/account"], ["/avatar", "/account"],
     ["/apps", "/control"], ["/money", "/"], ["/packs/trading", "/"], ["/studio", "/"], ["/map", "/"], ["/card", "/"],
     ["/world/id/room", "/world/id"], ["/world/id/ideas", "/world/id"], ["/world/id/studio", "/world/id"], ["/world/id/workbench", "/world/id"],

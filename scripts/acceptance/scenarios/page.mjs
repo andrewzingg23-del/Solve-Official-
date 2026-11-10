@@ -5,7 +5,7 @@
 // exactly the brief the owner reviewed.
 import { createClient } from "@supabase/supabase-js";
 import LZString from "lz-string";
-import { INTERNAL_IDS, MARK, OUR_WORDS, STAGING, VIEWPORTS, close, persona } from "../lib.mjs";
+import { INTERNAL_IDS, MARK, OUR_WORDS, STAGING, VIEWPORTS, close, persona, beginThing } from "../lib.mjs";
 import { loaded, phonePhoto, whyNot } from "./photos.mjs";
 
 const S = "page";
@@ -34,13 +34,8 @@ export async function page({ browser, base, evidence }) {
     const title = `${MARK} Photography portfolio website`;
 
     // --- The owner states an intention. It lives here, with its people, whatever tool makes it.
-    await owner.page.goto(base + "/");
-    await owner.page.getByRole("textbox", { name: "What do you want to do?" }).fill(title);
-    await owner.page.getByRole("button", { name: "Begin", exact: true }).click();
-    const card = owner.page.locator("a[data-thing]", { hasText: title });
-    if (!evidence.record(S, owner.role, "states an intention", await card.waitFor({ timeout: 20000 }).then(() => true, () => false))) return;
-    const worldId = decodeURIComponent((await card.getAttribute("href")).match(/^\/world\/([^/]+)$/)?.[1] ?? "");
-    await card.click();
+    const worldId = await beginThing(owner.page, base, title);
+    if (!evidence.record(S, owner.role, "states an intention, and is taken into it", Boolean(worldId))) return;
     await owner.page.locator("[data-ways]").waitFor({ timeout: 15000 }).catch(() => {});
 
     // --- The ways to make it: here first for a portfolio, a specialist offered and labelled honestly.

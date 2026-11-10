@@ -2,7 +2,7 @@
 // does in SOLVE just because it's fun". Three independent people: the one who starts it, a friend
 // with no account who joins from a link, and a third person who tries to reuse the friend's link.
 import { createHash, randomUUID } from "node:crypto";
-import { INTERNAL_IDS, MARK, OUR_WORDS, VIEWPORTS, close, persona } from "../lib.mjs";
+import { INTERNAL_IDS, MARK, OUR_WORDS, VIEWPORTS, close, persona, beginThing } from "../lib.mjs";
 import { GPS, loaded, phonePhoto, whyNot } from "./photos.mjs";
 
 const S = "together";
@@ -16,15 +16,8 @@ export async function together({ browser, base, evidence }) {
     const title = `${MARK} Summer road trip`;
 
     // --- The starter makes something and opens it.
-    await host.page.goto(base + "/");
-    await host.page.getByRole("textbox", { name: "What do you want to do?" }).fill(title);
-    await host.page.getByRole("button", { name: "Begin", exact: true }).click();
-    const card = host.page.locator("a[data-thing]", { hasText: title });
-    if (!evidence.record(S, host.role, "starts something", await card.waitFor({ timeout: 20000 }).then(() => true, () => false))) return;
-    const href = await card.getAttribute("href");
-    const worldId = decodeURIComponent(href.match(/^\/world\/([^/]+)$/)?.[1] ?? "");
-    await card.click();
-    await host.page.getByRole("heading", { level: 1, name: title }).waitFor({ timeout: 15000 });
+    const worldId = await beginThing(host.page, base, title);
+    if (!evidence.record(S, host.role, "starts something, and is taken into it", Boolean(worldId))) return;
     evidence.record(S, host.role, "opening it shows the thing, ready to build",
       await host.page.getByRole("heading", { name: "Nothing added yet" }).waitFor({ timeout: 15000 }).then(() => true, () => false));
 
@@ -117,7 +110,7 @@ export async function together({ browser, base, evidence }) {
 
     // --- The friend finds it among their own things.
     await friend.page.goto(base + "/");
-    evidence.record(S, friend.role, "finds it on their own Home",
+    evidence.record(S, friend.role, "finds it among their own recent things on Home",
       await friend.page.locator("a[data-thing]", { hasText: title }).waitFor({ timeout: 15000 }).then(() => true, () => false));
 
     // --- Kernel read-back: the friend's piece is authored by the friend, and the friend can read it.

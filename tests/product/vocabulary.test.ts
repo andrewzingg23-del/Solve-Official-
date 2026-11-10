@@ -39,7 +39,7 @@ const SURFACES = [
   "app/world-invite/[token]/page.tsx",
   "app/p/[worldId]/page.tsx",
   "app/s/[actorId]/page.tsx",
-  "app/account/space-share.tsx",
+  "app/space/space-share.tsx",
 ];
 
 /**

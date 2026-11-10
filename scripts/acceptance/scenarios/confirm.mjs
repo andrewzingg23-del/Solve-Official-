@@ -3,22 +3,15 @@
 //
 // Perspectives: the holder; the person asked (a stranger to SOLVE, no account); and an outsider
 // with a tampered or malformed link. Every outcome is read back through the kernel as each person.
-import { INTERNAL_IDS, MARK, OUR_WORDS, VIEWPORTS, close, persona } from "../lib.mjs";
+import { INTERNAL_IDS, MARK, OUR_WORDS, VIEWPORTS, beginThing, close, persona } from "../lib.mjs";
 
 const S = "confirm";
 
 async function createThing(who, base, words, evidence) {
-  const page = who.page;
-  await page.goto(base + "/");
-  await page.getByRole("textbox", { name: "What do you want to do?" }).fill(words);
-  await page.getByRole("button", { name: "Begin", exact: true }).click();
-  const card = page.locator("a[data-thing]", { hasText: words });
-  const ok = await card.waitFor({ timeout: 20000 }).then(() => true, () => false);
-  evidence.record(S, who.role, `records "${words.slice(MARK.length + 1)}"`, ok);
-  if (!ok) return null;
-  const href = await card.getAttribute("href");
-  const worldId = decodeURIComponent(href.match(/^\/world\/([^/]+)$/)?.[1] ?? "");
-  return { href: `${href}/record`, worldId, scope: `world:${worldId}` };
+  const worldId = await beginThing(who.page, base, words);
+  evidence.record(S, who.role, `records "${words.slice(MARK.length + 1)}"`, Boolean(worldId));
+  if (!worldId) return null;
+  return { href: `/world/${worldId}/record`, worldId, scope: `world:${worldId}` };
 }
 
 async function ask(who, base, thing, askedOf, question, evidence, label) {

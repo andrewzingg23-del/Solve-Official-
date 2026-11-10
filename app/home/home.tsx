@@ -12,7 +12,8 @@ import styles from "./home.module.css";
 
 export type ThingSummary = { id: string; title: string; summary: string };
 
-// Home: a person writes down what they want to do, and it becomes theirs — kept, with its history.
+// Home, the doorway: a person writes down what they want to do and is taken straight into it, or
+// picks up one of their three most recent things. Everything they have lives on Bench.
 // Their words are held on the device while they type, so a refresh or a dropped connection never
 // costs them anything; the device copy is a safety net, never the record.
 export function Home({ owner, durable, name, things }: {
@@ -21,7 +22,7 @@ export function Home({ owner, durable, name, things }: {
   const router = useRouter();
   const key = `solve.draft.v2:${owner ?? "none"}`;
   const [text, setText] = useState("");
-  const [id, setId] = useState(() => crypto.randomUUID());
+  const [id] = useState(() => crypto.randomUUID());
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
   const custody = custodyOf(owner, durable);
@@ -53,9 +54,8 @@ export function Home({ owner, durable, name, things }: {
         const result = await createThing(id, words);
         if (!result.ok) { setError(result.error); return; }
         writeDeviceText(key, null);
-        setText("");
-        setId(crypto.randomUUID());
-        router.refresh();
+        // Starting something takes you into it.
+        router.push(`/world/${encodeURIComponent(result.id)}`);
       } catch {
         setError("It wasn't recorded. Your words are still here; retry when you're connected.");
       }
@@ -81,15 +81,15 @@ export function Home({ owner, durable, name, things }: {
 
     <section aria-labelledby="home-things" className={styles.things}>
       <div className={styles.thingsHead}>
-        <h2 id="home-things">Your things</h2>
-        {things && things.length > 0 ? <Link href="/space" className="s-button" data-variant="link">All in Space</Link> : null}
+        <h2 id="home-things">Recent</h2>
+        {things && things.length > 0 ? <Link href="/workbench" className="s-button" data-variant="link">All your things</Link> : null}
       </div>
       {things === null
         ? <p role="status" className="s-muted">Your things couldn&apos;t be loaded. Nothing of yours has changed; try again shortly.</p>
         : things.length === 0
           ? <p className={styles.empty}>Nothing here yet. What you write down becomes yours — kept, with its whole history.</p>
           : <ul className={styles.grid}>
-              {things.slice(0, 6).map(thing => <li key={thing.id}>
+              {things.slice(0, 3).map(thing => <li key={thing.id}>
                 <Link href={`/world/${encodeURIComponent(thing.id)}`} className={styles.thing} data-thing={thing.id}>
                   <strong>{thing.title}</strong>
                   <span className="s-muted s-small">{thing.summary && thing.summary !== thing.title ? thing.summary : "Open it"}</span>

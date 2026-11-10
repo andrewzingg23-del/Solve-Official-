@@ -9,7 +9,7 @@
 - [ ] **Coupling:** every visible control corresponds to real supported behavior, truthful unavailable state, or clearly marked concept
 - [ ] **Evidence:** screenshots/device check and positive/negative tests where applicable, clearly distinguishing verified from unverified
 
-Reference: [Experience Implementation Contract](docs/design/EXPERIENCE-IMPLEMENTATION-CONTRACT.md).
+Reference: the builder rules in [AGENTS.md](AGENTS.md) and the [direction](docs/direction/2026-11-10-consolidated-direction.md).
 
 # What changed
 

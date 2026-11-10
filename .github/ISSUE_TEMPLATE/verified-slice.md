@@ -16,7 +16,7 @@ assignees: ""
 
 **Experience-to-action proof:** <!-- For each visible control: what user sees, what actually happens, where proof lives, independent device check. -->
 
-**Design system:** <!-- Link docs/design/EXPERIENCE-IMPLEMENTATION-CONTRACT.md and existing target. -->
+**Design system:** <!-- The rebuilt system in app/ui/ and the visual standard in AGENTS.md. -->
 
 **Before:** <!-- Grounded current behavior; include evidence/URL, not assumptions. -->
 

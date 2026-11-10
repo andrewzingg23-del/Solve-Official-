@@ -168,3 +168,17 @@ export const OUR_WORDS = /\b(World|Worlds|Project|Projects|kernel|Kernel)\b/;
  * UUIDs. Found on the 2026-11-09 run, where the record rendered its scope id under "whose it is".
  */
 export const INTERNAL_IDS = /\b(world|actor|community|system):[0-9a-f]{8}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+/**
+ * Write something on Home and press Begin. Starting something takes the person into it, so this
+ * waits for the thing's own page and returns its id (empty when it didn't arrive).
+ */
+export async function beginThing(page, base, words) {
+  await page.goto(base + "/");
+  await page.getByRole("textbox", { name: "What do you want to do?" }).fill(words);
+  await page.getByRole("button", { name: "Begin", exact: true }).click();
+  const arrived = await page.waitForURL(/\/world\/[0-9a-f-]{36}$/, { timeout: 20000 }).then(() => true, () => false);
+  if (!arrived) return "";
+  await page.getByRole("heading", { level: 1 }).waitFor({ timeout: 15000 }).catch(() => {});
+  return decodeURIComponent(new URL(page.url()).pathname.split("/")[2] ?? "");
+}

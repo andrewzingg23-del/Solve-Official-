@@ -3,7 +3,7 @@
 // result at once without installing SOLVE. Two parties: the owner, and a stranger with no account
 // and no cookies who opens the one link.
 import { createClient } from "@supabase/supabase-js";
-import { INTERNAL_IDS, MARK, OUR_WORDS, STAGING, VIEWPORTS, close, persona } from "../lib.mjs";
+import { INTERNAL_IDS, MARK, OUR_WORDS, STAGING, VIEWPORTS, close, persona, beginThing } from "../lib.mjs";
 import { loaded, phonePhoto } from "./photos.mjs";
 
 const S = "space";
@@ -24,9 +24,10 @@ export async function space({ browser, base, evidence }) {
     await p.getByRole("button", { name: "Save look" }).click();
     await p.waitForTimeout(1500);
 
-    // --- Before anything is shared, their Space doesn't exist for anyone.
+    // --- Their Space, with nothing shared yet, doesn't exist for anyone.
+    await p.goto(base + "/space");
     const shareBox = p.locator("[data-space-share]");
-    evidence.record(S, owner.role, "ID offers their Space, with a preview, unshared",
+    evidence.record(S, owner.role, "Space offers their public Space, with a preview, unshared",
       await shareBox.locator("[data-space-preview]").waitFor({ timeout: 15000 }).then(() => true, () => false)
       && (await shareBox.locator("[data-share-space]").count()) === 1);
     const spacePath = `/s/${owner.actorId}`;
@@ -35,13 +36,7 @@ export async function space({ browser, base, evidence }) {
 
     // --- They make something with a photo and share it as a page (the existing, tested flow).
     const title = `${MARK} Wedding photography`;
-    await p.goto(base + "/");
-    await p.getByRole("textbox", { name: "What do you want to do?" }).fill(title);
-    await p.getByRole("button", { name: "Begin", exact: true }).click();
-    const card = p.locator("a[data-thing]", { hasText: title });
-    await card.waitFor({ timeout: 20000 });
-    const worldId = decodeURIComponent((await card.getAttribute("href")).match(/^\/world\/([^/]+)$/)?.[1] ?? "");
-    await card.click();
+    const worldId = await beginThing(p, base, title);
     await p.locator("#photo-file").setInputFiles({ name: "IMG.jpg", mimeType: "image/jpeg", buffer: await phonePhoto(p) });
     await p.getByRole("textbox", { name: "Caption" }).fill("First dance");
     await p.locator("[data-add-photo]").click();
@@ -50,13 +45,10 @@ export async function space({ browser, base, evidence }) {
     await p.locator("[data-publish]").click();
     evidence.record(S, owner.role, "shares a thing as a page", await p.locator("[data-page-link]").waitFor({ timeout: 15000 }).then(() => true, () => false));
     // A second thing, never shared, must never appear.
-    await p.goto(base + "/");
-    await p.getByRole("textbox", { name: "What do you want to do?" }).fill(`${MARK} Private diary`);
-    await p.getByRole("button", { name: "Begin", exact: true }).click();
-    await p.locator("a[data-thing]", { hasText: "Private diary" }).waitFor({ timeout: 20000 });
+    await beginThing(p, base, `${MARK} Private diary`);
 
-    // --- Back on ID: the preview shows exactly the shared page; they share their Space.
-    await p.goto(base + "/account");
+    // --- Back on Space: the preview shows exactly the shared page; they share it.
+    await p.goto(base + "/space");
     const preview = await shareBox.locator("[data-space-preview]").innerText();
     evidence.record(S, owner.role, "the preview lists the shared page and not the private one",
       preview.includes("Wedding photography") && !preview.includes("Private diary"), preview.slice(0, 200));
@@ -66,8 +58,8 @@ export async function space({ browser, base, evidence }) {
       await link.waitFor({ timeout: 15000 }).then(() => true, () => false) && (await link.getAttribute("href")) === spacePath);
     const focus = await p.evaluate(() => ({ pointer: document.documentElement.hasAttribute("data-pointer"), active: document.activeElement?.textContent?.slice(0, 30) ?? "", tag: document.activeElement?.tagName }));
     evidence.record(S, owner.role, "after sharing, nothing pops over the page", focus.active !== "Skip to content", JSON.stringify(focus));
-    await evidence.shot(p, "space-01-id-shared-390");
-    await p.screenshot({ path: `${evidence.dir}/space-01b-id-shared-viewport-390.png` }).catch(() => {});
+    await evidence.shot(p, "space-01-shared-390");
+    await p.screenshot({ path: `${evidence.dir}/space-01b-shared-viewport-390.png` }).catch(() => {});
 
     // --- A stranger with nothing installed opens the one link.
     const opened = await stranger.page.goto(base + spacePath);
@@ -111,7 +103,7 @@ export async function space({ browser, base, evidence }) {
     evidence.record(S, stranger.role, "the kernel answers them nothing beyond what was shared", Boolean(peek.error), peek.error?.message ?? "read it");
 
     // --- The owner stops sharing; the Space goes offline, and they're told the truth about copies.
-    await p.goto(base + "/account");
+    await p.goto(base + "/space");
     await shareBox.locator("[data-stop-space]").click();
     await shareBox.locator("[data-share-space]").waitFor({ timeout: 15000 }).catch(() => {});
     const told = await shareBox.locator("[data-space-note]").innerText().catch(() => "");
