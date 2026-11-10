@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { PHOTO_BUCKET, PHOTO_MAX_BYTES, PHOTO_MAX_SIDE, photoName } from "@/lib/product/photo";
-import { addPiece, makeInvite, recordPhoto, setPagePublished } from "./together-actions";
+import { addPiece, makeInvite, setAiAccess, recordPhoto, setPagePublished } from "./together-actions";
 import styles from "./together.module.css";
 
 // Add your piece. The words stay on screen until the kernel has them.
@@ -223,6 +223,41 @@ export function SharePage({ worldId, title, description, published, selected, ca
       </> : <button type="button" className="s-button" disabled={pending} onClick={() => save(true, "Shared. Anyone with the link can see it.")} data-publish>{pending ? "Sharing…" : "Share as a page"}</button>}
     </div>
     {note ? <p role="status" className="s-small" data-share-note>{note}</p> : null}
+    {error ? <p role="alert" className="s-error">{error}</p> : null}
+  </section>;
+}
+
+// Your AI in this Space: the AI you connected in Apps can do nothing here until you choose. Read
+// lets it see this Space; Add also lets it add drafts, each labelled as its own.
+export function AiAccess({ worldId, current, name }: { worldId: string; current: "none" | "read" | "add"; name: string }) {
+  const router = useRouter();
+  const [value, setValue] = useState(current);
+  const [error, setError] = useState("");
+  const [note, setNote] = useState("");
+  const [pending, start] = useTransition();
+  const choose = (next: "none" | "read" | "add") => start(async () => {
+    setError(""); setNote("");
+    const result = await setAiAccess(worldId, next);
+    if (!result.ok) { setError(result.error); return; }
+    setValue(next);
+    setNote(next === "none" ? `${name} can't see this Space.` : next === "read" ? `${name} can read this Space.` : `${name} can read this Space and add drafts.`);
+    router.refresh();
+  });
+  const options: Array<["none" | "read" | "add", string, string]> = [
+    ["none", "Off", "It can't see this Space"],
+    ["read", "Read", "It can read what's here"],
+    ["add", "Add", "It can also add drafts, labelled as its own"],
+  ];
+  return <section className={styles.share} aria-labelledby="ai-title" data-ai-access>
+    <h2 id="ai-title">Your AI here</h2>
+    <fieldset className={styles.choose} disabled={pending}>
+      <legend className="s-visually-hidden">What {name} may do in this Space</legend>
+      {options.map(([v, label, hint]) => <label key={v} className={styles.option}>
+        <input type="radio" name="ai-access" value={v} checked={value === v} onChange={() => choose(v)} data-ai-choice={v} />
+        <span><strong>{label}</strong> <span className="s-muted s-small">{hint}</span></span>
+      </label>)}
+    </fieldset>
+    {note ? <p role="status" className="s-small" data-ai-note>{note}</p> : null}
     {error ? <p role="alert" className="s-error">{error}</p> : null}
   </section>;
 }

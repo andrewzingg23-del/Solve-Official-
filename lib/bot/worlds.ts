@@ -4,12 +4,12 @@
 // bot's agent, for 30 days at a time:
 //   read  kernel.read
 //   add   kernel.read + world.entity.write + kernel.evidence.attach (proof, lib/bot/proof.ts)
-// A person can also start a new World from their assistant. The World is theirs: it is created
-// with their own sign-in, because an agent can never claim a scope, and their bot is let in to add.
+// A connected app can't create a World: its token can change nothing (20261110080000), and an agent
+// can never claim a scope. The person starts one in Solve and lets their AI in from it.
 // The World itself (its entities, canvas and history) is Codex's lib/world/creative.ts; this file
 // only decides who the bot is and what it was let into.
 import type { Kernel } from "@/lib/kernel/client";
-import { createCreativeArtifact, createCreativeWorld, listCreativeWorlds, loadCreativeWorld, updateCreativeArtifact, type ArtifactVia, type CreativeWorld } from "@/lib/world/creative";
+import { createCreativeArtifact, listCreativeWorlds, loadCreativeWorld, updateCreativeArtifact, type ArtifactVia, type CreativeWorld } from "@/lib/world/creative";
 import { cleanText } from "./memory";
 
 export type WorldAccess = "none" | "read" | "add";
@@ -92,25 +92,6 @@ export async function worldsForAssistant(person: Kernel, bot: Kernel, appUrl: st
   return [...byId.values()]
     .map((w) => ({ ...w, access: accessFrom(botGrants.filter((g) => g.scope === w.scope)), url: worldUrl(appUrl, w.worldId) }))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-}
-
-// Starts a private World for a goal, as the person, and lets their bot in to add. A retried call
-// (same title within the hour) returns the World it already made.
-export async function startWorld(
-  person: Kernel,
-  botAgentId: string,
-  input: { title: unknown },
-  { now = new Date(), newId = () => crypto.randomUUID() }: { now?: Date; newId?: () => string } = {},
-): Promise<{ world: CreativeWorld; existing: boolean }> {
-  const title = cleanText(input.title, WORLD_LIMITS.title);
-  if (!title) throw new WorldInputError("a World needs a title");
-  const worlds = await listCreativeWorlds(person);
-  const same = worlds.find((w) => w.title.toLowerCase() === title.toLowerCase() && now.getTime() - Date.parse(w.updatedAt) < 3_600_000);
-  if (same) return { world: same, existing: true };
-  if (worlds.length >= WORLD_LIMITS.perPerson) throw new WorldInputError(`this person already has ${WORLD_LIMITS.perPerson} Worlds`);
-  const world = await createCreativeWorld(person, { worldId: newId(), title });
-  await setBotAccess(person, { scope: world.scope, botAgentId, access: "add" }, `start:${world.worldId}`, now);
-  return { world, existing: false };
 }
 
 // Reads a World as the bot: only what the bot was let into, private entities withheld by the kernel.

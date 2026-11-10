@@ -8,7 +8,9 @@ import { PHOTO_BUCKET, PHOTO_LINK_SECONDS, isPhotoOf } from "@/lib/product/photo
 import { loadCreativeWorld } from "@/lib/world/creative";
 import { readWorldMembers } from "@/lib/world/collaboration";
 import { nameFor, type ActorNames } from "@/lib/product/thing";
-import { AddPhoto, AddPiece, InviteFriend, SharePage } from "./together";
+import { AddPhoto, AddPiece, AiAccess, InviteFriend, SharePage } from "./together";
+import { loadBot } from "@/lib/bot/store";
+import { accessFrom, botGrantsIn } from "@/lib/bot/worlds";
 import { ownDescription, readPublication } from "@/lib/product/page";
 import styles from "./together.module.css";
 import { GuestGate } from "@/app/ui/guest-gate";
@@ -77,6 +79,10 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
   }
   const linkEntities = entities.filter(e => e.kind === "document" && e.attributes.documentType === "link" && typeof e.attributes.url === "string");
   const publication = isOwner && me ? await readPublication(kernel, me.actor_id, world.worldId).catch(() => null) : null;
+  // The owner's own AI, if they have connected one, and what it may do here — read from the grants.
+  const ai = isOwner ? await loadBot(kernel).then(async bot => bot.avatar
+    ? { name: bot.persona.name, access: accessFrom(await botGrantsIn(kernel, world.scope, bot.avatar.agent_id)) }
+    : null).catch(() => null) : null;
   type Piece = { id: string; at: string; text: string; photo?: { url: string | null }; link?: { url: string; madeWith: string } };
   const pieces: Piece[] = [
     ...texts.map(a => ({ id: a.entityId, at: a.updatedAt, text: a.body || a.title })),
@@ -147,6 +153,8 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
       candidates={pieces.filter(p => !p.link && authorOf.get(p.id) === ownerId).map(p => ({
         id: p.id, kind: p.photo ? "photo" as const : "text" as const, text: p.text, url: p.photo?.url ?? null }))}
       friendsPieces={pieces.filter(p => !p.link && authorOf.get(p.id) !== ownerId).length} /> : null}
+
+    {ai ? <AiAccess worldId={world.worldId} current={ai.access} name={ai.name} /> : null}
 
     <p><Link href={`/world/${encodeURIComponent(world.worldId)}/record`} className="s-button" data-variant="link">See its full record — who did what, and what proves it →</Link></p>
   </div>;

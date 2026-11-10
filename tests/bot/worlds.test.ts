@@ -84,25 +84,6 @@ it("lets the bot into a World only as far as its owner allows, and out again", a
   assert.equal((await call(ana, "read_world", { world_id: WORLD })).isError, true);
 });
 
-it("starts a World for a goal that belongs to the person, with the bot let in to add", async () => {
-  const { ana, anaId, anaBot, call } = await setting();
-  const started = await call(ana, "start_world", { title: "Plan Mom's 60th", goal: "A dinner for 20 on May 3, under $1,500." });
-  assert.equal(started.isError, undefined, started.content[0].text);
-  const { world_id: worldId, url } = started.structuredContent as { world_id: string; url: string };
-  assert.equal(url, `https://sov.test/world/${worldId}`);
-  const retry = await call(ana, "start_world", { title: "plan mom's 60th" });
-  assert.equal((retry.structuredContent as { world_id: string; existing: boolean }).world_id, worldId, "a retried start is the same World");
-
-  const claim = (await ana.readEvents(`world:${worldId}`)).find((e) => e.type === "kernel.scope.claimed");
-  assert.equal(claim?.actor_id, anaId, "the World is Ana's, not the bot's");
-  const { artifacts } = await loadCreativeWorld(ana, worldId);
-  assert.deepEqual(artifacts.map((a) => [a.title, a.body]), [["Goal", "A dinner for 20 on May 3, under $1,500."]]);
-  assert.equal((await worldsForBot(ana, anaBot))[0].access, "add");
-
-  const readOnly = await call(ana, "start_world", { title: "Another" }, { botAs: null });
-  assert.equal(readOnly.isError, true, "without acting as the bot, nothing is started");
-});
-
 it("lets a World's owner bring in someone else's bot, and stops a member passing access on", async () => {
   const { ana, ben, benId, benBot, call } = await setting();
   const world = await createCreativeWorld(ana, { worldId: WORLD, title: "Garage band EP" });

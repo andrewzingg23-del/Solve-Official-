@@ -98,28 +98,47 @@ export async function apps({ browser, base, evidence }) {
     // --- It can see what it may use, and who it is acting for.
     const listed = await mcp(base, token, "tools/list");
     const names = (listed.body?.result?.tools ?? []).map(t => t.name);
-    evidence.record(S, "app", "lists the connector's tools", names.includes("start_world") && names.includes("add_to_world"), names.join(","));
+    evidence.record(S, "app", "lists the connector's tools, and offers no way to create a Space it couldn't", names.includes("add_to_world") && !names.includes("start_world"), names.join(","));
     const who = await call(base, token, "whoami");
     evidence.record(S, "app", "whoami answers for this person's connection", who.status === 200 && !who.body?.result?.isError, said(who).slice(0, 160));
 
-    // --- Real work: it starts a Space for a goal and adds a draft — read back from the kernel.
+    // --- The person makes a Space and, from that Space, lets their AI in to add.
     const title = `${MARK} Plan the reunion picnic`;
-    const started = await call(base, token, "start_world", { title, goal: "Pick a date and a park" });
-    const worldId = started.body?.result?.structuredContent?.world_id ?? "";
-    evidence.record(S, "app", "starts a Space for the person's goal", Boolean(worldId) && !started.body?.result?.isError, said(started).slice(0, 200));
+    const worldId = await beginThing(page, base, title);
+    evidence.record(S, owner.role, "makes a Space for the goal", Boolean(worldId));
+    const before = await call(base, token, "add_to_world", { world_id: worldId, title: "Early", body: "Before I was let in" });
+    evidence.record(S, "app", "cannot add to it before being let in (refused on permission)",
+      Boolean(before.body?.result?.isError) && !/cannot act as the bot/i.test(said(before)), said(before).slice(0, 200));
+    const control = page.locator("[data-ai-access]");
+    evidence.record(S, owner.role, "the Space offers a control for their AI, off by default",
+      await control.waitFor({ timeout: 15000 }).then(() => true, () => false) && await control.locator('[data-ai-choice="none"]').isChecked());
+    await control.locator('[data-ai-choice="add"]').check();
+    evidence.record(S, owner.role, "letting it in to add is confirmed",
+      await control.locator("[data-ai-note]").filter({ hasText: "add drafts" }).waitFor({ timeout: 15000 }).then(() => true, () => false));
+    await evidence.shot(page, "apps-02-let-ai-in-390");
+    const seen = await call(base, token, "list_worlds");
+    const entry = (seen.body?.result?.structuredContent?.worlds ?? []).find(w => w.world_id === worldId);
+    evidence.record(S, "app", "now sees the Space, with add access", entry?.bot_access === "add", said(seen).slice(0, 200));
+
+    // --- Real work: it adds a draft — read back from the kernel, never trusted from its reply.
     const added = await call(base, token, "add_to_world", { world_id: worldId, title: "Shortlist", body: "Riverside Park or Elm Grove, Saturday the 14th" });
     const artifactId = added.body?.result?.structuredContent?.artifact_id ?? "";
     evidence.record(S, "app", "adds a draft to it", Boolean(artifactId) && !added.body?.result?.isError, said(added).slice(0, 200));
 
     const rows = await owner.kernel.rpc("read_world", { p_scope: `world:${worldId}` }).catch(e => e);
-    const container = Array.isArray(rows) ? rows.find(r => r.attributes?.worldId === worldId || r.title === title) : null;
-    evidence.record(S, owner.role, "the kernel holds the Space, readable by the person", Array.isArray(rows) && rows.some(r => r.title === title),
+    evidence.record(S, owner.role, "the kernel holds the draft in their Space, readable by them", Array.isArray(rows) && rows.some(r => r.entity_id === artifactId),
       rows instanceof Error ? rows.message : `${rows.length} records`);
     const events = await owner.kernel.rpc("read_events", { p_scope: `world:${worldId}`, p_after_seq: 0, p_limit: 200, p_newest_first: false }).catch(() => []);
     const made = Array.isArray(events) ? events.find(e => e.type === "kernel.entity.created" && e.payload?.entity_id === artifactId) : null;
     evidence.record(S, owner.role, "the draft is recorded as written by their AI, not by them", Boolean(made) && made.actor_id !== owner.actorId,
       made ? `author ${made.actor_id === owner.actorId ? "the person" : "their AI"}` : "no creation event found");
-    void container;
+
+    // --- Switched off, it is refused again at once.
+    await page.goto(`${base}/world/${encodeURIComponent(worldId)}`);
+    await page.locator('[data-ai-access] [data-ai-choice="none"]').check();
+    await page.locator("[data-ai-note]").filter({ hasText: "can't see" }).waitFor({ timeout: 15000 }).catch(() => {});
+    const off = await call(base, token, "add_to_world", { world_id: worldId, title: "After", body: "After I was taken out" });
+    evidence.record(S, "app", "once switched off, it is refused (on permission)", Boolean(off.body?.result?.isError) && !/cannot act as the bot/i.test(said(off)), said(off).slice(0, 200));
 
     // --- The person sees it in Solve, credited to their AI.
     await page.goto(`${base}/world/${encodeURIComponent(worldId)}`);
