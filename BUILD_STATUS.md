@@ -1,5 +1,12 @@
 # BUILD_STATUS
 
+## Build something and invite your friends — 2026-11-10 (Claude, branch `solve/from-zero`)
+
+- `/world/<id>` shows the thing with its people, who added what, a place to add a piece, and the starter's Invite a friend.
+- `/world-invite/<token>` shows who invited you and to what, then joins with one press and no sign-up.
+- New `kernel_api.read_world_invitation` (`20261110030000`) previews an invite without accepting or granting anything. **Staging only.**
+- Checks: `npm test` 602 pass, typecheck ok, lint 0 errors, kernel preview tests 3/3. Acceptance: 129/130 in one full run; the final reruns were blocked by staging's anonymous sign-in rate limit (429).
+
 ## Counterparty confirmation — the other side confirms its own side — 2026-11-09 (Claude)
 
 - **The problem it solves.** A record whose only author is its owner is only ever that owner's word. The founder's own work is full of cases where that is not enough: a customer disputing whether a stump was ground, a GC wanting a punch item proven closed, a carrier needing a document acknowledged. Verified today as the highest-value missing mechanism, and it is also the brother test — a person outside the founder's account, confirming their own side.
