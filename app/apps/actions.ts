@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient, getUser } from "@/lib/supabase/server";
+import { getKernel } from "@/lib/kernel/server";
 
 export type DisconnectResult = { ok: true } | { ok: false; error: string };
 
@@ -13,8 +14,16 @@ export async function disconnectApp(clientId: string): Promise<DisconnectResult>
   if (typeof clientId !== "string" || !/^[0-9a-f-]{36}$/i.test(clientId)) return { ok: false, error: "That app couldn't be found." };
   const user = await getUser();
   if (!user) return { ok: false, error: "Your identity isn't ready yet. Reload and try again." };
+  // The kernel first: every grant the app's agent holds is revoked, and its tokens stop resolving at
+  // once — even ones already issued. An app connected before per-app agents has no kernel connection.
+  const kernel = await getKernel();
+  const connected = (await kernel.myConnections().catch(() => [])).some(c => c.client_id === clientId && !c.disconnected_at);
+  if (connected) {
+    const cut = await kernel.disconnectApp(clientId, `disconnect-${clientId}-${Date.now()}`).then(() => true, () => false);
+    if (!cut) return { ok: false, error: "It wasn't disconnected. Try again; nothing else changed." };
+  }
   const { error } = await (await createClient()).auth.oauth.revokeGrant({ clientId });
-  if (error) return { ok: false, error: "It wasn't disconnected. Try again; nothing else changed." };
+  if (error && !connected) return { ok: false, error: "It wasn't disconnected. Try again; nothing else changed." };
   revalidatePath("/apps");
   return { ok: true };
 }

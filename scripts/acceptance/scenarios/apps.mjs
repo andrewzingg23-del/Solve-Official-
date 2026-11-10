@@ -6,7 +6,7 @@
 // exchanged for a token, then the connector at /mcp. Everything the app claims to have done is read
 // back from the kernel as the person, never trusted from the app's reply.
 import { createHash, randomBytes } from "node:crypto";
-import { MARK, STAGING, VIEWPORTS, beginThing, close, persona } from "../lib.mjs";
+import { MARK, STAGING, VIEWPORTS, beginThing, close, kernelFor, persona } from "../lib.mjs";
 
 const S = "apps";
 const REDIRECT = "http://127.0.0.1:8765/callback";
@@ -24,7 +24,7 @@ async function mcp(base, token, method, params = {}) {
 const call = (base, token, name, args = {}) => mcp(base, token, "tools/call", { name, arguments: args });
 // A refusal counts only when it is the kernel saying no on permission — never a broken deployment,
 // a bad key or any other error that merely looks like a refusal.
-const refused = res => Boolean(res.body?.result?.isError) && /may not add to that|has not been let into that/i.test(said(res));
+const refused = res => Boolean(res.body?.result?.isError) && /may not add to that|has not been let into that|not been let into/i.test(said(res));
 const said = res => res.body?.result?.content?.map(c => c.text).join(" ") ?? JSON.stringify(res.body)?.slice(0, 300);
 
 export async function apps({ browser, base, evidence }) {
@@ -80,9 +80,8 @@ export async function apps({ browser, base, evidence }) {
     const heading = await page.getByRole("heading", { level: 1 }).textContent().catch(() => "");
     evidence.record(S, owner.role, "the consent screen names the app asking", (heading ?? "").includes(appName), heading ?? "");
     const facts = await page.locator("main").innerText().catch(() => "");
-    evidence.record(S, owner.role, "and says plainly what it can't do", /can.t pay, buy or commit/i.test(facts) && /disconnect it at any time/i.test(facts));
+    evidence.record(S, owner.role, "and says plainly what it can't do", /starts with nothing/i.test(facts) && /can.t pay, buy, publish/i.test(facts) && /disconnect it at any time/i.test(facts));
     await evidence.shot(page, "apps-01-consent-390");
-    await page.getByRole("radio", { name: /Read and add/ }).check();
     await page.locator("[data-connect]").click();
     await page.waitForURL(u => u.toString().startsWith("http://127.0.0.1:8765/"), { timeout: 20000 }).catch(() => {});
     evidence.record(S, "app", "receives an authorization code, with its own state back", Boolean(code) && returnedState === state);
@@ -112,16 +111,17 @@ export async function apps({ browser, base, evidence }) {
     const before = await call(base, token, "add_to_world", { world_id: worldId, title: "Early", body: "Before I was let in" });
     evidence.record(S, "app", "cannot add to it before being let in (refused on permission)",
       refused(before), said(before).slice(0, 200));
-    const control = page.locator("[data-ai-access]");
+    await page.locator("[data-apps-here] summary").click();
+    const control = page.locator(`[data-app-access="${clientId}"]`);
     evidence.record(S, owner.role, "the Space offers a control for their AI, off by default",
-      await control.waitFor({ timeout: 15000 }).then(() => true, () => false) && await control.locator('[data-ai-choice="none"]').isChecked());
-    await control.locator('[data-ai-choice="add"]').check();
+      await control.waitFor({ timeout: 15000 }).then(() => true, () => false) && await control.locator('[data-app-choice="none"]').isChecked());
+    await control.locator('[data-app-choice="add"]').check();
     evidence.record(S, owner.role, "letting it in to add is confirmed",
-      await control.locator("[data-ai-note]").filter({ hasText: "add drafts" }).waitFor({ timeout: 15000 }).then(() => true, () => false));
+      await page.waitForFunction(id => document.querySelector(`[data-app-access="${id}"] [data-app-choice="add"]`)?.checked && !document.querySelector(`[data-app-access="${id}"]`)?.disabled, clientId, { timeout: 15000 }).then(() => true, () => false));
     await evidence.shot(page, "apps-02-let-ai-in-390");
     const seen = await call(base, token, "list_worlds");
     const entry = (seen.body?.result?.structuredContent?.worlds ?? []).find(w => w.world_id === worldId);
-    evidence.record(S, "app", "now sees the Space, with add access", entry?.bot_access === "add", said(seen).slice(0, 200));
+    evidence.record(S, "app", "now sees the Space, with add access", entry?.access === "add", said(seen).slice(0, 200));
 
     // --- Real work: it adds a draft — read back from the kernel, never trusted from its reply.
     const added = await call(base, token, "add_to_world", { world_id: worldId, title: "Shortlist", body: "Riverside Park or Elm Grove, Saturday the 14th" });
@@ -138,8 +138,9 @@ export async function apps({ browser, base, evidence }) {
 
     // --- Switched off, it is refused again at once.
     await page.goto(`${base}/world/${encodeURIComponent(worldId)}`);
-    await page.locator('[data-ai-access] [data-ai-choice="none"]').check();
-    await page.locator("[data-ai-note]").filter({ hasText: "can't see" }).waitFor({ timeout: 15000 }).catch(() => {});
+    if (!(await page.locator("[data-apps-here]").evaluate(el => el.open))) await page.locator("[data-apps-here] summary").click();
+    await page.locator(`[data-app-access="${clientId}"] [data-app-choice="none"]`).check();
+    await page.waitForFunction(id => !document.querySelector(`[data-app-access="${id}"]`)?.disabled, clientId, { timeout: 15000 }).catch(() => {});
     const off = await call(base, token, "add_to_world", { world_id: worldId, title: "After", body: "After I was taken out" });
     evidence.record(S, "app", "once switched off, it is refused (on permission)", refused(off), said(off).slice(0, 200));
 
@@ -158,6 +159,10 @@ export async function apps({ browser, base, evidence }) {
       refused(peek) && !said(peek).includes(privateTitle), said(peek).slice(0, 200));
     const intrude = await call(base, token, "add_to_world", { world_id: privateId, title: "Hi", body: "Let me in" });
     evidence.record(S, "app", "cannot add to it either (refused on permission)", refused(intrude), said(intrude).slice(0, 200));
+    // The probe that failed before per-app agents: the app's own token, straight to the kernel.
+    const direct = await kernelFor(token).rpc("read_world", { p_scope: `world:${privateId}` }).then(rows => rows, e => e);
+    evidence.record(S, "app", "its own token can't read a Space it wasn't let into, even calling the kernel directly",
+      direct instanceof Error || (Array.isArray(direct) && !direct.some(r => r.title === privateTitle)), direct instanceof Error ? direct.message : `${direct.length} records`);
 
     // --- The person disconnects it in Apps; it stops at once.
     await page.goto(base + "/apps");

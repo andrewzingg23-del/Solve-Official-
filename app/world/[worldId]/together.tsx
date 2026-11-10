@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { PHOTO_BUCKET, PHOTO_MAX_BYTES, PHOTO_MAX_SIDE, photoName } from "@/lib/product/photo";
-import { addPiece, changePresentation, makeInvite, revisePiece, setAiAccess, recordPhoto, setPagePublished } from "./together-actions";
+import { addPiece, changePresentation, makeInvite, revisePiece, setAppAccess, recordPhoto, setPagePublished } from "./together-actions";
 import styles from "./together.module.css";
 
 // Add your piece. The words stay on screen until the kernel has them.
@@ -259,46 +259,32 @@ export function SharePage({ worldId, title, description, published, selected, ca
   </details>;
 }
 
-// Your AI in this Space: the AI you connected in Apps can do nothing here until you choose. Read
-// lets it see this Space; Add also lets it add drafts, each labelled as its own.
-export function AiAccess({ worldId, current, name }: { worldId: string; current: "none" | "read" | "add"; name: string }) {
+// Apps here: each app the person connected (Claude, ChatGPT, any tool that signs in through Solve)
+// can do nothing in this Space until they choose. Read lets it see this Space; Add also lets it add
+// drafts, each labelled as its own. These grants are all the app has: its token is its own agent.
+export function AppAccess({ worldId, clientId, current, name }: { worldId: string; clientId: string; current: "none" | "read" | "add"; name: string }) {
   const router = useRouter();
   const [value, setValue] = useState(current);
   const [error, setError] = useState("");
-  const [note, setNote] = useState("");
   const [pending, start] = useTransition();
   const choose = (next: "none" | "read" | "add") => {
-    // Show the choice at once (outside the transition, which would hold it back); if the kernel
-    // refuses it, put back what is actually true.
     const before = value;
-    setValue(next); setError(""); setNote("");
+    setValue(next); setError("");
     start(async () => {
-    const result = await setAiAccess(worldId, next);
-    if (!result.ok) { setValue(before); setError(result.error); return; }
-    setNote(next === "none" ? `${name} isn't let in here.` : next === "read" ? `${name} can read this Space.` : `${name} can read this Space and add drafts.`);
-    router.refresh();
+      const result = await setAppAccess(worldId, clientId, next);
+      if (!result.ok) { setValue(before); setError(result.error); return; }
+      router.refresh();
     });
   };
-  const options: Array<["none" | "read" | "add", string, string]> = [
-    ["none", "Off", "Not let in here through Solve"],
-    ["read", "Read", "It can read what's here"],
-    ["add", "Add", "It can also add drafts, labelled as its own"],
-  ];
-  return <section className={styles.share} aria-labelledby="ai-title" data-ai-access>
-    <h2 id="ai-title">Your AI here</h2>
-    <fieldset className={styles.choose} disabled={pending}>
-      <legend className="s-visually-hidden">What {name} may do in this Space</legend>
-      {options.map(([v, label, hint]) => <label key={v} className={styles.option}>
-        <input type="radio" name="ai-access" value={v} checked={value === v} onChange={() => choose(v)} data-ai-choice={v} />
-        <span><strong>{label}</strong> <span className="s-muted s-small">{hint}</span></span>
-      </label>)}
-    </fieldset>
-    {note ? <p role="status" className="s-small" data-ai-note>{note}</p> : null}
+  return <fieldset className={styles.choose} disabled={pending} data-app-access={clientId}>
+    <legend className="s-small"><strong>{name}</strong></legend>
+    <div className={styles.row}>
+      {([["none", "Off"], ["read", "Read"], ["add", "Add"]] as const).map(([v, label]) =>
+        <label key={v} className={styles.option}><input type="radio" name={`app-${clientId}`} value={v} checked={value === v} onChange={() => choose(v)} data-app-choice={v} />
+          <span>{label}</span></label>)}
+    </div>
     {error ? <p role="alert" className="s-error">{error}</p> : null}
-    {/* Verified 2026-11-10 (docs/architecture/2026-11-10-reusable-foundation.md §6): an app's own
-        token can still read what the person can, whatever is chosen here. Say so. */}
-    <p className="s-muted s-small" data-ai-limit>This decides what {name} can do here through Solve. An app you&apos;ve connected can still read everything you can until each app gets its own limited access — the next security step. It can never change anything except through here.</p>
-  </section>;
+  </fieldset>;
 }
 
 // Edit one piece, in place. Offered only when the capability contract says this person may; the

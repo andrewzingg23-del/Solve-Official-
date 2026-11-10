@@ -10,7 +10,6 @@ import { BASE_PRESENTATION, normalizePresentation, readPresentation, samePresent
 import { createWorldInvitation } from "@/lib/world/invitations";
 import { readWorldMembers } from "@/lib/world/collaboration";
 import { cleanSelection, setPublished } from "@/lib/product/page";
-import { loadBot } from "@/lib/bot/store";
 import { setBotAccess, type WorldAccess } from "@/lib/bot/worlds";
 
 export type AddResult = { ok: true } | { ok: false; error: string };
@@ -112,21 +111,21 @@ export async function setPagePublished(worldId: string, published: boolean, piec
   }
 }
 
-// Let the person's own AI into this Space, at the level they choose, or take it out. Only the
-// Space's owner holds grants to pass on, so the kernel refuses anyone else; the AI's agent exists
-// once the person has connected an AI app (Apps).
-export async function setAiAccess(worldId: string, access: WorldAccess): Promise<SimpleResult> {
+// Let one connected app into this Space, at the level the person chooses, or take it out. The app
+// acts as its own agent (connect_app), so these grants are the whole of what it can do here. Only
+// the Space's owner holds grants to pass on; the kernel refuses anyone else.
+export async function setAppAccess(worldId: string, clientId: string, access: WorldAccess): Promise<SimpleResult> {
   if (!["none", "read", "add"].includes(access)) return { ok: false, error: "Choose Off, Read or Add." };
   if (!(await getUser())) return { ok: false, error: "Your identity isn't ready yet. Reload and try again." };
   try {
     const kernel = await getKernel();
     const { world } = await loadCreativeWorld(kernel, worldId);
-    const bot = await loadBot(kernel);
-    if (!bot.avatar) return { ok: false, error: "Connect your AI in Apps first." };
-    await setBotAccess(kernel, { scope: world.scope, botAgentId: bot.avatar.agent_id, access }, `space-ai:${world.worldId}:${randomUUID()}`);
+    const app = (await kernel.myConnections()).find(c => c.client_id === clientId && !c.disconnected_at);
+    if (!app) return { ok: false, error: "That app isn't connected any more." };
+    await setBotAccess(kernel, { scope: world.scope, botAgentId: app.agent_id, access }, `space-app:${world.worldId}:${randomUUID()}`);
     return { ok: true };
   } catch {
-    return { ok: false, error: "That didn't change. Only the Space's owner can let their AI in; nothing else changed." };
+    return { ok: false, error: "That didn't change. Only the Space's owner can let apps in; nothing else changed." };
   }
 }
 

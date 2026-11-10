@@ -3,8 +3,12 @@
 // invalid tokens get 401 with a pointer to the protected-resource metadata, which is how MCP
 // clients discover Sovereign's OAuth server.
 import { createConnector, type Session } from "./connector";
+import { createAppConnector } from "./app-connector";
+import type { Kernel } from "@/lib/kernel/client";
 
-export type McpAuth = Pick<Session, "clientId" | "person" | "botAs">;
+// Either an app connected as itself (its token is its own agent: the only authority used), or an
+// older connection, which the kernel keeps read-only (20261110080000).
+export type McpAuth = Pick<Session, "clientId" | "person" | "botAs"> & { asApp?: Kernel };
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -41,7 +45,9 @@ export async function serveMcp(
     return json({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } }, 400);
   }
 
-  const connector = createConnector({ ...auth, appUrl: deps.origin, now: deps.now });
+  const connector = auth.asApp
+    ? createAppConnector({ app: auth.asApp, clientId: auth.clientId, appUrl: deps.origin })
+    : createConnector({ ...auth, appUrl: deps.origin, now: deps.now });
   if (Array.isArray(body)) {
     if (body.length === 0) return json({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Invalid request" } }, 400);
     const responses = (await Promise.all(body.map((m) => connector.handle(m)))).filter(Boolean);

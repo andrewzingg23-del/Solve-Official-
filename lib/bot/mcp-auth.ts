@@ -29,6 +29,10 @@ export async function authenticateConnector(token: string): Promise<McpAuth | nu
   // ordinary app session cannot be replayed here.
   const clientId = clientIdOf(token);
   if (!clientId) return null;
+  // Connected as itself: the kernel resolves this token to the app's own agent. Use nothing else.
+  const asApp = kernelClient(asPerson);
+  const me = await asApp.whoami().catch(() => null);
+  if (me?.kind === "agent") return { clientId, person: asApp, botAs: null, asApp };
   const secret = serviceKey();
   const service = secret ? createClient(supabaseUrl, secret, { auth: noSession }) : null;
   return {

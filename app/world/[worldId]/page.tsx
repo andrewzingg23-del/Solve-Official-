@@ -8,12 +8,11 @@ import { PHOTO_BUCKET, PHOTO_LINK_SECONDS, isPhotoOf } from "@/lib/product/photo
 import { loadCreativeWorld } from "@/lib/world/creative";
 import { readWorldMembers } from "@/lib/world/collaboration";
 import { nameFor, type ActorNames } from "@/lib/product/thing";
-import { AddPhoto, AddPiece, AiAccess, EditSpace, InviteFriend, RevisePiece, SharePage } from "./together";
+import { AddPhoto, AddPiece, AppAccess, EditSpace, InviteFriend, RevisePiece, SharePage } from "./together";
 import { presentationFromParams, readPresentation } from "@/lib/product/presentation";
 import { SEEDS } from "@/lib/product/card";
 import { environmentFor } from "@/lib/product/environment";
 import { actionsFor, heldInSpace } from "@/lib/product/capabilities";
-import { loadBot } from "@/lib/bot/store";
 import { accessFrom, botGrantsIn } from "@/lib/bot/worlds";
 import { ownDescription, readPublication } from "@/lib/product/page";
 import styles from "./together.module.css";
@@ -88,10 +87,11 @@ export default async function ThingPage({ params, searchParams }: PageProps<"/wo
   }
   const linkEntities = entities.filter(e => e.kind === "document" && e.attributes.documentType === "link" && typeof e.attributes.url === "string");
   const publication = isOwner && me ? await readPublication(kernel, me.actor_id, world.worldId).catch(() => null) : null;
-  // The owner's own AI, if they have connected one, and what it may do here — read from the grants.
-  const ai = isOwner ? await loadBot(kernel).then(async bot => bot.avatar
-    ? { name: bot.persona.name, access: accessFrom(await botGrantsIn(kernel, world.scope, bot.avatar.agent_id)) }
-    : null).catch(() => null) : null;
+  // The apps the owner has connected, and what each may do here — read from the kernel's grants.
+  const apps = isOwner ? await kernel.myConnections().then(cs => Promise.all(cs.filter(c => !c.disconnected_at).map(async c => ({
+    clientId: c.client_id, name: c.label || "A connected app",
+    access: accessFrom(await botGrantsIn(kernel, world.scope, c.agent_id)),
+  })))).catch(() => []) : [];
   type Piece = { id: string; at: string; text: string; kind: "text" | "photo" | "link"; version: number; photo?: { url: string | null }; link?: { url: string; madeWith: string } };
   const pieces: Piece[] = [
     ...texts.map(a => ({ id: a.entityId, at: a.updatedAt, text: a.body || a.title, kind: "text" as const, version: a.version })),
@@ -216,7 +216,16 @@ export default async function ThingPage({ params, searchParams }: PageProps<"/wo
       photos={pieces.filter(p => p.kind === "photo").map(p => ({ id: p.id.toLowerCase(), label: p.text || "A photo", url: p.photo?.url ?? null }))}
       notes={texts.map(a => ({ id: a.entityId.toLowerCase(), label: (a.body || a.title).slice(0, 80) }))} /> : null}
 
-    {ai ? <AiAccess worldId={world.worldId} current={ai.access} name={ai.name} /> : null}
+    {isOwner && apps.length ? <details className={styles.sharePanel} data-apps-here>
+      <summary className={styles.shareLine}>
+        <span className={styles.shareText}><h2 className={styles.shareTitle}>Apps here</h2>
+          <span className="s-muted s-small">{apps.filter(a => a.access !== "none").length ? `${apps.filter(a => a.access !== "none").map(a => a.name).join(", ")} can reach this Space` : "No app can reach this Space"}</span></span>
+      </summary>
+      <div className={styles.shareBody}>
+        {apps.map(a => <AppAccess key={a.clientId} worldId={world.worldId} clientId={a.clientId} current={a.access} name={a.name} />)}
+        <p className="s-muted s-small">An app can only add drafts, labelled as its own. It can&apos;t publish, invite, pay or delete, and what it adds stays yours.</p>
+      </div>
+    </details> : null}
 
     <p><Link href={`/world/${encodeURIComponent(world.worldId)}/record`} className="s-button" data-variant="link">See its full record — who did what, and what proves it →</Link></p>
   </div>;
