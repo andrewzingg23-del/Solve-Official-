@@ -5,7 +5,7 @@ acceptance run changes what is known. A capability is **complete only when its h
 been executed, its result independently read back, its authority verified, and its failure modes
 tested** (founder directive, 2026-11-09).
 
-Last updated from acceptance run `acc-202611092349-qtdh` (74/74) against **solve-staging**
+Last updated from acceptance run `acc-202611100008-u5kf` (103/103) against **solve-staging**
 (`taeikshnbcsjlgbattyp`), commit on `main` recorded in `BUILD-STREAM.md`.
 
 ## How to read this
@@ -53,10 +53,16 @@ a real person and none touches production.
 
 | Capability | Status | Evidence |
 |---|---|---|
-| Name yourself | **Implemented, unverified through the app** | `set_person_label` works and reads back via `read_actors` — proven by the harness labelling its own fixtures, not by the `/account` form |
+| Name yourself | **Implemented, unverified through the app form** | `set_person_label` works and reads back via `read_actors` — proven by the harness labelling its own fixtures, not by the `/account` form |
 | Public identity for a signed-out visitor | **Backend only, and drift-blocked** | `sov_public_identity` and `public_space_projection` are applied to staging with **no file in this repo** |
 | Public preview, share, contact, credentials | **Unimplemented** | |
-| SOV card | **Hidden** | `lib/product/routes.ts`: no per-person issuance |
+| Digital SOV card on ID | **Verified automatically** | Carries the person's chosen name from their identity record; true ID-1 proportion at 320/390/1440; name and small print measured ≥ 4.5:1 in the rendered browser; the face claims nothing untrue (no number, expiry, payment mark or verification) |
+| Shape the card's look | **Verified automatically** | Base, Personal, Expressive; any colour; dark or light; matte, metal or glass. The kernel holds exactly the saved look as a private record in the person's own scope; it persists across reloads; every change is an act in their history |
+| Undo, and return to Base | **Verified automatically** | Undo restores the previous look as a new version — including after the very first change; Base is one tap away |
+| Nobody else can read or write a person's look | **Verified automatically** | Read refused; a forged write into their scope refused |
+| Any colour stays readable | **Verified in unit tests** | 306 hostile combinations (brightest yellow, near-white, near-black, primaries) across every expression, tone and finish: all text ≥ 4.5:1 |
+| Card's public side (scan → their world), physical card | **Not built** | Needs the narrow public-read path and the staging drift reconciled; printing needs a manufacturing decision |
+| Old `/card` sandbox | **Hidden** | `lib/product/routes.ts`: no per-person issuance |
 | Identity recovery | **Unimplemented** | Decided 2026-11-09 (scoped); nothing built |
 
 ## Space
@@ -112,6 +118,11 @@ Then on confirmation, two more: the confirmation readers named people from the r
 instead of their chosen name (the asker appeared as "Someone"; fixed in the kernel by
 `20261110010000_confirmation_names.sql`, applied to staging), and the answer re-rendered its own page
 and unmounted the message telling the person their answer was recorded.
+
+Then on the card, four more: our word "Project" still in ID's copy; undo impossible after a person's
+first change (it had nothing to restore to); raw kernel event types in the account history; and the
+skip link flashing over the card after saving, because a server action refocused the page and the
+link showed on any focus rather than keyboard focus only.
 
 And two defects in the harness itself, fixed rather than tolerated: an ambiguous `alert` selector
 (Next.js renders an invisible route announcer with the same role), and fixture labels that were

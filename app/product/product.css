@@ -98,7 +98,9 @@
 .solve-two-columns { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:25px; }
 .solve-mobile-nav { display:none; }
 .solve-skip { position:fixed; top:8px; left:8px; transform:translateY(-150%); z-index:100; background:#22d3ee; color:#07131b; padding:12px 20px; border-radius:6px; }
-.solve-skip:focus { transform:none; }
+/* Keyboard focus only. A programmatic focus after a server action (Next.js refocuses the first
+   focusable element) must not flash the skip link over the page (acceptance run, 2026-11-10). */
+.solve-skip:focus-visible { transform:none; }
 .solve-minimal { min-height:100svh; padding:25px; display:flex; flex-direction:column; background:#070c14; }
 .solve-home-member .solve-home-copy h1 { font-size:46px; }
 .solve-profile-preview { display:flex; align-items:center; gap:22px; padding-bottom:20px; margin-bottom:10px; border-bottom:1px solid #26364c; }

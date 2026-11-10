@@ -26,6 +26,9 @@ const SURFACES = [
   "app/world/[worldId]/record/ask.tsx",
   "app/confirm/[token]/page.tsx",
   "app/confirm/[token]/answer.tsx",
+  "app/account/page.tsx",
+  "app/account/card-studio.tsx",
+  "app/product/sov-card.tsx",
 ];
 
 /**

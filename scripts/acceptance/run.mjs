@@ -15,8 +15,9 @@ import { chromium } from "playwright-core";
 import { Evidence, RUN, chromiumPath } from "./lib.mjs";
 import { home } from "./scenarios/home.mjs";
 import { confirm } from "./scenarios/confirm.mjs";
+import { card } from "./scenarios/card.mjs";
 
-const SCENARIOS = { home, confirm };
+const SCENARIOS = { home, confirm, card };
 const args = process.argv.slice(2);
 const build = !args.includes("--no-build");
 const only = args.filter(a => !a.startsWith("--"));
