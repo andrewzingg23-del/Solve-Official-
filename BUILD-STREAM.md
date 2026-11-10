@@ -1461,3 +1461,17 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
   - **Runner:** `--base=` targets a deployed preview. A run that matches no scenario, or runs no checks, now fails instead of reporting PASS (it reported "PASS — 0 checks" once this session).
   - `docs/acceptance/STATUS.md` rewritten to the shell.
   - **Next:** once the founder adds the staging key for previews, rerun `apps`; then Edit Space (versioned layout, preview, undo, Restore Base) as the next foundation.
+
+- 2026-11-10 — **The connector, with a key** (branch `solve/shell-truth`, **not merged**).
+  - **Finding:** `SUPABASE_STAGING_SECRET_KEY` is read only by the deployed connector (`lib/bot/mcp-auth.ts`), never by the test runner.
+  - **The key:** the founder added it in Vercel. It was saved to Production; I moved it to Preview, scoped to `solve/shell-truth`, still sensitive, without the value ever being read. `SUPABASE_SECRET_KEY` on Production is untouched.
+  - **`start_world` removed:** under connector containment an app's token can change nothing, so it could never work, and it answered with a misleading refusal.
+  - **New:** each Space you own has "Your AI here" — Off, Read or Add — as kernel grants to your AI's agent. The connector scenario now proves let-in, add, read-back, switch-off and disconnect.
+  - **Test harness:**
+    - permission checks now count only the kernel's own refusals (an invalid key had passed as a refusal);
+    - the default local run skips `apps`, which needs a deployed preview.
+  - **Checks:**
+    - typecheck 0, lint 0, `npm test` 206/206;
+    - six scenarios on staging 197/197 (`acc-202611102212-g6vt` home, card, control, together; `acc-202611102223-7z1r` page, space — the first try hit staging's guest sign-in limit);
+    - `apps` on the preview: everything up to the first write passes; the writes fail with "Invalid API key" (`acc-202611102221-xxu1`).
+  - **Next:** the founder re-enters the staging secret key's value; rerun `apps` on the preview.

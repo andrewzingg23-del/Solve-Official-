@@ -56,7 +56,9 @@ All acceptance identities are automated fixtures, labelled `[automated <run>]` i
 | Capability | Status | Evidence |
 |---|---|---|
 | Connect an outside AI app (OAuth 2.1, PKCE, consent) | **Verified against the deployed preview** | Registers, is sent to consent, a wrong verifier gets nothing, the code becomes a token, no token gets 401 |
-| It acts on your Spaces, only where allowed | **Blocked** | The preview has no staging service key, so the connector refuses honestly: "This deployment cannot act as the bot yet. Nothing was written." The permission checks can't run until it can write |
+| Let your AI into one Space: Off, Read or Add, from the Space | **Verified against the deployed preview** | Off by default; the choice is written as kernel grants; switched off, the app is refused at once (on permission) |
+| It reads and adds drafts where you let it in | **Blocked** | The preview now has a staging service key, but staging rejects it ("Invalid API key"): the value must be re-entered |
+| A connected app creates a Space | **Removed** | Its token can change nothing (connector containment), so `start_world` could never work; the person starts the Space and lets their AI in |
 | Disconnect it in Apps; it stops at once | **Verified against the deployed preview** | The token is refused immediately; refresh fails |
 | Discover apps; app detail | **Unbuilt** | Apps says there is no catalogue yet |
 | An AI inside Solve | **Not planned** | Solve runs no model of its own (DECISIONS.md, 2026-11-10) |
