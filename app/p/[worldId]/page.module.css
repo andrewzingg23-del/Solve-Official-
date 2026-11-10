@@ -13,3 +13,6 @@
 .foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 20px 24px 28px; max-width: 720px; width: 100%; margin: 0 auto; border-top: 1px solid var(--line); }
 .made { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; text-decoration: none; }
 .link { color: var(--text); text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+a.owner { text-decoration: none; color: inherit; border-radius: 12px; }
+a.owner:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; }
+.more { color: var(--muted); }

@@ -40,11 +40,11 @@ describe("access", () => {
     const k = await createKernelDb();
     await assert.rejects(k.rpc(anon, "register"), sqlstate("42501"));
     await assert.rejects(k.rpc(anon, "read_events", { p_scope: "system" }), sqlstate("42501"));
-    // The single deliberate exception: reading a page its owner chose to publish, and whether a
-    // photo belongs to one (20261110050000). Anything else anonymous callers can run is a leak.
+    // The deliberate exceptions: reading a page or a Space its owner chose to share, and whether a
+    // photo belongs to a shared page (20261110050000, 20261110090000). Anything else anonymous callers can run is a leak.
     const open = await k.owner(`select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
       where n.nspname = 'kernel_api' and has_function_privilege('anon', p.oid, 'execute') order by 1`);
-    assert.deepEqual(open.map(r => r.proname), ["file_public", "read_page"]);
+    assert.deepEqual(open.map(r => r.proname), ["file_public", "read_page", "read_space"]);
     const kernelOpen = await k.owner(`select count(*)::int as n from pg_proc p join pg_namespace n on n.oid = p.pronamespace
       where n.nspname = 'kernel' and has_function_privilege('anon', p.oid, 'execute')`);
     assert.equal(kernelOpen[0].n, 0, "no internal kernel function is reachable anonymously");

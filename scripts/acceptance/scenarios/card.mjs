@@ -11,7 +11,7 @@ async function renderedContrast(page, textSelector) {
     const parse = s => (s.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number).map(v => v / 255);
     const lin = c => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
     const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-    const card = document.querySelector("main figure[data-card]");
+    const card = document.querySelector("main figure[data-card='full']");
     const text = document.querySelector(sel);
     if (!card || !text) return 0;
     const [a, b] = [lum(parse(getComputedStyle(card).backgroundColor)), lum(parse(getComputedStyle(text).color))];
@@ -20,7 +20,7 @@ async function renderedContrast(page, textSelector) {
 }
 
 async function cardShape(page) {
-  const box = await page.locator("main figure[data-card]").boundingBox();
+  const box = await page.locator("main figure[data-card='full']").boundingBox();
   return box ? box.width / box.height : 0;
 }
 
@@ -40,16 +40,16 @@ export async function card({ browser, base, evidence }) {
 
     // --- A person opens ID and sees their own card, carrying the name they chose.
     await page.goto(base + "/account");
-    const figure = page.locator("main figure[data-card]");
+    const figure = page.locator("main figure[data-card='full']");
     const shown = await figure.waitFor({ timeout: 20000 }).then(() => true, () => false);
     evidence.record(S, owner.role, "sees their SOV card on ID", shown);
     if (!shown) return;
-    const name = (await page.locator("main [data-card-name]").textContent())?.trim() ?? "";
+    const name = (await page.locator("main figure[data-card='full'] [data-card-name]").textContent())?.trim() ?? "";
     evidence.record(S, owner.role, "the card carries the name they chose, from their identity record", name.startsWith(MARK), `card says "${name}"`);
     const ratio = await cardShape(page);
     evidence.record(S, owner.role, "it is the shape of a real card (ID-1, 85.60 × 53.98 mm)", Math.abs(ratio - 85.6 / 53.98) < 0.012, `ratio ${ratio.toFixed(4)}`);
-    const nameContrast = await renderedContrast(page, "main [data-card-name]");
-    const lineContrast = await renderedContrast(page, "main [data-card-line]");
+    const nameContrast = await renderedContrast(page, "main figure[data-card='full'] [data-card-name]");
+    const lineContrast = await renderedContrast(page, "main figure[data-card='full'] [data-card-line]");
     evidence.record(S, owner.role, "its name is readable as rendered (≥ 4.5:1)", nameContrast >= 4.5, `${nameContrast.toFixed(2)}:1`);
     evidence.record(S, owner.role, "its small print is readable as rendered (≥ 4.5:1)", lineContrast >= 4.5, `${lineContrast.toFixed(2)}:1`);
     const idText = await page.locator("main").first().innerText();
@@ -67,7 +67,7 @@ export async function card({ browser, base, evidence }) {
     await page.getByRole("button", { name: "Colour #7a2f5c" }).click();
     await page.getByRole("group", { name: "Finish" }).getByRole("button", { name: "Metal" }).click();
     evidence.record(S, owner.role, "the preview says it is not saved yet", await page.getByText("Previewing — not saved yet.").isVisible());
-    const previewContrast = await renderedContrast(page, "main [data-card-name]");
+    const previewContrast = await renderedContrast(page, "main figure[data-card='full'] [data-card-name]");
     evidence.record(S, owner.role, "their colour keeps the name readable as rendered", previewContrast >= 4.5, `${previewContrast.toFixed(2)}:1`);
     await page.getByRole("button", { name: "Save look" }).click();
     const saved = await page.getByText("Saved. Your SOLVE now wears it.").waitFor({ timeout: 15000 }).then(() => true, () => false);

@@ -208,7 +208,9 @@ export type Visibility = "public" | "members" | "private";
 
 /** What anyone may see of a page its owner published (kernel_api.read_page). */
 export type PublicPiece = { id: string; kind: "text" | "photo"; text: string; file: string | null; at: string };
-export type PublicPage = { title: string; summary: string; by: string; look: unknown; pieces: PublicPiece[] };
+export type PublicPage = { title: string; summary: string; by: string; look: unknown; space: string | null; pieces: PublicPiece[] };
+/** A person's shared Space (kernel_api.read_space): their name, card look, and published pages. */
+export type PublicSpace = { by: string; look: unknown; pages: Array<{ id: string; title: string; cover: string | null; at: string }> };
 
 export type WorldEntity = {
   entity_id: string;
@@ -937,6 +939,7 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
       disconnected_at: string | null; scopes: Array<{ scope: string; capability: string; grant_id: string }> }>>("my_connections", {}),
     // A published page, readable by anyone — including callers with no identity at all.
     readPage: (worldId: string) => call<PublicPage>("read_page", { p_world_id: worldId }),
+    readSpace: (actorId: string) => call<PublicSpace>("read_space", { p_actor_id: actorId }),
     filePublic: (name: string) => call<boolean>("file_public", { p_name: name }),
     // Who invited the holder of this link, and to what — without accepting or granting anything.
     readWorldInvitation: (token: string) => call<{ title: string; invited_by: string; role: "viewer" | "editor"; expires_at: string;

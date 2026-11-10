@@ -29,7 +29,7 @@ export function Shell({ name, look, signedIn, children }: {
   const fromSomeoneElse = path.startsWith("/confirm/") || path.startsWith("/oauth") || path.startsWith("/world-invite");
 
   // A person's public page is theirs edge to edge: it draws its own frame in their colours.
-  if (path.startsWith("/p/")) return <>{children}</>;
+  if (path.startsWith("/p/") || path.startsWith("/s/")) return <>{children}</>;
 
   if (fromSomeoneElse) {
     return <div className={styles.bare}>

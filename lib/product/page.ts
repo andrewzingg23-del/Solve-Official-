@@ -39,7 +39,7 @@ export async function setPublished(kernel: Kernel, actorId: string, worldId: str
   });
 }
 
-export type { PublicPage, PublicPiece } from "@/lib/kernel/client";
+export type { PublicPage, PublicPiece, PublicSpace } from "@/lib/kernel/client";
 
 // Things made before the rebuild (or through older routes) carry a description SOLVE wrote, in our
 // own word, rather than the person's. It is never shown, published or handed to another tool.
@@ -69,4 +69,26 @@ export function linkParts(words: string): TextPart[] {
   }
   if (last < words.length) parts.push({ text: words.slice(last) });
   return parts;
+}
+
+// A person's public Space: their card, and the things they chose to share as pages, at one link.
+// Like a page, sharing it is a versioned record in their own scope; only they can write it.
+const SPACE = "solve.space";
+
+export async function readSpaceShared(kernel: Kernel, actorId: string): Promise<{ entityId: string | null; shared: boolean }> {
+  const record = (await kernel.readWorld(`actor:${actorId}`)).find(entity => entity.attributes?.sov === SPACE);
+  return { entityId: record?.entity_id ?? null, shared: record?.attributes?.published === true };
+}
+
+export async function setSpaceShared(kernel: Kernel, actorId: string, shared: boolean, requestId: string): Promise<void> {
+  const current = await readSpaceShared(kernel, actorId);
+  await kernel.upsertEntity({
+    entityId: current.entityId ?? undefined,
+    kind: "resource",
+    scope: `actor:${actorId}`,
+    title: "Public Space",
+    attributes: { sov: SPACE, published: shared },
+    visibility: "private",
+    idempotencyKey: requestId,
+  });
 }

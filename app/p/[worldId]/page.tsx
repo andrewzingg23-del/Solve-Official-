@@ -53,7 +53,11 @@ export default async function PublicPage({ params }: PageProps<"/p/[worldId]">) 
   return <div className={styles.page} data-tone={env.tone} style={environmentStyle(env) as React.CSSProperties}>
     <main className={styles.main}>
       <header className={styles.head}>
-        {by ? <div className={styles.owner}><SovCard name={by} look={look} size="mini" /><span className="s-label" data-by>{by}</span></div> : null}
+        {by ? (page.space
+          ? <Link href={`/s/${page.space}`} prefetch={false} className={styles.owner} data-owner-space>
+              <SovCard name={by} look={look} size="mini" /><span className="s-label" data-by>{by}</span><span className={styles.more} aria-hidden="true">→</span>
+            </Link>
+          : <div className={styles.owner}><SovCard name={by} look={look} size="mini" /><span className="s-label" data-by>{by}</span></div>) : null}
         <h1 className={styles.title}>{page.title}</h1>
         {description ? <p className={styles.description}>{description}</p> : null}
       </header>

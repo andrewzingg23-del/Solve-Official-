@@ -10,6 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # solve builder notes
 
+- **Current governing direction: `docs/direction/2026-11-10-consolidated-direction.md`** (five products, one foundation; one consumer experience in development at a time; security as a separate bounded track). Read it first.
 - Start every session by pulling `main` and reading `DIRECTIVES.md`. Active directives are orders; only the founder edits them.
 - Then read `BUILD-BOOK.md`, `VISION-CANON.md`, `docs/MONETARY-CONSTITUTION.md` and `BUILD_STATUS.md`, then the founder's master spec (`docs/specs/SOVEREIGN-MASTER-BUILD-SPEC.md`) and where it differs from the vision (`docs/specs/2026-10-05-spec-vision-check.md`).
 - Three builders share this repo (Codex, Claude, Manus). Claim a row in `ACTIVE-WORK.md` before starting, stay in your owned paths, and push code from your own branch where you can: the build workflow cancels a running build when new code lands on the same branch. A builder joining starts at `docs/handoff/`.

@@ -6,3 +6,10 @@
 .history li { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid var(--line); }
 .history li:first-child { border-top: 0; padding-top: 0; }
 @media (max-width: 760px) { .facts { grid-template-columns: minmax(0, 1fr); } }
+
+.space { gap: 20px; }
+.spacePreview { display: flex; flex-direction: column; gap: 10px; padding: 18px; border-radius: 18px; border: 1px dashed var(--line); background: var(--page); }
+.spacePreviewCard { width: 132px; }
+.spacePages { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.spacePages li { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 14px; overflow-wrap: anywhere; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; }

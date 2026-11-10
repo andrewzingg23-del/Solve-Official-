@@ -71,11 +71,11 @@ try {
 
   // --- ID shows the card, at the true card shape, even before there is an identity.
   await page.goto(url + "/account");
-  const card = page.locator("main figure[data-card]");
+  const card = page.locator("main figure[data-card='full']");
   await card.waitFor();
   const box = await card.boundingBox();
   assert.ok(box && Math.abs(box.width / box.height - 85.6 / 53.98) < 0.012, "the card is ID-1 shaped");
-  assert.equal(await page.locator("main [data-card-name]").textContent(), "Add your name", "an unnamed card invites a name");
+  assert.equal(await page.locator("main figure[data-card='full'] [data-card-name]").textContent(), "Add your name", "an unnamed card invites a name");
 
   // --- Every destination, at the smallest phone and a normal phone.
   for (const width of [320, 390]) {

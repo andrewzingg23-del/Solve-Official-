@@ -1314,3 +1314,25 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
     - `test:product` passed, rewritten to the new truth: Begin with no identity and no database stays on Home, says it couldn't set the person up, keeps the words, and shows no sign-in screen.
     - **All six acceptance scenarios on staging in one run: 213/213** (`acc-202611100453-apdx`). This is the first complete run on the containment kernel.
   - **For the founder, one setting:** staging's anonymous sign-in limit still governs the automated harness, which runs from one machine. It is under Authentication → Rate Limits in the staging dashboard (https://supabase.com/dashboard/project/taeikshnbcsjlgbattyp/auth/rate-limits). There is no tool access to change it from here.
+
+- 2026-11-10 — **Card-to-Space: share your Space** (branch `solve/from-zero`). The founder's consolidated direction is now saved verbatim at `docs/direction/2026-11-10-consolidated-direction.md`, and `AGENTS.md` sends every builder there first.
+  - **First milestone:** an ordinary person creates a beautiful SOV Card and personal Space, shares it, and another person can use it at once without installing SOLVE.
+  - **Real-person acceptance has not been run.** It needs the founder and his brother, and no automated run stands in for it.
+  - **Smallest missing part, found by inspecting ID:** the card said "Only you can see it until you choose to", but nothing let a person choose. Pages existed only one thing at a time, with nothing tying them to the person.
+  - **New migration** `supabase/migrations/20261110090000_public_space.sql`, **applied to staging only**:
+    - A Space is shared by a record in the person's own scope (`solve.space`).
+    - `kernel_api.read_space` is anonymous and returns only their name, card look and the pages they already published, for things they started. Each page's cover is one of that page's own ticked photos.
+    - `read_page` now gives the owner's Space only while it is shared.
+    - Anonymous callers can run exactly `read_page`, `read_space` and `file_public`. The kernel test lists exactly these, and staging confirms the same.
+  - **Product:**
+    - ID has **Your Space**: a preview of exactly what visitors will see, with Share my Space, Open, Copy link, and Stop sharing, which says truthfully what can't be recalled.
+    - `/s/<id>` shows the person's full-size card as the hero, in their colours, with a glow in the card's own colour behind it, and their shared things as tiles with cover photos.
+    - Each shared page links back to the owner's Space.
+    - Looking never creates an identity: the proxy skips `/s/` and links don't prefetch Home. No search indexing.
+  - **Visual review from screenshots, fixed before commit:** the name appeared three times; covers loaded lazily on a wide screen; a single tile sat lopsided; the glow was grey (the readability-tuned accent), so it now uses the card's own colour; and the glow's overflow is clipped, with a new phone overflow check.
+  - **Checks:**
+    - Kernel `public-space` 4/4.
+    - `npm test` 641 pass / 0 fail, lint 0 errors (9 baseline warnings), build ok, `test:product` passed.
+    - New acceptance scenario `scenarios/space.mjs`, owner plus a stranger with no account and no cookies, **passed** (`acc-202611100539-1azo`). The full seven-scenario run was **213/214** (`acc-202611100541-mhht`). Its one miss was the `card` scenario finding two cards on ID now that the preview shows one; its selectors were scoped to the full card. The rerun of `card` was stopped by the staging sign-in limit (`429`), so **that fix is unverified on staging**; `test:product` passes with the same selector change.
+  - **Founder direction recorded in `DECISIONS.md`:** the Centurion card as the reference for card design language, applied as its own bounded improvement.
+  - **Next smallest improvement:** let the visitor keep the person, by saving them as a contact or sharing the Space onward. That is what "use the result" means beyond looking.
