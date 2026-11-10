@@ -11,7 +11,7 @@ async function renderedContrast(page, textSelector) {
     const parse = s => (s.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number).map(v => v / 255);
     const lin = c => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
     const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-    const card = document.querySelector(".sov-card");
+    const card = document.querySelector("main figure[data-card]");
     const text = document.querySelector(sel);
     if (!card || !text) return 0;
     const [a, b] = [lum(parse(getComputedStyle(card).backgroundColor)), lum(parse(getComputedStyle(text).color))];
@@ -20,7 +20,7 @@ async function renderedContrast(page, textSelector) {
 }
 
 async function cardShape(page) {
-  const box = await page.locator(".sov-card").boundingBox();
+  const box = await page.locator("main figure[data-card]").boundingBox();
   return box ? box.width / box.height : 0;
 }
 
@@ -40,16 +40,16 @@ export async function card({ browser, base, evidence }) {
 
     // --- A person opens ID and sees their own card, carrying the name they chose.
     await page.goto(base + "/account");
-    const figure = page.locator("figure.sov-card");
+    const figure = page.locator("main figure[data-card]");
     const shown = await figure.waitFor({ timeout: 20000 }).then(() => true, () => false);
     evidence.record(S, owner.role, "sees their SOV card on ID", shown);
     if (!shown) return;
-    const name = (await page.locator(".sov-card-name").textContent())?.trim() ?? "";
+    const name = (await page.locator("main [data-card-name]").textContent())?.trim() ?? "";
     evidence.record(S, owner.role, "the card carries the name they chose, from their identity record", name.startsWith(MARK), `card says "${name}"`);
     const ratio = await cardShape(page);
     evidence.record(S, owner.role, "it is the shape of a real card (ID-1, 85.60 × 53.98 mm)", Math.abs(ratio - 85.6 / 53.98) < 0.012, `ratio ${ratio.toFixed(4)}`);
-    const nameContrast = await renderedContrast(page, ".sov-card-name");
-    const lineContrast = await renderedContrast(page, ".sov-card-line");
+    const nameContrast = await renderedContrast(page, "main [data-card-name]");
+    const lineContrast = await renderedContrast(page, "main [data-card-line]");
     evidence.record(S, owner.role, "its name is readable as rendered (≥ 4.5:1)", nameContrast >= 4.5, `${nameContrast.toFixed(2)}:1`);
     evidence.record(S, owner.role, "its small print is readable as rendered (≥ 4.5:1)", lineContrast >= 4.5, `${lineContrast.toFixed(2)}:1`);
     const idText = await page.locator("main").first().innerText();
@@ -67,12 +67,12 @@ export async function card({ browser, base, evidence }) {
     await page.getByRole("button", { name: "Colour #7a2f5c" }).click();
     await page.getByRole("group", { name: "Finish" }).getByRole("button", { name: "Metal" }).click();
     evidence.record(S, owner.role, "the preview says it is not saved yet", await page.getByText("Previewing — not saved yet.").isVisible());
-    const previewContrast = await renderedContrast(page, ".sov-card-name");
+    const previewContrast = await renderedContrast(page, "main [data-card-name]");
     evidence.record(S, owner.role, "their colour keeps the name readable as rendered", previewContrast >= 4.5, `${previewContrast.toFixed(2)}:1`);
     await page.getByRole("button", { name: "Save look" }).click();
-    const saved = await page.getByText("Saved to your SOV ID.").waitFor({ timeout: 15000 }).then(() => true, () => false);
+    const saved = await page.getByText("Saved. Your SOLVE now wears it.").waitFor({ timeout: 15000 }).then(() => true, () => false);
     evidence.record(S, owner.role, "saving tells them it is saved", saved);
-    const skipShown = await page.locator(".solve-skip").evaluate(el => {
+    const skipShown = await page.locator('a[href="#main"]').evaluate(el => {
       const r = el.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight;
     }).catch(() => false);
     evidence.record(S, owner.role, "nothing flashes over their card after saving", !skipShown, "the skip link appeared on screen");
@@ -83,6 +83,15 @@ export async function card({ browser, base, evidence }) {
     const want = { expression: "expressive", seed: "#7a2f5c", tone: "dark", finish: "metal" };
     const same = (a, b) => Boolean(a && b) && Object.keys(b).every(k => a[k] === b[k]) && Object.keys(a).length === Object.keys(b).length;
     evidence.record(S, owner.role, "the kernel holds exactly the look they saved", same(afterSave.look, want), JSON.stringify(afterSave));
+
+    // --- One record, card to Control: the whole environment now wears the card's colour.
+    await page.reload();
+    await figure.waitFor({ timeout: 15000 });
+    const accent = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim());
+    await other.page.goto(base + "/account");
+    const baseAccent = await other.page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim());
+    evidence.record(S, owner.role, "their whole SOLVE takes its colour from their card", Boolean(accent) && accent !== baseAccent,
+      `their accent ${accent}, an untouched person's ${baseAccent}`);
 
     // --- It persists: a fresh load shows their card as they left it.
     await page.reload();
@@ -102,7 +111,7 @@ export async function card({ browser, base, evidence }) {
     // --- And Base is always one tap away.
     await page.getByRole("group", { name: "Expression" }).getByRole("button", { name: "Personal" }).click();
     await page.getByRole("button", { name: "Save look" }).click();
-    await page.getByText("Saved to your SOV ID.").waitFor({ timeout: 15000 }).catch(() => {});
+    await page.getByText("Saved. Your SOLVE now wears it.").waitFor({ timeout: 15000 }).catch(() => {});
     await page.getByRole("button", { name: "Return to Base" }).click();
     await page.getByText("Back to SOLVE Base.").waitFor({ timeout: 15000 }).catch(() => {});
     const afterReset = await storedLook(owner.kernel, owner.actorId);
@@ -116,8 +125,7 @@ export async function card({ browser, base, evidence }) {
 
     // --- Their account history says what happened in plain words, never as our event types.
     await page.goto(base + "/account");
-    await page.locator("details.solve-account-history summary").click().catch(() => {});
-    const history = await page.locator("details.solve-account-history").innerText().catch(() => "");
+    const history = await page.locator('section[aria-label="About your SOV ID"]').innerText().catch(() => "");
     evidence.record(S, owner.role, "their account history uses plain words, not our event types",
       history.length > 0 && !/\bkernel\b|\bentity\b|[a-z]+\.[a-z]+\.[a-z]+/i.test(history.replace(MARK, "")), history.slice(0, 200));
 

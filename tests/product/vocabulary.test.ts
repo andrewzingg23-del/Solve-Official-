@@ -16,19 +16,24 @@ import { it } from "node:test";
 // Capitalised only: "a world that grows with you" is ordinary English; "World" is our term.
 const OURS = /\b(World|Worlds|Project|Projects)\b/;
 
+// Every person-visible surface of the experience rebuilt on 2026-11-10.
 const SURFACES = [
-  "app/reality/entry.tsx",
-  "app/product/thing-inspector.tsx",
-  "app/world/[worldId]/record/page.tsx",
+  "app/home/home.tsx",
+  "app/account/page.tsx",
+  "app/account/studio.tsx",
+  "app/space/page.tsx",
   "app/workbench/page.tsx",
-  "app/product/shell.tsx",
-  "app/space/personal-space.tsx",
+  "app/control/page.tsx",
+  "app/control/export-button.tsx",
+  "app/login/page.tsx",
+  "app/ui/shell.tsx",
+  "app/ui/record.tsx",
+  "app/ui/things.tsx",
+  "app/ui/sov-card.tsx",
+  "app/world/[worldId]/record/page.tsx",
   "app/world/[worldId]/record/ask.tsx",
   "app/confirm/[token]/page.tsx",
   "app/confirm/[token]/answer.tsx",
-  "app/account/page.tsx",
-  "app/account/card-studio.tsx",
-  "app/product/sov-card.tsx",
 ];
 
 /**
@@ -61,7 +66,7 @@ for (const file of SURFACES) {
 }
 
 it("reads real labels out of a surface, so the check above cannot pass by finding nothing", () => {
-  const strings = visibleStrings(readFileSync("app/product/thing-inspector.tsx", "utf8"));
+  const strings = visibleStrings(readFileSync("app/ui/record.tsx", "utf8"));
   assert.ok(strings.includes("No type yet"), "the extractor must actually see visible copy");
   assert.ok(strings.some(s => s.startsWith("Nothing has happened")), "including JSX text");
   // And it must catch our vocabulary when it is there.

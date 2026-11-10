@@ -1,41 +1,53 @@
-import Link from "next/link";
+import type { Metadata } from "next";
 import { getUser } from "@/lib/supabase/server";
-import { Icon } from "@/app/product/icons";
+import { getKernel } from "@/lib/kernel/server";
+import { myThings } from "@/lib/product/my-things";
+import { reachFrom, type Reach } from "@/lib/product/access";
+import { PageHead } from "@/app/ui/page-head";
+import { ExportButton } from "./export-button";
+import styles from "./control.module.css";
 
-export const metadata = { title: "Control — SOV" };
+export const metadata: Metadata = { title: "Control · SOLVE" };
 
+// Control: what a person can reach, and the way out. Rebuilt from zero (2026-11-10) — every line on
+// it is read from the kernel; nothing here describes a capability that isn't there.
 export default async function ControlPage() {
   const user = await getUser();
-  const signedIn = Boolean(user && !user.is_anonymous);
-  return <main className="solve-page">
-    <header className="solve-page-heading">
-      <span className="solve-kicker">Control</span>
-      <h1>Your identity. Your permissions.</h1>
-      <p>See the services you authorize, decide what your Agent may access, and change your preferences whenever you want.</p>
-    </header>
-    <div className="solve-two-columns">
-      <section className="solve-panel">
-        <span className="solve-kicker">SOV ID</span>
-        <h2 className="mt-3">{signedIn ? "Signed in" : "Guest or signed out"}</h2>
-        <p className="my-3">{signedIn ? "Your account session is active. Review account details and kernel identity status in Account." : "You can explore without connecting accounts. Sign in to recover work across devices and manage protected resources."}</p>
-        <Link href={signedIn ? "/account" : "/login?next=%2Fcontrol"} className="solve-button solve-button-secondary">{signedIn ? "Identity & security" : "Sign in"} <Icon name="arrow" width={16}/></Link>
+  let reach: Reach[] | null = [];
+  if (user) {
+    try {
+      const kernel = await getKernel();
+      const me = await kernel.whoami();
+      const [grants, things] = await Promise.all([kernel.myGrants(), myThings(kernel)]);
+      reach = reachFrom(grants, { actorId: me.actor_id, things: Object.fromEntries((things ?? []).map(t => [t.id.toLowerCase(), t.title])) });
+    } catch {
+      reach = null;
+    }
+  }
+  return <div>
+    <PageHead label="Control" title="You decide.">
+      What you can reach, who else can reach what&apos;s yours, and how to take it all with you.
+    </PageHead>
+
+    <div className={styles.grid}>
+      <section className="s-surface s-stack" aria-labelledby="reach">
+        <h2 id="reach">What you can reach</h2>
+        {reach === null
+          ? <p role="status" className="s-muted">This couldn&apos;t be read right now. Nothing has changed.</p>
+          : reach.length === 0
+            ? <p className="s-muted">Nothing yet.</p>
+            : <ul className={styles.reach}>{reach.map(r => <li key={r.what}>
+                <span>{r.what}</span>
+                <span className="s-muted s-small">{r.can.join(" · ")}</span>
+              </li>)}</ul>}
+        <p className="s-muted s-small">Who else can reach one of your things is shown on that thing.</p>
       </section>
-      <section className="solve-panel">
-        <span className="solve-kicker">Connected apps · optional</span>
-        <h2 className="mt-3">Bring your tools.</h2>
-        <p className="my-3">Choose apps for later setup, or connect a compatible assistant using the existing SOV MCP authorization flow. Selecting an app does not grant any access.</p>
-        <div className="solve-profile-save"><Link href="/onboarding#apps" className="solve-button">Browse apps <Icon name="arrow" width={16}/></Link><Link href="/apps" className="solve-text-link">My app surfaces →</Link><Link href="/bot?section=connections" className="solve-text-link">AI connectors →</Link></div>
-      </section>
-      <section className="solve-panel">
-        <span className="solve-kicker">My Agent</span><h2 className="mt-3">AI & permissions</h2>
-        <p className="my-3">Review your AI persona, existing MCP authorizations, and Project-specific access. No connection is implied by its appearance here.</p>
-        <Link href="/bot" className="solve-text-link">Manage Agent →</Link>
-      </section>
-      <section className="solve-panel">
-        <span className="solve-kicker">Tasks & budgets</span><h2 className="mt-3">Only verified outcomes.</h2>
-        <p className="my-3">Real external operations need supported provider adapters, an authorized context and a bounded execution path. Unconfigured providers and unknown usage must never be shown as active or paid.</p>
-        <Link href="/projects" className="solve-text-link">Open Projects →</Link>
+
+      <section className="s-surface s-stack" aria-labelledby="leave">
+        <h2 id="leave">Take it with you</h2>
+        <p className="s-muted">Everything that&apos;s yours — your things, their history, your card — in one file you keep. Nothing of anyone else&apos;s is in it.</p>
+        <ExportButton />
       </section>
     </div>
-  </main>;
+  </div>;
 }

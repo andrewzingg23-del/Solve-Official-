@@ -1,52 +1,55 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import { Geist, Geist_Mono } from "next/font/google";
 import { getUser } from "@/lib/supabase/server";
-import { getBotAvatar } from "@/lib/bot/avatar";
-import { ProductShell } from "./product/shell";
-import "./product/product.css";
-import "./world/[worldId]/room/room.css";
-import "./product/approved-language.css";
+import { getKernel } from "@/lib/kernel/server";
+import { BASE_LOOK, type CardLook } from "@/lib/product/card";
+import { environmentFor, environmentStyle } from "@/lib/product/environment";
+import { readLook } from "@/lib/product/look-store";
+import { Shell } from "./ui/shell";
+import "./ui/system.css";
 
-const archivo = Archivo({
-  variable: "--font-archivo",
-  subsets: ["latin"],
-});
+// Rebuilt from zero (2026-11-10). Nothing visual here descends from the earlier product: one design
+// system (app/ui/system.css), one shell (app/ui/shell.tsx), and an environment whose colours come
+// from the person's own card, computed before the first paint.
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const sans = Geist({ variable: "--font-sans", subsets: ["latin"] });
+const mono = Geist_Mono({ variable: "--font-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "solve",
-  description: "A shared place for people, ideas and your AIs. Think, plan and build together.",
-  applicationName: "solve",
-  // Installable to the home screen (PWA). The manifest link is added by app/manifest.ts.
-  appleWebApp: { capable: true, title: "solve", statusBarStyle: "black-translucent" },
+  title: "SOLVE",
+  description: "Your digital life, in your hands.",
+  applicationName: "SOLVE",
+  appleWebApp: { capable: true, title: "SOLVE", statusBarStyle: "black-translucent" },
   icons: {
     icon: [{ url: "/brand/solve-favicon.svg", type: "image/svg+xml" }],
     apple: [{ url: "/brand/solve-app-icon.svg", type: "image/svg+xml" }],
   },
 };
 
-// themeColor lives on the viewport export in this Next version (not metadata).
-export const viewport: Viewport = {
-  themeColor: "#04070d",
-};
+export const viewport: Viewport = { themeColor: "#0a0b0d" };
+
+/** Who is here, and how their SOLVE looks. Any failure falls back to SOLVE's Base, never to an error. */
+async function presence(): Promise<{ name: string; look: CardLook; signedIn: boolean }> {
+  const user = await getUser().catch(() => null);
+  if (!user) return { name: "", look: BASE_LOOK, signedIn: false };
+  try {
+    const kernel = await getKernel();
+    const me = await kernel.whoami();
+    const [profile] = await kernel.readActors([me.actor_id]).catch(() => []);
+    const stored = await readLook(kernel, me.actor_id).catch(() => null);
+    return { name: profile?.label?.trim() ?? "", look: stored?.look ?? BASE_LOOK, signedIn: !user.is_anonymous };
+  } catch {
+    return { name: "", look: BASE_LOOK, signedIn: !user.is_anonymous };
+  }
+}
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const user = await getUser();
-  const avatar = getBotAvatar(user);
-  const identity = user ? { userId: user.id, name: typeof user.user_metadata?.display_name === "string" ? user.user_metadata.display_name : "Your profile", botName: avatar.name, face: avatar.face } : null;
+  const { name, look, signedIn } = await presence();
+  const env = environmentFor(look);
   return (
-    <html
-      lang="en"
-      className={`${archivo.variable} ${geistMono.variable} h-full antialiased`}
-      style={{ backgroundColor: "#04070d" }}
-    >
-      <body className="min-h-full flex flex-col font-sans">
-        <ProductShell identity={identity}>{children}</ProductShell>
+    <html lang="en" data-tone={env.tone} className={`${sans.variable} ${mono.variable}`} style={environmentStyle(env) as React.CSSProperties}>
+      <body>
+        <Shell name={name} look={look} signedIn={signedIn}>{children}</Shell>
       </body>
     </html>
   );

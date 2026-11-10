@@ -11,27 +11,28 @@ export function AskForConfirmation({ worldId, entityId }: { worldId: string; ent
 
   if (state?.ok) {
     const link = typeof window === "undefined" ? state.path : window.location.origin + state.path;
-    return <div className="solve-ask-done" role="status" aria-live="polite">
+    return <div className="s-stack" role="status" aria-live="polite" data-ask-done>
       <p><strong>Your link is ready.</strong> Send it to the person you asked. Whoever holds it can see this one thing and answer — nothing else of yours.</p>
-      <input readOnly value={link} aria-label="Confirmation link" className="solve-link-field" onFocus={event => event.currentTarget.select()} />
-      <button type="button" className="solve-button" onClick={() => navigator.clipboard?.writeText(link).then(() => setCopied("copied"), () => setCopied("failed"))}>
+      <input readOnly value={link} aria-label="Confirmation link" className="s-input" onFocus={event => event.currentTarget.select()} />
+      <div><button type="button" className="s-button" onClick={() => navigator.clipboard?.writeText(link).then(() => setCopied("copied"), () => setCopied("failed"))}>
         {copied === "copied" ? "Copied" : "Copy link"}
-      </button>
-      {copied === "failed" ? <p className="solve-muted">Couldn&apos;t copy automatically. Select the link above and copy it.</p> : null}
-      <p className="solve-muted">This link is shown once and isn&apos;t stored anywhere. If you lose it, ask again.</p>
+      </button></div>
+      {copied === "failed" ? <p className="s-muted s-small">Couldn&apos;t copy automatically. Select the link above and copy it.</p> : null}
+      <p className="s-muted s-small">This link is shown once and isn&apos;t stored anywhere. If you lose it, ask again.</p>
     </div>;
   }
 
-  return <form action={action} className="solve-ask" aria-label="Ask someone to confirm this">
+  return <form action={action} className="s-stack" aria-label="Ask someone to confirm this">
     <input type="hidden" name="worldId" value={worldId} />
     <input type="hidden" name="entityId" value={entityId} />
-    <label className="solve-field-label">Who are you asking?
-      <input name="askedOf" required maxLength={200} placeholder="Their name" autoComplete="off" />
+    <p className="s-muted">Ask someone other than you to say whether this happened. Their answer is theirs, so it means something to anyone.</p>
+    <label className="s-stack" style={{ "--gap": "8px" } as React.CSSProperties}><span className="s-small">Who are you asking?</span>
+      <input name="askedOf" required maxLength={200} placeholder="Their name" autoComplete="off" className="s-input" />
     </label>
-    <label className="solve-field-label">What should they confirm?
-      <input name="question" maxLength={500} placeholder="That it happened as agreed" autoComplete="off" />
+    <label className="s-stack" style={{ "--gap": "8px" } as React.CSSProperties}><span className="s-small">What should they confirm?</span>
+      <input name="question" maxLength={500} placeholder="That it happened as agreed" autoComplete="off" className="s-input" />
     </label>
-    <button type="submit" className="solve-button" disabled={pending}>{pending ? "Recording…" : "Ask someone to confirm this"}</button>
-    {state && !state.ok ? <p role="alert" className="solve-error">{state.error}</p> : null}
+    <div><button type="submit" className="s-button" disabled={pending}>{pending ? "Recording…" : "Ask someone to confirm this"}</button></div>
+    {state && !state.ok ? <p role="alert" className="s-error">{state.error}</p> : null}
   </form>;
 }

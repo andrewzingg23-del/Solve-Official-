@@ -1,0 +1,33 @@
+.record { display: flex; flex-direction: column; gap: 40px; max-width: 880px; }
+.head { display: flex; flex-direction: column; gap: 14px; }
+.head h1 { overflow-wrap: anywhere; }
+.proofLine { display: inline-flex; align-self: flex-start; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+.proofLine::before { content: ""; width: 7px; height: 7px; border-radius: 999px; background: var(--muted); }
+.proofLine[data-proof="witnessed"]::before, .proofLine[data-proof="verified"]::before { background: var(--ok); }
+.proofLine[data-proof="disputed"]::before { background: var(--danger); }
+
+.parts { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.part { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; padding: 26px 0; border-bottom: 1px solid var(--line); }
+.part h2 { padding-top: 5px; }
+.body { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+.fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px 24px; }
+.fields dd { overflow-wrap: anywhere; }
+.owner { font-size: 18px; }
+
+.timeline { display: flex; flex-direction: column; gap: 10px; }
+.timeline li { padding-left: 16px; position: relative; }
+.timeline li::before { content: ""; position: absolute; left: 0; top: 10px; width: 6px; height: 6px; border-radius: 999px; background: var(--line); }
+.act { font-weight: 500; }
+
+.asked, .evidence, .access { display: flex; flex-direction: column; gap: 10px; }
+.asked li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; padding: 12px 14px; border-radius: 12px; background: var(--raised); }
+.state { font-size: 14px; }
+.asked li[data-state="confirmed"] .state { color: var(--ok); }
+.asked li[data-state="disputed"] .state { color: var(--danger); }
+.asked li[data-state="awaiting"] .state { color: var(--muted); }
+
+@media (max-width: 700px) {
+  .part { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 22px 0; }
+  .part h2 { padding-top: 0; }
+}

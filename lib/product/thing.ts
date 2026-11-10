@@ -53,6 +53,8 @@ export type ThingAct = {
   at: string;
   type: string;
   actorLabel: string;
+  /** Whose permission a granted act relied on, when that is known. */
+  grantor?: string | null;
   /** Whether the act carried a grant. Unknown is said, not guessed. */
   authority: "own" | "granted" | "unknown";
   onBehalfOf: string | null;
@@ -187,6 +189,12 @@ export type ActorNames = {
   kinds?: Record<string, string>;
   /** The person looking. Their own acts are "You", which is the truest name there is. */
   viewerId?: string | null;
+  /**
+   * Who holds the thing. Their acts are on their own authority — the grant they act under is their
+   * ownership — and anyone else's granted act happened with their permission, which is what a
+   * person needs to read rather than "under a grant".
+   */
+  ownerId?: string | null;
 };
 
 /**
@@ -210,22 +218,44 @@ export function actsFrom(
   names: ActorNames | Record<string, string> = {},
 ): ThingAct[] {
   // Accept a bare label map for callers that have nothing more to say about who is who.
-  const resolved: ActorNames = "labels" in names || "kinds" in names || "viewerId" in names
+  const resolved: ActorNames = "labels" in names || "kinds" in names || "viewerId" in names || "ownerId" in names
     ? names as ActorNames : { labels: names as Record<string, string> };
-  return events.map(e => ({
-    at: e.occurred_at,
-    type: e.type,
-    actorLabel: nameFor(e.actor_id, resolved),
-    authority: e.grant_id ? "granted" : "own",
-    onBehalfOf: e.on_behalf_of ? nameFor(e.on_behalf_of, resolved) : null,
-  }));
+  const owner = resolved.ownerId ?? null;
+  return events.map(e => {
+    const byOwner = owner !== null && e.actor_id === owner;
+    return {
+      at: e.occurred_at,
+      type: e.type,
+      actorLabel: nameFor(e.actor_id, resolved),
+      grantor: e.grant_id && owner && !byOwner ? nameFor(owner, resolved) : null,
+      authority: e.grant_id && !byOwner ? "granted" : "own",
+      onBehalfOf: e.on_behalf_of ? nameFor(e.on_behalf_of, resolved) : null,
+    };
+  });
+}
+
+/**
+ * One human act can be several kernel rows — making a thing writes the thing, its link and its
+ * goal. Consecutive acts that read identically, by the same person, in the same minute, are shown
+ * once. Nothing different is ever merged.
+ */
+export function collapseActs(acts: ThingAct[]): ThingAct[] {
+  const out: ThingAct[] = [];
+  for (const act of acts) {
+    const prev = out[out.length - 1];
+    const same = prev && actWording(prev.type) === actWording(act.type) && prev.actorLabel === act.actorLabel
+      && prev.authority === act.authority && prev.grantor === act.grantor && prev.at.slice(0, 16) === act.at.slice(0, 16);
+    if (!same) out.push(act);
+  }
+  return out;
 }
 
 /** One provenance line, used wherever an act is shown. Never claims more than the act carried. */
 export function provenanceLine(act: ThingAct, proof?: ThingProof): string {
   const who = act.onBehalfOf ? `${act.actorLabel}, for ${act.onBehalfOf}` : act.actorLabel;
   const own = act.actorLabel === "You" ? "on your own authority" : act.actorLabel === "SOLVE" ? "as the system" : "on their own authority";
-  const how = act.authority === "granted" ? "under a grant" : act.authority === "own" ? own : "authority unknown";
+  const permission = act.grantor ? (act.grantor === "You" ? "with your permission" : `with ${act.grantor}'s permission`) : "under a grant";
+  const how = act.authority === "granted" ? permission : act.authority === "own" ? own : "authority unknown";
   const when = act.at ? ` · ${act.at.slice(0, 10)}` : "";
   const proven = proof && proof.status !== "none" ? ` · ${proofWording(proof)}` : "";
   return `${who} · ${how}${when}${proven}`;
@@ -273,4 +303,20 @@ export function confirmationWording(c: Pick<ThingConfirmation, "state" | "answer
     case "expired": return "Expired without an answer";
     case "withdrawn": return "Withdrawn";
   }
+}
+
+
+/**
+ * One event in a person's own identity history, with its subject. "Updated" alone tells a person
+ * nothing; the event carries the request it made, so the history can say what changed.
+ */
+export function identityEventWording(e: { type: string; payload?: unknown }): string {
+  if (e.type === "kernel.person.label.updated") return "Name changed";
+  if (e.type === "kernel.actor.registered") return "SOV ID created";
+  const request = (e.payload as { request?: { title?: unknown; attributes?: { sov?: unknown } } } | undefined)?.request;
+  if (/^kernel\.entity\.(created|updated|revised)$/.test(e.type)) {
+    if (request?.attributes?.sov === "solve.look") return e.type.endsWith("created") ? "Card look set" : "Card look changed";
+    if (typeof request?.title === "string" && request.title.trim()) return `${actWording(e.type)}: ${request.title.trim()}`;
+  }
+  return actWording(e.type);
 }

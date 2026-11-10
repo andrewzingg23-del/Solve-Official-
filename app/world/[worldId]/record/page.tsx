@@ -6,8 +6,8 @@ import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { loadCreativeWorld } from "@/lib/world/creative";
 import { readWorldMembers } from "@/lib/world/collaboration";
-import { ThingInspector } from "@/app/product/thing-inspector";
-import { fieldsFromType, proofOf, actsFrom, accessFrom, nameFor, type ActorNames, type ThingConfirmation } from "@/lib/product/thing";
+import { Record } from "@/app/ui/record";
+import { fieldsFromType, proofOf, actsFrom, accessFrom, collapseActs, nameFor, type ActorNames, type ThingConfirmation } from "@/lib/product/thing";
 import { AskForConfirmation } from "./ask";
 
 export const metadata: Metadata = { title: "Record · SOLVE" };
@@ -26,11 +26,11 @@ export default async function WorldRecordPage({ params }: PageProps<"/world/[wor
     data = await loadCreativeWorld(kernel, worldId);
   } catch (error) {
     if (error instanceof KernelError && (error.name === "forbidden" || error.name === "not_found" || error.name === "invalid")) notFound();
-    return <main className="solve-page">
-      <h1>This record is temporarily unavailable.</h1>
-      <p>Nothing was deleted. Reopen it when the connection is restored.</p>
-      <Link href="/">Return to SOLVE</Link>
-    </main>;
+    return <div className="s-stack">
+      <h1>This can&apos;t be opened right now.</h1>
+      <p className="s-muted">Nothing was deleted. Try again when the connection is back.</p>
+      <p><Link href="/space" className="s-button" data-variant="quiet">Back to Space</Link></p>
+    </div>;
   }
 
   const { world } = data;
@@ -64,6 +64,7 @@ export default async function WorldRecordPage({ params }: PageProps<"/world/[wor
     labels,
     kinds: Object.fromEntries(actors.map(actor => [actor.actor_id, actor.kind])),
     viewerId: me?.actor_id ?? null,
+    ownerId: membership?.ownerActorId ?? null,
   };
 
   const granteeOf: Record<string, string> = {};
@@ -85,36 +86,28 @@ export default async function WorldRecordPage({ params }: PageProps<"/world/[wor
 
   // Only an action that exists, offered only to someone who could take it. The holder of a thing
   // that nothing proves yet is offered the one act that changes that: asking someone else.
-  const durable = Boolean(user && !user.is_anonymous);
   const isHolder = Boolean(ownerActorId && me?.actor_id === ownerActorId);
   const proof = proofOf(evidence, confirmations ?? []);
   const nextAction = isHolder && (proof.status === "none" || proof.status === "claimed")
     ? <AskForConfirmation worldId={world.worldId} entityId={world.entityId} />
     : undefined;
-  const next = durable
-    ? { label: "Open the workbench", href: `/world/${encodeURIComponent(world.worldId)}/workbench` }
-    : null;
   const asked: ThingConfirmation[] = (confirmations ?? []).map(c => ({
     id: c.confirmation_id, askedOf: c.asked_of, question: c.question, state: c.state,
     answeredBy: c.answered_by, answeredAt: c.answered_at,
   }));
 
-  return <ThingInspector
+  return <Record
     title={world.title}
-    /* No type has been declared for this yet, and "World" is our word for a scope, not
-       the person's word for their thing. Absence is shown instead of invented. */
     typeName={null}
     fields={fields}
-    scope={scope}
     ownerLabel={ownerLabel}
     context={collaborators && collaborators.length
       ? `Shared with ${collaborators.length} ${collaborators.length === 1 ? "person" : "people"}`
       : collaborators === null ? "Who else holds this could not be read" : "Kept privately"}
-    acts={actsFrom(events ?? [], names)}
+    acts={collapseActs(actsFrom(events ?? [], names))}
     proof={proof}
-    next={next}
-    nextAction={nextAction}
     confirmations={asked}
+    nextAction={nextAction}
     access={accessFrom(grants, names, granteeOf)}
   />;
 }

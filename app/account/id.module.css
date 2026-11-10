@@ -1,0 +1,8 @@
+.page { display: flex; flex-direction: column; gap: 48px; }
+.head { display: flex; flex-direction: column; gap: 14px; max-width: 640px; }
+.unready { display: flex; flex-direction: column; gap: 14px; max-width: 480px; }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.history { display: flex; flex-direction: column; }
+.history li { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid var(--line); }
+.history li:first-child { border-top: 0; padding-top: 0; }
+@media (max-width: 760px) { .facts { grid-template-columns: minmax(0, 1fr); } }

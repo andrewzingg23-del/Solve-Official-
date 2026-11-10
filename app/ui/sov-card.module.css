@@ -1,0 +1,49 @@
+/* ISO/IEC 7810 ID-1: 85.60 × 53.98 mm, corner radius 3.18 mm. Sized from its own width, so it is
+   the same object at every size. Every text colour is guaranteed WCAG AA by lib/product/card.ts;
+   finishes are low-alpha light that cannot undo that. */
+
+.frame { container-type: inline-size; width: 100%; max-width: 480px; }
+.mini { max-width: 196px; }
+
+.card {
+  position: relative;
+  aspect-ratio: 85.6 / 53.98;
+  border-radius: 3.715% / 5.891%;
+  padding: 6.5cqw 7cqw 5.5cqw;
+  display: flex; flex-direction: column; justify-content: space-between;
+  background: var(--card-surface);
+  color: var(--card-text);
+  border: 1px solid var(--card-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 24px 48px -24px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+  isolation: isolate;
+}
+.card::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.card[data-finish="metal"]::before {
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.022) 0 1px, transparent 1px 2px),
+    linear-gradient(118deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.02) 34%, transparent 46%, rgba(255, 255, 255, 0.07) 68%, transparent 86%);
+}
+.card[data-tone="light"][data-finish="metal"]::before {
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.018) 0 1px, transparent 1px 2px),
+    linear-gradient(118deg, rgba(255, 255, 255, 0.55) 0%, transparent 40%, rgba(0, 0, 0, 0.035) 70%, transparent);
+}
+.card[data-finish="glass"]::before {
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(255, 255, 255, 0.16), transparent 55%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.07), transparent 60%);
+}
+
+.top, .bottom { display: flex; align-items: center; justify-content: space-between; gap: 3cqw; }
+.brand { display: inline-flex; align-items: center; gap: 2.2cqw; font-weight: 600; letter-spacing: 0.32em; font-size: 3.4cqw; }
+.mark { width: 6.4cqw; height: 6.4cqw; }
+.instrument { font-size: 2.5cqw; letter-spacing: 0.22em; font-weight: 500; color: var(--card-muted); }
+.name { font-size: 7.4cqw; line-height: 1.05; font-weight: 500; letter-spacing: -0.02em; margin-top: 4cqw; overflow-wrap: anywhere; }
+.name[data-named="false"] { color: var(--card-muted); font-weight: 400; }
+.line { font-size: 2.3cqw; letter-spacing: 0.18em; text-transform: uppercase; color: var(--card-muted); }
+.wave { width: 7cqw; height: 7cqw; color: var(--card-accent); flex-shrink: 0; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .card { transition: background-color 240ms ease, color 240ms ease, border-color 240ms ease; }
+}

@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { it } from "node:test";
 import {
-  SIX_PARTS, fieldsFromType, proofOf, proofWording, actsFrom, actWording, nameFor, provenanceLine,
+  SIX_PARTS, fieldsFromType, proofOf, proofWording, actsFrom, actWording, collapseActs, identityEventWording, nameFor, provenanceLine,
 } from "../../lib/product/thing";
 
 // ---------------------------------------------------------------------------------------------
@@ -165,4 +165,37 @@ it("names every actor truthfully: the viewer is You, the system is SOLVE, the un
   assert.equal(provenanceLine(acts[0]), "You · on your own authority · 2026-11-09");
   assert.equal(provenanceLine(acts[1]), "SOLVE · as the system · 2026-11-09");
   for (const act of acts) assert.ok(!/kernel/i.test(provenanceLine(act)), "no internal word in any provenance line");
+});
+
+it("says an owner's acts are theirs, and someone else's happened with the owner's permission", () => {
+  // From the 2026-11-10 acceptance screenshots: "You · under a grant" for a person's own thing.
+  const names = { labels: { ana: "Ana", dana: "Dana" }, viewerId: "ana", ownerId: "ana" };
+  const acts = actsFrom([
+    { occurred_at: "2026-11-10T10:00:00Z", type: "kernel.entity.created", actor_id: "ana", grant_id: "g-own", on_behalf_of: null },
+    { occurred_at: "2026-11-10T11:00:00Z", type: "kernel.confirmation.answered", actor_id: "dana", grant_id: "g-own", on_behalf_of: null },
+  ], names);
+  assert.equal(provenanceLine(acts[0]), "You · on your own authority · 2026-11-10");
+  assert.equal(provenanceLine(acts[1]), "Dana · with your permission · 2026-11-10");
+  const seenByDana = actsFrom([{ occurred_at: "2026-11-10T11:00:00Z", type: "x", actor_id: "dana", grant_id: "g", on_behalf_of: null }],
+    { labels: { ana: "Ana" }, viewerId: "dana", ownerId: "ana" });
+  assert.equal(provenanceLine(seenByDana[0]), "You · with Ana's permission · 2026-11-10");
+});
+
+it("shows one human act once, and never merges acts that differ", () => {
+  const at = "2026-11-10T10:00:12Z";
+  const row = (type: string, actor = "ana", t = at) => ({ occurred_at: t, type, actor_id: actor, grant_id: null, on_behalf_of: null });
+  const acts = actsFrom([row("kernel.entity.created"), row("kernel.relation.created"), row("kernel.entity.created"),
+    row("kernel.grant.issued", "sys"), row("kernel.entity.created", "ana", "2026-11-10T10:05:00Z")],
+    { labels: { ana: "Ana", sys: "kernel" }, kinds: { sys: "service" } });
+  const shown = collapseActs(acts);
+  assert.deepEqual(shown.map(a => `${actWording(a.type)}/${a.actorLabel}`), ["Created/Ana", "Gave access/SOLVE", "Created/Ana"],
+    "three rows of one act become one; a different actor or a later minute stays separate");
+});
+
+it("says what changed in a person's identity history, not just that something did", () => {
+  assert.equal(identityEventWording({ type: "kernel.person.label.updated" }), "Name changed");
+  assert.equal(identityEventWording({ type: "kernel.entity.created", payload: { request: { attributes: { sov: "solve.look" } } } }), "Card look set");
+  assert.equal(identityEventWording({ type: "kernel.entity.updated", payload: { request: { attributes: { sov: "solve.look" } } } }), "Card look changed");
+  assert.equal(identityEventWording({ type: "kernel.entity.created", payload: { request: { title: "Portrait" } } }), "Created: Portrait");
+  assert.ok(!/kernel|entity/.test(identityEventWording({ type: "kernel.entity.updated" })), "never our words");
 });

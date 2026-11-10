@@ -29,8 +29,10 @@ test("only existing MCP assistant setup is presented as guided", () => {
   }
 });
 
-test("Space, Projects, Control and onboarding are launch-reachable", () => {
-  for (const path of ["/", "/projects", "/control", "/onboarding", "/onboarding/"]) {
+test("the five destinations are reachable, and the old screens open them", () => {
+  for (const path of ["/", "/account", "/space", "/workbench", "/control"]) {
     assert.deepEqual(launchRoute(path, {}), { kind: "allow" }, path);
   }
+  assert.deepEqual(launchRoute("/projects", {}), { kind: "redirect", href: "/space" });
+  assert.deepEqual(launchRoute("/onboarding/", {}), { kind: "redirect", href: "/account" });
 });

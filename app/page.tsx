@@ -1,25 +1,25 @@
-import { randomUUID } from "node:crypto";
 import { getUser } from "@/lib/supabase/server";
 import { getKernel } from "@/lib/kernel/server";
 import { listCreativeWorlds } from "@/lib/world/creative";
-import { normalizeAppearance } from "@/lib/product/appearance";
-import { isRealityMode } from "./reality/mode";
-import { RealityEntry } from "./reality/entry";
+import { Home } from "./home/home";
 
-export default async function Home() {
+// Home. A visitor already has a kernel identity (the proxy registers an anonymous one), so what they
+// write down is recorded as theirs straight away; `durable` is only whether that identity outlives
+// this browser.
+export default async function HomePage() {
   const user = await getUser();
-  // A visitor already has a kernel identity (proxy.ts registers an anonymous one), so their
-  // first line can be recorded as theirs straight away. `durable` is the narrower question of
-  // whether that identity survives this browser — which is what signing in actually buys.
-  const durable = Boolean(user && !user.is_anonymous);
-  const projects = user ? await listCreativeWorlds(await getKernel()).catch(() => null) : [];
-  const modeCandidate: unknown = user?.user_metadata?.solve_reality_mode_v1;
-  return <RealityEntry
-    owner={user ? user.id : null}
-    durable={durable}
-    initialMode={isRealityMode(modeCandidate) ? modeCandidate : "base"}
-    initialAppearance={normalizeAppearance(user?.user_metadata?.sov_space_appearance)}
-    worldId={randomUUID()}
-    projects={projects}
-  />;
+  let name = "";
+  let things: { id: string; title: string; summary: string }[] | null = [];
+  if (user) {
+    try {
+      const kernel = await getKernel();
+      const me = await kernel.whoami();
+      const [profile] = await kernel.readActors([me.actor_id]).catch(() => []);
+      name = profile?.label?.trim() ?? "";
+      things = (await listCreativeWorlds(kernel)).map(w => ({ id: w.worldId, title: w.title, summary: w.summary }));
+    } catch {
+      things = null;
+    }
+  }
+  return <Home owner={user?.id ?? null} durable={Boolean(user && !user.is_anonymous)} name={name} things={things} />;
 }

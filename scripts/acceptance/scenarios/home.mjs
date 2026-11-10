@@ -16,7 +16,7 @@ export async function home({ browser, base, evidence }) {
     const { page } = ana;
     const words = `${MARK} Replace the gate latch at the back fence`;
     const title = words; // one sentence, under 100 characters: the title is the whole line
-    const field = page.getByRole("textbox", { name: "What do you want to accomplish?" });
+    const field = page.getByRole("textbox", { name: "What do you want to do?" });
 
     // --- A new person types one line, and it survives a refresh before they press anything.
     await field.fill(words);
@@ -26,7 +26,7 @@ export async function home({ browser, base, evidence }) {
 
     // --- They press Begin. A guest stays on Home and the thing is listed as theirs.
     await page.getByRole("button", { name: "Begin", exact: true }).click();
-    const card = page.locator("a.reality-project", { hasText: title });
+    const card = page.locator("a[data-thing]", { hasText: title });
     const listed = await card.waitFor({ timeout: 20000 }).then(() => true, () => false);
     evidence.record(S, ana.role, "pressing Begin records the thing and lists it on Home", listed,
       (await page.getByRole("alert").textContent().catch(() => "")) || "card never appeared");
@@ -58,7 +58,7 @@ export async function home({ browser, base, evidence }) {
 
     // --- Find: the same thing is in Space, which is where things live, not only on Home.
     await page.goto(base + "/space");
-    const inSpace = page.locator(".sov-real-projects a", { hasText: title });
+    const inSpace = page.locator("main a[data-thing]", { hasText: title });
     evidence.record(S, ana.role, "it is also found in Space, where her things live",
       await inSpace.waitFor({ timeout: 15000 }).then(() => true, () => false));
     evidence.record(S, ana.role, "and opening it from Space goes to its record",
@@ -71,7 +71,7 @@ export async function home({ browser, base, evidence }) {
     // --- Returning: a fresh load still lists it, and the record shows all six parts in order.
     await page.goto(base + "/");
     evidence.record(S, ana.role, "returning later, it is still there",
-      await page.locator("a.reality-project", { hasText: title }).waitFor({ timeout: 15000 }).then(() => true, () => false));
+      await page.locator("a[data-thing]", { hasText: title }).waitFor({ timeout: 15000 }).then(() => true, () => false));
     await page.goto(base + href);
     const heading = await page.getByRole("heading", { level: 1 }).textContent().catch(() => "");
     evidence.record(S, ana.role, "reopening it shows the thing she made", heading?.trim() === title, `heading was "${heading}"`);
@@ -81,10 +81,10 @@ export async function home({ browser, base, evidence }) {
     evidence.record(S, ana.role, "its record shows all six parts, in order",
       positions.every(i => i >= 0) && positions.every((v, i) => i === 0 || v > positions[i - 1]), `positions ${positions.join(",")}`);
     // Read the parts from the DOM, not from concatenated text, so whitespace cannot fool a check.
-    const part = name => page.locator("section", { has: page.locator(".solve-kicker", { hasText: name }) });
+    const part = name => page.locator(`section[data-part="${name}"]`);
     const holder = (await part("whose it is").locator("p").first().textContent())?.trim() ?? "";
     evidence.record(S, ana.role, "the record names her as the holder, as You", holder === "You", `holder shown as "${holder}"`);
-    const lines = await part("what happened").locator("li span").allTextContents();
+    const lines = await part("what happened").locator("li span.s-muted").allTextContents();
     evidence.record(S, ana.role, "every act in her history has a real name, never a blank",
       lines.length > 0 && lines.every(l => /^\s*—\s*\S/.test(l)), lines.join(" | "));
     const visible = await page.locator("main").first().innerText();
@@ -110,9 +110,9 @@ export async function home({ browser, base, evidence }) {
 
     // --- A second device with no shared identity does not see it. Guest custody is this browser.
     await stranger.page.goto(base + "/");
-    const seen = await stranger.page.locator("a.reality-project", { hasText: title }).count();
+    const seen = await stranger.page.locator("a[data-thing]", { hasText: title }).count();
     evidence.record(S, stranger.role, "a different browser does not see a guest's things", seen === 0, `${seen} matching cards`);
-    const notice = await stranger.page.locator(".reality-privacy").textContent().catch(() => "");
+    const notice = await stranger.page.locator("[data-custody]").textContent().catch(() => "");
     evidence.record(S, stranger.role, "and is told truthfully where their own work lives", /another browser/.test(notice ?? ""), notice ?? "");
     await evidence.shot(stranger.page, "home-04-second-device-320");
 
@@ -124,14 +124,14 @@ export async function home({ browser, base, evidence }) {
     await page.getByRole("button", { name: "Begin", exact: true }).click();
     // The product's own error element. getByRole("alert") is ambiguous: Next.js renders an
     // invisible route announcer with the same role (found on the first run, 2026-11-09).
-    const alert = await page.locator(".reality-error").textContent({ timeout: 15000 }).catch(() => "");
+    const alert = await page.locator("main [role=alert]").textContent({ timeout: 15000 }).catch(() => "");
     evidence.record(S, ana.role, "losing the network is reported, not hidden", /wasn't recorded|retry/i.test(alert ?? ""), alert || "no alert");
     evidence.record(S, ana.role, "and her words are still on screen", (await field.inputValue()) === second, await field.inputValue());
     await evidence.shot(page, "home-05-offline-390");
     await ana.context.setOffline(false);
     await page.getByRole("button", { name: "Begin", exact: true }).click();
     evidence.record(S, ana.role, "retrying once the network returns records it",
-      await page.locator("a.reality-project", { hasText: second }).waitFor({ timeout: 20000 }).then(() => true, () => false));
+      await page.locator("a[data-thing]", { hasText: second }).waitFor({ timeout: 20000 }).then(() => true, () => false));
 
     // --- Nothing was thrown in the browser along the way.
     for (const p of [ana, other, stranger]) {

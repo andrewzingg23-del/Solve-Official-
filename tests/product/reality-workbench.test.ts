@@ -14,16 +14,15 @@ test("only three approved Reality modes are accepted", () => {
   assert.equal(isRealityMode(null), false);
 });
 
-test("the signed-in entry and focus route share the existing owner-backed World", () => {
-  assert.match(read("app/page.tsx"), /listCreativeWorlds/);
-  assert.match(read("app/page.tsx"), /RealityEntry/);
-  const entry = read("app/reality/entry.tsx");
-  assert.match(entry, /createProject\(input, owner\)/);
-  assert.match(entry, /useProjectDraft\(owner\)/);
-  assert.match(entry, /\/workbench/);
-  // The custody notice moved into lib/product/custody.ts so the rule could be tested as
-  // behaviour (tests/product/custody.test.ts) rather than asserted against source text.
-  assert.match(entry, /custodyNotice\(custody\)/);
+test("Home records what a person writes as theirs, and lists their real things", () => {
+  // Rebuilt 2026-11-10. Behaviour is proven against staging by scripts/acceptance/scenarios/home.mjs;
+  // this only pins that Home stays wired to the kernel rather than to a device draft.
+  const page = read("app/page.tsx");
+  const action = read("app/home/actions.ts");
+  const view = read("app/home/home.tsx");
+  assert.match(page, /listCreativeWorlds/, "Home lists the person's things from the kernel");
+  assert.match(action, /createCreativeWorld\(/, "and records new ones there");
+  assert.match(view, /custodyNotice\(custody\)/, "and says truthfully who is holding them");
   assert.equal(custodyNotice("durable"), "Private until you choose to share.");
 });
 

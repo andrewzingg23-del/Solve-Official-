@@ -136,17 +136,13 @@ test("the central AI conversation returns a typed capability action without pret
 });
 
 
-test("one approved personal appearance reaches Home, Space and Workbench", () => {
-  const home = read("app/page.tsx");
-  const entry = read("app/reality/entry.tsx");
-  const workPage = read("app/world/[worldId]/workbench/page.tsx");
-  const workView = read("app/world/[worldId]/workbench/workbench.tsx");
-  const css = read("app/reality/reality.css");
-  assert.match(home,/initialAppearance=\{normalizeAppearance/);
-  assert.match(entry,/data-style-tone=\{initialAppearance\.tone\}/);
-  assert.match(workPage,/tone=\{normalizeAppearance/);
-  assert.match(workView,/data-style-tone=\{tone\}/);
-  for(const tone of ["graphite","ocean","mint","sunset","violet"]) {
-    assert.ok(css.includes('data-style-tone="' + tone + '"'));
-  }
+test("one look reaches every page, because it is applied at the root", () => {
+  // Rebuilt 2026-11-10: the person's card look is read once in the root layout and turned into the
+  // environment on <html>, so every page inherits it by construction rather than by each page
+  // remembering to apply it.
+  const layout = read("app/layout.tsx");
+  assert.match(layout, /readLook\(/, "the root reads the person's look");
+  assert.match(layout, /environmentFor\(look\)/, "and derives the environment from it");
+  assert.match(layout, /data-tone=\{env\.tone\}/, "applied to the whole document");
+  assert.match(layout, /style=\{environmentStyle\(env\)/);
 });

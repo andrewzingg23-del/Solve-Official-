@@ -16,8 +16,9 @@ import { Evidence, RUN, chromiumPath } from "./lib.mjs";
 import { home } from "./scenarios/home.mjs";
 import { confirm } from "./scenarios/confirm.mjs";
 import { card } from "./scenarios/card.mjs";
+import { control } from "./scenarios/control.mjs";
 
-const SCENARIOS = { home, confirm, card };
+const SCENARIOS = { home, confirm, card, control };
 const args = process.argv.slice(2);
 const build = !args.includes("--no-build");
 const only = args.filter(a => !a.startsWith("--"));

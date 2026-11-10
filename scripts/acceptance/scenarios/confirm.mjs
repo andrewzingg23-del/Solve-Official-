@@ -10,9 +10,9 @@ const S = "confirm";
 async function createThing(who, base, words, evidence) {
   const page = who.page;
   await page.goto(base + "/");
-  await page.getByRole("textbox", { name: "What do you want to accomplish?" }).fill(words);
+  await page.getByRole("textbox", { name: "What do you want to do?" }).fill(words);
   await page.getByRole("button", { name: "Begin", exact: true }).click();
-  const card = page.locator("a.reality-project", { hasText: words });
+  const card = page.locator("a[data-thing]", { hasText: words });
   const ok = await card.waitFor({ timeout: 20000 }).then(() => true, () => false);
   evidence.record(S, who.role, `records "${words.slice(MARK.length + 1)}"`, ok);
   if (!ok) return null;
@@ -31,7 +31,7 @@ async function ask(who, base, thing, askedOf, question, evidence, label) {
   const shown = await field.waitFor({ timeout: 20000 }).then(() => true, () => false);
   const link = shown ? await field.inputValue() : "";
   evidence.record(S, who.role, `${label}: asking produces a link to send`, /\/confirm\/[A-Za-z0-9_-]{43}$/.test(link),
-    shown ? link : (await page.locator(".solve-error").textContent().catch(() => "")) || "no link shown");
+    shown ? link : (await page.locator("main [role=alert]").textContent().catch(() => "")) || "no link shown");
   return link;
 }
 
@@ -56,14 +56,14 @@ export async function confirm({ browser, base, evidence }) {
 
     // --- Before anyone answers: the holder sees a request waiting, not a confirmation.
     await owner.page.goto(base + thing.href);
-    const waiting = await owner.page.locator(".solve-confirmations").textContent().catch(() => "");
+    const waiting = await owner.page.locator('ul[aria-label="Asked to confirm"]').textContent().catch(() => "");
     evidence.record(S, owner.role, "sees the request as waiting, never as confirmed", /Waiting for an answer/.test(waiting ?? "") && !/Confirmed by/.test(waiting ?? ""), waiting ?? "");
     await evidence.shot(owner.page, "confirm-01-asked-holder-390");
 
     // --- The holder cannot confirm their own record, even holding the link.
     await owner.page.goto(base + path);
     await owner.page.getByRole("button", { name: "Confirm", exact: true }).click();
-    const refused = await owner.page.locator(".solve-error").textContent({ timeout: 15000 }).catch(() => "");
+    const refused = await owner.page.locator("main [role=alert]").textContent({ timeout: 15000 }).catch(() => "");
     evidence.record(S, owner.role, "cannot confirm their own record", /can't confirm your own record/i.test(refused ?? ""), refused || "no refusal shown");
 
     // --- The person asked: a stranger to SOLVE opens the link.
@@ -80,7 +80,7 @@ export async function confirm({ browser, base, evidence }) {
 
     await asked.page.locator("textarea[name=note]").fill("Saw it done this morning.");
     await asked.page.getByRole("button", { name: "Confirm", exact: true }).click();
-    const done = await asked.page.locator(".solve-answer-done").textContent({ timeout: 15000 }).catch(() => "");
+    const done = await asked.page.locator("[data-answer-done]").textContent({ timeout: 15000 }).catch(() => "");
     evidence.record(S, asked.role, "their answer is recorded and they are told so", /Your answer is recorded: confirmed/.test(done ?? ""), done || "");
     await evidence.shot(asked.page, "confirm-03-answered-390");
 
@@ -138,7 +138,7 @@ export async function confirm({ browser, base, evidence }) {
         await asked.page.goto(base + new URL(link2).pathname);
         await asked.page.locator("textarea[name=note]").fill("Some was left by the fence.");
         await asked.page.getByRole("button", { name: "Dispute", exact: true }).click();
-        const disputed = await asked.page.locator(".solve-answer-done").textContent({ timeout: 15000 }).catch(() => "");
+        const disputed = await asked.page.locator("[data-answer-done]").textContent({ timeout: 15000 }).catch(() => "");
         evidence.record(S, asked.role, "can dispute instead, and is told it was recorded", /Your answer is recorded: disputed/.test(disputed ?? ""), disputed ?? "");
         await owner.page.goto(base + thing2.href);
         const shown = await owner.page.locator("main").first().innerText();
