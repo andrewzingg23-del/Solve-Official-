@@ -22,6 +22,9 @@ async function mcp(base, token, method, params = {}) {
   return { status: r.status, body, challenge: r.headers.get("www-authenticate") ?? "" };
 }
 const call = (base, token, name, args = {}) => mcp(base, token, "tools/call", { name, arguments: args });
+// A refusal counts only when it is the kernel saying no on permission — never a broken deployment,
+// a bad key or any other error that merely looks like a refusal.
+const refused = res => Boolean(res.body?.result?.isError) && /may not add to that|has not been let into that/i.test(said(res));
 const said = res => res.body?.result?.content?.map(c => c.text).join(" ") ?? JSON.stringify(res.body)?.slice(0, 300);
 
 export async function apps({ browser, base, evidence }) {
@@ -108,7 +111,7 @@ export async function apps({ browser, base, evidence }) {
     evidence.record(S, owner.role, "makes a Space for the goal", Boolean(worldId));
     const before = await call(base, token, "add_to_world", { world_id: worldId, title: "Early", body: "Before I was let in" });
     evidence.record(S, "app", "cannot add to it before being let in (refused on permission)",
-      Boolean(before.body?.result?.isError) && !/cannot act as the bot/i.test(said(before)), said(before).slice(0, 200));
+      refused(before), said(before).slice(0, 200));
     const control = page.locator("[data-ai-access]");
     evidence.record(S, owner.role, "the Space offers a control for their AI, off by default",
       await control.waitFor({ timeout: 15000 }).then(() => true, () => false) && await control.locator('[data-ai-choice="none"]').isChecked());
@@ -138,7 +141,7 @@ export async function apps({ browser, base, evidence }) {
     await page.locator('[data-ai-access] [data-ai-choice="none"]').check();
     await page.locator("[data-ai-note]").filter({ hasText: "can't see" }).waitFor({ timeout: 15000 }).catch(() => {});
     const off = await call(base, token, "add_to_world", { world_id: worldId, title: "After", body: "After I was taken out" });
-    evidence.record(S, "app", "once switched off, it is refused (on permission)", Boolean(off.body?.result?.isError) && !/cannot act as the bot/i.test(said(off)), said(off).slice(0, 200));
+    evidence.record(S, "app", "once switched off, it is refused (on permission)", refused(off), said(off).slice(0, 200));
 
     // --- The person sees it in Solve, credited to their AI.
     await page.goto(`${base}/world/${encodeURIComponent(worldId)}`);
@@ -150,12 +153,11 @@ export async function apps({ browser, base, evidence }) {
 
     // --- The boundary: a Space it was never let into stays closed to it.
     // Refused for the right reason: permission, not a deployment that can't act at all.
-    const unable = /cannot act as the bot/i;
     const peek = await call(base, token, "read_world", { world_id: privateId });
     evidence.record(S, "app", "cannot read a Space it was never let into (refused on permission)",
-      Boolean(peek.body?.result?.isError) && !unable.test(said(peek)) && !said(peek).includes(privateTitle), said(peek).slice(0, 200));
+      refused(peek) && !said(peek).includes(privateTitle), said(peek).slice(0, 200));
     const intrude = await call(base, token, "add_to_world", { world_id: privateId, title: "Hi", body: "Let me in" });
-    evidence.record(S, "app", "cannot add to it either (refused on permission)", Boolean(intrude.body?.result?.isError) && !unable.test(said(intrude)), said(intrude).slice(0, 200));
+    evidence.record(S, "app", "cannot add to it either (refused on permission)", refused(intrude), said(intrude).slice(0, 200));
 
     // --- The person disconnects it in Apps; it stops at once.
     await page.goto(base + "/apps");
