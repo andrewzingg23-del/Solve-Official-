@@ -113,6 +113,7 @@ async function exerciseEveryMethod(supabase: SupabaseClient, actAs?: string) {
   await k.answerConfirmation({ tokenHash: "a".repeat(64), decision: "confirmed", note: "yes", requestId: "r" });
   await k.cancelConfirmation(id);
   await k.readConfirmations(id);
+  await k.readWorldInvitation("a".repeat(64));
   await k.readActors([id]);
 }
 

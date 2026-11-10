@@ -108,7 +108,7 @@ try {
   // --- Every older address lands on a rebuilt destination; mutations to them are refused.
   for (const [path, location] of [
     ["/projects", "/space"], ["/communities", "/space"], ["/bot", "/account"], ["/onboarding", "/account"], ["/apps", "/control"],
-    ["/worlds/new", "/"], ["/world/example/room", "/world/example/record"], ["/card", "/"], ["/money", "/"], ["/studio", "/"], ["/sov-id", "/account"],
+    ["/worlds/new", "/"], ["/world/example/room", "/world/example"], ["/card", "/"], ["/money", "/"], ["/studio", "/"], ["/sov-id", "/account"],
   ]) {
     const r = await fetch(url + path, { redirect: "manual" });
     assert.equal(r.status, 307, path);

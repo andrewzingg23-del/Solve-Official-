@@ -34,6 +34,9 @@ const SURFACES = [
   "app/world/[worldId]/record/ask.tsx",
   "app/confirm/[token]/page.tsx",
   "app/confirm/[token]/answer.tsx",
+  "app/world/[worldId]/page.tsx",
+  "app/world/[worldId]/together.tsx",
+  "app/world-invite/[token]/page.tsx",
 ];
 
 /**

@@ -33,8 +33,9 @@ export async function home({ browser, base, evidence }) {
     await evidence.shot(page, "home-01-created-390");
     if (!listed) return;
     const href = await card.getAttribute("href");
-    const worldId = decodeURIComponent(href?.match(/^\/world\/([^/]+)\/record$/)?.[1] ?? "");
-    evidence.record(S, ana.role, "a guest's thing opens its record, not a sign-in wall", Boolean(worldId), `href was ${href}`);
+    const worldId = decodeURIComponent(href?.match(/^\/world\/([^/]+)$/)?.[1] ?? "");
+    evidence.record(S, ana.role, "a guest's thing opens itself, not a sign-in wall", Boolean(worldId), `href was ${href}`);
+    const recordHref = `${href}/record`;
     if (!worldId) return;
     const scope = `world:${worldId}`;
 
@@ -61,7 +62,7 @@ export async function home({ browser, base, evidence }) {
     const inSpace = page.locator("main a[data-thing]", { hasText: title });
     evidence.record(S, ana.role, "it is also found in Space, where her things live",
       await inSpace.waitFor({ timeout: 15000 }).then(() => true, () => false));
-    evidence.record(S, ana.role, "and opening it from Space goes to its record",
+    evidence.record(S, ana.role, "and opening it from Space goes to the same thing",
       (await inSpace.getAttribute("href").catch(() => "")) === href, `href ${await inSpace.getAttribute("href").catch(() => "")}`);
     const spaceText = await page.locator("main").first().innerText().catch(() => "");
     evidence.record(S, ana.role, "Space shows her no word or id of ours", !OUR_WORDS.test(spaceText) && !INTERNAL_IDS.test(spaceText),
@@ -72,7 +73,7 @@ export async function home({ browser, base, evidence }) {
     await page.goto(base + "/");
     evidence.record(S, ana.role, "returning later, it is still there",
       await page.locator("a[data-thing]", { hasText: title }).waitFor({ timeout: 15000 }).then(() => true, () => false));
-    await page.goto(base + href);
+    await page.goto(base + recordHref);
     const heading = await page.getByRole("heading", { level: 1 }).textContent().catch(() => "");
     evidence.record(S, ana.role, "reopening it shows the thing she made", heading?.trim() === title, `heading was "${heading}"`);
     const main = (await page.locator("main").first().textContent()) ?? "";
@@ -95,7 +96,7 @@ export async function home({ browser, base, evidence }) {
     await evidence.shot(page, "home-02-record-390");
 
     // --- Another person, holding the exact address, sees nothing — in the app and in the kernel.
-    const theirs = await other.page.goto(base + href);
+    const theirs = await other.page.goto(base + recordHref);
     const leaked = ((await other.page.content()) ?? "").includes(words);
     evidence.record(S, other.role, "cannot open someone else's thing by its address", theirs?.status() === 404 && !leaked,
       `status ${theirs?.status()}, leaked=${leaked}`);

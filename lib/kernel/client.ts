@@ -919,6 +919,9 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
       one<{ invitation_id: string; expires_at: string }>("create_world_invitation", {
         p_world_id: input.worldId, p_token_hash: input.tokenHash, p_role: input.role, p_request_id: input.requestId, ...as }),
     acceptWorldInvitation: (token: string) => call<string>("accept_world_invitation", { p_token: token, ...as }),
+    // Who invited the holder of this link, and to what — without accepting or granting anything.
+    readWorldInvitation: (token: string) => call<{ title: string; invited_by: string; role: "viewer" | "editor"; expires_at: string;
+      expired: boolean; used: boolean; used_by_you: boolean; is_yours: boolean }>("read_world_invitation", { p_token: token, ...as }),
     cancelWorldInvitation: (invitationId: string) => call<void>("cancel_world_invitation", { p_invitation_id: invitationId, ...as }),
     readWorldInvitations: (worldId: string) => call<Array<{ invitation_id: string; role: "viewer" | "editor"; expires_at: string; accepted_by: string | null; cancelled_at: string | null }>>("read_world_invitations", { p_world_id: worldId, ...as }),
     readWorldPresence: (scope: string) => call<Array<{ actor_id: string; label: string; at: string }>>("read_world_presence", { p_scope: scope, ...as }),

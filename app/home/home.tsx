@@ -89,7 +89,7 @@ export function Home({ owner, durable, name, things }: {
           ? <p className={styles.empty}>Nothing here yet. What you write down becomes yours — kept, with its whole history.</p>
           : <ul className={styles.grid}>
               {things.slice(0, 6).map(thing => <li key={thing.id}>
-                <Link href={`/world/${encodeURIComponent(thing.id)}/record`} className={styles.thing} data-thing={thing.id}>
+                <Link href={`/world/${encodeURIComponent(thing.id)}`} className={styles.thing} data-thing={thing.id}>
                   <strong>{thing.title}</strong>
                   <span className="s-muted s-small">{thing.summary && thing.summary !== thing.title ? thing.summary : "Open it"}</span>
                 </Link>

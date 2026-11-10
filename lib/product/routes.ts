@@ -15,12 +15,12 @@ const notYetRebuilt: Record<string, string> = {
   "/bot": "/account", "/onboarding": "/account", "/personalize": "/account",
   "/apps": "/control", "/saved": "/",
 };
-/** Every older view of a thing opens its record, which has been rebuilt. */
-const olderThingView = /^\/world\/([^/]+)(?:\/(?:room|ideas|studio|workbench))?\/?$/;
+/** Every older view of a thing opens the thing itself, which has been rebuilt. */
+const olderThingView = /^\/world\/([^/]+)\/(?:room|ideas|studio|workbench)\/?$/;
 
 export function rebuiltRoute(pathname: string): string | null {
   const thing = olderThingView.exec(pathname);
-  if (thing) return `/world/${thing[1]}/record`;
+  if (thing) return `/world/${thing[1]}`;
   const hit = Object.entries(notYetRebuilt).find(([root]) => within(pathname, root));
   return hit ? hit[1] : null;
 }

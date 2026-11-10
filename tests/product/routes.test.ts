@@ -7,7 +7,7 @@ test("launch excludes nested legacy financial and experimental pages", () => {
     assert.deepEqual(launchRoute(path, {}), { kind: "redirect", href: "/" }, path);
   }
   // An older view of a thing opens its rebuilt record rather than Home.
-  assert.deepEqual(launchRoute("/world/example/studio", {}), { kind: "redirect", href: "/world/example/record" });
+  assert.deepEqual(launchRoute("/world/example/studio", {}), { kind: "redirect", href: "/world/example" });
 });
 
 test("legacy HTTP APIs fail closed without redirecting a mutation", () => {
@@ -17,7 +17,7 @@ test("legacy HTTP APIs fail closed without redirecting a mutation", () => {
 });
 
 test("the rebuilt destinations, links from other people, and every API stay reachable", () => {
-  for (const path of ["/", "/account", "/space", "/workbench", "/control", "/login", "/world/id/record", "/confirm/token",
+  for (const path of ["/", "/account", "/space", "/workbench", "/control", "/login", "/world/id", "/world/id/record", "/confirm/token",
     "/world-invite/token", "/api/worlds/create", "/api/worlds/id/conversation", "/auth/callback", "/oauth/consent", "/mcp",
     "/.well-known/oauth-protected-resource", "/parts/id/file.stl"]) {
     assert.deepEqual(launchRoute(path, {}), { kind: "allow" }, path);
@@ -30,8 +30,8 @@ test("every screen not yet rebuilt opens the rebuilt destination it belongs to, 
     ["/worlds", "/"], ["/worlds/new", "/"], ["/saved/token", "/"],
     ["/bot", "/account"], ["/onboarding", "/account"], ["/personalize/instagram", "/account"],
     ["/apps", "/control"],
-    ["/world/id", "/world/id/record"], ["/world/id/room", "/world/id/record"], ["/world/id/ideas", "/world/id/record"],
-    ["/world/id/workbench", "/world/id/record"], ["/world/id/studio", "/world/id/record"],
+    ["/world/id/room", "/world/id"], ["/world/id/ideas", "/world/id"],
+    ["/world/id/workbench", "/world/id"], ["/world/id/studio", "/world/id"],
   ];
   for (const [path, href] of expected) assert.deepEqual(launchRoute(path, {}), { kind: "redirect", href }, path);
 });
@@ -47,7 +47,7 @@ test("experimental opt-in never enables money without its financial flags", () =
   const env = { ENABLE_EXPERIMENTAL_FEATURES: "true" };
   assert.deepEqual(launchRoute("/studio", env), { kind: "allow" });
   // The old studio view of a thing is not part of the rebuilt experience even with the flag on.
-  assert.deepEqual(launchRoute("/world/id/studio", env), { kind: "redirect", href: "/world/id/record" });
+  assert.deepEqual(launchRoute("/world/id/studio", env), { kind: "redirect", href: "/world/id" });
   assert.deepEqual(launchRoute("/packs/trading", env), { kind: "redirect", href: "/" });
   assert.deepEqual(launchRoute("/card", env), { kind: "redirect", href: "/" });
   assert.deepEqual(launchRoute("/money", { ...env, ENABLE_MONEY: "true" }), { kind: "allow" });

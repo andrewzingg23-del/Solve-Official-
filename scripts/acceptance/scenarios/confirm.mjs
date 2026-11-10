@@ -17,8 +17,8 @@ async function createThing(who, base, words, evidence) {
   evidence.record(S, who.role, `records "${words.slice(MARK.length + 1)}"`, ok);
   if (!ok) return null;
   const href = await card.getAttribute("href");
-  const worldId = decodeURIComponent(href.match(/^\/world\/([^/]+)\/record$/)?.[1] ?? "");
-  return { href, worldId, scope: `world:${worldId}` };
+  const worldId = decodeURIComponent(href.match(/^\/world\/([^/]+)$/)?.[1] ?? "");
+  return { href: `${href}/record`, worldId, scope: `world:${worldId}` };
 }
 
 async function ask(who, base, thing, askedOf, question, evidence, label) {
