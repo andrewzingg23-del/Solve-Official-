@@ -1,8 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { addPiece, makeInvite } from "./together-actions";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { PHOTO_BUCKET, PHOTO_MAX_BYTES, PHOTO_MAX_SIDE, photoName } from "@/lib/product/photo";
+import { addPiece, makeInvite, recordPhoto } from "./together-actions";
 import styles from "./together.module.css";
 
 // Add your piece. The words stay on screen until the kernel has them.
@@ -60,6 +62,89 @@ export function InviteFriend({ worldId, title }: { worldId: string; title: strin
       <p className="s-muted s-small">Each link works once, for one person, for two days. Make a new one for each friend.</p>
     </div> : null}
     {note ? <p role="status" className="s-small">{note}</p> : null}
+    {error ? <p role="alert" className="s-error">{error}</p> : null}
+  </div>;
+}
+
+// Add a photo. The browser redraws it before it leaves the device — that drops the hidden
+// details a phone writes into every photo, above all where it was taken — then stores it as this
+// person, and the server checks the stored bytes before recording anything.
+async function redraw(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+  const scale = Math.min(1, PHOTO_MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("no canvas");
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, "image/jpeg", 0.86));
+  if (!blob) throw new Error("no image");
+  return blob;
+}
+
+export function AddPhoto({ worldId }: { worldId: string }) {
+  const router = useRouter();
+  const input = useRef<HTMLInputElement>(null);
+  const [photo, setPhoto] = useState<{ blob: Blob; preview: string } | null>(null);
+  const [caption, setCaption] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState<"" | "preparing" | "adding">("");
+
+  useEffect(() => () => { if (photo) URL.revokeObjectURL(photo.preview); }, [photo]);
+
+  const choose = async (file: File | undefined) => {
+    if (!file) return;
+    setError(""); setBusy("preparing");
+    try {
+      const blob = await redraw(file);
+      if (blob.size > PHOTO_MAX_BYTES) throw new Error("too large");
+      setPhoto({ blob, preview: URL.createObjectURL(blob) });
+    } catch {
+      setError("That photo couldn't be opened here. Try a JPEG or PNG.");
+    } finally {
+      setBusy("");
+      if (input.current) input.current.value = "";
+    }
+  };
+
+  const add = async () => {
+    if (!photo || busy) return;
+    setError(""); setBusy("adding");
+    try {
+      const name = photoName(worldId, crypto.randomUUID());
+      const { error: stored } = await createClient().storage.from(PHOTO_BUCKET)
+        .upload(name, photo.blob, { contentType: "image/jpeg", upsert: false });
+      if (stored) { setError("The photo couldn't be stored. You may not be able to add to this; otherwise try again."); return; }
+      const result = await recordPhoto(worldId, name, caption);
+      if (!result.ok) { setError(result.error); return; }
+      setPhoto(null); setCaption(""); router.refresh();
+    } catch {
+      setError("The photo wasn't added. Your photo is still here; retry when you're connected.");
+    } finally {
+      setBusy("");
+    }
+  };
+
+  return <div className={styles.photo}>
+    <input ref={input} id="photo-file" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+      className="s-visually-hidden" onChange={event => choose(event.target.files?.[0])} />
+    {photo ? <div className={styles.photoDraft}>
+      {/* A local preview of the photo as it will be stored. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={photo.preview} alt="The photo you chose" className={styles.photoPreview} />
+      <label htmlFor="photo-caption" className="s-visually-hidden">Caption</label>
+      <input id="photo-caption" className="s-input" maxLength={500} value={caption} disabled={busy === "adding"}
+        placeholder="Say something about it (optional)" onChange={event => setCaption(event.target.value)} />
+      <div className={styles.row}>
+        <button type="button" className="s-button" onClick={add} disabled={Boolean(busy)} data-add-photo>{busy === "adding" ? "Adding…" : "Add photo"}</button>
+        <button type="button" className="s-button" data-variant="quiet" disabled={busy === "adding"} onClick={() => { setPhoto(null); setError(""); }}>Cancel</button>
+      </div>
+    </div> : <label htmlFor="photo-file" className="s-button" data-variant="quiet" role="button" tabIndex={0}
+      onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); input.current?.click(); } }}>
+      {busy === "preparing" ? "Opening…" : "Add a photo"}
+    </label>}
     {error ? <p role="alert" className="s-error">{error}</p> : null}
   </div>;
 }

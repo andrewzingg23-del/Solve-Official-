@@ -3,11 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { KernelError } from "@/lib/kernel/client";
 import { getKernel } from "@/lib/kernel/server";
-import { getUser } from "@/lib/supabase/server";
+import { createClient as createSupabase, getUser } from "@/lib/supabase/server";
+import { PHOTO_BUCKET, PHOTO_LINK_SECONDS, isPhotoOf } from "@/lib/product/photo";
 import { loadCreativeWorld } from "@/lib/world/creative";
 import { readWorldMembers } from "@/lib/world/collaboration";
 import { nameFor, type ActorNames } from "@/lib/product/thing";
-import { AddPiece, InviteFriend } from "./together";
+import { AddPhoto, AddPiece, InviteFriend } from "./together";
 import styles from "./together.module.css";
 
 export const metadata: Metadata = { title: "SOLVE" };
@@ -32,7 +33,7 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
       <p className="s-muted">Nothing was deleted. Try again when the connection is back.</p>
     </div>;
   }
-  const { world, artifacts } = data;
+  const { world, artifacts, entities } = data;
 
   const [membership, me, events] = await Promise.all([
     readWorldMembers(kernel, world.scope).catch(() => null),
@@ -59,9 +60,26 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
   // Starting a thing also records the starter's opening words as a piece titled "Goal", whose text
   // is the thing's summary — already shown in the header. Listing it again showed the same words
   // twice (acceptance run, 2026-11-10). Only that piece, matched on both markers, is left out.
-  const pieces = artifacts
-    .filter(a => !(a.title === "Goal" && a.body === world.summary))
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const texts = artifacts.filter(a => !(a.title === "Goal" && a.body === world.summary));
+
+  // Photos: the piece records the file; a link to it is issued per view, for ten minutes, and only
+  // if storage — asking the kernel — agrees this person may read the thing.
+  const photoEntities = entities.filter(e => e.kind === "document" && e.attributes.documentType === "photo"
+    && isPhotoOf((e.attributes.file as { name?: unknown } | undefined)?.name, world.worldId));
+  const photoNames = photoEntities.map(e => (e.attributes.file as { name: string }).name);
+  const links = new Map<string, string>();
+  if (photoNames.length) {
+    const signed = await (await createSupabase()).storage.from(PHOTO_BUCKET).createSignedUrls(photoNames, PHOTO_LINK_SECONDS).catch(() => null);
+    for (const entry of signed?.data ?? []) if (entry.path && entry.signedUrl && !entry.error) links.set(entry.path, entry.signedUrl);
+  }
+  type Piece = { id: string; at: string; text: string; photo?: { url: string | null } };
+  const pieces: Piece[] = [
+    ...texts.map(a => ({ id: a.entityId, at: a.updatedAt, text: a.body || a.title })),
+    ...photoEntities.map(e => {
+      const name = (e.attributes.file as { name: string }).name;
+      return { id: e.entity_id, at: e.updated_at, text: typeof e.attributes.caption === "string" ? e.attributes.caption : "", photo: { url: links.get(name) ?? null } };
+    }),
+  ].sort((a, b) => b.at.localeCompare(a.at));
   const initial = (id: string) => (nameFor(id, names).replace(/^[^\p{L}]+/u, "").charAt(0) || "·").toUpperCase();
 
   return <div className={styles.page}>
@@ -81,17 +99,28 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
       {isOwner ? <InviteFriend worldId={world.worldId} title={world.title} /> : null}
     </section>
 
-    {canAdd ? <AddPiece worldId={world.worldId} /> : null}
+    {canAdd ? <div className="s-stack" style={{ "--gap": "12px" } as React.CSSProperties}>
+      <AddPiece worldId={world.worldId} />
+      <AddPhoto worldId={world.worldId} />
+    </div> : null}
 
     <section aria-labelledby="pieces-title" className="s-stack">
       <h2 id="pieces-title">{pieces.length ? "What's been added" : "Nothing added yet"}</h2>
       {pieces.length === 0
         ? <p className="s-muted">{isOwner ? "Add the first piece, or invite a friend to start it with you." : "Be the first to add something."}</p>
         : <ul className={styles.pieces}>{pieces.map(piece => {
-            const author = authorOf.get(piece.entityId);
-            return <li key={piece.entityId} className={styles.piece} data-piece>
-              <p>{piece.body || piece.title}</p>
-              <span className={styles.by}>Added by <strong data-author>{author ? nameFor(author, names) : "Someone"}</strong> · {piece.updatedAt.slice(0, 10)}</span>
+            const author = authorOf.get(piece.id);
+            const who = author ? nameFor(author, names) : "Someone";
+            return <li key={piece.id} className={styles.piece} data-piece data-photo={piece.photo ? "" : undefined}>
+              {piece.photo
+                ? piece.photo.url
+                  // A short-lived private link; the image optimiser would cache a private photo, so it isn't used.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={piece.photo.url} alt={piece.text || `A photo ${who === "You" ? "you" : who} added`} className={styles.image} loading="lazy" />
+                  : <div className={styles.missing} role="status">This photo can&apos;t be shown right now.</div>
+                : null}
+              {piece.text ? <p>{piece.text}</p> : null}
+              <span className={styles.by}>Added by <strong data-author>{who}</strong> · {piece.at.slice(0, 10)}</span>
             </li>;
           })}</ul>}
     </section>

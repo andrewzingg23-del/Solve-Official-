@@ -1,5 +1,11 @@
 # BUILD_STATUS
 
+## Photos in a shared thing — files on the kernel's authority — 2026-11-10 (Claude, branch `solve/from-zero`)
+
+- Private bucket `things`. Storage asks `kernel_api.file_allowed` for every read and write; files are add-only and cannot be swapped (`20261110040000`, **staging only**).
+- Photos are redrawn in the browser and checked by the server for hidden metadata such as GPS before recording. Each piece records the file's SHA-256.
+- Checks: `npm test` 612 pass, typecheck ok, lint 0 errors, kernel 5/5, photo rules 5/5, `together` acceptance 46/46. A full five-scenario run was blocked by the staging sign-in rate limit.
+
 ## Build something and invite your friends — 2026-11-10 (Claude, branch `solve/from-zero`)
 
 - `/world/<id>` shows the thing with its people, who added what, a place to add a piece, and the starter's Invite a friend.

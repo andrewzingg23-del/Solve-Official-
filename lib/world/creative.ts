@@ -465,7 +465,7 @@ export async function loadCreativeWorld(kernel: Kernel, rawWorldId: string) {
   const resources = entities
     .map((entity) => resourceFromEntity(entity, attribution.get(entity.entity_id)))
     .filter((entry): entry is CreativeResourceEntry => entry !== null);
-  return { world, artifacts, resources };
+  return { world, artifacts, resources, entities };
 }
 
 export async function createCreativeArtifact(kernel: Kernel, input: CreateCreativeArtifactInput): Promise<string> {

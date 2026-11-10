@@ -1,7 +1,37 @@
 // Build something and invite your friends — the founder's answer to "what's the first thing someone
 // does in SOLVE just because it's fun". Three independent people: the one who starts it, a friend
 // with no account who joins from a link, and a third person who tries to reuse the friend's link.
+import { createHash, randomUUID } from "node:crypto";
 import { INTERNAL_IDS, MARK, OUR_WORDS, VIEWPORTS, close, persona } from "../lib.mjs";
+
+// A real JPEG drawn in the browser, then given an EXIF segment carrying a GPS position — the way a
+// phone photo arrives. The product must remove it before the photo is stored.
+const GPS = "GPS 28.538336 -81.379234 home";
+async function phonePhoto(page) {
+  const b64 = await page.evaluate(() => {
+    const c = document.createElement("canvas"); c.width = 640; c.height = 480;
+    const g = c.getContext("2d"); const grad = g.createLinearGradient(0, 0, 640, 480);
+    grad.addColorStop(0, "#f97316"); grad.addColorStop(1, "#2563eb"); g.fillStyle = grad; g.fillRect(0, 0, 640, 480);
+    return c.toDataURL("image/jpeg", 0.9).split(",")[1];
+  });
+  const jpeg = Buffer.from(b64, "base64");
+  const body = Buffer.concat([Buffer.from("Exif\0\0MM\0*\0\0\0\x08", "binary"), Buffer.from(GPS)]);
+  const app1 = Buffer.concat([Buffer.from([0xff, 0xe1, (body.length + 2) >> 8, (body.length + 2) & 0xff]), body]);
+  return Buffer.concat([jpeg.subarray(0, 2), app1, jpeg.subarray(2)]);
+}
+// Wait for the image to actually load (it may be lazy), then report whether it decoded.
+async function loaded(locator) {
+  await locator.scrollIntoViewIfNeeded().catch(() => {});
+  return locator.evaluate(img => img.complete && img.naturalWidth > 0 ? true
+    : new Promise(r => { img.addEventListener("load", () => r(img.naturalWidth > 0), { once: true }); img.addEventListener("error", () => r(false), { once: true }); setTimeout(() => r(false), 10000); }))
+    .catch(() => false);
+}
+async function whyNot(locator) {
+  const src = await locator.getAttribute("src").catch(() => null);
+  if (!src) return `no img (count ${await locator.count()})`;
+  const r = await fetch(src).then(x => `${x.status} ${x.headers.get("content-type")}`, e => e.message);
+  return `${src.replace(/token=[^&]+/, "token=…").slice(0, 140)} → ${r}`;
+}
 
 const S = "together";
 
@@ -76,12 +106,40 @@ export async function together({ browser, base, evidence }) {
       (await friend.page.getByRole("button", { name: "Invite a friend" }).count()) === 0);
     await evidence.shot(friend.page, "together-03-friend-added-390");
 
+    // --- The friend adds a photo straight from their phone — hidden location and all.
+    const original = await phonePhoto(friend.page);
+    await friend.page.locator("#photo-file").setInputFiles({ name: "IMG_0412.jpg", mimeType: "image/jpeg", buffer: original });
+    await friend.page.getByRole("textbox", { name: "Caption" }).fill("The van!");
+    await evidence.shot(friend.page, "together-03b-photo-chosen-390");
+    await friend.page.locator("[data-add-photo]").click();
+    const shot = friend.page.locator("[data-photo]", { hasText: "The van!" });
+    const photoShown = await shot.waitFor({ timeout: 20000 }).then(() => true, () => false);
+    evidence.record(S, friend.role, "adds a photo with a caption, and sees it", photoShown && await loaded(shot.locator("img")),
+      photoShown ? await whyNot(shot.locator("img")) : await friend.page.locator("main [role=alert]").allTextContents().then(t => t.join(" | ")));
+    evidence.record(S, friend.role, "the photo is credited to them", photoShown && (await shot.locator("[data-author]").textContent()) === "You");
+
+    // Kernel and storage read-back: the photo the friend's piece points at is the photo stored, and it carries no location.
+    const world = await friend.kernel.rpc("read_world", { p_scope: `world:${worldId}` }).catch(() => []);
+    const piece = Array.isArray(world) ? world.find(e => e.attributes?.documentType === "photo" && e.attributes?.caption === "The van!") : null;
+    const file = piece?.attributes?.file;
+    evidence.record(S, friend.role, "the kernel records the photo as a piece of this thing", Boolean(file?.name?.startsWith(`${worldId}/`)), JSON.stringify(file ?? null));
+    const stored = file ? await friend.kernel.storage.from("things").download(file.name) : { error: "no file" };
+    const bytes = stored.data ? Buffer.from(await stored.data.arrayBuffer()) : Buffer.alloc(0);
+    evidence.record(S, friend.role, "what's stored is exactly what was recorded (SHA-256 matches)",
+      bytes.length > 0 && createHash("sha256").update(bytes).digest("hex") === file?.sha256, stored.error?.message ?? "");
+    evidence.record(S, friend.role, "the stored photo carries no hidden location — the GPS the phone wrote is gone",
+      bytes.length > 0 && !bytes.includes(Buffer.from(GPS)) && !bytes.includes(Buffer.from("Exif\0\0", "binary")) && original.includes(Buffer.from(GPS)));
+
     // --- The starter sees the friend's piece, credited to the friend, and the friend among the people.
     await host.page.reload();
     const hostView = await host.page.locator("main").first().innerText();
     const friendPiece = host.page.locator("[data-piece]", { hasText: "bring snacks" });
     evidence.record(S, host.role, "sees what their friend added, credited to the friend",
       await friendPiece.isVisible() && (await friendPiece.locator("[data-author]").textContent())?.includes("friend"), hostView.slice(0, 240));
+    const hostPhoto = host.page.locator("[data-photo]", { hasText: "The van!" });
+    evidence.record(S, host.role, "sees their friend's photo, credited to the friend",
+      await loaded(hostPhoto.locator("img")) && (await hostPhoto.locator("[data-author]").textContent().catch(() => ""))?.includes("friend"),
+      await whyNot(hostPhoto.locator("img")));
     evidence.record(S, host.role, "sees their friend among the people building it", (await host.page.locator("[data-people]").textContent())?.includes("friend"));
     await evidence.shot(host.page, "together-04-host-sees-friend-390");
 
@@ -106,6 +164,22 @@ export async function together({ browser, base, evidence }) {
     const peek = await third.page.goto(base + `/world/${worldId}`);
     evidence.record(S, third.role, "and they cannot open the thing by its address", peek?.status() === 404);
     await evidence.shot(third.page, "together-05-reused-320");
+
+    // --- And the photo is out of their reach by every route storage offers.
+    if (file?.name) {
+      const read = await third.kernel.storage.from("things").download(file.name);
+      evidence.record(S, third.role, "cannot download the photo with their own session", Boolean(read.error) && !read.data, read.error?.message ?? "downloaded it");
+      const link = await third.kernel.storage.from("things").createSignedUrl(file.name, 60);
+      evidence.record(S, third.role, "cannot get a link to it", Boolean(link.error) && !link.data?.signedUrl, link.error?.message ?? "got a link");
+      const listing = await third.kernel.storage.from("things").list(worldId);
+      evidence.record(S, third.role, "cannot list the thing's files", (listing.data ?? []).length === 0, `${(listing.data ?? []).length} listed`);
+      const planted = await third.kernel.storage.from("things").upload(`${worldId}/${randomUUID()}.jpg`, original, { contentType: "image/jpeg" });
+      evidence.record(S, third.role, "cannot put a file into the thing", Boolean(planted.error), planted.error?.message ?? "uploaded it");
+      const swap = await friend.kernel.storage.from("things").upload(file.name, original, { contentType: "image/jpeg", upsert: true });
+      const again = await friend.kernel.storage.from("things").download(file.name);
+      const same = again.data ? createHash("sha256").update(Buffer.from(await again.data.arrayBuffer())).digest("hex") === file.sha256 : false;
+      evidence.record(S, friend.role, "even someone who can add can't swap a recorded photo for another", Boolean(swap.error) && same, swap.error?.message ?? "overwrote it");
+    }
 
     // --- Returning to the link: the friend is told they're in; the starter that it's their own.
     await friend.page.goto(base + path);

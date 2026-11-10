@@ -919,6 +919,10 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
       one<{ invitation_id: string; expires_at: string }>("create_world_invitation", {
         p_world_id: input.worldId, p_token_hash: input.tokenHash, p_role: input.role, p_request_id: input.requestId, ...as }),
     acceptWorldInvitation: (token: string) => call<string>("accept_world_invitation", { p_token: token, ...as }),
+    // Whether this caller may read or add a file of a thing. Storage's own rules call this; the
+    // client exposes it so the app can ask the same question storage will.
+    fileAllowed: (name: string, capability: "kernel.read" | "world.entity.write") =>
+      call<boolean>("file_allowed", { p_name: name, p_capability: capability }),
     // Who invited the holder of this link, and to what — without accepting or granting anything.
     readWorldInvitation: (token: string) => call<{ title: string; invited_by: string; role: "viewer" | "editor"; expires_at: string;
       expired: boolean; used: boolean; used_by_you: boolean; is_yours: boolean }>("read_world_invitation", { p_token: token, ...as }),

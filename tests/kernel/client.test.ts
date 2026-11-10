@@ -114,6 +114,7 @@ async function exerciseEveryMethod(supabase: SupabaseClient, actAs?: string) {
   await k.cancelConfirmation(id);
   await k.readConfirmations(id);
   await k.readWorldInvitation("a".repeat(64));
+  await k.fileAllowed("x", "kernel.read");
   await k.readActors([id]);
 }
 

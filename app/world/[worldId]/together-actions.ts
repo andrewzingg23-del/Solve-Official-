@@ -1,8 +1,9 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { getKernel } from "@/lib/kernel/server";
-import { getUser } from "@/lib/supabase/server";
+import { createClient as createSupabase, getUser } from "@/lib/supabase/server";
+import { PHOTO_BUCKET, checkPhoto, isPhotoOf, photoProblem } from "@/lib/product/photo";
 import { createCreativeArtifact, loadCreativeWorld } from "@/lib/world/creative";
 import { createWorldInvitation } from "@/lib/world/invitations";
 
@@ -42,5 +43,43 @@ export async function makeInvite(worldId: string): Promise<InviteResult> {
     return { ok: true, path: `/world-invite/${token}`, expiresAt };
   } catch {
     return { ok: false, error: "The invite couldn't be made. Only the person who started this can invite people to it." };
+  }
+}
+
+export type PhotoResult = { ok: true } | { ok: false; error: string };
+
+// Record a photo the browser has just stored. The server never trusts the browser about it: it
+// reads the stored bytes back as this person (so storage asks the kernel whether they may), checks
+// they are a clean photo with no hidden location, and records their SHA-256 on the piece. The
+// kernel then decides whether this person may add to the thing at all.
+export async function recordPhoto(worldId: string, name: string, caption: string): Promise<PhotoResult> {
+  const words = typeof caption === "string" ? caption.trim() : "";
+  if (words.length > 500 || CONTROL.test(words)) return { ok: false, error: "That caption can't be added as written. Try shorter, plain text." };
+  if (!isPhotoOf(name, String(worldId))) return { ok: false, error: "That photo can't be added here." };
+  if (!(await getUser())) return { ok: false, error: "Your identity isn't ready yet. Reload and try again." };
+  try {
+    const supabase = await createSupabase();
+    const { data, error } = await supabase.storage.from(PHOTO_BUCKET).download(name);
+    if (error || !data) return { ok: false, error: "The photo didn't arrive. Try adding it again." };
+    const bytes = new Uint8Array(await data.arrayBuffer());
+    const check = checkPhoto(bytes);
+    if (!check.ok) return { ok: false, error: photoProblem(check.reason) };
+    const kernel = await getKernel();
+    const { world } = await loadCreativeWorld(kernel, worldId);
+    await kernel.upsertEntity({
+      kind: "document",
+      scope: world.scope,
+      title: "Photo",
+      summary: words.slice(0, 240),
+      attributes: {
+        documentType: "photo", worldId: world.worldId, caption: words,
+        file: { bucket: PHOTO_BUCKET, name, type: check.type, bytes: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") },
+      },
+      visibility: "members",
+      idempotencyKey: `photo:${name}`,
+    });
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "The photo wasn't added. Try again." };
   }
 }

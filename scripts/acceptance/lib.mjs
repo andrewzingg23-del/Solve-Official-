@@ -98,6 +98,8 @@ export function kernelFor(accessToken) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   return {
+    // Storage as this person: every read and write is decided by the kernel's file_allowed.
+    storage: sb.storage,
     async rpc(fn, args = {}) {
       const { data, error } = await sb.schema("kernel_api").rpc(fn, args);
       if (error) throw Object.assign(new Error(`${fn}: ${error.message}`), { code: error.code });
