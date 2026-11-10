@@ -3,6 +3,8 @@
 //   node scripts/acceptance/run.mjs                 build for staging, then run every scenario
 //   node scripts/acceptance/run.mjs --no-build      reuse the last staging build
 //   node scripts/acceptance/run.mjs home            run one scenario
+//   node scripts/acceptance/run.mjs --base=https://… apps   run against a deployed preview instead of a
+//                                                    local build (it must be bound to solve-staging)
 //
 // The build is exactly what a Vercel preview gets: VERCEL_ENV=preview selects solve-staging in
 // lib/supabase/config.ts. It goes to .next-acceptance so the database-free build used by
@@ -19,17 +21,22 @@ import { control } from "./scenarios/control.mjs";
 import { together } from "./scenarios/together.mjs";
 import { page } from "./scenarios/page.mjs";
 import { space } from "./scenarios/space.mjs";
+import { apps } from "./scenarios/apps.mjs";
 
-const SCENARIOS = { home, card, control, together, page, space };
+const SCENARIOS = { home, card, control, together, page, space, apps };
 const args = process.argv.slice(2);
 const build = !args.includes("--no-build");
-const only = args.filter(a => !a.startsWith("--"));
+const only = args.filter(a => !a.startsWith("--")).flatMap(a => a.split(","));
+const unknown = only.filter(name => !(name in SCENARIOS));
+// A run that matches nothing would report a green it never earned.
+if (unknown.length) { console.error(`No such scenario: ${unknown.join(", ")}. Known: ${Object.keys(SCENARIOS).join(", ")}`); process.exit(2); }
+const remote = args.find(a => a.startsWith("--base="))?.slice("--base=".length).replace(/\/$/, "") ?? "";
 const port = process.env.ACCEPTANCE_PORT || "3007";
-const base = `http://localhost:${port}`;
+const base = remote || `http://localhost:${port}`;
 const distDir = ".next-acceptance";
 const env = { ...process.env, VERCEL_ENV: "preview", SOLVE_DIST_DIR: distDir, NEXT_TELEMETRY_DISABLED: "1" };
 
-if (build || !existsSync(join(distDir, "BUILD_ID"))) {
+if (!remote && (build || !existsSync(join(distDir, "BUILD_ID")))) {
   console.log(`Building for solve-staging into ${distDir} …`);
   const result = spawnSync(process.execPath, ["node_modules/next/dist/bin/next", "build"], { env, stdio: "inherit" });
   if (result.status !== 0) process.exit(result.status ?? 1);
@@ -38,17 +45,17 @@ if (build || !existsSync(join(distDir, "BUILD_ID"))) {
 const executablePath = chromiumPath();
 if (!executablePath) throw new Error("No Chromium found. Run: npx playwright install chromium");
 
-const server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "--port", port], { env, stdio: ["ignore", "pipe", "pipe"] });
+const server = remote ? null : spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "--port", port], { env, stdio: ["ignore", "pipe", "pipe"] });
 let log = "";
-server.stdout.on("data", d => { log = (log + d).slice(-12000); });
-server.stderr.on("data", d => { log = (log + d).slice(-12000); });
+server?.stdout.on("data", d => { log = (log + d).slice(-12000); });
+server?.stderr.on("data", d => { log = (log + d).slice(-12000); });
 
 const evidence = new Evidence(join("test-results", "acceptance", RUN));
 let browser;
 try {
   let ready = false;
   for (let i = 0; i < 60 && !ready; i++) {
-    if (server.exitCode !== null) throw new Error("Server exited:\n" + log);
+    if (server && server.exitCode !== null) throw new Error("Server exited:\n" + log);
     try { ready = (await fetch(base)).status < 500; } catch {}
     if (!ready) await new Promise(r => setTimeout(r, 1000));
   }
@@ -63,11 +70,13 @@ try {
     }
   }
 } finally {
-  evidence.write({ target: "solve-staging (taeikshnbcsjlgbattyp)", build: distDir });
+  evidence.write({ target: "solve-staging (taeikshnbcsjlgbattyp)", build: remote ? `deployed: ${remote}` : distDir });
   await browser?.close();
-  server.kill("SIGTERM");
+  server?.kill("SIGTERM");
 }
 
 const failed = evidence.failures.length;
-console.log(`\n${failed === 0 ? "PASS" : `FAIL — ${failed} of ${evidence.checks.length} checks`}. Evidence: ${evidence.dir}`);
+const none = evidence.checks.length === 0;
+console.log(`\n${none ? "FAIL — no checks ran" : failed === 0 ? "PASS" : `FAIL — ${failed} of ${evidence.checks.length} checks`}. Evidence: ${evidence.dir}`);
+if (none) process.exit(1);
 if (failed) { console.log("\nServer log tail:\n" + log.slice(-3000)); process.exit(1); }

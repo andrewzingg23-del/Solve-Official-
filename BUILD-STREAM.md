@@ -1454,4 +1454,10 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
     - The scenarios now drive the shell: the box, the Space switcher, Search, the Space's visibility, People.
     - The first run caught one regression: the public page showed its owner's name only in an all-capitals label. Fixed; it now shows the name as written.
     - Covered: create, reload, find, appearance with undo and Base, invite and join, publish to a stranger, withdraw.
-  - **Next:** connect one external capability end to end and verify it.
+  - **External capability — your AI connecting to Solve** (`scripts/acceptance/scenarios/apps.mjs`, run against this branch's deployed preview with `--base=`): **20/28** (`acc-202611101250-tuwj`).
+    - **Proven:** dynamic registration; PKCE; consent naming the app and its limits; the code exchanged for a token (and refused with a wrong verifier); 401 with OAuth metadata when there's no token; the tool list; Disconnect in Apps refusing the token at once, with no refresh.
+    - **Blocked (all 8 failures):** the preview has no staging service key — it exists only for the retired `claude/keen-cerf-tpd7io` branch — so the connector refuses to act as the person's AI and says so. The two permission-boundary checks now pass only on a permission refusal, so they fail honestly until writes work.
+    - **Found:** staging's Auth Site URL sends approvals to that retired preview.
+  - **Runner:** `--base=` targets a deployed preview. A run that matches no scenario, or runs no checks, now fails instead of reporting PASS (it reported "PASS — 0 checks" once this session).
+  - `docs/acceptance/STATUS.md` rewritten to the shell.
+  - **Next:** once the founder adds the staging key for previews, rerun `apps`; then Edit Space (versioned layout, preview, undo, Restore Base) as the next foundation.

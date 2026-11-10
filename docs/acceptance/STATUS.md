@@ -4,9 +4,10 @@ Every capability, and how it was verified. A capability is complete only when it
 been executed, its result read back independently, its authority verified, and its failure modes
 tested.
 
-**Last full run:** see the newest `npm run test:acceptance` entry in `BUILD-STREAM.md` (all seven
-scenarios — home, confirm, card, control, together, page, space — against **solve-staging**, on a side
-branch; **not on `main`, not in production**).
+**Last full run:** `acc-202611101243-pzpy` — six scenarios (home, card, control, together, page,
+space), **197/197**, against **solve-staging**, on branch `solve/shell-truth`. Connector scenario
+(`apps`) against this branch's deployed preview: `acc-202611101250-tuwj`, **20/28** — every failure
+traces to one missing setting (below). **Not on `main`, not in production.**
 
 **No capability is verified by a real person yet.** Automated runs prove behaviour and authority;
 they can't show whether someone enjoys it. The first real test: `docs/acceptance/2026-11-10-first-real-experience.md`.
@@ -15,68 +16,72 @@ they can't show whether someone enjoys it. The first real test: `docs/acceptance
 |---|---|
 | **Verified automatically** | Done in a real browser against staging, read back through the kernel as that person, authority and failures tested |
 | **Kernel-tested** | Proven against the real migrations, attacks included; no screen exercises it yet |
+| **UI only** | The screen exists and is honest about its limits; nothing deeper is claimed |
 | **Unbuilt** | Nothing exists |
 
 All acceptance identities are automated fixtures, labelled `[automated <run>]` in the kernel.
 
-## Home — the doorway
+## The shell
 
 | Capability | Status | Evidence |
 |---|---|---|
-| A visitor gets an identity with no sign-up; if the server can't, the browser makes one | **Verified automatically** | Session read back as a kernel actor; no sign-in screen is ever required to start |
-| Start something and land in it | **Verified automatically** | The kernel holds exactly the person's words under their scope; its history is theirs |
+| The approved shell: Space · People · Apps · Control; Search, Add, AI, visibility, Your ID | **Verified automatically** (no database) | `test:product` at 320/390/1440 and keyboard; `test:compare` against the reference image (mean difference 7.2/255) |
+| Start as a guest with no sign-up | **Verified automatically** | Session read back as a kernel actor |
+
+## Space
+
+| Capability | Status | Evidence |
+|---|---|---|
+| Make a Space from your words and land in it | **Verified automatically** | The kernel holds exactly the words under the person's scope; its history is theirs |
 | Unsent words survive a refresh and a lost connection | **Verified automatically** | Draft held on the device; the network drop is reported and the words stay |
-| Three recent things to reopen | **Verified automatically** | Listed after a reload; a different browser doesn't see a guest's things |
+| The Space switcher lists every Space you made or joined | **Verified automatically** | A different browser doesn't see a guest's Spaces |
+| Add words and photos to a Space | **Verified automatically** | GPS removed; stored bytes match the kernel's record; outsiders can't read, list or upload |
+| A Space shows who can see it (Private, Shared, Public) | **Verified automatically** | Private when made; Shared once a friend joins |
+| The full record of a Space | **Verified automatically** | Six parts, in order, with real names and no internal ids |
+| Search | **Verified automatically**, names and descriptions only | Finds by words; says so when nothing matches; a stranger finds nothing |
+| Edit Space (layout, components) | **Unbuilt** | Only colours change today (Your ID) |
+| Versions and restore of a Space | **Unbuilt** | History is recorded; there is no restore control |
 
-## ID — the card
-
-| Capability | Status | Evidence |
-|---|---|---|
-| Name the card, choose its look, undo, return to Base | **Verified automatically** | Saved as a versioned record and read back; contrast measured in the rendered browser |
-| The look shapes the person's whole environment | **Verified automatically** | Every look keeps text ≥ 4.5:1 and the accent ≥ 3:1 |
-| Identity recovery | **Unbuilt** | Decided (scoped); nothing built |
-
-## Space — MySpace
+## People
 
 | Capability | Status | Evidence |
 |---|---|---|
-| Share your Space: your card and your shared pages at one link | **Verified automatically** | A stranger with no account and no cookies opens it in the owner's colours, taps into a page and back, and gets no identity |
-| A thing's public page, showing only what was ticked | **Verified automatically** | A friend's contribution is never offered or shown; links in words are tappable |
-| Stop sharing | **Verified automatically, with a stated limit** | Offline at once; a photo link already issued lasts up to 10 minutes and saved copies can't be recalled, and the owner is told so |
+| Invite a friend by link; they join with no sign-up | **Verified automatically** | A link preview doesn't use the invite; a used link turns anyone else away; only the starter invites |
+| People lists everyone you share a Space with | **Verified automatically** | Each side sees the other, with the Space they share |
+| Remove someone from a Space | **Kernel-tested** | Their access, photos included, ends; no control on screen yet |
+| Person profile, Connect, Message | **Unbuilt** | |
 
-## Bench — your things
-
-| Capability | Status | Evidence |
-|---|---|---|
-| The one list of everything a person has made or joined | **Verified automatically** | The thing appears and opens; no word or id of ours |
-| The six-part record of a thing | **Verified automatically** | All six parts, in order, with real names and no internal ids |
-| Build with a friend from one link | **Verified automatically** | No sign-up to join; a link preview doesn't use the invite; a used link turns anyone else away; only the starter invites |
-| Photos in a shared thing | **Verified automatically** | GPS removed; the stored bytes match what the kernel recorded; outsiders can't read, list or upload; a recorded photo can't be replaced |
-| Ask someone to confirm; they answer from a link with no account | **Verified automatically** | Authored by the person asked; the owner can't confirm their own; a dispute sits beside the claim |
-| Ways to make it, including a handoff to another tool | **Verified automatically** | Recommended from the person's needs alone; the handoff carries exactly the brief they edited |
-| Remove someone from a thing | **Kernel-tested** | Their access, photos included, ends; no control on screen yet |
-| Delete a photo so its bytes are gone; files other than photos | **Unbuilt** | |
-
-## Control
+## Apps and your AI
 
 | Capability | Status | Evidence |
 |---|---|---|
+| Connect an outside AI app (OAuth 2.1, PKCE, consent) | **Verified against the deployed preview** | Registers, is sent to consent, a wrong verifier gets nothing, the code becomes a token, no token gets 401 |
+| It acts on your Spaces, only where allowed | **Blocked** | The preview has no staging service key, so the connector refuses honestly: "This deployment cannot act as the bot yet. Nothing was written." The permission checks can't run until it can write |
+| Disconnect it in Apps; it stops at once | **Verified against the deployed preview** | The token is refused immediately; refresh fails |
+| Discover apps; app detail | **Unbuilt** | Apps says there is no catalogue yet |
+| An AI inside Solve | **Not planned** | Solve runs no model of its own (DECISIONS.md, 2026-11-10) |
+
+## Control and Your ID
+
+| Capability | Status | Evidence |
+|---|---|---|
+| Your ID card, your name, your colours; undo; Return to Base | **Verified automatically** | Saved as a versioned record and read back; contrast measured as rendered; nobody else can read or forge it |
 | What you can reach, in plain words | **Verified automatically** | |
 | Take everything with you (export) | **Verified automatically** | The download is read back |
-| Connected apps: see them, disconnect them | **Kernel-tested; partly verified live** | A revoked app session is refused at once; the Disconnect button itself hasn't been pressed by the harness |
+| Identity recovery; claiming a guest's work on a second device | **Unbuilt** | Decided (scoped); nothing built |
 
-## My AI and connected apps
+## Share and publish
 
 | Capability | Status | Evidence |
 |---|---|---|
-| Connect an AI app (Claude, ChatGPT…) to your SOLVE | **Partly verified** | The approval screen renders to standard; the full sign-in can't be automated and has not been done since it was rebuilt |
-| A connected app reads, remembers when allowed, and adds only where you let your AI in | **Kernel-tested; verified live on staging** | Its direct write was refused and nothing was created |
-| A connected app sees only what you choose, thing by thing | **Kernel-tested** | Built in the kernel; the connector hasn't moved onto it yet, so old-style connections can still read what you can |
-| An AI inside the app itself | **Unbuilt** | |
+| Publish chosen pieces as a page; a stranger opens it with no account | **Verified automatically** | A friend's contribution is never offered or shown |
+| Share your Space at one link | **Verified automatically** | The stranger gets no identity; the kernel answers them nothing beyond what was shared |
+| Stop sharing | **Verified automatically, with a stated limit** | Offline at once; a photo link already issued lasts up to 10 minutes and saved copies can't be recalled, and the owner is told so |
 
 ## What needs the founder
 
-1. **The real two-person test** (above). No automated run stands in for it.
-2. **Production:** nothing from this work is in production; every database change needs your approval.
-3. **Staging's anonymous sign-in limit** still interrupts automated runs from one machine.
-4. **Rotate** the production secret key pasted in chat on 2026-11-09.
+1. **Staging service key for previews.** It exists only for the retired `claude/keen-cerf-tpd7io` branch. Add `SUPABASE_STAGING_SECRET_KEY` (the staging project's secret key) for Preview in Vercel; then rerun `node scripts/acceptance/run.mjs --base=<preview> apps`.
+2. **Staging Auth Site URL** sends people approving an app to that retired preview. Point it at this branch's preview (or a stable alias) in Supabase → Authentication → URL Configuration.
+3. **The real two-person test** (above). No automated run stands in for it.
+4. **Production:** nothing from this work is in production; every database change needs your approval.
+5. **Rotate** the production secret key pasted in chat on 2026-11-09.
