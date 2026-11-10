@@ -1273,3 +1273,9 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
     - The connector reads through the agent's grants.
     - Control gets "Connected apps".
     - Then apply to staging and run the proof with a real MCP client.
+
+- 2026-11-10 — **Direction: lead with creation and participation; the operating system grows underneath** (founder, via a ChatGPT synthesis; documentation only). The question changes from "how many capabilities can SOLVE support?" to "what can someone create on SOLVE today that they're excited to show someone tomorrow?" The test: a creator publishes something, shares the link on Instagram, and a stranger uses or personalizes it with no technical support. Then: does either person come back? No foundation changes. The order of work becomes:
+  1. **Make the public Space exceptional.** Today's `/p/<id>` is one thing's page. Next it becomes the person's own page: their card, their creations and their links, link-in-bio simple and MySpace expressive, beautiful and reliable on a phone. This is what the founder-and-brother test (`docs/acceptance/2026-11-10-first-real-experience.md`) exercises.
+  2. **One real "Make it mine".** Copy an explicitly reusable SOLVE-native page's permitted configuration, customize it and publish your own, with attribution to the original.
+  3. **AI as creation partner.** It proposes a real change, previews it, and applies it with approval. It recommends a specialist when SOLVE isn't the right place (the paths in `lib/product/paths.ts`).
+  4. **Connect for developers.** Finish what increment 1 (`20261110070000`, built and not applied) started: move the connector onto connection agents, apply it, and prove one outside app end to end. The documented authorization gap remains a security gate before any outside app gets access.
