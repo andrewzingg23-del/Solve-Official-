@@ -1336,3 +1336,24 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
     - New acceptance scenario `scenarios/space.mjs`, owner plus a stranger with no account and no cookies, **passed** (`acc-202611100539-1azo`). The full seven-scenario run was **213/214** (`acc-202611100541-mhht`). Its one miss was the `card` scenario finding two cards on ID now that the preview shows one; its selectors were scoped to the full card. The rerun of `card` was stopped by the staging sign-in limit (`429`), so **that fix is unverified on staging**; `test:product` passes with the same selector change.
   - **Founder direction recorded in `DECISIONS.md`:** the Centurion card as the reference for card design language, applied as its own bounded improvement.
   - **Next smallest improvement:** let the visitor keep the person, by saving them as a contact or sharing the Space onward. That is what "use the result" means beyond looking.
+
+- 2026-11-10 — **Dead code removed, on its own branch for review: `solve/remove-dead-code`** (from `solve/from-zero` at `208dfe0`; **not merged**). This is recommendation 1 of the codebase analysis. It removes the retired product, which the founder's direction already said to delete at cutover.
+  - **Method:** files were kept by tracing imports outward from every live route, the kernel tests and the scripts that remain. Everything else in `app/` and `lib/` went. Database migrations and `kernel_api` are untouched.
+  - **Also removed:** six old API endpoints that nothing called but were still reachable from the internet — `/api/bot/avatar` (which calls a paid image provider), `/api/bot/chat`, `/api/ideas/expand`, `/api/passport/*`, `/api/reason` and `/api/worlds/*`. Removed with them:
+    - the Arcadia build step that ran before every build;
+    - the CesiumJS globe copy;
+    - retired test scripts (`test:world`, `test:studio`, `test:shared-room`) and old demos;
+    - 10 packages nothing used (`cesium`, a physics engine, the Solana wallet adapters, `@higgsfield/client`, `@types/three`).
+  - **Size:** `app/` and `lib/` went from about 48,000 lines in 485 files to 13,700 lines in 131 files. 439 files deleted in total.
+  - **Coverage was proven, not assumed.** Every live file that lost its only test had it restored, with just the cases about deleted screens cut:
+    - the connector's outreach, part, proof and routes tests, keeping draft/approve authority, said-no and record-on-the-person's-word checks;
+    - the consent screen's bot character;
+    - the money-flag test, still guarding live `lib/flags.ts`.
+  - **Restored** after first being wrongly removed: `lib/sandbox/pglite.ts` (loaded by bundling for the in-browser kernel tests) and `@types/pg` (used by the Postgres test runner).
+  - **Checks:**
+    - typecheck 0 errors; lint **0 problems** (was 9 warnings, all in removed code); build ok.
+    - `npm test` 335 pass / 0 fail (was 641; the rest tested removed code).
+    - `test:product` passed; `test:browser` kernel tests in Chromium 74/74.
+    - **All seven acceptance scenarios on staging: 237/237** (`acc-202611100653-u5jl`), which also verifies the card-selector fix the sign-in limit had blocked.
+  - **Not removed:** dormant database functions (money, ledger, settlements, custom types), deliberately. Removing database functions is a separate, riskier decision.
+  - **Next:** the founder reviews the branch. Once it's merged into `solve/from-zero`, recommendation 2 (the three staging-only migrations) follows.

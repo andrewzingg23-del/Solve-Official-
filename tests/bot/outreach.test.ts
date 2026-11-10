@@ -10,7 +10,6 @@ import { createConnector, type Session } from "../../lib/bot/connector";
 import { approveConnection } from "../../lib/bot/memory";
 import { approveAndSend, encodeOutreach, finalMessage, OPT_OUT, outcomesIn, parseOutreach, recordOutcome, SEND_CAPABILITY, sentIn } from "../../lib/bot/outreach";
 import { saveBot } from "../../lib/bot/store";
-import { overview, waitingOn } from "../../lib/bot/waiting";
 import { setBotAccess, WorldInputError } from "../../lib/bot/worlds";
 import { createCreativeWorld } from "../../lib/world/creative";
 import { createKernelDb, service, user } from "../kernel/harness";
@@ -56,10 +55,6 @@ it("lets the bot draft, and only the person approve; Practice sends nothing outs
   assert.match(drafted.content[0].text, /^Drafted 2 messages for "Find two print shops to pilot solve"\. Nothing is sent: the person approves each one here/);
   const pieceId = (drafted.structuredContent as { artifact_id: string }).artifact_id;
 
-  const worlds = [{ worldId: world.worldId, title: world.title, scope: world.scope }];
-  assert.deepEqual((await waitingOn(ana, worlds, anaId)).map((w) => [w.kind, w.kind === "approve" ? w.pending : 0]), [["approve", 2]]);
-  assert.deepEqual(await waitingOn(ben, worlds, benId), [], "a member who can only read is not asked to approve");
-
   const bot = botAs(anaBot);
   await assert.rejects(approveAndSend(bot, { worldId: world.worldId, pieceId, lead: 0 }), (e: Error) => e.name === "forbidden", "the bot cannot approve its own drafts");
   await assert.rejects(approveAndSend(ben, { worldId: world.worldId, pieceId, lead: 0 }), (e: Error) => e.name === "forbidden");
@@ -75,25 +70,10 @@ it("lets the bot draft, and only the person approve; Practice sends nothing outs
   assert.match(String(task.result?.message), /If this isn't useful, reply "no"/);
   assert.equal((await sentIn(ben, world.scope)).get(pieceId)?.size, 1, "a member who can read sees what was approved");
 
-  assert.deepEqual((await waitingOn(ana, worlds, anaId)).map((w) => [w.kind, w.kind === "approve" ? w.pending : 0]), [["approve", 1]]);
   const read = await call(ana, "read_world", { world_id: world.worldId });
   assert.match(read.content[0].text, /outreach for: Find two print shops to pilot solve: 2 drafted messages \(0\. Inkwell Print Co\.; 1\. Northside Fab Lab\), 1 approved by the person and recorded in Practice \(not sent outside solve\)/);
   const revise = await call(ana, "propose_outreach", { world_id: world.worldId, goal: "Other", from: "Andrew", leads: LEADS, artifact_id: pieceId });
   assert.match(revise.content[0].text, /already approved, so the outreach stays as it was/);
-});
-
-it("shows each message as it would go out, labeled Practice, with approve only where it's still waiting", async () => {
-  const { renderToStaticMarkup } = await import("react-dom/server");
-  const { OutreachCard } = await import("../../app/outreach-card");
-  const outreach = parseOutreach(encodeOutreach({ goal: "Find two print shops to pilot solve", from: "Andrew, founder of solve", leads: LEADS }))!;
-  const html = renderToStaticMarkup(OutreachCard({ pieceId: "p", outreach, sent: new Map([[0, { taskId: "t", lead: 0, channel: "practice" as const, at: "2026-10-05T05:00:00Z", by: "a" }]]), approve: async () => {} }));
-  assert.match(html, /Outreach · 1 of 2 approved/);
-  assert.match(html, /Practice/);
-  assert.match(html, /found on inkwell\.example/);
-  assert.match(html, /Andrew, founder of solve\nIf this isn&#x27;t useful, reply &quot;no&quot;/);
-  assert.match(html, /Approved · recorded in Practice, not sent · Oct 5/);
-  assert.equal(html.match(/Approve this message/g)?.length, 1);
-  assert.doesNotMatch(html, /bg-accent/, "a draft or a Practice send never carries the point");
 });
 
 it("records what happened on the person's word, and never contacts a business that said no again", async () => {
@@ -142,37 +122,6 @@ it("records what happened on the person's word, and never contacts a business th
 
   const read = await call("read_world", { world_id: world.worldId });
   assert.match(read.content[0].text, /outcomes on the person's word: Inkwell Print Co\.: meeting; Northside Fab Lab: said_no/);
-
-  const { results } = await overview(ana, [{ worldId: world.worldId, title: world.title, scope: world.scope }], anaId);
-  assert.deepEqual(results.map((r) => [r.business, r.outcome]).sort(), [["Inkwell Print Co.", "meeting"], ["Northside Fab Lab", "said_no"]], "the latest outcome per business reaches the Command Center");
-});
-
-it("shows outcomes on the card, and offers no more recording after a no", async () => {
-  const { renderToStaticMarkup } = await import("react-dom/server");
-  const { OutreachCard } = await import("../../app/outreach-card");
-  const outreach = parseOutreach(encodeOutreach({ goal: "Pilots", from: "Andrew", leads: LEADS }))!;
-  const sentAt = (lead: number) => ({ taskId: `t${lead}`, lead, channel: "practice" as const, at: "2026-10-05T05:00:00Z", by: "a" });
-  const outcome = (o: "replied" | "said_no", note = "") => ({ outcome: o, note, at: "2026-10-05T06:00:00Z", basis: "self_reported" as const, by: "a", number: 7 });
-  const html = renderToStaticMarkup(OutreachCard({
-    pieceId: "p", outreach,
-    sent: new Map([[0, sentAt(0)], [1, sentAt(1)]]),
-    outcomes: new Map([[0, [outcome("replied", "Wants a call")]], [1, [outcome("said_no")]]]),
-    approve: async () => {}, record: async () => {},
-  }));
-  assert.match(html, /Outreach · 2 of 2 approved · 1 replied · 1 said no/);
-  assert.match(html, /Replied · on your word · Oct 5.*Wants a call/);
-  assert.match(html, /Said no · on your word · Oct 5.*won&#x27;t be contacted again from this World/);
-  assert.equal(html.match(/>Record</g)?.length, 1, "no more recording for a business that said no");
-});
-
-it("puts outreach results under what actually happened on the Command Center", async () => {
-  const { renderToStaticMarkup } = await import("react-dom/server");
-  const { CommandView } = await import("../../app/command/view");
-  const html = renderToStaticMarkup(CommandView({ data: { name: "Ana", botName: "Nova", worlds: [], journeys: [], connections: [], saves: [], results: [
-    { worldId: "w1", worldTitle: "Pilot users", pieceId: "p", business: "Inkwell Print Co.", outcome: "meeting", note: "Thursday at 10", at: "2026-10-05T06:00:00Z" },
-  ] } }));
-  assert.match(html, /What actually happened.*Meeting booked · Inkwell Print Co\..*Thursday at 10.*on your word · Oct 5.*in Pilot users/);
-  assert.doesNotMatch(html, /Nothing saved yet/, "a recorded result is something that happened");
 });
 
 it("records what a win was worth on the person's word, and totals it per year and currency", async () => {
@@ -202,17 +151,5 @@ it("records what a win was worth on the person's word, and totals it per year an
   assert.match(byBot.content[0].text, /^Recorded: Won, worth CA\$1,250\.50, on the person's word\./);
   assert.deepEqual((byBot.structuredContent as { value: unknown }).value, { amount: 1250.5, currency: "CAD" });
 
-  const { results } = await overview(ana, [{ worldId: world.worldId, title: world.title, scope: world.scope }], anaId);
-  const { madeIn } = await import("../../lib/bot/waiting");
-  const year = new Date().getUTCFullYear();
-  assert.deepEqual(madeIn(results, year), [{ minor: 240000, currency: "USD" }, { minor: 125050, currency: "CAD" }]);
-  assert.deepEqual(madeIn(results, year - 1), [], "only this year's wins count toward this year");
-
-  const { renderToStaticMarkup } = await import("react-dom/server");
-  const { CommandView } = await import("../../app/command/view");
-  const html = renderToStaticMarkup(CommandView({ data: { name: "Ana", botName: "Nova", worlds: [], journeys: [], connections: [], saves: [], results, now: new Date() } }));
-  assert.match(html, new RegExp(`Made through solve in ${year}: \\$2,400 \\+ CA\\$1,250\\.50.*from wins you recorded, on your word`));
-  assert.match(html, /Won · \$2,400 · Inkwell Print Co\./);
-  assert.doesNotMatch(html, /10,000/, "no target bar: the north star is ours, not a game on the person's screen");
 });
 

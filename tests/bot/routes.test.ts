@@ -105,34 +105,3 @@ it("lets the bot propose routes, and only the person take one and mark its steps
   assert.ok((await loadCreativeWorld(ana, worldId)).artifacts.some((a) => a.entityId === pieceId));
 });
 
-it("draws proposed routes with a choice, and a taken route with whose word each done step rests on", async () => {
-  const { renderToStaticMarkup } = await import("react-dom/server");
-  const { RouteCard } = await import("../../app/route-card");
-  const routes = parseRoutes(encodeRoutes({ ask: ASK, routes: ROUTES }))!;
-  const act = async () => {};
-  const proposed = renderToStaticMarkup(RouteCard({ pieceId: "p", routes, take: act, markDone: act }));
-  assert.match(proposed, /Proposed · 2 routes/);
-  assert.equal(proposed.match(/Take this route/g)?.length, 2);
-  assert.match(proposed, /Nothing starts until you take a route\./);
-  assert.match(proposed, /example\.gov/);
-  assert.doesNotMatch(proposed, /bg-accent/, "a proposal never carries the point");
-  assert.match(proposed, /Not yet known.*Whether the council needs public liability insurance/);
-  assert.match(proposed, /Done when.*A receipt for the first pitch/);
-
-  const taken = {
-    pieceId: "p", route: 0, takenBy: "a", takenAt: "2026-10-05T12:00:00Z",
-    steps: [
-      { taskId: "t1", step: 0, do: "Apply for a casual trader permit", link: "https://example.gov/market-permit", status: "completed" as const, doneAt: "2026-10-05T13:00:00Z", since: "2026-10-05T13:00:00Z" },
-      { taskId: "t2", step: 1, do: "Book a Saturday pitch", link: null, status: "ready" as const, doneAt: null, since: "2026-10-05T12:00:00Z" },
-      { taskId: "t3", step: 2, do: "Bring 20 framed prints and a card reader", link: null, status: "ready" as const, doneAt: null, since: "2026-10-05T12:00:00Z" },
-    ],
-  };
-  const mine = renderToStaticMarkup(RouteCard({ pieceId: "p", routes, taken, take: act, markDone: act }));
-  assert.match(mine, /Route taken · 1 of 3 done/);
-  assert.match(mine, /Done · On your word · Oct 5/);
-  assert.equal(mine.match(/Mark done/g)?.length, 1, "only the next step can be marked done");
-  assert.equal(mine.match(/bg-accent/g)?.length, 1, "the point lands only on the done step");
-  const theirs = renderToStaticMarkup(RouteCard({ pieceId: "p", routes, taken, who: "Ana" }));
-  assert.match(theirs, /Done · On Ana&#x27;s word/);
-  assert.doesNotMatch(theirs, /Mark done/, "without the action the card is read only");
-});

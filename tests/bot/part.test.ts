@@ -104,20 +104,6 @@ it("designs a part through the connector, serves it only to people who may see t
   assert.equal((await proofsIn(ana, world.scope))[0].pieceId, pieceId);
 });
 
-it("draws the part from its checked outline, with the STL a click away", async () => {
-  const { createElement } = await import("react");
-  const { renderToStaticMarkup } = await import("react-dom/server");
-  const { PartPreview } = await import("../../app/part-preview");
-  const body = encodePart({ purpose: "Phone stand", profile: STAND, width: 70, material: "PETG" });
-  const html = renderToStaticMarkup(createElement(PartPreview, { worldId: "w", pieceId: "p", body, title: "Phone stand" }));
-  assert.match(html, /<path d="M0\.0 /);
-  assert.match(html, /80 × 70 × 63 mm · PETG/);
-  assert.match(html, /href="\/parts\/w\/p\.stl"[^>]*>Download STL/);
-  assert.doesNotMatch(html, /SOV_PART_V1/);
-  assert.equal(renderToStaticMarkup(createElement(PartPreview, { worldId: "w", pieceId: "p", body: "just text", title: "x" })), "");
-});
-
-// Closed, consistently wound and the right volume: every edge used once each way, positive volume.
 function assertSolid(part: NonNullable<ReturnType<typeof parsePart>>, volume: number) {
   const tris = partTriangles(part);
   const edges = new Map<string, number>();

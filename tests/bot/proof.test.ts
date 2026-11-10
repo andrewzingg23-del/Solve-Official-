@@ -102,24 +102,6 @@ it("refuses read access, missing proof, unsafe links, unknown pieces, and bots l
   assert.deepEqual(await proofsIn(ana, world.scope), [], "nothing was saved by any refused call");
 });
 
-it("draws a save point only with its words, and never a link that is not a web address", async () => {
-  const { createElement } = await import("react");
-  const { renderToStaticMarkup } = await import("react-dom/server");
-  const { SavePoint, PracticeLabel } = await import("../../app/save-point");
-  const base = { what: "Printed the stand", basis: "self_reported" as const, at: `${new Date().getUTCFullYear()}-10-05T12:00:00Z`, number: 1042 };
-  const html = renderToStaticMarkup(createElement(SavePoint, { ...base, link: "https://photos.example.com/stand.jpg" }));
-  assert.match(html, /bg-accent/, "a save gets the point");
-  assert.match(html, /Saved · No\. 1042/);
-  assert.match(html, /On your word · Oct 5 · /);
-  assert.match(renderToStaticMarkup(createElement(SavePoint, { ...base, basis: "witnessed", who: "Ana" })), /Seen by Ana · Oct 5/);
-  assert.match(renderToStaticMarkup(createElement(SavePoint, { ...base, at: "2024-03-01T00:00:00Z" })), /On your word · Mar 1, 2024/, "an older save shows its year");
-  assert.match(html, /href="https:\/\/photos\.example\.com\/stand\.jpg"[^>]*>See proof</);
-  assert.doesNotMatch(renderToStaticMarkup(createElement(SavePoint, { ...base, link: "javascript:alert(1)" })), /href=/, "only web links");
-  const practice = renderToStaticMarkup(createElement(PracticeLabel, {}));
-  assert.match(practice, /Practice/);
-  assert.doesNotMatch(practice, /bg-accent/, "Practice never gets the point");
-});
-
 it("refuses a memory where the kernel cannot keep its key, before writing anything", async () => {
   const { KernelError } = await import("../../lib/kernel/client");
   const { noteMemory, MemoryUnavailableError } = await import("../../lib/bot/memory");
