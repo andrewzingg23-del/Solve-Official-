@@ -8,7 +8,8 @@ import { PHOTO_BUCKET, PHOTO_LINK_SECONDS, isPhotoOf } from "@/lib/product/photo
 import { loadCreativeWorld } from "@/lib/world/creative";
 import { readWorldMembers } from "@/lib/world/collaboration";
 import { nameFor, type ActorNames } from "@/lib/product/thing";
-import { AddPhoto, AddPiece, AiAccess, InviteFriend, SharePage } from "./together";
+import { AddPhoto, AddPiece, AiAccess, InviteFriend, RevisePiece, SharePage } from "./together";
+import { actionsFor, heldInSpace } from "@/lib/product/capabilities";
 import { loadBot } from "@/lib/bot/store";
 import { accessFrom, botGrantsIn } from "@/lib/bot/worlds";
 import { ownDescription, readPublication } from "@/lib/product/page";
@@ -46,13 +47,15 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
     kernel.readEvents(world.scope, { limit: 200 }).catch(() => []),
   ]);
   const authorOf = new Map<string, string>();
+  const editorOf = new Map<string, string>(); // who made the latest change after the first
   for (const e of events) {
     const id = (e.payload as { entity_id?: unknown })?.entity_id;
     if (e.type === "kernel.entity.created" && typeof id === "string" && !authorOf.has(id)) authorOf.set(id, e.actor_id);
+    if (e.type === "kernel.entity.updated" && typeof id === "string") editorOf.set(id, e.actor_id);
   }
   const ownerId = membership?.ownerActorId ?? null;
   const memberIds = (membership?.members ?? []).map(m => m.actorId);
-  const ids = [...new Set([ownerId, ...memberIds, ...authorOf.values()].filter((x): x is string => Boolean(x)))];
+  const ids = [...new Set([ownerId, ...memberIds, ...authorOf.values(), ...editorOf.values()].filter((x): x is string => Boolean(x)))];
   const actors = ids.length ? await kernel.readActors(ids).catch(() => []) : [];
   const names: ActorNames = {
     labels: Object.fromEntries(actors.map(a => [a.actor_id, a.label])),
@@ -61,7 +64,9 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
   };
   const people = [ownerId, ...memberIds].filter((x): x is string => Boolean(x));
   const isOwner = Boolean(ownerId && me?.actor_id === ownerId);
-  const canAdd = isOwner || (membership?.members ?? []).some(m => m.actorId === me?.actor_id && m.role === "editor");
+  const role = isOwner ? "owner" as const : (membership?.members ?? []).find(m => m.actorId === me?.actor_id)?.role ?? null;
+  const held = heldInSpace(role);
+  const canAdd = role === "owner" || role === "editor";
   // Starting a thing also records the starter's opening words as a piece titled "Goal", whose text
   // is the thing's summary — already shown in the header. Listing it again showed the same words
   // twice (acceptance run, 2026-11-10). Only that piece, matched on both markers, is left out.
@@ -83,14 +88,14 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
   const ai = isOwner ? await loadBot(kernel).then(async bot => bot.avatar
     ? { name: bot.persona.name, access: accessFrom(await botGrantsIn(kernel, world.scope, bot.avatar.agent_id)) }
     : null).catch(() => null) : null;
-  type Piece = { id: string; at: string; text: string; photo?: { url: string | null }; link?: { url: string; madeWith: string } };
+  type Piece = { id: string; at: string; text: string; kind: "text" | "photo" | "link"; version: number; photo?: { url: string | null }; link?: { url: string; madeWith: string } };
   const pieces: Piece[] = [
-    ...texts.map(a => ({ id: a.entityId, at: a.updatedAt, text: a.body || a.title })),
+    ...texts.map(a => ({ id: a.entityId, at: a.updatedAt, text: a.body || a.title, kind: "text" as const, version: a.version })),
     ...photoEntities.map(e => {
       const name = (e.attributes.file as { name: string }).name;
-      return { id: e.entity_id, at: e.updated_at, text: typeof e.attributes.caption === "string" ? e.attributes.caption : "", photo: { url: links.get(name) ?? null } };
+      return { id: e.entity_id, at: e.updated_at, text: typeof e.attributes.caption === "string" ? e.attributes.caption : "", kind: "photo" as const, version: e.version, photo: { url: links.get(name) ?? null } };
     }),
-    ...linkEntities.map(e => ({ id: e.entity_id, at: e.updated_at, text: "",
+    ...linkEntities.map(e => ({ id: e.entity_id, at: e.updated_at, text: "", kind: "link" as const, version: e.version,
       link: { url: String(e.attributes.url), madeWith: typeof e.attributes.madeWith === "string" ? e.attributes.madeWith : "" } })),
   ].sort((a, b) => b.at.localeCompare(a.at));
   const initial = (id: string) => (nameFor(id, names).replace(/^[^\p{L}]+/u, "").charAt(0) || "·").toUpperCase();
@@ -118,7 +123,7 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
       {isOwner ? <InviteFriend worldId={world.worldId} title={world.title} /> : null}
     </section>
 
-    {canAdd ? <div id="add" className="s-stack" style={{ "--gap": "12px" } as React.CSSProperties}>
+    {canAdd ? <div id="add" className={styles.addRow}>
       <AddPiece worldId={world.worldId} />
       <AddPhoto worldId={world.worldId} />
     </div> : null}
@@ -143,7 +148,10 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
                 <a href={piece.link.url} target="_blank" rel="noopener noreferrer nofollow" className={styles.linkOut} data-made>{piece.link.url}</a>
               </p> : null}
               {piece.text ? <p>{piece.text}</p> : null}
-              <span className={styles.by}>Added by <strong data-author>{who}</strong> · {piece.at.slice(0, 10)}{piece.link ? " · their word, not checked by SOLVE" : ""}</span>
+              <span className={styles.by}>Added by <strong data-author>{who}</strong>{editorOf.has(piece.id) ? <> · edited by <strong data-editor>{nameFor(editorOf.get(piece.id)!, names)}</strong></> : null} · {piece.at.slice(0, 10)}{piece.link ? " · their word, not checked by Solve" : ""}</span>
+              {actionsFor({ kind: piece.kind }, held).map(action => action.id === "revise"
+                ? <RevisePiece key={action.id} worldId={world.worldId} entityId={piece.id} version={piece.version} text={piece.text} label={action.label} />
+                : null)}
             </li>;
           })}</ul>}
     </section>

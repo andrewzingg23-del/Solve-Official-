@@ -4,13 +4,21 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { PHOTO_BUCKET, PHOTO_MAX_BYTES, PHOTO_MAX_SIDE, photoName } from "@/lib/product/photo";
-import { addPiece, makeInvite, setAiAccess, recordPhoto, setPagePublished } from "./together-actions";
+import { addPiece, makeInvite, revisePiece, setAiAccess, recordPhoto, setPagePublished } from "./together-actions";
 import styles from "./together.module.css";
 
 // Add your piece. The words stay on screen until the kernel has them.
 export function AddPiece({ worldId }: { worldId: string }) {
   const router = useRouter();
   const [text, setText] = useState("");
+  const field = useRef<HTMLTextAreaElement>(null);
+  // Grow with the words (and shrink back once added) where the browser can't size the field itself.
+  useEffect(() => {
+    const el = field.current;
+    if (!el || CSS.supports("field-sizing", "content")) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [text]);
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
   return <form className={styles.compose} onSubmit={event => {
@@ -23,9 +31,12 @@ export function AddPiece({ worldId }: { worldId: string }) {
     });
   }}>
     <label htmlFor="piece" className="s-visually-hidden">Add something</label>
-    <textarea id="piece" className={styles.words} rows={2} maxLength={5000} value={text} disabled={pending}
-      placeholder="Add an idea, a link, a plan — anything" onChange={event => { setText(event.target.value); setError(""); }} />
-    <button type="submit" className="s-button" disabled={!text.trim() || pending}>{pending ? "Adding…" : "Add"}</button>
+    <textarea ref={field} id="piece" className={styles.words} rows={1} maxLength={5000} value={text} disabled={pending}
+      placeholder="Add an idea, a link, a plan…" onChange={event => { setText(event.target.value); setError(""); }} />
+    {/* The approved input's round arrow: it says what it does, and is quiet until there's something to add. */}
+    <button type="submit" className={styles.send} aria-label="Add" disabled={!text.trim() || pending} data-pending={pending || undefined}>
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+    </button>
     {error ? <p role="alert" className="s-error">{error}</p> : null}
   </form>;
 }
@@ -141,8 +152,9 @@ export function AddPhoto({ worldId }: { worldId: string }) {
         <button type="button" className="s-button" onClick={add} disabled={Boolean(busy)} data-add-photo>{busy === "adding" ? "Adding…" : "Add photo"}</button>
         <button type="button" className="s-button" data-variant="quiet" disabled={busy === "adding"} onClick={() => { setPhoto(null); setError(""); }}>Cancel</button>
       </div>
-    </div> : <label htmlFor="photo-file" className="s-button" data-variant="quiet" role="button" tabIndex={0}
+    </div> : <label htmlFor="photo-file" className={styles.chip} role="button" tabIndex={0}
       onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); input.current?.click(); } }}>
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5" /><circle cx="9" cy="10.5" r="1.8" /><path d="m20.5 15.5-4.5-4.5-9 7.5" /></svg>
       {busy === "preparing" ? "Opening…" : "Add a photo"}
     </label>}
     {error ? <p role="alert" className="s-error">{error}</p> : null}
@@ -173,8 +185,27 @@ export function SharePage({ worldId, title, description, published, selected, ca
     router.refresh();
   });
 
-  return <section id="share" className={styles.share} aria-labelledby="share-title" data-share>
-    <h2 id="share-title">Public page</h2>
+  // Sharing is something a person does, not a form that lives on every Space: one quiet line that says
+  // where things stand, opening in place — and opening by itself when they arrive from "Private".
+  const panel = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const openIfAsked = () => { if (window.location.hash === "#share" && panel.current) panel.current.open = true; };
+    openIfAsked();
+    window.addEventListener("hashchange", openIfAsked);
+    return () => window.removeEventListener("hashchange", openIfAsked);
+  }, []);
+  return <details ref={panel} id="share" className={styles.sharePanel} data-share>
+    <summary className={styles.shareLine}>
+      <span className={styles.shareIcon} aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h17M12 3.5c2.4 2.4 3.4 5.2 3.4 8.5s-1 6.1-3.4 8.5c-2.4-2.4-3.4-5.2-3.4-8.5s1-6.1 3.4-8.5z" /></svg>
+      </span>
+      <span className={styles.shareText}>
+        <h2 id="share-title" className={styles.shareTitle}>Public page</h2>
+        <span className="s-muted s-small" data-share-state>{published ? "Shared — anyone with the link can see it" : "Not shared"}</span>
+      </span>
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={styles.shareChevron}><path d="m7 10 5 5 5-5" /></svg>
+    </summary>
+    <div className={styles.shareBody}>
     <p className="s-muted s-small">
       {published ? "Shared. Anyone with the link can see what's below — and can save or screenshot it." :
         "Show this to anyone, no account needed to look. Choose what they see; anything you share can be saved or screenshotted by whoever sees it."}
@@ -224,7 +255,8 @@ export function SharePage({ worldId, title, description, published, selected, ca
     </div>
     {note ? <p role="status" className="s-small" data-share-note>{note}</p> : null}
     {error ? <p role="alert" className="s-error">{error}</p> : null}
-  </section>;
+    </div>
+  </details>;
 }
 
 // Your AI in this Space: the AI you connected in Apps can do nothing here until you choose. Read
@@ -243,12 +275,12 @@ export function AiAccess({ worldId, current, name }: { worldId: string; current:
     start(async () => {
     const result = await setAiAccess(worldId, next);
     if (!result.ok) { setValue(before); setError(result.error); return; }
-    setNote(next === "none" ? `${name} can't see this Space.` : next === "read" ? `${name} can read this Space.` : `${name} can read this Space and add drafts.`);
+    setNote(next === "none" ? `${name} isn't let in here.` : next === "read" ? `${name} can read this Space.` : `${name} can read this Space and add drafts.`);
     router.refresh();
     });
   };
   const options: Array<["none" | "read" | "add", string, string]> = [
-    ["none", "Off", "It can't see this Space"],
+    ["none", "Off", "Not let in here through Solve"],
     ["read", "Read", "It can read what's here"],
     ["add", "Add", "It can also add drafts, labelled as its own"],
   ];
@@ -263,5 +295,57 @@ export function AiAccess({ worldId, current, name }: { worldId: string; current:
     </fieldset>
     {note ? <p role="status" className="s-small" data-ai-note>{note}</p> : null}
     {error ? <p role="alert" className="s-error">{error}</p> : null}
+    {/* Verified 2026-11-10 (docs/architecture/2026-11-10-reusable-foundation.md §6): an app's own
+        token can still read what the person can, whatever is chosen here. Say so. */}
+    <p className="s-muted s-small" data-ai-limit>This decides what {name} can do here through Solve. An app you&apos;ve connected can still read everything you can until each app gets its own limited access — the next security step. It can never change anything except through here.</p>
   </section>;
 }
+
+// Edit one piece, in place. Offered only when the capability contract says this person may; the
+// kernel decides again on save. The request id is kept until the save succeeds, so pressing Save
+// again after a dropped connection repeats the same request instead of making a second change.
+export function RevisePiece({ worldId, entityId, version, text, label }: {
+  worldId: string; entityId: string; version: number; text: string; label: string;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [words, setWords] = useState(text);
+  const [expected, setExpected] = useState(version);
+  const [requestId, setRequestId] = useState("");
+  const [error, setError] = useState("");
+  const [latest, setLatest] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  if (!open) return <button type="button" className={styles.reviseOpen} data-revise-open
+    onClick={() => { setWords(text); setExpected(version); setRequestId(crypto.randomUUID()); setError(""); setLatest(null); setOpen(true); }}>{label}</button>;
+  return <form className={styles.revise} data-revise onSubmit={event => {
+    event.preventDefault();
+    if (pending || !words.trim()) return;
+    start(async () => {
+      setError("");
+      try {
+        const result = await revisePiece(worldId, entityId, expected, words, requestId);
+        if (!result.ok) {
+          setError(result.error);
+          // Someone else saved first: show theirs, keep these words, and aim the next save at theirs.
+          if (result.latest) { setLatest(result.latest.text); setExpected(result.latest.version); setRequestId(crypto.randomUUID()); }
+          return;
+        }
+        setOpen(false); setLatest(null);
+        router.refresh();
+      } catch {
+        setError("It wasn't saved — the connection dropped. Your words are still here; save again.");
+      }
+    });
+  }}>
+    <label htmlFor={`revise-${entityId}`} className="s-visually-hidden">Edit this piece</label>
+    <textarea id={`revise-${entityId}`} className="s-textarea" rows={4} maxLength={5000} value={words} autoFocus
+      onChange={event => setWords(event.target.value)} disabled={pending} data-revise-text />
+    {latest !== null ? <p className="s-small" data-revise-latest><span className="s-muted">Saved by someone else: </span>{latest}</p> : null}
+    <div className={styles.row}>
+      <button className="s-button" disabled={pending || !words.trim()} data-revise-save>{pending ? "Saving…" : "Save"}</button>
+      <button type="button" className="s-button" data-variant="quiet" disabled={pending} onClick={() => setOpen(false)}>Cancel</button>
+    </div>
+    {error ? <p role="alert" className="s-error" data-revise-error>{error}</p> : null}
+  </form>;
+}
+

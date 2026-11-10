@@ -4,7 +4,7 @@
 // looking, goes dark the moment the owner stops sharing, and that a handoff to another tool carries
 // exactly the brief the owner reviewed.
 import { createClient } from "@supabase/supabase-js";
-import { INTERNAL_IDS, MARK, OUR_WORDS, STAGING, VIEWPORTS, close, persona, beginThing } from "../lib.mjs";
+import { INTERNAL_IDS, MARK, OUR_WORDS, STAGING, VIEWPORTS, close, persona, beginThing, openShare } from "../lib.mjs";
 import { loaded, phonePhoto, whyNot } from "./photos.mjs";
 
 const S = "page";
@@ -57,6 +57,12 @@ export async function page({ browser, base, evidence }) {
     // --- The owner chooses what visitors see, and sees it before sharing.
     await owner.page.goto(base + `/world/${worldId}`);
     const share = owner.page.locator("[data-share]");
+    evidence.record(S, owner.role, "sharing is one quiet line until they ask for it",
+      await share.waitFor({ timeout: 15000 }).then(() => true, () => false) && !(await share.evaluate(el => el.open)) && /Not shared/.test(await share.locator("[data-share-state]").innerText()));
+    // Arriving from the Space's own "Private" opens it in place.
+    await owner.page.locator("[data-visibility]").first().click();
+    evidence.record(S, owner.role, "tapping the Space's visibility opens sharing in place",
+      await owner.page.waitForFunction(() => document.querySelector("[data-share]")?.open === true, null, { timeout: 10000 }).then(() => true, () => false));
     const offered = await share.locator("[data-choice]").allInnerTexts();
     evidence.record(S, owner.role, "is offered only what they added themselves, all unticked",
       offered.some(t => t.includes(ownText)) && offered.some(t => t.includes("Lake at dusk")) && !offered.some(t => /Dana/.test(t))

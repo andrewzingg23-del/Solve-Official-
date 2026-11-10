@@ -180,6 +180,13 @@ export async function switcherEntry(page, base, title) {
   return page.locator("[aria-label='Your Spaces'] a[data-thing]", { hasText: title });
 }
 
+/** Open a Space's sharing panel (one line until opened) the way a person would, if it isn't open. */
+export async function openShare(page) {
+  const panel = page.locator("[data-share]");
+  await panel.waitFor({ timeout: 15000 });
+  if (!(await panel.evaluate(el => el.open))) await panel.locator("summary").click();
+}
+
 export async function beginThing(page, base, words) {
   await page.goto(base + "/");
   await page.getByRole("textbox", { name: "Ask, create, or add anything" }).fill(words);

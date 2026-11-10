@@ -3,7 +3,7 @@
 // result at once without installing SOLVE. Two parties: the owner, and a stranger with no account
 // and no cookies who opens the one link.
 import { createClient } from "@supabase/supabase-js";
-import { INTERNAL_IDS, MARK, OUR_WORDS, STAGING, VIEWPORTS, close, persona, beginThing } from "../lib.mjs";
+import { INTERNAL_IDS, MARK, OUR_WORDS, STAGING, VIEWPORTS, close, persona, beginThing, openShare } from "../lib.mjs";
 import { loaded, phonePhoto } from "./photos.mjs";
 
 const S = "space";
@@ -41,6 +41,7 @@ export async function space({ browser, base, evidence }) {
     await p.getByRole("textbox", { name: "Caption" }).fill("First dance");
     await p.locator("[data-add-photo]").click();
     await p.locator("[data-photo]", { hasText: "First dance" }).waitFor({ timeout: 20000 });
+    await openShare(p);
     await p.locator("[data-share] [data-choice]", { hasText: "First dance" }).locator("input").check();
     await p.locator("[data-publish]").click();
     evidence.record(S, owner.role, "shares a thing as a page", await p.locator("[data-page-link]").waitFor({ timeout: 15000 }).then(() => true, () => false));

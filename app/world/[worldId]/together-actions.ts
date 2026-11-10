@@ -4,7 +4,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { getKernel } from "@/lib/kernel/server";
 import { createClient as createSupabase, getUser } from "@/lib/supabase/server";
 import { PHOTO_BUCKET, checkPhoto, isPhotoOf, photoProblem } from "@/lib/product/photo";
-import { createCreativeArtifact, loadCreativeWorld } from "@/lib/world/creative";
+import { createCreativeArtifact, loadCreativeWorld, updateCreativeArtifact } from "@/lib/world/creative";
+import { KernelError } from "@/lib/kernel/client";
 import { createWorldInvitation } from "@/lib/world/invitations";
 import { readWorldMembers } from "@/lib/world/collaboration";
 import { cleanSelection, setPublished } from "@/lib/product/page";
@@ -126,4 +127,50 @@ export async function setAiAccess(worldId: string, access: WorldAccess): Promise
   } catch {
     return { ok: false, error: "That didn't change. Only the Space's owner can let their AI in; nothing else changed." };
   }
+}
+
+export type ReviseResult =
+  | { ok: true; version: number }
+  | { ok: false; error: string; latest?: { version: number; text: string } };
+
+const REQUEST = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Revise one piece (the "revise" capability, lib/product/capabilities.ts). The kernel decides: it
+// needs world.entity.write on this Space, and it refuses a revision of a version the person wasn't
+// looking at, so nobody silently overwrites someone else. The request id comes from the screen and
+// is reused on a retry, so a save that was sent twice is one change, not two.
+export async function revisePiece(worldId: string, entityId: string, expectedVersion: number, words: string, requestId: string): Promise<ReviseResult> {
+  const text = typeof words === "string" ? words.trim() : "";
+  if (!text) return { ok: false, error: "Write something, or cancel to keep it as it was." };
+  if (text.length > 5000 || CONTROL.test(text)) return { ok: false, error: "That can't be saved as written. Try shorter, plain text." };
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1 || !REQUEST.test(requestId)) return { ok: false, error: "This couldn't be saved. Reload and try again." };
+  if (!(await getUser())) return { ok: false, error: "Your identity isn't ready yet. Reload and try again." };
+  const kernel = await getKernel();
+  let world, piece;
+  try {
+    const loaded = await loadCreativeWorld(kernel, worldId);
+    world = loaded.world;
+    piece = loaded.artifacts.find(a => a.entityId === entityId);
+  } catch {
+    return { ok: false, error: "This Space can't be reached right now. Nothing changed." };
+  }
+  if (!piece) return { ok: false, error: "That piece isn't here any more." };
+  const first = text.split("\n")[0].trim();
+  try {
+    await updateCreativeArtifact(kernel, {
+      scope: world.scope, entityId, requestId, expectedVersion,
+      title: first.length > 80 ? first.slice(0, 77).trimEnd() + "…" : first,
+      body: text, position: piece.position,
+    });
+  } catch (error) {
+    if (error instanceof KernelError && error.name === "conflict") {
+      const now = (await loadCreativeWorld(kernel, worldId).catch(() => null))?.artifacts.find(a => a.entityId === entityId);
+      return { ok: false, error: "Someone changed this while you were editing. Their version is shown; your words are kept here — save again to replace it.",
+        latest: now ? { version: now.version, text: now.body || now.title } : undefined };
+    }
+    if (error instanceof KernelError && error.name === "forbidden") return { ok: false, error: "You can see this Space but not change it." };
+    return { ok: false, error: "It wasn't saved. Your words are still here; try again." };
+  }
+  const saved = (await loadCreativeWorld(kernel, worldId).catch(() => null))?.artifacts.find(a => a.entityId === entityId);
+  return { ok: true, version: saved?.version ?? expectedVersion + 1 };
 }
