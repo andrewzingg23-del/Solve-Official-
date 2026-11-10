@@ -235,14 +235,18 @@ export function AiAccess({ worldId, current, name }: { worldId: string; current:
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const [pending, start] = useTransition();
-  const choose = (next: "none" | "read" | "add") => start(async () => {
-    setError(""); setNote("");
+  const choose = (next: "none" | "read" | "add") => {
+    // Show the choice at once (outside the transition, which would hold it back); if the kernel
+    // refuses it, put back what is actually true.
+    const before = value;
+    setValue(next); setError(""); setNote("");
+    start(async () => {
     const result = await setAiAccess(worldId, next);
-    if (!result.ok) { setError(result.error); return; }
-    setValue(next);
+    if (!result.ok) { setValue(before); setError(result.error); return; }
     setNote(next === "none" ? `${name} can't see this Space.` : next === "read" ? `${name} can read this Space.` : `${name} can read this Space and add drafts.`);
     router.refresh();
-  });
+    });
+  };
   const options: Array<["none" | "read" | "add", string, string]> = [
     ["none", "Off", "It can't see this Space"],
     ["read", "Read", "It can read what's here"],

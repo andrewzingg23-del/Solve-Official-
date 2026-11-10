@@ -63,6 +63,9 @@ try {
   browser = await chromium.launch({ executablePath, args: ["--no-sandbox"] });
   for (const [name, scenario] of Object.entries(SCENARIOS)) {
     if (only.length && !only.includes(name)) continue;
+    // The connector acts as a person's AI with the deployment's staging service key, which a local
+    // build doesn't have; it runs against a deployed preview, or when named.
+    if (!only.length && name === "apps" && !remote) { console.log("apps: skipped locally — run with --base=<preview> apps"); continue; }
     try {
       await scenario({ browser, base, evidence });
     } catch (error) {
