@@ -1418,7 +1418,7 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
     - Acceptance scenarios gained one shared step, "begin and land in it" (`beginThing`).
   - **Kept whole:** the kernel, money included. It is verified, and removing capabilities would be redesigning it.
   - **Docs:** cut to what governs the build — the direction, `DECISIONS.md`, `AGENTS.md` (rewritten, short), `SECURITY-INVARIANTS.md` (rewritten so every guarantee names a test that exists), `docs/acceptance/STATUS.md` (rewritten to the new structure and to what's true), the real-person test, the README (rewritten), and this log. Everything else in `docs/` and the root canon files is removed on the founder's word. The GitHub templates were repointed. Comments in applied migrations still mention old docs; applied migrations are never edited.
-  - **Size:** `app/` and `lib/` 105 files, about 7,900 lines; repository 271 files; 10 Markdown files.
+  - **Size:** `app/` and `lib/` 106 files, about 7,900 lines; repository 221 files; 11 Markdown files (including the two GitHub templates).
   - **Checks:**
     - typecheck 0, lint 0, build ok, `npm test` 237/237.
     - `test:product` passed; in-browser kernel tests 73/73.
