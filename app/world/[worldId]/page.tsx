@@ -74,7 +74,7 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
     for (const entry of signed?.data ?? []) if (entry.path && entry.signedUrl && !entry.error) links.set(entry.path, entry.signedUrl);
   }
   const linkEntities = entities.filter(e => e.kind === "document" && e.attributes.documentType === "link" && typeof e.attributes.url === "string");
-  const published = isOwner && me ? (await readPublication(kernel, me.actor_id, world.worldId).catch(() => null))?.published ?? false : false;
+  const publication = isOwner && me ? await readPublication(kernel, me.actor_id, world.worldId).catch(() => null) : null;
   type Piece = { id: string; at: string; text: string; photo?: { url: string | null }; link?: { url: string; madeWith: string } };
   const pieces: Piece[] = [
     ...texts.map(a => ({ id: a.entityId, at: a.updatedAt, text: a.body || a.title })),
@@ -135,7 +135,11 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
     </section>
 
     {canAdd ? <Ways worldId={world.worldId} title={world.title} summary={ownDescription(world.summary, world.title)} isOwner={isOwner} /> : null}
-    {isOwner ? <SharePage worldId={world.worldId} published={published} /> : null}
+    {isOwner ? <SharePage worldId={world.worldId} title={world.title} description={ownDescription(world.summary, world.title)}
+      published={publication?.published ?? false} selected={publication?.pieces ?? []}
+      candidates={pieces.filter(p => !p.link && authorOf.get(p.id) === ownerId).map(p => ({
+        id: p.id, kind: p.photo ? "photo" as const : "text" as const, text: p.text, url: p.photo?.url ?? null }))}
+      friendsPieces={pieces.filter(p => !p.link && authorOf.get(p.id) !== ownerId).length} /> : null}
 
     <p><Link href={`/world/${encodeURIComponent(world.worldId)}/record`} className="s-button" data-variant="link">See its full record — who did what, and what proves it →</Link></p>
   </div>;

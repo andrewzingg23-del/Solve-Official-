@@ -1239,3 +1239,21 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
   - **All six scenarios on staging: 206/206** (`acc-202611100346-u17h`).
 
   **Not built:** connected tools (no outside tool is acted in yet; that needs Connect Increment 1), AI reading intentions (needs are read by tested rules, not a model), a person's whole-profile page across all their things, and choosing search indexing.
+
+- 2026-11-10 — **Deliberate publishing, honest withdrawal, and the first real test written** (branch `solve/from-zero`). An external review of the previous slice asked for three corrections before launch, and all three are made.
+  1. **Owners choose what's public.** New migration `supabase/migrations/20261110060000_page_selection.sql`, **applied to staging only**. The publication record carries the ids the owner ticked, and a piece appears only if it is ticked and still purely the owner's own; with nothing ticked, only the title and name show. The share panel lists only the owner's own pieces, all unticked, and says how many friends' pieces aren't listed and stay private. Beside the list is a preview of exactly what visitors will see. Stopping sharing keeps the selection, so sharing again restores it.
+  2. **Withdrawal is described truthfully.** The page and its photos stop opening at once, but a photo link already issued keeps working until it expires (up to 10 minutes), and saved copies can't be recalled. The owner is told exactly that, and `docs/acceptance/STATUS.md` records it as a stated limit.
+  3. **Real people.** `docs/acceptance/2026-11-10-first-real-experience.md` sets out six steps for the founder and his brother, ending with the page in an Instagram bio opened from an unrelated phone and a return the next day. Every step has a pass condition and what to watch for, including the known rough edges. The stable address for it is https://solve-git-solve-from-zero-sovigrn.vercel.app (latest push, against staging; publicly reachable, checked).
+
+  **Also changed:**
+  - https addresses in a page's words become tappable links (`linkParts`, tested), for link-in-bio use.
+  - The skip link now appears only after Tab, not when a save moves focus. Screenshots had shown it popping up over the page.
+  - "they stay private" grammar.
+  - `docs/acceptance/STATUS.md` brought up to date: it cited the old 103-check run, and it now states that nothing is human-verified yet.
+
+  **Checks:**
+  - Kernel `public-page` 6/6.
+  - `npm test` 629 pass / 0 fail, lint 0 errors, build ok, `test:product` passed (Tab still reaches the skip link).
+  - Full six-scenario run on staging, 212/213 (`acc-202611100408-1a18`). The miss was the check's own wording, and with it corrected `page` passed on its own (`acc-202611100411-4ksq`).
+
+  **Next:** the founder's direction to build the connector by reconciling MCPvault with what already exists, not by starting over.

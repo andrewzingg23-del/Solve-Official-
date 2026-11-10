@@ -66,3 +66,13 @@ it("a description SOLVE wrote, in our own word, is never shown or handed on", as
   assert.equal(ownDescription("Trip plan", "Trip plan"), "", "a description that only repeats the title adds nothing");
   assert.equal(ownDescription(" Plan the garden ", "Garden"), "Plan the garden");
 });
+
+it("https addresses in a page's words become links; nothing else does", async () => {
+  const { linkParts } = await import("../../lib/product/page");
+  assert.deepEqual(linkParts("My shop: https://shop.example.com/a. Say hi!"), [
+    { text: "My shop: " }, { href: "https://shop.example.com/a", text: "shop.example.com/a" }, { text: ". Say hi!" }]);
+  for (const words of ["javascript:alert(1)", "http://insecure.example.com", "https://user:pw@x.com", "data:text/html,hi", "https://localhost/x"]) {
+    assert.ok(linkParts(words).every(p => !("href" in p)), words);
+  }
+  assert.deepEqual(linkParts("plain words"), [{ text: "plain words" }]);
+});

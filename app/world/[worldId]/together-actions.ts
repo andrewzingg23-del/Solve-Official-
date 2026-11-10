@@ -7,7 +7,7 @@ import { PHOTO_BUCKET, checkPhoto, isPhotoOf, photoProblem } from "@/lib/product
 import { createCreativeArtifact, loadCreativeWorld } from "@/lib/world/creative";
 import { createWorldInvitation } from "@/lib/world/invitations";
 import { readWorldMembers } from "@/lib/world/collaboration";
-import { setPublished } from "@/lib/product/page";
+import { cleanSelection, setPublished } from "@/lib/product/page";
 import { TOOLS, cleanLink } from "@/lib/product/paths";
 
 export type AddResult = { ok: true } | { ok: false; error: string };
@@ -91,7 +91,7 @@ export type SimpleResult = { ok: true } | { ok: false; error: string };
 
 // Share a thing as a public page, or stop. Only its owner can: the record lives in the owner's own
 // scope, and the kernel's page reader only honours the owner's record (20261110050000).
-export async function setPagePublished(worldId: string, published: boolean): Promise<SimpleResult> {
+export async function setPagePublished(worldId: string, published: boolean, pieces?: string[]): Promise<SimpleResult> {
   if (!(await getUser())) return { ok: false, error: "Your identity isn't ready yet. Reload and try again." };
   try {
     const kernel = await getKernel();
@@ -99,7 +99,10 @@ export async function setPagePublished(worldId: string, published: boolean): Pro
     const me = await kernel.whoami();
     const { ownerActorId } = await readWorldMembers(kernel, world.scope);
     if (ownerActorId !== me.actor_id) return { ok: false, error: "Only the person who started this can share it publicly." };
-    await setPublished(kernel, me.actor_id, world.worldId, Boolean(published), randomUUID());
+    // What the owner ticked. The kernel shows a ticked piece only while it is purely the owner's own,
+    // so a selection can never publish a friend's contribution whatever this request contains.
+    await setPublished(kernel, me.actor_id, world.worldId, Boolean(published), randomUUID(),
+      pieces === undefined ? undefined : cleanSelection(pieces));
     return { ok: true };
   } catch {
     return { ok: false, error: published ? "It couldn't be shared. Try again." : "It couldn't be taken down. Try again — nothing else changed." };

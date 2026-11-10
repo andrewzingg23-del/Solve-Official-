@@ -5,8 +5,16 @@ acceptance run changes what is known. A capability is **complete only when its h
 been executed, its result independently read back, its authority verified, and its failure modes
 tested** (founder directive, 2026-11-09).
 
-Last updated from acceptance run `acc-202611100008-u5kf` (103/103) against **solve-staging**
-(`taeikshnbcsjlgbattyp`), commit on `main` recorded in `BUILD-STREAM.md`.
+Last updated 2026-11-10 from acceptance run `acc-202611100346-u17h` (**206/206, all six scenarios:
+home, confirm, card, control, together, page**) against **solve-staging** (`taeikshnbcsjlgbattyp`),
+on branch `solve/from-zero` — **not on `main`, not in production**. The `page` scenario was then
+extended for deliberate selection: the full six-scenario run `acc-202611100408-1a18` passed 212 of 213,
+and its one miss was the check's own wording ("stays" against the corrected "they stay"). With the
+check corrected, `page` passed on its own (`acc-202611100411-4ksq`).
+
+**No capability here is verified by a real human yet.** Automated runs prove behaviour and authority;
+they cannot show whether someone would enjoy this, or replace a link-in-bio with it. The first real
+test is written out in `docs/acceptance/2026-11-10-first-real-experience.md`.
 
 ## How to read this
 
@@ -77,10 +85,16 @@ a real person and none touches production.
 | Confirmation cannot be abused | **Verified automatically** | The holder cannot confirm their own record; a changed answer is refused in the app and in the kernel; a tampered or malformed link reveals nothing; answering grants no access to the holder's thing |
 | Withdraw a request | **Backend only** | `cancel_confirmation` exists and is kernel-tested; no control in the app yet |
 | A person's own types and vocabulary | **Verified in kernel tests; backend only** | `define_type`, `put_object`, applied to staging, zero call sites |
-| Invite someone into a thing; grant and revoke | **Implemented, unverified here** | `access-panel.tsx` and invitations exist and are World-scoped; needs signed-in fixtures |
+| Build something with a friend | **Verified automatically** | `together`: the starter invites by link (share sheet or copy); a friend with no account sees who invited them and to what, joins with one press, adds words and photos credited to them; a link preview doesn't use up the invite; a used link turns anyone else away; only the starter can make invites (kernel-enforced) |
+| Photos in a shared thing | **Verified automatically** | A phone photo carrying GPS is stored with no location; stored bytes hash to what the kernel recorded; outsiders can't download, link, list or upload; a recorded photo can't be overwritten even by a builder |
+| Ways to make it (tools as paths) | **Verified automatically** | `page`: a portfolio is recommended here first, a specialist offered and labelled as opening another app; the Replit link carries exactly the brief the owner edited, in Replit's documented format; a made-elsewhere link comes back marked "their word, not checked" |
+| AI choosing the tool | **Unimplemented** | Needs are read by tested rules, not a model |
+| Public page, deliberately selected | **Verified automatically** | Nothing the owner made is public until ticked; what friends added is never offered; the preview shows exactly what's ticked; a stranger with no account sees exactly the ticked pieces, links tappable, and gets no identity by looking; ticking more updates the live page |
+| Stop sharing | **Verified automatically, with a stated limit** | The page and its photos stop opening at once for new requests. **Not** recalled: a photo link already issued keeps working until it expires (up to 10 minutes), and anything a visitor already saved or screenshotted. The owner is told exactly this |
+| Grant and revoke a named person | **Implemented, unverified here** | Kernel-tested (removing someone removes their photo access too); no rebuilt control to remove someone yet |
 | "Talk to Your AI" panel | **UI only, unverified** | Renders with a Send button; nothing has exercised it |
 | Apps & Integrations, Public SOV Profile cards | **UI only** | Describe capabilities; no functional run |
-| Evidence (photographs, files) | **Blocked** | No storage bucket exists |
+| Files other than photos; deleting a photo so its bytes are gone | **Unimplemented** | The `things` bucket exists on staging; deletion waits on per-scope keys |
 
 ## Bench
 
@@ -145,7 +159,12 @@ trusted on write instead of read back.
    separate cookie jars, so a link opened in a different one fails. The robust fix needs an **email
    template change** in Supabase Auth (a `token_hash` link, or a 6-digit code), staging first. The
    code side is mine; the template is a dashboard setting.
-3. **A storage bucket**, for photographs and files.
+3. ~~A storage bucket~~ — created on staging 2026-11-10 (`things`, private, kernel-decided).
+4. **The anonymous sign-in rate limit on staging** (about 30 new guests an hour from one address).
+   It blocked automated runs twice on 2026-11-10, and friends joining from one shared network would
+   meet the same ceiling. It is a Supabase Auth setting.
+5. **A real experience with you and your brother**, written out in
+   `docs/acceptance/2026-11-10-first-real-experience.md`. No automated run can stand in for it.
 
 Not blocked, and next on my side: **the SOV card** — the founder's direction is that the visual
 language is the value and the card is its reference — built on a versioned appearance record, and

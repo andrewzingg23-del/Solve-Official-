@@ -6,7 +6,7 @@ import { getKernel } from "@/lib/kernel/server";
 import { createClient as createSupabase } from "@/lib/supabase/server";
 import { normalizeCardLook } from "@/lib/product/card";
 import { environmentFor, environmentStyle } from "@/lib/product/environment";
-import { ownDescription } from "@/lib/product/page";
+import { linkParts, ownDescription } from "@/lib/product/page";
 import { PHOTO_BUCKET, PHOTO_LINK_SECONDS, isPhotoOf } from "@/lib/product/photo";
 import { Mark } from "@/app/ui/mark";
 import { SovCard } from "@/app/ui/sov-card";
@@ -69,7 +69,10 @@ export default async function PublicPage({ params }: PageProps<"/p/[worldId]">) 
                 ? <img src={url} alt={piece.text || `A photo by ${by || "the owner"}`} className={styles.image} loading="lazy" />
                 : <div className={styles.missing}>This photo can&apos;t be shown right now.</div>
               : null}
-            {piece.text ? <p>{piece.text}</p> : null}
+            {piece.text ? <p>{linkParts(piece.text).map((part, i) => "href" in part
+              // Links the owner wrote; the page doesn't vouch for where they go.
+              ? <a key={i} href={part.href} target="_blank" rel="noopener noreferrer nofollow ugc" className={styles.link}>{part.text}</a>
+              : <span key={i}>{part.text}</span>)}</p> : null}
           </li>;
         })}
       </ul> : <p className={styles.description}>Nothing shared here yet.</p>}

@@ -150,36 +150,80 @@ export function AddPhoto({ worldId }: { worldId: string }) {
   </div>;
 }
 
-// Share this as a public page, or stop. Anyone with the link can look, with no account; only what
-// the owner made themselves appears there — never a friend's contribution.
-export function SharePage({ worldId, published }: { worldId: string; published: boolean }) {
+// Share this as a public page, or stop. Nothing the owner made is public until they tick it, and
+// they see exactly what visitors will see before sharing. What friends added is never offered.
+export type PageCandidate = { id: string; kind: "text" | "photo"; text: string; url: string | null };
+
+export function SharePage({ worldId, title, description, published, selected, candidates, friendsPieces }: {
+  worldId: string; title: string; description: string; published: boolean; selected: string[];
+  candidates: PageCandidate[]; friendsPieces: number;
+}) {
   const router = useRouter();
+  const [chosen, setChosen] = useState<string[]>(() => selected.filter(id => candidates.some(c => c.id === id)));
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const [pending, start] = useTransition();
   const path = `/p/${worldId}`;
-  const toggle = (next: boolean) => start(async () => {
+  const shown = candidates.filter(c => chosen.includes(c.id));
+  const changed = published && (chosen.length !== selected.length || chosen.some(id => !selected.includes(id)));
+  const save = (next: boolean, message: string) => start(async () => {
     setError(""); setNote("");
-    const result = await setPagePublished(worldId, next);
+    const result = await setPagePublished(worldId, next, chosen);
     if (!result.ok) { setError(result.error); return; }
-    setNote(next ? "Shared. Anyone with the link can see it." : "Taken down. The link no longer works.");
+    setNote(message);
     router.refresh();
   });
+
   return <section className={styles.share} aria-labelledby="share-title" data-share>
     <h2 id="share-title">Public page</h2>
-    {published ? <>
-      <p className="s-muted">Anyone with the link can see the title, the description and what you added yourself. What friends added stays private.</p>
-      <div className={styles.row}>
+    <p className="s-muted s-small">
+      {published ? "Shared. Anyone with the link can see what's below — and can save or screenshot it." :
+        "Show this to anyone, no account needed to look. Choose what they see; anything you share can be saved or screenshotted by whoever sees it."}
+    </p>
+
+    {candidates.length ? <fieldset className={styles.choose}>
+      <legend className="s-small">What you added — tick what visitors should see</legend>
+      {candidates.map(c => <label key={c.id} className={styles.option} data-choice={c.id}>
+        <input type="checkbox" checked={chosen.includes(c.id)} disabled={pending}
+          onChange={e => setChosen(now => e.target.checked ? [...now, c.id] : now.filter(id => id !== c.id))} />
+        {c.kind === "photo" && c.url
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img src={c.url} alt="" className={styles.thumb} />
+          : null}
+        <span className={styles.optionText}>{c.text || (c.kind === "photo" ? "A photo" : "")}</span>
+      </label>)}
+    </fieldset> : <p className="s-small">Nothing you added yet. The page will show the title and your name.</p>}
+    {friendsPieces ? <p className="s-muted s-small" data-friends-private>
+      {friendsPieces === 1 ? "1 thing a friend added isn't listed — it stays private." : `${friendsPieces} things friends added aren't listed — they stay private.`}
+    </p> : null}
+
+    <div className={styles.preview} aria-label="What visitors will see" data-preview>
+      <span className="s-label">What visitors will see</span>
+      <strong className={styles.previewTitle}>{title}</strong>
+      {description ? <p className="s-muted s-small">{description}</p> : null}
+      {shown.length ? <ul className={styles.previewList}>{shown.map(c => <li key={c.id}>
+        {c.kind === "photo" && c.url
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img src={c.url} alt="" className={styles.previewImage} />
+          : null}
+        {c.text ? <span>{c.text}</span> : null}
+      </li>)}</ul> : <p className="s-muted s-small">Only the title and your name.</p>}
+    </div>
+
+    <div className={styles.row}>
+      {published ? <>
+        {changed ? <button type="button" className="s-button" disabled={pending} onClick={() => save(true, "Updated. Visitors now see what's ticked.")} data-update-page>{pending ? "Updating…" : "Update the page"}</button> : null}
         <a href={path} className="s-button" data-variant="quiet" target="_blank" rel="noopener" data-page-link>Open the page</a>
-        <button type="button" className="s-button" data-variant="quiet" onClick={() =>
-          { const full = window.location.origin + path; navigator.clipboard?.writeText(full).then(() => setNote("Link copied."), () => setNote(full)); }}>Copy link</button>
-        <button type="button" className="s-button" data-variant="quiet" disabled={pending} onClick={() => toggle(false)} data-unpublish>{pending ? "Taking down…" : "Stop sharing"}</button>
-      </div>
-    </> : <>
-      <p className="s-muted">Show it to anyone — no account needed to look. Only what you added yourself appears; what friends added stays private.</p>
-      <div><button type="button" className="s-button" disabled={pending} onClick={() => toggle(true)} data-publish>{pending ? "Sharing…" : "Share as a page"}</button></div>
-    </>}
-    {note ? <p role="status" className="s-small">{note}</p> : null}
+        <button type="button" className="s-button" data-variant="quiet" onClick={() => {
+          const full = window.location.origin + path;
+          navigator.clipboard?.writeText(full).then(() => setNote("Link copied."), () => setNote(full));
+        }}>Copy link</button>
+        <button type="button" className="s-button" data-variant="quiet" disabled={pending} data-unpublish
+          onClick={() => save(false, "Stopped sharing. The page no longer opens. A photo someone already had open may keep loading for up to 10 minutes, and anything someone already saved can't be taken back.")}>
+          {pending ? "Stopping…" : "Stop sharing"}</button>
+      </> : <button type="button" className="s-button" disabled={pending} onClick={() => save(true, "Shared. Anyone with the link can see it.")} data-publish>{pending ? "Sharing…" : "Share as a page"}</button>}
+    </div>
+    {note ? <p role="status" className="s-small" data-share-note>{note}</p> : null}
     {error ? <p role="alert" className="s-error">{error}</p> : null}
   </section>;
 }

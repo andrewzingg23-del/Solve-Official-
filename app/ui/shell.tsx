@@ -8,6 +8,13 @@ import { DestinationIcon, Mark } from "./mark";
 import { SovCard } from "./sov-card";
 import styles from "./shell.module.css";
 
+// Whether the most recent key a person pressed was Tab — the only way the skip link should appear.
+let tabbed = false;
+if (typeof window !== "undefined") {
+  window.addEventListener("keydown", event => { tabbed = event.key === "Tab"; }, true);
+  window.addEventListener("pointerdown", () => { tabbed = false; }, true);
+}
+
 // One shell. The frame is SOLVE's; the person is present in it through their own card, which sits
 // at the foot of the rail and opens ID. Pages a person reaches from someone else's link get only
 // SOLVE's mark — never someone else's navigation.
@@ -35,7 +42,9 @@ export function Shell({ name, look, signedIn, children }: {
   const here = DESTINATIONS.find(d => d.href === active)?.label ?? "SOLVE";
 
   return <div className={styles.shell}>
-    <a href="#main" className={styles.skip}>Skip to content</a>
+    {/* Only for someone who pressed Tab to get here: after a save, Next can move focus to the first
+        focusable element, which would pop this up over the page for a person who never asked. */}
+    <a href="#main" className={styles.skip} onFocus={event => { if (!tabbed) event.currentTarget.blur(); }}>Skip to content</a>
     <aside className={styles.rail} aria-label="SOLVE">
       <Link href="/" className={styles.brand} aria-label="SOLVE, home"><Mark size={24} />SOLVE</Link>
       <nav aria-label="Primary" className={styles.nav}>{links}</nav>

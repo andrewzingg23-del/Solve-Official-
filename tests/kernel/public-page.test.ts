@@ -47,9 +47,31 @@ it("an unpublished thing has no page, and none of its photos are public", async 
   assert.equal(await isPublic(ownersPhoto.name), false);
 });
 
-it("once the owner publishes, anyone with no account sees exactly what the owner made", async () => {
+it("publishing with nothing ticked shows the title and name, and none of the owner's pieces", async () => {
   const s = await setup();
-  await setPublished(s.owner, s.ownerId, s.world.worldId, true, "publish");
+  await setPublished(s.owner, s.ownerId, s.world.worldId, true, "publish-empty", []);
+  const page = await s.read();
+  assert.equal(page.title, "My garden");
+  assert.deepEqual(page.pieces, [], "nothing is public that wasn't deliberately selected");
+  assert.equal(await s.isPublic(s.ownersPhoto.name), false);
+});
+
+it("only ticked pieces appear — and a tick can never publish a friend's piece or a private one", async () => {
+  const s = await setup();
+  await setPublished(s.owner, s.ownerId, s.world.worldId, true, "publish-photo", [s.ownersPhoto.id]);
+  let texts = (await s.read()).pieces.map(p => p.text);
+  assert.deepEqual(texts, ["The tomato bed"], "the owner's unticked words stay private");
+  await setPublished(s.owner, s.ownerId, s.world.worldId, true, "publish-all",
+    [s.ownersText, s.ownersPhoto.id, s.friendsPhoto.id, s.privatePhoto.id, "not-an-id"]);
+  texts = (await s.read()).pieces.map(p => p.text);
+  assert.ok(!texts.includes("Dana's selfie") && !texts.includes("Not for the page"));
+  assert.equal(await s.isPublic(s.friendsPhoto.name), false, "ticking a friend's photo does not make it public");
+  assert.equal(await s.isPublic(s.privatePhoto.name), false);
+});
+
+it("once the owner publishes what they ticked, anyone with no account sees exactly that", async () => {
+  const s = await setup();
+  await setPublished(s.owner, s.ownerId, s.world.worldId, true, "publish", [s.ownersText, s.ownersPhoto.id]);
   const page = await s.read();
   assert.equal(page.title, "My garden");
   assert.equal(page.by, "Ana Reyes");
@@ -68,11 +90,11 @@ it("once the owner publishes, anyone with no account sees exactly what the owner
 
 it("someone invited to build cannot publish the owner's thing, nor slip their edits onto the page", async () => {
   const s = await setup();
-  await setPublished(s.friend, s.friendId, s.world.worldId, true, "friend-publish");
+  await setPublished(s.friend, s.friendId, s.world.worldId, true, "friend-publish", [s.ownersText]);
   await assert.rejects(s.read(), sqlstate("KA007"), "a friend's own publication record means nothing");
   await assert.rejects(s.friend.upsertEntity({ kind: "resource", scope: `actor:${s.ownerId}`, title: "Public page",
     attributes: { sov: "solve.page", worldId: s.world.worldId, published: true }, visibility: "private", idempotencyKey: "forge" }));
-  await setPublished(s.owner, s.ownerId, s.world.worldId, true, "publish");
+  await setPublished(s.owner, s.ownerId, s.world.worldId, true, "publish", [s.ownersText, s.ownersPhoto.id]);
   // The friend rewrites the owner's piece. It is no longer purely the owner's, so it leaves the page.
   await s.friend.upsertEntity({ entityId: s.ownersText, kind: "document", scope: s.world.scope, title: "Tomatoes came in early",
     attributes: { documentType: "text", worldId: s.world.worldId, content: "Dana was here", canvas: { x: 0, y: 0 } }, visibility: "members", idempotencyKey: "rewrite" });
@@ -82,8 +104,10 @@ it("someone invited to build cannot publish the owner's thing, nor slip their ed
 
 it("withdrawing the page takes it, and its photos, offline again", async () => {
   const s = await setup();
-  await setPublished(s.owner, s.ownerId, s.world.worldId, true, "publish");
+  await setPublished(s.owner, s.ownerId, s.world.worldId, true, "publish", [s.ownersPhoto.id]);
   await setPublished(s.owner, s.ownerId, s.world.worldId, false, "withdraw");
   await assert.rejects(s.read(), sqlstate("KA007"));
   assert.equal(await s.isPublic(s.ownersPhoto.name), false);
+  await setPublished(s.owner, s.ownerId, s.world.worldId, true, "again");
+  assert.deepEqual((await s.read()).pieces.map(p => p.text), ["The tomato bed"], "sharing again restores exactly what was shown before");
 });

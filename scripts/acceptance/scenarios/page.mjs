@@ -79,7 +79,9 @@ export async function page({ browser, base, evidence }) {
 
     // --- The owner adds their own work; a friend joins and adds theirs.
     const ownText = "Golden hour at the lake";
-    evidence.record(S, owner.role, "adds their own words and photo", await addText(owner, ownText) && await addPhoto(owner, "Lake at dusk"));
+    const ownLink = "Book a shoot: https://example.com/book";
+    evidence.record(S, owner.role, "adds their own words, a link and a photo",
+      await addText(owner, ownText) && await addText(owner, ownLink) && await addPhoto(owner, "Lake at dusk"));
     await owner.page.getByRole("button", { name: "Invite a friend" }).click();
     const invite = await owner.page.getByRole("textbox", { name: "Invite link" }).inputValue().catch(() => "");
     await friend.page.goto(base + new URL(invite).pathname);
@@ -93,8 +95,20 @@ export async function page({ browser, base, evidence }) {
     const before = await stranger.page.goto(base + `/p/${worldId}`);
     evidence.record(S, stranger.role, "before it's shared, the page doesn't exist", before?.status() === 404, `status ${before?.status()}`);
 
-    // --- The owner shares it as a page.
+    // --- The owner chooses what visitors see, and sees it before sharing.
     await owner.page.goto(base + `/world/${worldId}`);
+    const share = owner.page.locator("[data-share]");
+    const offered = await share.locator("[data-choice]").allInnerTexts();
+    evidence.record(S, owner.role, "is offered only what they added themselves, all unticked",
+      offered.some(t => t.includes(ownText)) && offered.some(t => t.includes("Lake at dusk")) && !offered.some(t => /Dana/.test(t))
+      && (await share.locator("[data-choice] input:checked").count()) === 0, offered.join(" | "));
+    evidence.record(S, owner.role, "is told what friends added stays private", /stays? private/.test(await share.locator("[data-friends-private]").innerText().catch(() => "")));
+    await share.locator("[data-choice]", { hasText: "Lake at dusk" }).locator("input").check();
+    await share.locator("[data-choice]", { hasText: "Book a shoot" }).locator("input").check();
+    const preview = await share.locator("[data-preview]").innerText();
+    evidence.record(S, owner.role, "the preview shows exactly what's ticked",
+      preview.includes("Lake at dusk") && preview.includes("Book a shoot") && !preview.includes(ownText) && !preview.includes("Dana"), preview.slice(0, 200));
+    await evidence.shot(owner.page, "page-01b-choose-390");
     await owner.page.locator("[data-publish]").click();
     evidence.record(S, owner.role, "shares it as a page with one press",
       await owner.page.locator("[data-page-link]").waitFor({ timeout: 15000 }).then(() => true, () => false));
@@ -104,9 +118,12 @@ export async function page({ browser, base, evidence }) {
     const view = await stranger.page.locator("body").innerText();
     evidence.record(S, stranger.role, "opens the page with no account", opened?.status() === 200, `status ${opened?.status()}`);
     evidence.record(S, stranger.role, "sees whose it is and what it is", view.includes(`${MARK} owner`) && view.includes(title));
-    evidence.record(S, stranger.role, "sees the owner's own words and photo",
-      view.includes(ownText) && await loaded(stranger.page.locator('[data-public-piece="photo"]', { hasText: "Lake at dusk" }).locator("img")),
+    evidence.record(S, stranger.role, "sees the photo the owner ticked",
+      await loaded(stranger.page.locator('[data-public-piece="photo"]', { hasText: "Lake at dusk" }).locator("img")),
       await whyNot(stranger.page.locator('[data-public-piece="photo"] img').first()));
+    evidence.record(S, stranger.role, "and the owner's link, as a link they can tap",
+      (await stranger.page.getByRole("link", { name: "example.com/book" }).getAttribute("href").catch(() => null)) === "https://example.com/book");
+    evidence.record(S, stranger.role, "and not the words the owner left unticked", !view.includes(ownText), view.slice(0, 300));
     evidence.record(S, stranger.role, "never sees what the friend added — publishing someone's page doesn't publish their friends",
       !view.includes(friendText) && !view.includes("Dana at the beach"), view.slice(0, 300));
     evidence.record(S, stranger.role, "sees no word or identifier of ours", !OUR_WORDS.test(view) && !INTERNAL_IDS.test(view), view.slice(0, 300));
@@ -134,9 +151,19 @@ export async function page({ browser, base, evidence }) {
     // Refused by the kernel's authority check itself (KA002), not by a malformed call.
     evidence.record(S, friend.role, "cannot take the owner's page down (or up) for them", forged.code === "KA002", `${forged.code}: ${forged.message}`);
 
-    // --- The owner stops sharing: the page and its photos go dark at once.
+    // --- The owner changes their mind about one piece; the live page follows.
+    await share.locator("[data-choice]", { hasText: ownText }).locator("input").check();
+    await owner.page.locator("[data-update-page]").click();
+    await owner.page.locator("[data-share-note]").filter({ hasText: "Updated" }).waitFor({ timeout: 15000 }).catch(() => {});
+    await stranger.page.reload();
+    evidence.record(S, stranger.role, "after the owner ticks one more thing, it appears on the page", (await stranger.page.locator("body").innerText()).includes(ownText));
+
+    // --- The owner stops sharing: the page and its photos stop opening, and they're told the truth about copies.
     await owner.page.locator("[data-unpublish]").click();
     await owner.page.locator("[data-publish]").waitFor({ timeout: 15000 }).catch(() => {});
+    const told = await owner.page.locator("[data-share-note]").innerText().catch(() => "");
+    evidence.record(S, owner.role, "is told plainly that copies already taken can't be recalled",
+      /up to 10 minutes/.test(told) && /can't be taken back/.test(told), told);
     const after = await stranger.page.goto(base + `/p/${worldId}`);
     evidence.record(S, stranger.role, "after the owner stops sharing, the page is gone", after?.status() === 404, `status ${after?.status()}`);
     const gone = ownersFile ? await anon.storage.from("things").download(ownersFile) : { error: { message: "no file" } };
