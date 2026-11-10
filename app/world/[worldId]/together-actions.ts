@@ -6,6 +6,9 @@ import { createClient as createSupabase, getUser } from "@/lib/supabase/server";
 import { PHOTO_BUCKET, checkPhoto, isPhotoOf, photoProblem } from "@/lib/product/photo";
 import { createCreativeArtifact, loadCreativeWorld } from "@/lib/world/creative";
 import { createWorldInvitation } from "@/lib/world/invitations";
+import { readWorldMembers } from "@/lib/world/collaboration";
+import { setPublished } from "@/lib/product/page";
+import { TOOLS, cleanLink } from "@/lib/product/paths";
 
 export type AddResult = { ok: true } | { ok: false; error: string };
 export type InviteResult = { ok: true; path: string; expiresAt: string } | { ok: false; error: string };
@@ -81,5 +84,45 @@ export async function recordPhoto(worldId: string, name: string, caption: string
     return { ok: true };
   } catch {
     return { ok: false, error: "The photo wasn't added. Try again." };
+  }
+}
+
+export type SimpleResult = { ok: true } | { ok: false; error: string };
+
+// Share a thing as a public page, or stop. Only its owner can: the record lives in the owner's own
+// scope, and the kernel's page reader only honours the owner's record (20261110050000).
+export async function setPagePublished(worldId: string, published: boolean): Promise<SimpleResult> {
+  if (!(await getUser())) return { ok: false, error: "Your identity isn't ready yet. Reload and try again." };
+  try {
+    const kernel = await getKernel();
+    const { world } = await loadCreativeWorld(kernel, worldId);
+    const me = await kernel.whoami();
+    const { ownerActorId } = await readWorldMembers(kernel, world.scope);
+    if (ownerActorId !== me.actor_id) return { ok: false, error: "Only the person who started this can share it publicly." };
+    await setPublished(kernel, me.actor_id, world.worldId, Boolean(published), randomUUID());
+    return { ok: true };
+  } catch {
+    return { ok: false, error: published ? "It couldn't be shared. Try again." : "It couldn't be taken down. Try again — nothing else changed." };
+  }
+}
+
+// Bring back what was made elsewhere. SOLVE records the link and who added it; it does not claim the
+// thing exists or works — that is shown as the person's own word until a connected tool confirms it.
+export async function linkWhatWasMade(worldId: string, url: string, tool: string): Promise<SimpleResult> {
+  const link = cleanLink(url);
+  if (!link) return { ok: false, error: "Paste a full https:// address." };
+  const from = TOOLS.find(t => t.id === tool)?.name ?? "";
+  if (!(await getUser())) return { ok: false, error: "Your identity isn't ready yet. Reload and try again." };
+  try {
+    const kernel = await getKernel();
+    const { world } = await loadCreativeWorld(kernel, worldId);
+    await kernel.upsertEntity({
+      kind: "document", scope: world.scope, title: "Link", summary: link.slice(0, 240),
+      attributes: { documentType: "link", worldId: world.worldId, url: link, madeWith: from, checked: false },
+      visibility: "members", idempotencyKey: `link:${world.worldId}:${randomUUID()}`,
+    });
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "The link wasn't added. Try again." };
   }
 }

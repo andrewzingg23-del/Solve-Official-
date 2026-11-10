@@ -1,5 +1,11 @@
 # BUILD_STATUS
 
+## Ways to make it, and a public page — 2026-11-10 (Claude, branch `solve/from-zero`)
+
+- Intentions live in SOLVE. Tools are paths, each declared native, connected, handoff or unavailable, and recommended from the person's needs only. The first handoff is Replit via its documented link, with a brief the person edits first; what was made comes back as an unchecked link.
+- `/p/<id>`: a page the owner publishes, readable with no account, showing only what the owner made, in their card's colours. New `read_page` and `file_public` are the only functions anonymous callers can run (`20261110050000`, **staging only**).
+- Checks: `npm test` 626 pass, typecheck, lint 0 errors, build, `test:product`, and **all six acceptance scenarios 206/206 on staging**.
+
 ## Photos in a shared thing — files on the kernel's authority — 2026-11-10 (Claude, branch `solve/from-zero`)
 
 - Private bucket `things`. Storage asks `kernel_api.file_allowed` for every read and write; files are add-only and cannot be swapped (`20261110040000`, **staging only**).

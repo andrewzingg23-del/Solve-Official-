@@ -8,7 +8,8 @@ import { PHOTO_BUCKET, PHOTO_LINK_SECONDS, isPhotoOf } from "@/lib/product/photo
 import { loadCreativeWorld } from "@/lib/world/creative";
 import { readWorldMembers } from "@/lib/world/collaboration";
 import { nameFor, type ActorNames } from "@/lib/product/thing";
-import { AddPhoto, AddPiece, InviteFriend } from "./together";
+import { AddPhoto, AddPiece, InviteFriend, SharePage, Ways } from "./together";
+import { ownDescription, readPublication } from "@/lib/product/page";
 import styles from "./together.module.css";
 
 export const metadata: Metadata = { title: "SOLVE" };
@@ -72,13 +73,17 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
     const signed = await (await createSupabase()).storage.from(PHOTO_BUCKET).createSignedUrls(photoNames, PHOTO_LINK_SECONDS).catch(() => null);
     for (const entry of signed?.data ?? []) if (entry.path && entry.signedUrl && !entry.error) links.set(entry.path, entry.signedUrl);
   }
-  type Piece = { id: string; at: string; text: string; photo?: { url: string | null } };
+  const linkEntities = entities.filter(e => e.kind === "document" && e.attributes.documentType === "link" && typeof e.attributes.url === "string");
+  const published = isOwner && me ? (await readPublication(kernel, me.actor_id, world.worldId).catch(() => null))?.published ?? false : false;
+  type Piece = { id: string; at: string; text: string; photo?: { url: string | null }; link?: { url: string; madeWith: string } };
   const pieces: Piece[] = [
     ...texts.map(a => ({ id: a.entityId, at: a.updatedAt, text: a.body || a.title })),
     ...photoEntities.map(e => {
       const name = (e.attributes.file as { name: string }).name;
       return { id: e.entity_id, at: e.updated_at, text: typeof e.attributes.caption === "string" ? e.attributes.caption : "", photo: { url: links.get(name) ?? null } };
     }),
+    ...linkEntities.map(e => ({ id: e.entity_id, at: e.updated_at, text: "",
+      link: { url: String(e.attributes.url), madeWith: typeof e.attributes.madeWith === "string" ? e.attributes.madeWith : "" } })),
   ].sort((a, b) => b.at.localeCompare(a.at));
   const initial = (id: string) => (nameFor(id, names).replace(/^[^\p{L}]+/u, "").charAt(0) || "·").toUpperCase();
 
@@ -86,7 +91,7 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
     <header className={styles.head}>
       <span className="s-label">{people.length > 1 ? "Building together" : "Yours"}</span>
       <h1>{world.title}</h1>
-      {world.summary && world.summary !== world.title ? <p className="s-muted">{world.summary}</p> : null}
+      {ownDescription(world.summary, world.title) ? <p className="s-muted">{ownDescription(world.summary, world.title)}</p> : null}
     </header>
 
     <section className={styles.people} aria-label="Who's building this">
@@ -119,11 +124,18 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
                   ? <img src={piece.photo.url} alt={piece.text || `A photo ${who === "You" ? "you" : who} added`} className={styles.image} loading="lazy" />
                   : <div className={styles.missing} role="status">This photo can&apos;t be shown right now.</div>
                 : null}
+              {piece.link ? <p>
+                {piece.link.madeWith ? <>Made with {piece.link.madeWith}: </> : <>Link: </>}
+                <a href={piece.link.url} target="_blank" rel="noopener noreferrer nofollow" className={styles.linkOut} data-made>{piece.link.url}</a>
+              </p> : null}
               {piece.text ? <p>{piece.text}</p> : null}
-              <span className={styles.by}>Added by <strong data-author>{who}</strong> · {piece.at.slice(0, 10)}</span>
+              <span className={styles.by}>Added by <strong data-author>{who}</strong> · {piece.at.slice(0, 10)}{piece.link ? " · their word, not checked by SOLVE" : ""}</span>
             </li>;
           })}</ul>}
     </section>
+
+    {canAdd ? <Ways worldId={world.worldId} title={world.title} summary={ownDescription(world.summary, world.title)} isOwner={isOwner} /> : null}
+    {isOwner ? <SharePage worldId={world.worldId} published={published} /> : null}
 
     <p><Link href={`/world/${encodeURIComponent(world.worldId)}/record`} className="s-button" data-variant="link">See its full record — who did what, and what proves it →</Link></p>
   </div>;

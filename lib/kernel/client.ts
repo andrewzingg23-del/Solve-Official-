@@ -206,6 +206,10 @@ export type EntityKind =
 export type LocationTruth = "declared" | "device_observed" | "provider_derived" | "legal_address" | "estimated";
 export type Visibility = "public" | "members" | "private";
 
+/** What anyone may see of a page its owner published (kernel_api.read_page). */
+export type PublicPiece = { id: string; kind: "text" | "photo"; text: string; file: string | null; at: string };
+export type PublicPage = { title: string; summary: string; by: string; look: unknown; pieces: PublicPiece[] };
+
 export type WorldEntity = {
   entity_id: string;
   kind: EntityKind;
@@ -923,6 +927,9 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
     // client exposes it so the app can ask the same question storage will.
     fileAllowed: (name: string, capability: "kernel.read" | "world.entity.write") =>
       call<boolean>("file_allowed", { p_name: name, p_capability: capability }),
+    // A published page, readable by anyone — including callers with no identity at all.
+    readPage: (worldId: string) => call<PublicPage>("read_page", { p_world_id: worldId }),
+    filePublic: (name: string) => call<boolean>("file_public", { p_name: name }),
     // Who invited the holder of this link, and to what — without accepting or granting anything.
     readWorldInvitation: (token: string) => call<{ title: string; invited_by: string; role: "viewer" | "editor"; expires_at: string;
       expired: boolean; used: boolean; used_by_you: boolean; is_yours: boolean }>("read_world_invitation", { p_token: token, ...as }),

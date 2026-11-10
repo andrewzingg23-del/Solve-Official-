@@ -35,6 +35,8 @@ export async function updateSession(request: NextRequest) {
   const guestPage = ["GET", "POST"].includes(request.method)
     && !path.startsWith("/api/") && !path.startsWith("/auth/")
     && path !== "/login" && !path.startsWith("/_next/")
+    // Looking at someone's public page never creates an identity for the person looking.
+    && !path.startsWith("/p/")
     && !/\.[a-z0-9]+$/i.test(path);
   if (!signedIn && !loginRequired() && guestPage) {
     const { data: guest, error } = await supabase.auth.signInAnonymously();

@@ -18,8 +18,9 @@ import { confirm } from "./scenarios/confirm.mjs";
 import { card } from "./scenarios/card.mjs";
 import { control } from "./scenarios/control.mjs";
 import { together } from "./scenarios/together.mjs";
+import { page } from "./scenarios/page.mjs";
 
-const SCENARIOS = { home, confirm, card, control, together };
+const SCENARIOS = { home, confirm, card, control, together, page };
 const args = process.argv.slice(2);
 const build = !args.includes("--no-build");
 const only = args.filter(a => !a.startsWith("--"));

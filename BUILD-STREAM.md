@@ -1214,3 +1214,28 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
   - even a builder cannot overwrite a recorded photo.
 
   An earlier miss in this scenario was the check firing before a lazy image loaded, not a product fault. **Not run:** a full five-scenario run. Staging's anonymous sign-in rate limit (`429`, roughly 30 new guests an hour from one address) stopped the last attempt after the first scenarios, and it has now blocked testing twice today. Raising it on staging is a founder decision. Not built yet: deleting a photo so the bytes are destroyed (planned with per-scope keys), files other than images, the Vault view across things, and public links.
+
+- 2026-11-10 — **Ways to make it, and a public page** (branch `solve/from-zero`). Founder direction: SOLVE should feel like MySpace grown up with AI. First, a creation router with two tested routes: a native, shareable page and a genuine handoff to an outside builder. Then, mid-slice: "Build collaboration around people and their intentions, not around a specific application. Replit is a possible tool, not the architecture" (recorded in `DECISIONS.md`).
+
+  **Ways to make it** (`lib/product/paths.ts`, tested 9/9). The intention — a thing, its goal, its people — always lives in SOLVE, and tools are entries in a list, each declaring itself native, connected, handoff or unavailable. Needs are read from the person's own words, and the recommendation depends on those needs alone: the tests prove that reordering the tools changes nothing, and that an unavailable tool is never offered. A portfolio is recommended "Here, as a page"; something needing logins, data or payments is recommended to a builder that can make it, and the native path says plainly what it can't do. The first handoff is Replit, through its documented "Open in Replit" link: `stack` is Design or Build, and `prompt` is LZ-string compressed (new dependency `lz-string`). The person edits the brief before anything leaves SOLVE, and it starts from the thing's own words only. Links open with `noreferrer`. What was made comes back as an https link, shown as "their word, not checked by SOLVE".
+
+  **Public page** (`/p/<id>`). New migration `supabase/migrations/20261110050000_public_page.sql`, **applied to staging only**. This is the narrow anonymous public-read path the founder authorized in principle:
+  - `kernel_api.read_page` and `kernel_api.file_public`, plus a storage policy that lets anyone read photos on a published page.
+  - Publication is a record in the owner's own `actor:` scope, so only the owner can publish, and publishing or withdrawing is history.
+  - A page shows the title, the owner's own description, their chosen name, their card look, and only pieces the owner both created and last edited. A friend's contribution never becomes public because the owner published, and private pieces never appear.
+  - Unknown, unpublished and withdrawn pages are indistinguishable.
+
+  The page wears the owner's card colours, shows their card, and ends with "Make your own". Looking never creates an identity: the proxy skips `/p/`, and the page's links don't prefetch Home. The scenario caught that defect, because prefetching `/` signed the visitor in. Pages are kept out of search engines until a person chooses that separately. `tests/kernel/kernel.test.ts` now proves anonymous callers can execute exactly `read_page` and `file_public` and nothing else, and the same check against staging's real roles returns exactly those two.
+
+  **Also changed:**
+  - A description SOLVE wrote itself ("A private World…") is never shown, published or handed on (`ownDescription`).
+  - The owner's opening words no longer repeat as a piece on the public page.
+  - On a thing, building comes first, then the ways to make it, then the public page.
+
+  **Checks:**
+  - Kernel: `tests/kernel/public-page.test.ts` 4/4 (unpublished has no page; a published page shows exactly what the owner made, with no identifiers; a builder can neither publish the owner's thing nor slip edits onto the page; withdrawing takes the page and its photos offline).
+  - `npm test` 626 pass / 0 fail, typecheck ok, lint 0 errors (9 warnings, baseline), build ok, `npm run test:product` passed.
+  - New acceptance scenario `scenarios/page.mjs`: owner, friend, and a stranger with no account and no cookies. The stranger sees only the owner's work, storage gives them the owner's published photo and refuses the friend's, no other kernel function answers them, the friend's forged publication is refused by the kernel's own authority check (`KA002`), and stopping sharing takes the page and the photo offline at once.
+  - **All six scenarios on staging: 206/206** (`acc-202611100346-u17h`).
+
+  **Not built:** connected tools (no outside tool is acted in yet; that needs Connect Increment 1), AI reading intentions (needs are read by tested rules, not a model), a person's whole-profile page across all their things, and choosing search indexing.

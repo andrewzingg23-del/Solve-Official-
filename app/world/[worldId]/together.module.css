@@ -38,3 +38,11 @@
 .row { display: flex; gap: 10px; flex-wrap: wrap; }
 .image { width: 100%; height: auto; max-height: 640px; object-fit: cover; border-radius: 12px; background: var(--raised); display: block; }
 .missing { padding: 28px 16px; border-radius: 12px; background: var(--raised); color: var(--muted); font-size: 14px; text-align: center; }
+
+.share, .ways { display: flex; flex-direction: column; gap: 12px; padding: 20px; border-radius: 20px; border: 1px solid var(--line); background: var(--surface); }
+.wayList { display: flex; flex-direction: column; gap: 12px; list-style: none; padding: 0; margin: 0; }
+.way { display: flex; flex-direction: column; gap: 8px; padding: 14px 0; border-top: 1px solid var(--line); }
+.way:first-child { border-top: 0; padding-top: 0; }
+.wayHead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.pick { font-size: 12px; padding: 2px 10px; border-radius: 999px; background: var(--accent); color: var(--on-accent); }
+.linkOut { color: var(--text); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }

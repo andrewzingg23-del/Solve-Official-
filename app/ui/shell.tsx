@@ -18,6 +18,9 @@ export function Shell({ name, look, signedIn, children }: {
   const active = destinationOf(path);
   const fromSomeoneElse = path.startsWith("/confirm/") || path.startsWith("/oauth") || path.startsWith("/world-invite");
 
+  // A person's public page is theirs edge to edge: it draws its own frame in their colours.
+  if (path.startsWith("/p/")) return <>{children}</>;
+
   if (fromSomeoneElse) {
     return <div className={styles.bare}>
       <header className={styles.bareHead}><Link href="/" className={styles.brand} aria-label="SOLVE"><Mark size={22} />SOLVE</Link></header>

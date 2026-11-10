@@ -1,0 +1,14 @@
+.page { min-height: 100svh; background: var(--page); color: var(--text); display: flex; flex-direction: column; }
+.main { flex: 1; width: 100%; max-width: 720px; margin: 0 auto; padding: 56px 24px 40px; display: flex; flex-direction: column; gap: 40px; }
+.head { display: flex; flex-direction: column; gap: 16px; }
+.owner { display: flex; align-items: center; gap: 14px; }
+.owner > :first-child { width: 72px; flex: none; }
+.title { font-size: clamp(36px, 8vw, 64px); line-height: 1.02; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.description { font-size: 19px; line-height: 1.5; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+.pieces { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 20px; }
+.piece { display: flex; flex-direction: column; gap: 10px; }
+.piece p { font-size: 18px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.image { width: 100%; height: auto; border-radius: 18px; display: block; background: var(--raised); }
+.missing { padding: 32px 16px; border-radius: 18px; background: var(--raised); color: var(--muted); text-align: center; font-size: 14px; }
+.foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 20px 24px 28px; max-width: 720px; width: 100%; margin: 0 auto; border-top: 1px solid var(--line); }
+.made { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; text-decoration: none; }
