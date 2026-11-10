@@ -1304,3 +1304,13 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
     - An old-style app token can still **read** as the person.
     - The connector's `start_world` no longer works until connections move onto their own agents.
     - The `keen-cerf` preview's service key is invalid, an older and separate problem.
+
+- 2026-11-10 — **No sign-in screen in anyone's way** (branch `solve/from-zero`). Founder: "Take away anything [that] gates sign in screen or anything of this nature that is slowing down testing and implementation."
+  - **Found:** every sign-in gate in the rebuilt app traces to one failure — the server couldn't create the visitor's guest identity. When that happened, Home sent people to `/login`, invites said "something went wrong", confirmation links said "unavailable", and a thing's page 404'd.
+  - **The cause:** the proxy creates guests on the server, so on a deployment every visitor's sign-in comes from the server's own address. Supabase's anonymous limit (about 30 an hour per address) was therefore shared by every visitor together, not applied per person. `REQUIRE_LOGIN` is not set anywhere (checked on Vercel), so nothing forced sign-in on purpose.
+  - **Fix:** when the server can't make the guest, the browser makes it, against the visitor's own address (`lib/supabase/become-guest.ts`, `app/guest-actions.ts`, `app/ui/guest-gate.tsx`). Home's Begin, invite links, confirmation links and a thing's own page now carry on rather than send anyone to sign in. Sign-in stays available and is never required to start. A browser that blocks storage is still told its words can't be kept.
+  - **Checks:**
+    - `npm test` 635 pass / 0 fail, lint 0 errors, build ok.
+    - `test:product` passed, rewritten to the new truth: Begin with no identity and no database stays on Home, says it couldn't set the person up, keeps the words, and shows no sign-in screen.
+    - **All six acceptance scenarios on staging in one run: 213/213** (`acc-202611100453-apdx`). This is the first complete run on the containment kernel.
+  - **For the founder, one setting:** staging's anonymous sign-in limit still governs the automated harness, which runs from one machine. It is under Authentication → Rate Limits in the staging dashboard (https://supabase.com/dashboard/project/taeikshnbcsjlgbattyp/auth/rate-limits). There is no tool access to change it from here.

@@ -11,6 +11,7 @@ import { nameFor, type ActorNames } from "@/lib/product/thing";
 import { AddPhoto, AddPiece, InviteFriend, SharePage, Ways } from "./together";
 import { ownDescription, readPublication } from "@/lib/product/page";
 import styles from "./together.module.css";
+import { GuestGate } from "@/app/ui/guest-gate";
 
 export const metadata: Metadata = { title: "SOLVE" };
 
@@ -21,7 +22,7 @@ export const metadata: Metadata = { title: "SOLVE" };
 export default async function ThingPage({ params }: PageProps<"/world/[worldId]">) {
   const { worldId } = await params;
   const user = await getUser();
-  if (!user) notFound();
+  if (!user) return <GuestGate />;
 
   const kernel = await getKernel();
   let data: Awaited<ReturnType<typeof loadCreativeWorld>>;

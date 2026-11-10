@@ -1,3 +1,4 @@
+import { GuestGate } from "@/app/ui/guest-gate";
 import type { Metadata } from "next";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
@@ -22,7 +23,7 @@ export default async function ConfirmPage({ params }: PageProps<"/confirm/[token
   const { token } = await params;
   if (!isPlausibleToken(token)) return <Unavailable />;
   const user = await getUser();
-  if (!user) return <Unavailable />;
+  if (!user) return <GuestGate />;
 
   let request: Awaited<ReturnType<Awaited<ReturnType<typeof getKernel>>["readConfirmationRequest"]>>;
   try {

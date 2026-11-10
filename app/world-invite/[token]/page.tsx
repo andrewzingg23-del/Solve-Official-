@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getKernel } from "@/lib/kernel/server";
 import { getUser } from "@/lib/supabase/server";
 import { acceptWorldInvitation } from "@/lib/world/invitations";
+import { GuestGate } from "@/app/ui/guest-gate";
 import styles from "./invite.module.css";
 
 export const metadata: Metadata = { title: "You're invited · SOLVE", robots: { index: false, follow: false } };
@@ -23,7 +24,7 @@ function Unavailable({ children }: { children: React.ReactNode }) {
 export default async function InvitePage({ params }: PageProps<"/world-invite/[token]">) {
   const { token } = await params;
   if (!/^[a-f0-9]{64}$/.test(token)) return <Unavailable>The link may be incomplete. Ask the person who sent it for a new one.</Unavailable>;
-  if (!(await getUser())) return <Unavailable>Something went wrong opening it. Reload and try again.</Unavailable>;
+  if (!(await getUser())) return <div className={styles.page}><GuestGate /></div>;
 
   let preview: Awaited<ReturnType<Awaited<ReturnType<typeof getKernel>>["readWorldInvitation"]>>;
   try {

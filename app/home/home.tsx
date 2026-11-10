@@ -1,5 +1,6 @@
 "use client";
 
+import { becomeGuest } from "@/lib/supabase/become-guest";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
@@ -42,13 +43,13 @@ export function Home({ owner, durable, name, things }: {
     event.preventDefault();
     const words = text.trim();
     if (!words || pending) return;
-    if (!owner) {
-      if (!writeDeviceText(key, words)) { setError("Your browser can't keep this. Copy your words before reloading."); return; }
-      router.push("/login?next=%2F");
-      return;
-    }
     start(async () => {
       try {
+        // No identity yet: make one here and keep going. Never a sign-in screen just to start.
+        if (!owner) {
+          if (!writeDeviceText(key, words)) { setError("Your browser can't keep this. Copy your words before reloading."); return; }
+          if (!(await becomeGuest())) { setError("SOLVE couldn't get you set up just now. Your words are kept here; try again in a moment."); return; }
+        }
         const result = await createThing(id, words);
         if (!result.ok) { setError(result.error); return; }
         writeDeviceText(key, null);

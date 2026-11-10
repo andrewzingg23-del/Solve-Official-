@@ -62,12 +62,12 @@ try {
   await page.waitForFunction(w => document.getElementById("home-words")?.value === w, words);
   await page.screenshot({ path: join(out, "home-1440.png"), fullPage: true });
 
-  // --- With no identity, beginning leads to sign-in, and coming back costs nothing.
+  // --- With no identity and no database, Begin never sends anyone to sign in: it tries to make a
+  // guest here, says plainly that it couldn't, and the words stay.
   await page.getByRole("button", { name: "Begin", exact: true }).click();
-  await page.waitForURL(/\/login\?next=%2F$/);
-  await page.getByRole("heading", { level: 1 }).waitFor();
-  await page.getByRole("link", { name: "← Back to your idea" }).click();
-  await page.waitForFunction(w => document.getElementById("home-words")?.value === w, words);
+  await page.locator("main [role=alert]").filter({ hasText: "couldn't get you set up" }).waitFor();
+  assert.equal(new URL(page.url()).pathname, "/", "no sign-in screen");
+  assert.equal(await page.getByRole("textbox", { name: "What do you want to do?" }).inputValue(), words);
 
   // --- ID shows the card, at the true card shape, even before there is an identity.
   await page.goto(url + "/account");
@@ -136,5 +136,5 @@ try {
   await blocked.close();
 
   assert.deepEqual(errors, []);
-  console.log("Product browser checks passed on the rebuilt experience: one shell and five destinations at 320/390/1440, keyboard, a draft surviving reload and the trip to sign-in, the card's true shape, every older address landing on a rebuilt destination, and honest storage failure. No database was present, so nothing is claimed as saved.");
+  console.log("Product browser checks passed on the rebuilt experience: one shell and five destinations at 320/390/1440, keyboard, a draft surviving reload and a failed start with no sign-in screen, the card's true shape, every older address landing on a rebuilt destination, and honest storage failure. No database was present, so nothing is claimed as saved.");
 } catch (error) { console.error(serverLog); throw error; } finally { await browser?.close(); server.kill("SIGTERM"); }
