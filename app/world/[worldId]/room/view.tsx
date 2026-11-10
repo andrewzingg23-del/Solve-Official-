@@ -140,6 +140,7 @@ export function RoomView({ data }: { data: RoomData }) {
         </div>
         <nav aria-label="Project sections" className="solve-room-sections">
           <Link href={`${projectUrl}/room`} aria-current="page"><Icon name="chat" width={17} height={17} />Conversation</Link>
+          <Link href={`${projectUrl}/work`}><Icon name="projects" width={17} height={17} />Work</Link>
           <Link href={`${projectUrl}#documents-heading`}><Icon name="document" width={17} height={17} />Documents</Link>
           <Link href={`${projectUrl}#people-heading`}><Icon name="community" width={17} height={17} />People &amp; access</Link>
           <Link href={projectUrl} className="solve-room-details-link">Project details<Icon name="arrow" width={15} height={15} /></Link>
