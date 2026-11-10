@@ -1279,3 +1279,28 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
   2. **One real "Make it mine".** Copy an explicitly reusable SOLVE-native page's permitted configuration, customize it and publish your own, with attribution to the original.
   3. **AI as creation partner.** It proposes a real change, previews it, and applies it with approval. It recommends a specialist when SOLVE isn't the right place (the paths in `lib/product/paths.ts`).
   4. **Connect for developers.** Finish what increment 1 (`20261110070000`, built and not applied) started: move the connector onto connection agents, apply it, and prove one outside app end to end. The documented authorization gap remains a security gate before any outside app gets access.
+
+- 2026-11-10 — **Security gate: the existing connector contained, on staging** (branch `solve/from-zero`). Founder direction, after an external review: a known authorization weakness in a live connector can't wait for the fourth milestone. Contain it now, in one bounded task, while the founder and his brother test the product.
+  - **Exposure, measured:**
+    - Staging has 4 app registrations, all "Claude Code (solve)" or a preflight check, and 2 app sessions, all belonging to the founder's own Claude Code connection. No one else was exposed.
+    - Production exposure is **unknown**: the read was not permitted. That is the founder's decision.
+  - **New migration** `supabase/migrations/20261110080000_connector_containment.sql`, applied to staging together with `20261110070000_connections.sql`. The latter went in without its interim strict resolver, which would have cut connected assistants off.
+    - **Old-style app tokens become read-only.** They resolve to the person as before, but `append_event` refuses any caller marked `app_read_only`, and every kernel change is an event. No writes, grants, invitations, labels or app connections.
+    - **Immediate revocation.** An app token whose Supabase session no longer exists is refused at once.
+    - **Kernel-disconnected apps are refused outright.**
+    - **Apps connected the new way** act as their own agent.
+  - **Control: Connected apps.** It lists the person's apps from Supabase, with Disconnect (`revokeGrant`, which deletes the app's sessions). The rebuilt app had no way to disconnect an assistant at all, because `/bot` is hidden.
+  - **Tests:**
+    - Kernel `connections` 6/6. A legacy app can read but appends nothing across six kinds of write. A revoked session is refused using a stand-in `auth.sessions`. The person's own session is unaffected.
+    - `npm test` 635 pass / 0 fail, typecheck ok, lint 0 errors, build ok.
+  - **Verified live on staging:**
+    - The founder's connector still reads (`whoami`), and its `start_world` was refused, with database read-back confirming nothing was created.
+    - `app_session_alive` tells live sessions from unknown ones.
+    - Anonymous callers still reach exactly `read_page` and `file_public`, and no internal kernel function is open to users.
+    - `verify_chain` ok over 1,756 events.
+  - **Acceptance on the new kernel:** a full six-scenario run passed the first five scenarios completely, **171/171** (`acc-202611100433-4bmm`). The sixth, `page`, could not create its people because the staging anonymous sign-in limit was reached again (`429`), and a rerun was refused the same way. **The complete suite has not yet passed in one run on this kernel.**
+  - **Found and fixed by `test:product`:** the earlier skip-link change could blur the link for keyboard users who pressed Tab before the app had started. The link is now shown on keyboard focus by default and hidden only after a tap or click until Tab is pressed again; focus is never moved. The suite now also asserts the link is on screen after Tab.
+  - **Still open:**
+    - An old-style app token can still **read** as the person.
+    - The connector's `start_world` no longer works until connections move onto their own agents.
+    - The `keen-cerf` preview's service key is invalid, an older and separate problem.

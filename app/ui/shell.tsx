@@ -2,18 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 import type { CardLook } from "@/lib/product/card";
 import { DESTINATIONS, destinationOf } from "@/lib/product/destinations";
 import { DestinationIcon, Mark } from "./mark";
 import { SovCard } from "./sov-card";
 import styles from "./shell.module.css";
-
-// Whether the most recent key a person pressed was Tab — the only way the skip link should appear.
-let tabbed = false;
-if (typeof window !== "undefined") {
-  window.addEventListener("keydown", event => { tabbed = event.key === "Tab"; }, true);
-  window.addEventListener("pointerdown", () => { tabbed = false; }, true);
-}
 
 // One shell. The frame is SOLVE's; the person is present in it through their own card, which sits
 // at the foot of the rail and opens ID. Pages a person reaches from someone else's link get only
@@ -22,6 +16,15 @@ export function Shell({ name, look, signedIn, children }: {
   name: string; look: CardLook; signedIn: boolean; children: React.ReactNode;
 }) {
   const path = usePathname();
+  useEffect(() => {
+    const root = document.documentElement;
+    // After a tap or click, a save that moves focus mustn't pop the skip link up; Tab brings it back.
+    const key = (event: KeyboardEvent) => { if (event.key === "Tab") delete root.dataset.pointer; };
+    const pointer = () => { root.dataset.pointer = ""; };
+    window.addEventListener("keydown", key, true);
+    window.addEventListener("pointerdown", pointer, true);
+    return () => { window.removeEventListener("keydown", key, true); window.removeEventListener("pointerdown", pointer, true); };
+  }, []);
   const active = destinationOf(path);
   const fromSomeoneElse = path.startsWith("/confirm/") || path.startsWith("/oauth") || path.startsWith("/world-invite");
 
@@ -42,9 +45,10 @@ export function Shell({ name, look, signedIn, children }: {
   const here = DESTINATIONS.find(d => d.href === active)?.label ?? "SOLVE";
 
   return <div className={styles.shell}>
-    {/* Only for someone who pressed Tab to get here: after a save, Next can move focus to the first
-        focusable element, which would pop this up over the page for a person who never asked. */}
-    <a href="#main" className={styles.skip} onFocus={event => { if (!tabbed) event.currentTarget.blur(); }}>Skip to content</a>
+    {/* Hidden after a tap or click until Tab is pressed again: after a save, Next can move focus to
+        the first focusable element, which would otherwise pop this up for someone who never asked.
+        Focus itself is never moved, and with no script at all the keyboard still gets it. */}
+    <a href="#main" className={styles.skip}>Skip to content</a>
     <aside className={styles.rail} aria-label="SOLVE">
       <Link href="/" className={styles.brand} aria-label="SOLVE, home"><Mark size={24} />SOLVE</Link>
       <nav aria-label="Primary" className={styles.nav}>{links}</nav>

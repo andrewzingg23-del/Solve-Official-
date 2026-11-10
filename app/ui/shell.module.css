@@ -1,7 +1,7 @@
 .shell { min-height: 100svh; display: grid; grid-template-columns: 252px minmax(0, 1fr); }
 
 .skip { position: fixed; top: 10px; left: 10px; z-index: 100; padding: 12px 18px; border-radius: 999px; background: var(--text); color: var(--page); transform: translateY(-160%); }
-.skip:focus-visible { transform: none; }
+:global(html:not([data-pointer])) .skip:focus-visible { transform: none; }
 
 .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: 0.3em; font-size: 14px; text-decoration: none; }
 

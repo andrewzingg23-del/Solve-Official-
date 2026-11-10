@@ -102,6 +102,8 @@ try {
   await page.goto(url);
   await page.keyboard.press("Tab");
   assert.equal(await page.evaluate(() => document.activeElement?.textContent), "Skip to content");
+  await page.waitForFunction(() => (document.activeElement?.getBoundingClientRect().top ?? -1) >= 0);
+  assert.ok((await page.evaluate(() => document.activeElement.getBoundingClientRect().top)) >= 0, "after Tab, the skip link is on screen");
   await page.keyboard.press("Enter");
   assert.equal(await page.evaluate(() => document.activeElement?.id), "main");
 

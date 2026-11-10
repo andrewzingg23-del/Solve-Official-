@@ -51,17 +51,28 @@ the connector's tools. Disconnecting was an app-layer record; the token kept wor
 - Only the person, in their own session, can connect or disconnect. The connection records can't be
   rewritten or erased.
 
-## Status, honestly
+## Status, honestly (updated after the containment slice)
 
-- **Not applied to staging or production.** Applying it changes who every connector token is. The
-  existing connector (`lib/bot/connector.ts`) reads the persona, memories and connections through the
-  token as though it were the person, in 21 places, so connected assistants would lose those reads.
-  Staging's `resolve_caller` was compared and matches the repository's exactly, so applying is
-  mechanically safe once the connector is ready.
-- **Next slice:**
-  - Approving an assistant on `/oauth/consent` also calls `connect_app`, and disconnecting calls
-    `disconnect_app`, so the existing connection record and the kernel connection are one concept
-    with one enforcement.
-  - The connector reads through grants the person gives the connection's agent.
-  - Control gets "Connected apps": what each can reach, "let it into this thing", and Disconnect.
-  - Then apply to staging and run the proof end to end with a real MCP client.
+- **Applied to staging, 2026-11-10:**
+  - `20261110070000_connections.sql`, without its interim strict `resolve_caller`. That version would have cut connected assistants off, and it was superseded in the same session.
+  - `20261110080000_connector_containment.sql`.
+- **Not applied to production.** Exposure on production is **unknown**: reading its app registrations was not permitted.
+- **Exposure found on staging:**
+  - 4 app registrations, all dynamic. Three of them are "Claude Code (solve)", one is a preflight check, and two have never been used.
+  - 2 app sessions, both belonging to **one person: the founder's own Claude Code connection** (this session's connector points at the retired `keen-cerf` preview, which runs on staging).
+  - No one else's account was reachable this way.
+- **What containment does, on staging now:**
+  - Apps connected before SOLVE Connect can read as the person, and **cannot change anything**: `append_event` refuses them, and every kernel change is an event.
+  - An app whose session was revoked is refused immediately, not when its token expires.
+  - Apps connected the new way act as their own agent, holding only what they were granted.
+  - Control has **Connected apps** with a working Disconnect (Supabase `revokeGrant`).
+- **Verified live on staging:**
+  - The founder's connector still reads (`whoami` returned the bot).
+  - Its `start_world`, which writes through the person's token, was refused, and the database confirms nothing was created.
+  - A live app session reads as alive and unknown sessions as dead.
+  - Anonymous callers still reach only `read_page` and `file_public`, and no internal kernel function is open to users.
+  - `verify_chain` is ok over 1,756 events.
+- **Still open, stated plainly:**
+  - An old-style app token can still **read** what the person can read, until its connection moves onto its own agent.
+  - `start_world` through the connector no longer works until that move.
+  - Separately and older: the `keen-cerf` preview's service key is invalid ("Invalid API key"), so connector tools that act as the bot fail there.

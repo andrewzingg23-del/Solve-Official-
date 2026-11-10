@@ -5,6 +5,8 @@ import { myThings } from "@/lib/product/my-things";
 import { reachFrom, type Reach } from "@/lib/product/access";
 import { PageHead } from "@/app/ui/page-head";
 import { ExportButton } from "./export-button";
+import { ConnectedApps, type ConnectedApp } from "./apps";
+import { createClient } from "@/lib/supabase/server";
 import styles from "./control.module.css";
 
 export const metadata: Metadata = { title: "Control · SOLVE" };
@@ -14,7 +16,12 @@ export const metadata: Metadata = { title: "Control · SOLVE" };
 export default async function ControlPage() {
   const user = await getUser();
   let reach: Reach[] | null = [];
+  let apps: ConnectedApp[] | null = [];
   if (user) {
+    const listed = await (await createClient()).auth.oauth.listGrants().catch(() => null);
+    apps = listed && !listed.error && listed.data
+      ? listed.data.map(g => ({ clientId: g.client.id, name: g.client.name || "An app", since: g.granted_at }))
+      : null;
     try {
       const kernel = await getKernel();
       const me = await kernel.whoami();
@@ -41,6 +48,14 @@ export default async function ControlPage() {
                 <span className="s-muted s-small">{r.can.join(" · ")}</span>
               </li>)}</ul>}
         <p className="s-muted s-small">Who else can reach one of your things is shown on that thing.</p>
+      </section>
+
+      <section className="s-surface s-stack" aria-labelledby="apps">
+        <h2 id="apps">Connected apps</h2>
+        <p className="s-muted">AI assistants and other apps you let into SOLVE. They can read what you can. They can&apos;t change your things directly; anything one adds goes through your bot, only where you allowed it, and is labelled. Disconnecting stops one at once.</p>
+        {apps === null
+          ? <p role="status" className="s-muted">This couldn&apos;t be read right now. Nothing has changed.</p>
+          : <ConnectedApps apps={apps} />}
       </section>
 
       <section className="s-surface s-stack" aria-labelledby="leave">
