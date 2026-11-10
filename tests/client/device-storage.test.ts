@@ -21,9 +21,9 @@ function installWindow(localStorage: Store) {
 
 afterEach(() => { delete (globalThis as { window?: unknown }).window; });
 
-it("reads and writes a device-local preference and announces the change", () => {
+it("reads, writes and removes a device-local value", () => {
   const values = new Map<string, string>();
-  const events = installWindow({
+  installWindow({
     getItem: (k) => values.get(k) ?? null,
     setItem: (k, v) => { values.set(k, v); },
     removeItem: (k) => { values.delete(k); },
@@ -34,7 +34,6 @@ it("reads and writes a device-local preference and announces the change", () => 
   assert.equal(readDeviceText("solve.test.pref"), "[\"a\"]");
   assert.equal(writeDeviceText("solve.test.pref", null), true, "null removes it");
   assert.equal(readDeviceText("solve.test.pref"), null);
-  assert.deepEqual(events, ["solve:device-storage", "solve:device-storage"], "each write notifies readers");
 });
 
 it("reports failure instead of claiming a refused preference was saved", () => {

@@ -2,7 +2,7 @@
 // interface says so accurately, and never claims an anonymous identity reaches further than it does.
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { custodyOf, custodyNotice, openWorldHref, openWorldLabel } from "../../lib/product/custody";
+import { custodyOf, custodyNotice } from "../../lib/product/custody";
 
 it("distinguishes no identity, an anonymous one, and a signed-in account", () => {
   assert.equal(custodyOf(null, false), "device", "nothing is recorded without an identity");
@@ -23,21 +23,4 @@ it("never tells a guest their work reaches further than this browser", () => {
   assert.ok(!/[Yy]ours/.test(device), "nothing unrecorded may be called theirs");
 
   assert.match(custodyNotice("durable"), /Private/);
-});
-
-it("lets a person without a durable account open the record of what they own", () => {
-  assert.equal(openWorldHref("w1", true), "/world/w1/workbench");
-  assert.equal(
-    openWorldHref("w1", false),
-    "/world/w1/record",
-    "reading your own record needs no account that outlives the browser",
-  );
-  assert.equal(openWorldLabel(false), "Open its record", "no dead end is presented as an open door");
-  assert.equal(openWorldLabel(true), "Private workspace");
-});
-
-it("encodes a world id that would otherwise break the path", () => {
-  const nasty = "a/b?c#d";
-  assert.equal(openWorldHref(nasty, true), "/world/a%2Fb%3Fc%23d/workbench");
-  assert.equal(openWorldHref(nasty, false), "/world/a%2Fb%3Fc%23d/record");
 });

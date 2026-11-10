@@ -29,18 +29,3 @@ export function custodyNotice(custody: Custody): string {
   }
 }
 
-/**
- * Where "open this thing" goes.
- *
- * The record is the view every thing is guaranteed to have, and reading it needs nothing more
- * than the authority to read the thing — so a visitor can open what they own. The workbench is
- * where a thing is changed, and that needs an account that outlives the browser.
- */
-export function openWorldHref(worldId: string, durable: boolean): string {
-  const id = encodeURIComponent(worldId);
-  return durable ? `/world/${id}/workbench` : `/world/${id}/record`;
-}
-
-export function openWorldLabel(durable: boolean): string {
-  return durable ? "Private workspace" : "Open its record";
-}

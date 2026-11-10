@@ -22,18 +22,6 @@ export const SWATCHES = [
   "#22d3ee", "#00e5a0", "#60a5fa", "#a78bfa", "#e879f9", "#f472b6", "#ff7a8a", "#a3e635", "#e2f1ff", "#94a3b8", "#1e293b", "#0b1324",
 ] as const;
 
-// Named color sets for one tap. All of them keep clear of gold, which the brand never uses.
-export const PALETTES = [
-  { name: "Abyss", primary: "#22d3ee", secondary: "#1e293b", glow: "#a78bfa" },
-  { name: "Signal", primary: "#00e5a0", secondary: "#0b1324", glow: "#22d3ee" },
-  { name: "Ice", primary: "#e2f1ff", secondary: "#1e293b", glow: "#60a5fa" },
-  { name: "Violet", primary: "#a78bfa", secondary: "#0b1324", glow: "#e879f9" },
-  { name: "Ember", primary: "#ff7a8a", secondary: "#1e293b", glow: "#f472b6" },
-  { name: "Grove", primary: "#a3e635", secondary: "#0b1324", glow: "#00e5a0" },
-  { name: "Steel", primary: "#94a3b8", secondary: "#0b1324", glow: "#22d3ee" },
-  { name: "Night", primary: "#1e293b", secondary: "#0b1324", glow: "#22d3ee" },
-] as const;
-
 export type Body = (typeof BODIES)[number];
 export type Eyes = (typeof EYES)[number];
 export type Mouth = (typeof MOUTHS)[number];
@@ -133,28 +121,6 @@ export function validatePersona(raw: unknown, base: Persona = DEFAULT_PERSONA): 
     values,
     relationship: pick(RELATIONSHIPS, r.relationship, base.relationship),
   };
-}
-
-// A playful random look and temperament (the creator's dice). `random` is injectable for tests.
-export function randomPersona(name: string, random: () => number = Math.random): Persona {
-  const any = <T>(list: readonly T[]) => list[Math.floor(random() * list.length) % list.length];
-  const bright = SWATCHES.slice(0, 10);
-  return validatePersona({
-    ...DEFAULT_PERSONA,
-    name,
-    body: any(BODIES),
-    palette: { primary: any(bright), secondary: any(["#1e293b", "#0b1324", "#94a3b8"]), glow: any(bright) },
-    eyes: any(EYES),
-    mouth: any(MOUTHS),
-    top: any(TOPS),
-    accessory: any(ACCESSORIES),
-    aura: any(AURAS),
-    material: any(MATERIALS),
-    brows: any(BROWS),
-    marks: any(MARKS),
-    motion: { energy: Math.round(random() * 100), idle: any(IDLES) },
-    traits: Object.fromEntries(TRAITS.map((t) => [t, Math.round(random() * 100)])),
-  });
 }
 
 const RELATION_TEXT: Record<AvatarRelationship, string> = {

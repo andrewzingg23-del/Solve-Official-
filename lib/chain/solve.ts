@@ -341,8 +341,3 @@ export function teamVested(monthsSinceGenesis: number, total = ALLOCATION.team) 
   return (total * BigInt(Math.min(monthsSinceGenesis, 72))) / BigInt(72);
 }
 
-export function formatSolve(amount: bigint) {
-  const whole = amount / UNIT;
-  const fraction = (amount % UNIT).toString().padStart(SOLVE_DECIMALS, "0").replace(/0+$/, "");
-  return fraction ? `${whole.toLocaleString("en-US")}.${fraction}` : whole.toLocaleString("en-US");
-}

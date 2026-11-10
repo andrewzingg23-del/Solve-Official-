@@ -46,52 +46,15 @@ export type Grant = {
 export type Actor = { actor_id: string; kind: "human" | "agent" | "service"; label: string; owner_id: string | null };
 
 export type RoomSourceRef = { entityId: string; version: number; title: string };
-export type RoomMessage = {
-  message_id: string; seq: number; occurred_at: string; actor_id: string;
-  actor_kind: "human" | "agent" | "service"; actor_label: string;
-  kind: "message" | "decision" | "ai_draft"; text: string;
-  reply_to: string | null; source_refs: RoomSourceRef[];
-  ask_ai: boolean; reply_state: "pending" | "failed" | "complete" | null; request_id: string;
-};
 
-export type Balance = {
-  account_id: string;
-  scope: string;
-  asset: string;
-  normal_balance: "debit" | "credit";
-  // Minor units as an integer string; parse with BigInt.
-  balance: string;
-};
 
-// Positive amounts are debits, negative are credits, in minor units.
-export type Entry = { account_id: string; amount: bigint | string };
 
 export type ChainCheck = { ok: boolean; events_checked: number; first_bad_seq: number | null; problem: string | null };
 
 export type SettlementChain = "litesvm" | "solana-devnet" | "solana-mainnet";
 export type SettlementStatus = "prepared" | "submitted" | "confirmed" | "failed" | "needs_reconciliation";
 
-export type Rail = { chain: SettlementChain; asset: string; mint_address: string; settlement_authority: string };
-export type Wallet = { id: string; chain: SettlementChain; address: string; created_at: string };
 
-export type Entitlement = {
-  entitlement_id: string;
-  settlement_id: string;
-  world_scope: string;
-  obligation_event_id: string;
-  outcome_event_id: string;
-  policy_key: string;
-  policy_version: number;
-  attribution_bps: number;
-  asset: string;
-  amount: string;
-  evidence_root: string;
-  created_at: string;
-  chain: SettlementChain | null;
-  recipient_address: string | null;
-  status: SettlementStatus | "unsettled";
-  tx_signature: string | null;
-};
 
 export type Settlement = {
   settlement_id: string;
@@ -340,10 +303,6 @@ export type Action = {
   created_at: string;
 };
 
-export type ActionSummary = Pick<
-  Action,
-  "action_id" | "kind" | "proposer_id" | "on_behalf_of" | "target_ref" | "task_ref" | "payload" | "decision" | "status" | "in_reply_to" | "created_at"
->;
 
 export type MessageType =
   | "DISCOVERY_REQUEST"
@@ -525,41 +484,7 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
         ...as,
       }),
 
-    openAccount: (input: {
-      scope: string;
-      asset: string;
-      normalBalance?: "debit" | "credit";
-      allowNegative?: boolean;
-      label?: string;
-      idempotencyKey?: string;
-    }) =>
-      call<string>("open_account", {
-        p_scope: input.scope,
-        p_asset: input.asset,
-        p_normal_balance: input.normalBalance ?? "debit",
-        p_allow_negative: input.allowNegative ?? false,
-        p_label: input.label ?? "",
-        p_idempotency_key: input.idempotencyKey ?? null,
-        ...as,
-      }),
 
-    postTransaction: (input: {
-      scope: string;
-      entries: Entry[];
-      memo?: string;
-      evidence?: Evidence[];
-      idempotencyKey?: string;
-      correlationId?: string;
-    }) =>
-      call<string>("post_transaction", {
-        p_scope: input.scope,
-        p_entries: input.entries.map((e) => ({ account_id: e.account_id, amount: e.amount.toString() })),
-        p_memo: input.memo ?? "",
-        p_evidence: input.evidence ?? [],
-        p_idempotency_key: input.idempotencyKey ?? null,
-        p_correlation_id: input.correlationId ?? null,
-        ...as,
-      }),
 
     readEvents: (scope: string, { afterSeq = 0, limit = 50, newestFirst = false } = {}) =>
       call<KernelEvent[]>("read_events", {
@@ -586,112 +511,25 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
         ...as,
       }),
 
-    accountBalance: (accountId: string) => one<Balance>("account_balance", { p_account_id: accountId, ...as }),
 
     myGrants: () => call<Grant[]>("my_grants", { ...as }),
 
     // Service role only.
     verifyChain: () => one<ChainCheck>("verify_chain", {}),
 
-    // Money: rails and policies (system authority).
-    registerRail: (input: {
-      chain: SettlementChain;
-      mintAddress: string;
-      settlementAuthority: string;
-      onchainAccount: string;
-      unallocatedAccount: string;
-      payableAccount: string;
-    }) =>
-      call<string>("register_rail", {
-        p_chain: input.chain,
-        p_mint_address: input.mintAddress,
-        p_settlement_authority: input.settlementAuthority,
-        p_onchain_account: input.onchainAccount,
-        p_unallocated_account: input.unallocatedAccount,
-        p_payable_account: input.payableAccount,
-        ...as,
-      }),
 
-    defineRewardPolicy: (input: {
-      policyKey: string;
-      chain: SettlementChain;
-      outcomeType: string;
-      amount: bigint | string;
-      maxPerRelease: bigint | string;
-      totalCap: bigint | string;
-      requiredBases: Exclude<EvidenceBasis, "self_reported">[];
-      minIndependentParties?: number;
-      active?: boolean;
-    }) =>
-      call<number>("define_reward_policy", {
-        p_policy_key: input.policyKey,
-        p_chain: input.chain,
-        p_outcome_type: input.outcomeType,
-        p_amount: input.amount.toString(),
-        p_max_per_release: input.maxPerRelease.toString(),
-        p_total_cap: input.totalCap.toString(),
-        p_required_bases: input.requiredBases,
-        p_min_independent_parties: input.minIndependentParties ?? 1,
-        p_active: input.active ?? true,
-        ...as,
-      }),
 
-    readRail: (chain: SettlementChain) => one<Rail>("read_rail", { p_chain: chain }),
 
     // Money: wallets, entitlements, settlements.
     linkWallet: (chain: SettlementChain, address: string) =>
       call<string>("link_wallet", { p_chain: chain, p_address: address, ...as }),
 
-    myWallets: () => call<Wallet[]>("my_wallets", { ...as }),
 
-    createEntitlement: (input: {
-      obligationEventId: string;
-      outcomeEventId: string;
-      beneficiaryId: string;
-      policyKey: string;
-      policyVersion: number;
-    }) =>
-      call<string>("create_entitlement", {
-        p_obligation_event_id: input.obligationEventId,
-        p_outcome_event_id: input.outcomeEventId,
-        p_beneficiary_id: input.beneficiaryId,
-        p_policy_key: input.policyKey,
-        p_policy_version: input.policyVersion,
-        ...as,
-      }),
 
-    myEntitlements: () => call<Entitlement[]>("my_entitlements", { ...as }),
 
-    prepareSettlement: (entitlementId: string, recipientAddress: string) =>
-      call<string>("prepare_settlement", { p_entitlement_id: entitlementId, p_recipient_address: recipientAddress, ...as }),
 
-    readSettlement: (settlementId: string) => one<Settlement>("read_settlement", { p_settlement_id: settlementId, ...as }),
 
-    pendingSettlements: (chain: SettlementChain, limit = 50) =>
-      call<{ settlement_id: string; status: SettlementStatus; created_at: string }[]>("pending_settlements", {
-        p_chain: chain,
-        p_limit: limit,
-        ...as,
-      }),
 
-    // Settlement service only.
-    recordSettlement: (input: {
-      settlementId: string;
-      status: Exclude<SettlementStatus, "prepared">;
-      txSignature?: string;
-      slot?: bigint;
-      detail?: string;
-      evidence?: Evidence[];
-    }) =>
-      call<string>("record_settlement", {
-        p_settlement_id: input.settlementId,
-        p_status: input.status,
-        p_tx_signature: input.txSignature ?? null,
-        p_slot: input.slot === undefined ? null : Number(input.slot),
-        p_detail: input.detail ?? "",
-        p_evidence: input.evidence ?? [],
-        ...as,
-      }),
 
     // Payments: assets on chains (system authority) and payment profiles.
     registerChainAsset: (chain: SettlementChain, asset: string, mintAddress: string) =>
@@ -890,8 +728,6 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
     challengeAction: (actionId: string, reason: string) =>
       call<ActionStatus>("challenge_action", { p_action_id: actionId, p_reason: reason, ...as }),
 
-    cancelAction: (actionId: string, reason = "") =>
-      call<ActionStatus>("cancel_action", { p_action_id: actionId, p_reason: reason, ...as }),
 
     enactAction: (actionId: string) => call<Record<string, unknown>>("enact_action", { p_action_id: actionId, ...as }),
 
@@ -916,7 +752,6 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
 
     readAction: (actionId: string) => one<Action>("read_action", { p_action_id: actionId, ...as }),
 
-    readActions: (scope: string, limit = 100) => call<ActionSummary[]>("read_actions", { p_scope: scope, p_limit: limit, ...as }),
 
     inbox: () => call<InboxMessage[]>("inbox", { ...as }),
 
@@ -925,10 +760,6 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
       one<{ invitation_id: string; expires_at: string }>("create_world_invitation", {
         p_world_id: input.worldId, p_token_hash: input.tokenHash, p_role: input.role, p_request_id: input.requestId, ...as }),
     acceptWorldInvitation: (token: string) => call<string>("accept_world_invitation", { p_token: token, ...as }),
-    // Whether this caller may read or add a file of a thing. Storage's own rules call this; the
-    // client exposes it so the app can ask the same question storage will.
-    fileAllowed: (name: string, capability: "kernel.read" | "world.entity.write") =>
-      call<boolean>("file_allowed", { p_name: name, p_capability: capability }),
     // Connected apps (SOLVE Connect). Only the person, in their own session, can call these; a
     // connected app acts as its own agent and reaches only what it was granted.
     connectApp: (clientId: string, label: string, idempotencyKey?: string) =>
@@ -940,13 +771,10 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
     // A published page, readable by anyone — including callers with no identity at all.
     readPage: (worldId: string) => call<PublicPage>("read_page", { p_world_id: worldId }),
     readSpace: (actorId: string) => call<PublicSpace>("read_space", { p_actor_id: actorId }),
-    filePublic: (name: string) => call<boolean>("file_public", { p_name: name }),
     // Who invited the holder of this link, and to what — without accepting or granting anything.
     readWorldInvitation: (token: string) => call<{ title: string; invited_by: string; role: "viewer" | "editor"; expires_at: string;
       expired: boolean; used: boolean; used_by_you: boolean; is_yours: boolean }>("read_world_invitation", { p_token: token, ...as }),
     cancelWorldInvitation: (invitationId: string) => call<void>("cancel_world_invitation", { p_invitation_id: invitationId, ...as }),
-    readWorldInvitations: (worldId: string) => call<Array<{ invitation_id: string; role: "viewer" | "editor"; expires_at: string; accepted_by: string | null; cancelled_at: string | null }>>("read_world_invitations", { p_world_id: worldId, ...as }),
-    readWorldPresence: (scope: string) => call<Array<{ actor_id: string; label: string; at: string }>>("read_world_presence", { p_scope: scope, ...as }),
     updateDocument: (input: { entityId: string; scope: string; expectedVersion: number; title: string; summary: string; attributes: Record<string, unknown>; idempotencyKey: string }) =>
       call<string>("update_document_version", { p_entity_id: input.entityId, p_scope: input.scope,
         p_expected_version: input.expectedVersion, p_title: input.title, p_summary: input.summary,
@@ -956,19 +784,9 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
       call<string>("post_room_message", { p_world_id: input.worldId, p_text: input.text, p_request_id: input.requestId,
         p_kind: input.kind ?? "message", p_ask_ai: input.askAi ?? false, ...as }),
 
-    readRoomMessages: (worldId: string, options: { beforeSeq?: number; limit?: number; kind?: RoomMessage["kind"] } = {}) =>
-      call<RoomMessage[]>("read_room_messages", { p_world_id: worldId, p_before_seq: options.beforeSeq ?? null,
-        p_limit: options.limit ?? 50, p_kind: options.kind ?? null, ...as }),
 
-    claimRoomReply: (messageId: string) =>
-      one<{ state: "claimed" | "pending" | "complete"; lease_token: string | null; reply_id: string | null }>("claim_room_reply", { p_message_id: messageId, ...as }),
 
-    finishRoomReply: (input: { messageId: string; leaseToken: string; text: string; model: string; sourceRefs: RoomSourceRef[] }) =>
-      call<string>("finish_room_reply", { p_message_id: input.messageId, p_lease_token: input.leaseToken,
-        p_text: input.text, p_model: input.model, p_source_refs: input.sourceRefs, ...as }),
 
-    failRoomReply: (messageId: string, leaseToken: string) =>
-      call<void>("fail_room_reply", { p_message_id: messageId, p_lease_token: leaseToken, ...as }),
 
     upsertEntity: (input: {
       entityId?: string;
@@ -1020,16 +838,7 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
 
     publicWorld: () => call<WorldEntity[]>("public_world", { ...as }),
 
-    // A domain's own vocabulary. A type is an ordinary scoped record, so declaring one needs the
-    // same authority as any other write there, and a thing is checked against it before it is kept.
-    defineType: (input: { type: string; scope: string; fields: Record<string, { type?: "text" | "number" | "boolean" | "date" | "list"; required?: boolean }>; label?: string; idempotencyKey?: string }) =>
-      call<string>("define_type", { p_type: input.type, p_scope: input.scope, p_fields: input.fields,
-        p_label: input.label ?? null, p_idempotency_key: input.idempotencyKey ?? null, ...as }),
 
-    putObject: (input: { type: string; scope: string; title: string; data: Record<string, unknown>; objectId?: string; visibility?: Visibility; idempotencyKey?: string }) =>
-      call<string>("put_object", { p_type: input.type, p_scope: input.scope, p_title: input.title,
-        p_data: input.data, p_object_id: input.objectId ?? null, p_visibility: input.visibility ?? "private",
-        p_idempotency_key: input.idempotencyKey ?? null, ...as }),
 
     // Everything this actor holds authority over, as one document they can take away.
     exportMine: () => call<{ exported_at: string; actor: { actor_id: string; label: string }; scopes: string[];
@@ -1056,8 +865,6 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
       call<string>("answer_confirmation", { p_token_hash: input.tokenHash, p_decision: input.decision,
         p_note: input.note ?? "", p_request_id: input.requestId, ...as }),
 
-    cancelConfirmation: (confirmationId: string) =>
-      call<null>("cancel_confirmation", { p_confirmation_id: confirmationId, ...as }),
 
     // An unanswered request is a state, not a gap, so the owner's surface can say so.
     readConfirmations: (entityId: string) =>

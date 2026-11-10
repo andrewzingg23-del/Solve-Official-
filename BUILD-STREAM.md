@@ -1379,3 +1379,31 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
     - `test:product` passed; in-browser kernel tests 74/74.
     - **All seven acceptance scenarios on staging: 237/237** (`acc-202611100719-45hw`).
   - **Not touched:** database migrations and `kernel_api` (including dormant money functions and custom types), `/oauth/consent`'s old markup (it is the live connector's consent screen), and documentation. Pruning the docs is a separate step, pending the founder.
+
+- 2026-11-10 — **Third pass, under heat: necessary and up to standard, or cut** (branch `solve/remove-dead-code`, **not merged**). Founder: "get our core down to only what is technically necessary; anything that isn't necessary or isn't to standard, throw away and cut." Every remaining file was checked against both tests.
+  - **A real defect found and fixed:** no new person could connect an AI assistant. The connector's approval screen required a bot, the only way to make one was the retired bot page, and its "create your bot first" link looped back to ID. `/oauth/consent` is rebuilt to the current design system. It creates the person's AI companion (default persona) when they approve, and it states only what the kernel enforces today: an app may read what you can, changes nothing directly, adds only through your AI where you allow, can't pay or commit, and stops at once on disconnect from Control. A browser check that the screen renders in the bare frame was added to `test:product`.
+  - **Cut because unnecessary:**
+    - the live-activity broadcast to the deleted bot page (`lib/bot/presence.ts`);
+    - the 619-line bot drawing and the old class strings (`app/ui.ts`);
+    - Tailwind (config and two packages; nothing used it);
+    - a placeholder AI-watermark pipeline with no callers (`lib/kernel/provenance.ts`);
+    - offers-and-needs throughout `creative.ts` and the connector's read output;
+    - capability proposals;
+    - 26 kernel-client wrappers nothing called, and 7 orphaned types. The client now wraps what SOLVE uses; the kernel tests still prove every function directly, and the client test now checks that every wrapper calls a real function correctly;
+    - unused helpers: random persona, colour palettes, `latestSaves`, the old link helpers, two device-storage hooks, a Solana formatter;
+    - a one-time October rehearsal test.
+  - **Cut because broken or obsolete:**
+    - two GitHub workflows that ran removed commands, or checked the old production site's text;
+    - a dead step in the third workflow;
+    - unused root files (`solve.communities.json`, `solve.rooms.json`, `perf/`), the October staging scripts, 7 avatar images, 7 brand graphics and a world map.
+  - **Kept under heat, for the founder to rule on:** the kernel's dormant money and payment functions with their tests and the Solana helper (the direction says preserve verified kernel capabilities, and the founder's earlier word was that crypto is "optional but necessary"), plus the documentation.
+  - **Size:**
+    - `app/` and `lib/`: 109 → **105 files**, 9,459 → **7,899 lines** (about 48,000 before all three passes);
+    - repository: 806 → 294 files;
+    - dependencies: 36 → 24;
+    - test files: 129 → 39.
+  - **Checks:**
+    - typecheck 0, lint 0, build ok.
+    - `npm test` 237 / 237, and no live file lost its only test.
+    - `test:product` passed (now including the consent screen); in-browser kernel tests 73/73.
+    - **All seven acceptance scenarios on staging: 237/237** (`acc-202611100743-01wh`).

@@ -123,6 +123,14 @@ try {
     assert.equal(r.headers.get("cache-control"), "no-store");
   }
 
+  // --- The connector's approval screen, rebuilt to the current standard: with no request waiting it
+  // says so plainly, in the bare frame, with a way back, and no old styling or broken links.
+  await page.goto(url + "/oauth/consent");
+  const consent = await page.locator("main").innerText();
+  assert.match(consent, /Nothing is waiting/);
+  assert.equal(await page.getByRole("navigation", { name: "Primary", exact: true }).count(), 0, "someone else's link gets the bare frame");
+  assert.ok(await page.getByRole("link", { name: "Go to SOLVE" }).isVisible());
+
   // --- A browser that refuses storage is told so, and the person keeps their words on screen.
   const blocked = await browser.newContext();
   await blocked.addInitScript(() => { Storage.prototype.setItem = function () { throw new DOMException("Blocked for this test", "SecurityError"); }; });

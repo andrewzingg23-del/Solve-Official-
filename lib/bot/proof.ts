@@ -138,14 +138,3 @@ export async function proofsIn(kernel: Kernel, scope: string): Promise<SavedProo
   return saved;
 }
 
-// The latest saves in each of the given Worlds, newest first, for the person's own view (/bot).
-export async function latestSaves(kernel: Kernel, worlds: { worldId: string; scope: string }[], perWorld = 2): Promise<Record<string, SavedProof[]>> {
-  const out: Record<string, SavedProof[]> = {};
-  await Promise.all(
-    worlds.map(async (w) => {
-      const saved = await proofsIn(kernel, w.scope).catch(() => [] as SavedProof[]);
-      if (saved.length) out[w.worldId] = saved.slice(-perWorld).reverse();
-    }),
-  );
-  return out;
-}

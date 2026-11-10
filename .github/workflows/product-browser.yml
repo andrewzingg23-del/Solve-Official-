@@ -27,12 +27,10 @@ jobs:
       - run: npx playwright-core install --with-deps chromium
       - run: npm run build
       - run: npm run test:product
-      - run: npm run test:shared-room
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: product-browser-evidence
           path: |
             test-results/product
-            .browser-tests/shared-room/*.png
           retention-days: 7

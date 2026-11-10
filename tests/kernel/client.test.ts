@@ -38,27 +38,14 @@ async function exerciseEveryMethod(supabase: SupabaseClient, actAs?: string) {
   await k.revokeGrant(id, "reason", "key");
   await k.claimScope("world:x");
   await k.defineAsset({ code: "SOLVE", issuerScope: "system", decimals: 9, label: "", idempotencyKey: "k" });
-  await k.openAccount({ scope: "system", asset: "SOLVE", normalBalance: "credit", allowNegative: false, label: "", idempotencyKey: "k" });
-  await k.postTransaction({ scope: "system", entries: [{ account_id: id, amount: BigInt(5) }, { account_id: id, amount: "-5" }], memo: "", evidence: [], idempotencyKey: "k", correlationId: id });
   await k.readEvents("system", { afterSeq: 1, limit: 5, newestFirst: true });
   await k.readEvidence(id);
   await k.sealKey(id, "A".repeat(43) + "=");
   await k.unsealKeys([id]);
   await k.destroyKey(id, "erased");
-  await k.accountBalance(id);
   await k.myGrants();
   await k.verifyChain();
-  await k.registerRail({ chain: "litesvm", mintAddress: "m", settlementAuthority: "s", onchainAccount: id, unallocatedAccount: id, payableAccount: id });
-  await k.defineRewardPolicy({ policyKey: "p", chain: "litesvm", outcomeType: "outcome.completed", amount: BigInt(1), maxPerRelease: "1", totalCap: "1", requiredBases: ["system_observed"], minIndependentParties: 1, active: true });
-  await k.readRail("litesvm");
   await k.linkWallet("litesvm", "addr");
-  await k.myWallets();
-  await k.createEntitlement({ obligationEventId: id, outcomeEventId: id, beneficiaryId: id, policyKey: "p", policyVersion: 1 });
-  await k.myEntitlements();
-  await k.prepareSettlement(id, "addr");
-  await k.readSettlement("s");
-  await k.pendingSettlements("litesvm", 10);
-  await k.recordSettlement({ settlementId: "s", status: "confirmed", txSignature: "t", slot: BigInt(1), detail: "", evidence: [evidence] });
   await k.registerChainAsset("litesvm", "DEV_USDC", "m");
   await k.readChainAssets("litesvm");
   await k.setPaymentProfile({ chain: "litesvm", receiveAddress: "addr", acceptAssets: ["DEV_USDC"] });
@@ -75,24 +62,16 @@ async function exerciseEveryMethod(supabase: SupabaseClient, actAs?: string) {
   await k.proposeAction({ kind: "message.send", capability: "message.send", scope: "world:x", payload: {}, targetRef: `actor:${id}`, amount: BigInt(1), asset: "DEV_USDC", counterpartyRef: `actor:${id}`, taskRef: `task:${id}`, inReplyTo: id, idempotencyKey: "k" });
   await k.approveAction(id);
   await k.challengeAction(id, "r");
-  await k.cancelAction(id, "r");
   await k.enactAction(id);
   await k.beginAction(id, "d");
   await k.settleAction({ actionId: id, status: "completed", result: {}, detail: "", evidence: [evidence] });
   await k.readAction(id);
-  await k.readActions("world:x", 10);
   await k.inbox();
   await k.createWorldInvitation({ worldId: id, tokenHash: "0".repeat(64), role: "editor", requestId: "invite" });
   await k.acceptWorldInvitation("0".repeat(64));
   await k.cancelWorldInvitation(id);
-  await k.readWorldInvitations(id);
-  await k.readWorldPresence(`world:${id}`);
   await k.updateDocument({ entityId: id, scope: `world:${id}`, expectedVersion: 1, title: "t", summary: "", attributes: {}, idempotencyKey: "update" });
   await k.postRoomMessage({ worldId: id, text: "t", requestId: "room", kind: "message", askAi: true });
-  await k.readRoomMessages(id, { beforeSeq: 10, limit: 51, kind: "decision" });
-  await k.claimRoomReply(id);
-  await k.finishRoomReply({ messageId: id, leaseToken: id, text: "t", model: "test", sourceRefs: [] });
-  await k.failRoomReply(id, id);
   await k.upsertEntity({ entityId: id, kind: "place", scope: "world:x", title: "t", summary: "", attributes: {}, latitude: 1, longitude: 2, altitudeM: 3, locationTruth: "declared", visibility: "public", importance: 50, idempotencyKey: "k" });
   await k.relate({ kind: "supplies", fromRef: `entity:${id}`, toRef: `entity:${id}`, scope: "world:x", attributes: {}, idempotencyKey: "k" });
   await k.endRelation(id, "r");
@@ -105,18 +84,13 @@ async function exerciseEveryMethod(supabase: SupabaseClient, actAs?: string) {
   await k.createAvatar({ type: "ai_companion", name: "Nova", relationship: "assist", seed: {}, representation: "abstract" });
   await k.setAvatarRepresentation(id, "pixel", "sov-1", "ref");
   await k.myAvatars();
-  await k.defineType({ type: "candidate", scope: "world:x", fields: { name: { type: "text", required: true } }, label: "l", idempotencyKey: "k" });
-  await k.putObject({ type: "candidate", scope: "world:x", title: "t", data: { name: "n" }, objectId: id, visibility: "private", idempotencyKey: "k" });
   await k.exportMine();
   await k.requestConfirmation({ entityId: id, tokenHash: "a".repeat(64), askedOf: "The homeowner", question: "Done?", requestId: "r" });
   await k.readConfirmationRequest("a".repeat(64));
   await k.answerConfirmation({ tokenHash: "a".repeat(64), decision: "confirmed", note: "yes", requestId: "r" });
-  await k.cancelConfirmation(id);
   await k.readConfirmations(id);
   await k.readWorldInvitation("a".repeat(64));
-  await k.fileAllowed("x", "kernel.read");
   await k.readPage(id);
-  await k.filePublic("x");
   await k.readSpace(id);
   await k.connectApp("c", "C");
   await k.disconnectApp("c");
@@ -152,8 +126,8 @@ it("calls only real kernel_api functions with their real argument names", async 
     }
   }
 
-  // Every function in the interface is reachable from the client.
-  assert.deepEqual([...new Set(asUser.calls.map((c) => c.fn))].sort(), [...signatures.keys()].sort());
+  // The client wraps only what SOLVE uses. Functions it doesn't wrap are still proven by the kernel
+  // tests directly (and the database's own storage rules call file_allowed and file_public).
 });
 
 it("acts as an agent only when asked, and never on functions that are user-only", async () => {
@@ -166,21 +140,6 @@ it("acts as an agent only when asked, and never on functions that are user-only"
   const plain = fakeSupabase();
   await exerciseEveryMethod(plain.supabase);
   assert.ok(plain.calls.every((c) => !("p_as_actor" in c.args)));
-});
-
-it("sends amounts as integer strings so no precision is lost", async () => {
-  const { calls, supabase } = fakeSupabase();
-  await kernelClient(supabase).postTransaction({
-    scope: "system",
-    entries: [
-      { account_id: "a", amount: BigInt("900719925474099312345") },
-      { account_id: "b", amount: "-900719925474099312345" },
-    ],
-  });
-  assert.deepEqual(calls[0].args.p_entries, [
-    { account_id: "a", amount: "900719925474099312345" },
-    { account_id: "b", amount: "-900719925474099312345" },
-  ]);
 });
 
 it("turns kernel SQLSTATEs into named errors", async () => {

@@ -26,8 +26,6 @@ export const SIX_PARTS = [
   "who can reach it",
 ] as const;
 
-export type PartName = (typeof SIX_PARTS)[number];
-
 export type FieldKind = "text" | "number" | "boolean" | "date" | "list";
 
 export type TypeFieldSpec = { type?: FieldKind; required?: boolean; label?: string };
@@ -304,7 +302,6 @@ export function confirmationWording(c: Pick<ThingConfirmation, "state" | "answer
     case "withdrawn": return "Withdrawn";
   }
 }
-
 
 /**
  * One event in a person's own identity history, with its subject. "Updated" alone tells a person
