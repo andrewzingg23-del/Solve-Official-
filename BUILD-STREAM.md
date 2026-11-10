@@ -1257,3 +1257,19 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
   - Full six-scenario run on staging, 212/213 (`acc-202611100408-1a18`). The miss was the check's own wording, and with it corrected `page` passed on its own (`acc-202611100411-4ksq`).
 
   **Next:** the founder's direction to build the connector by reconciling MCPvault with what already exists, not by starting over.
+
+- 2026-11-10 — **SOLVE Connect, increment 1: in the kernel, NOT applied anywhere** (branch `solve/from-zero`). Founder direction: build the connector by reconciling MCPvault with what exists, then prove that an outside AI client authorized to one selected project can do one permitted act, and is refused once disconnected.
+  - **Audit:** `docs/research/2026-11-10-mcpvault-connect-audit.md`. MCPvault's OAuth server accepts any password, stores tokens in plaintext and writes raw tokens into its audit log. Its PKCE support is unchecked columns. Its permission manager builds shell scripts from app ids and paths (remote command execution), never checks granted permissions, and never enforces expiry. Its model (per-app, per-area grants with expiry and an audit trail) is kept as ideas; the kernel is the mechanism. No code was taken. Its CLI device sign-in is worth porting later.
+  - **SOLVE already has half the connector.** The MCP server with Supabase OAuth 2.1 tokens is how Claude reaches SOLVE in this session. The gap: `resolve_caller` ignored `client_id`, so a connected app held the person's whole authority, and a leaked connector token could call every kernel function directly.
+  - **Built:** `supabase/migrations/20261110070000_connections.sql`.
+    - A `client_id` token resolves to that app's connection agent, which starts with nothing and reaches only what the person grants it.
+    - `connect_app`, `disconnect_app` and `my_connections` work only from the person's own session.
+    - Disconnecting revokes all of the agent's grants, and the same token is refused from then on.
+    - Connection records are append-only.
+  - **Tests:** `tests/kernel/connections.test.ts` 5/5 proves the founder's proof in the kernel, with attacks: self-granting, connecting other apps, another client's token, and reviving by erasing the disconnection. The test harness gained `app(sub, clientId)` sessions. `npm test` 634 pass / 0 fail, typecheck ok, lint 0 errors.
+  - **Why not applied to staging:** it changes who every connector token is. `lib/bot/connector.ts` reads the persona, memories and connections through the token as though it were the person (21 places), so connected assistants would lose those reads. Staging's `resolve_caller` matches the repository's exactly, so applying is safe once the connector is moved onto connection agents.
+  - **Next:**
+    - Approving on `/oauth/consent` calls `connect_app` and disconnecting calls `disconnect_app`, so the existing connection record and the kernel connection become one concept.
+    - The connector reads through the agent's grants.
+    - Control gets "Connected apps".
+    - Then apply to staging and run the proof with a real MCP client.

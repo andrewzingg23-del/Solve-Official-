@@ -12,13 +12,15 @@ export interface PGliteLike {
 }
 
 export type Session =
-  | { role: "authenticated"; sub: string; is_anonymous?: boolean }
+  | { role: "authenticated"; sub: string; is_anonymous?: boolean; client_id?: string }
   | { role: "service_role" }
   | { role: "anon" };
 
 export type Row = Record<string, unknown>;
 
 export const user = (sub: string): Session => ({ role: "authenticated", sub });
+/** A token Supabase issued to an OAuth client (a connected app) on this person's behalf. */
+export const app = (sub: string, clientId: string): Session => ({ role: "authenticated", sub, client_id: clientId });
 export const service: Session = { role: "service_role" };
 export const anon: Session = { role: "anon" };
 

@@ -5,7 +5,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { KernelDb, migrate, type PGliteLike } from "../../lib/kernel/local";
 
-export { anon, KernelDb, service, user, type Row, type Session } from "../../lib/kernel/local";
+export { anon, app, KernelDb, service, user, type Row, type Session } from "../../lib/kernel/local";
 
 export type KernelRuntime = { create(): Promise<PGliteLike>; migrations(): Promise<string[]> };
 

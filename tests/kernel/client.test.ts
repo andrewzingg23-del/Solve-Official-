@@ -117,6 +117,9 @@ async function exerciseEveryMethod(supabase: SupabaseClient, actAs?: string) {
   await k.fileAllowed("x", "kernel.read");
   await k.readPage(id);
   await k.filePublic("x");
+  await k.connectApp("c", "C");
+  await k.disconnectApp("c");
+  await k.myConnections();
   await k.readActors([id]);
 }
 

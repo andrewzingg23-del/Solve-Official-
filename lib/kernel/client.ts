@@ -927,6 +927,14 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
     // client exposes it so the app can ask the same question storage will.
     fileAllowed: (name: string, capability: "kernel.read" | "world.entity.write") =>
       call<boolean>("file_allowed", { p_name: name, p_capability: capability }),
+    // Connected apps (SOLVE Connect). Only the person, in their own session, can call these; a
+    // connected app acts as its own agent and reaches only what it was granted.
+    connectApp: (clientId: string, label: string, idempotencyKey?: string) =>
+      call<string>("connect_app", { p_client_id: clientId, p_label: label, p_idempotency_key: idempotencyKey ?? null }),
+    disconnectApp: (clientId: string, idempotencyKey?: string) =>
+      call<void>("disconnect_app", { p_client_id: clientId, p_idempotency_key: idempotencyKey ?? null }),
+    myConnections: () => call<Array<{ client_id: string; label: string; agent_id: string; connected_at: string;
+      disconnected_at: string | null; scopes: Array<{ scope: string; capability: string; grant_id: string }> }>>("my_connections", {}),
     // A published page, readable by anyone — including callers with no identity at all.
     readPage: (worldId: string) => call<PublicPage>("read_page", { p_world_id: worldId }),
     filePublic: (name: string) => call<boolean>("file_public", { p_name: name }),
