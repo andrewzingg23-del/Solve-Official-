@@ -170,13 +170,20 @@ export const OUR_WORDS = /\b(World|Worlds|Project|Projects|kernel|Kernel)\b/;
 export const INTERNAL_IDS = /\b(world|actor|community|system):[0-9a-f]{8}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 
 /**
- * Write something on Home and press Begin. Starting something takes the person into it, so this
+ * Write something in Your Space's box and send it. Starting something takes the person into it, so this
  * waits for the thing's own page and returns its id (empty when it didn't arrive).
  */
+/** Open the Space switcher on Your Space and return the link to one of the person's Spaces. */
+export async function switcherEntry(page, base, title) {
+  await page.goto(base + "/");
+  await page.locator("summary", { hasText: "Your Space" }).click();
+  return page.locator("[aria-label='Your Spaces'] a[data-thing]", { hasText: title });
+}
+
 export async function beginThing(page, base, words) {
   await page.goto(base + "/");
-  await page.getByRole("textbox", { name: "What do you want to do?" }).fill(words);
-  await page.getByRole("button", { name: "Begin", exact: true }).click();
+  await page.getByRole("textbox", { name: "Ask, create, or add anything" }).fill(words);
+  await page.getByRole("button", { name: "Make it a Space" }).click();
   const arrived = await page.waitForURL(/\/world\/[0-9a-f-]{36}$/, { timeout: 20000 }).then(() => true, () => false);
   if (!arrived) return "";
   await page.getByRole("heading", { level: 1 }).waitFor({ timeout: 15000 }).catch(() => {});

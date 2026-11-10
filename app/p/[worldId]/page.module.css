@@ -16,3 +16,6 @@
 a.owner { text-decoration: none; color: inherit; border-radius: 12px; }
 a.owner:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; }
 .more { color: var(--muted); }
+
+/* The owner's name as they wrote it — never re-cased. */
+.by { font-size: 15px; font-weight: 600; color: var(--text); }

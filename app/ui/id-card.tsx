@@ -17,6 +17,6 @@ export function IdCard({ name, shared = false }: { name: string; shared?: boolea
       <span className={styles.kind}>Your Solve ID</span>
       <figcaption className={styles.name} data-card-name>{named || "Your Name"}</figcaption>
     </div>
-    <span className={styles.status}><Icon name={shared ? "globe" : "lock"} size={16} />{shared ? "Shared" : "Private until shared"}</span>
+    <span className={styles.status} data-card-status><Icon name={shared ? "globe" : "lock"} size={16} />{shared ? "Shared" : "Private until shared"}</span>
   </figure>;
 }

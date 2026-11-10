@@ -67,11 +67,11 @@ export async function space({ browser, base, evidence }) {
     evidence.record(S, stranger.role, "opens the Space with no account", opened?.status() === 200, `status ${opened?.status()}`);
     evidence.record(S, stranger.role, "it fits a phone without sideways scrolling",
       await stranger.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
-    evidence.record(S, stranger.role, "sees the owner's card, full size, with their name",
-      (await stranger.page.locator("[data-space-card] figure[data-card]").count()) === 1 && view.includes(`${MARK} owner`));
-    // SOLVE's Base accent is #f2f3f5; the owner chose an expressive colour, so the page must carry theirs.
+    evidence.record(S, stranger.role, "sees the owner's name, as the Space's heading",
+      (await stranger.page.locator("h1[data-space-name]").count()) === 1 && view.includes(`${MARK} owner`));
+    // Solve's light Base accent is its ink, #11121c; the owner chose an expressive colour, so the page must carry theirs.
     const accent = await stranger.page.locator("div[data-tone]").first().evaluate(el => getComputedStyle(el).getPropertyValue("--accent").trim());
-    evidence.record(S, stranger.role, "the whole page wears the owner's own colours, not SOLVE's default", Boolean(accent) && accent.toLowerCase() !== "#f2f3f5", accent);
+    evidence.record(S, stranger.role, "the whole page wears the owner's own colours, not SOLVE's default", Boolean(accent) && accent.toLowerCase() !== "#11121c", accent);
     const tile = stranger.page.locator(`[data-space-page="${worldId}"]`);
     evidence.record(S, stranger.role, "sees what the owner shared, with its photo as the cover",
       await tile.isVisible() && await loaded(tile.locator("img")));

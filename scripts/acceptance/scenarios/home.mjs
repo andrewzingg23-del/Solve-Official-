@@ -3,7 +3,7 @@
 // Perspectives: a new person who has never used SOLVE; the same person returning; a second
 // device belonging to nobody; and another person deliberately trying to reach the first person's
 // thing. Every UI result is read back through the kernel as that person.
-import { INTERNAL_IDS, MARK, OUR_WORDS, VIEWPORTS, close, persona } from "../lib.mjs";
+import { INTERNAL_IDS, MARK, OUR_WORDS, VIEWPORTS, close, persona, switcherEntry } from "../lib.mjs";
 
 const S = "home";
 
@@ -16,7 +16,7 @@ export async function home({ browser, base, evidence }) {
     const { page } = ana;
     const words = `${MARK} Replace the gate latch at the back fence`;
     const title = words; // one sentence, under 100 characters: the title is the whole line
-    const field = page.getByRole("textbox", { name: "What do you want to do?" });
+    const field = page.getByRole("textbox", { name: "Ask, create, or add anything" });
 
     // --- A new person types one line, and it survives a refresh before they press anything.
     await field.fill(words);
@@ -24,10 +24,10 @@ export async function home({ browser, base, evidence }) {
     evidence.record(S, ana.role, "an unsent line survives a refresh", (await field.inputValue()) === words,
       `field held "${await field.inputValue()}"`);
 
-    // --- They press Begin. A guest is taken straight into the thing they started.
-    await page.getByRole("button", { name: "Begin", exact: true }).click();
+    // --- They send it. A guest is taken straight into the Space they started.
+    await page.getByRole("button", { name: "Make it a Space" }).click();
     const arrived = await page.waitForURL(/\/world\/[0-9a-f-]{36}$/, { timeout: 20000 }).then(() => true, () => false);
-    evidence.record(S, ana.role, "pressing Begin records the thing and takes her into it", arrived,
+    evidence.record(S, ana.role, "sending it records the Space and takes her into it", arrived,
       (await page.getByRole("alert").textContent().catch(() => "")) || page.url());
     await evidence.shot(page, "home-01-created-390");
     if (!arrived) return;
@@ -57,22 +57,28 @@ export async function home({ browser, base, evidence }) {
       Array.isArray(events) && events.some(e => e.actor_id === ana.actorId) && systemOnly,
       events instanceof Error ? events.message : `others: ${others.map(e => e.type).join(",")}`);
 
-    // --- Find: Bench is the one place her things are listed.
-    await page.goto(base + "/workbench");
-    const onBench = page.locator("main a[data-thing]", { hasText: title });
-    evidence.record(S, ana.role, "it is listed on Bench, where all her things live",
-      await onBench.waitFor({ timeout: 15000 }).then(() => true, () => false));
-    evidence.record(S, ana.role, "and opening it from Bench goes to the same thing",
-      (await onBench.getAttribute("href").catch(() => "")) === href, `href ${await onBench.getAttribute("href").catch(() => "")}`);
-    const benchText = await page.locator("main").first().innerText().catch(() => "");
-    evidence.record(S, ana.role, "Bench shows her no word or id of ours", !OUR_WORDS.test(benchText) && !INTERNAL_IDS.test(benchText),
-      benchText.match(OUR_WORDS)?.[0] ?? benchText.match(INTERNAL_IDS)?.[0] ?? "");
-    await evidence.shot(page, "home-02a-bench-390");
+    // --- Find: the Space switcher on Your Space lists every Space she has.
+    const inSwitcher = await switcherEntry(page, base, title);
+    evidence.record(S, ana.role, "it is listed in the Space switcher, where all her Spaces are",
+      await inSwitcher.waitFor({ timeout: 15000 }).then(() => true, () => false));
+    evidence.record(S, ana.role, "and opening it from the switcher goes to the same Space",
+      (await inSwitcher.getAttribute("href").catch(() => "")) === href, `href ${await inSwitcher.getAttribute("href").catch(() => "")}`);
+    const switcherText = await page.locator("[aria-label='Your Spaces']").innerText().catch(() => "");
+    evidence.record(S, ana.role, "the switcher shows her no word or id of ours", !OUR_WORDS.test(switcherText) && !INTERNAL_IDS.test(switcherText),
+      switcherText.match(OUR_WORDS)?.[0] ?? switcherText.match(INTERNAL_IDS)?.[0] ?? "");
+    await evidence.shot(page, "home-02a-switcher-390");
 
-    // --- Returning: Home offers it among her recent things, and the record shows all six parts in order.
-    await page.goto(base + "/");
-    evidence.record(S, ana.role, "returning later, it is among her recent things on Home",
-      await page.locator("a[data-thing]", { hasText: title }).waitFor({ timeout: 15000 }).then(() => true, () => false));
+    // --- Search finds it by its words, and finds nothing for words it doesn't have.
+    await page.goto(base + "/search?q=" + encodeURIComponent("gate latch"));
+    const hit = page.locator(`main a[href="${href}"]`);
+    evidence.record(S, ana.role, "search finds it by words in its name", await hit.waitFor({ timeout: 15000 }).then(() => true, () => false));
+    await page.goto(base + "/search?q=" + encodeURIComponent(`${MARK} zebra crossing`));
+    evidence.record(S, ana.role, "and says plainly when nothing matches", /Nothing found/.test(await page.locator("main").innerText()));
+
+    // --- Its visibility is shown on the Space itself, read from the kernel: private until shared.
+    await page.goto(base + href);
+    evidence.record(S, ana.role, "the Space says it is private", /Private/.test(await page.locator("[data-visibility]").first().innerText().catch(() => "")));
+
     await page.goto(base + recordHref);
     const heading = await page.getByRole("heading", { level: 1 }).textContent().catch(() => "");
     evidence.record(S, ana.role, "reopening it shows the thing she made", heading?.trim() === title, `heading was "${heading}"`);
@@ -111,7 +117,9 @@ export async function home({ browser, base, evidence }) {
 
     // --- A second device with no shared identity does not see it. Guest custody is this browser.
     await stranger.page.goto(base + "/");
-    const seen = await stranger.page.locator("a[data-thing]", { hasText: title }).count();
+    const seen = await stranger.page.locator("a[data-thing]", { hasText: title }).count()
+      + await stranger.page.goto(base + "/search?q=" + encodeURIComponent("gate latch")).then(() => stranger.page.locator("main a[href^='/world/']").count());
+    await stranger.page.goto(base + "/");
     evidence.record(S, stranger.role, "a different browser does not see a guest's things", seen === 0, `${seen} matching cards`);
     const notice = await stranger.page.locator("[data-custody]").textContent().catch(() => "");
     evidence.record(S, stranger.role, "and is told truthfully where their own work lives", /another browser/.test(notice ?? ""), notice ?? "");
@@ -122,15 +130,15 @@ export async function home({ browser, base, evidence }) {
     await page.goto(base + "/");
     await field.fill(second);
     await ana.context.setOffline(true);
-    await page.getByRole("button", { name: "Begin", exact: true }).click();
+    await page.getByRole("button", { name: "Make it a Space" }).click();
     // The product's own error element. getByRole("alert") is ambiguous: Next.js renders an
     // invisible route announcer with the same role (found on the first run, 2026-11-09).
     const alert = await page.locator("main [role=alert]").textContent({ timeout: 15000 }).catch(() => "");
-    evidence.record(S, ana.role, "losing the network is reported, not hidden", /wasn't recorded|retry/i.test(alert ?? ""), alert || "no alert");
+    evidence.record(S, ana.role, "losing the network is reported, not hidden", /wasn't (recorded|kept)|try again/i.test(alert ?? ""), alert || "no alert");
     evidence.record(S, ana.role, "and her words are still on screen", (await field.inputValue()) === second, await field.inputValue());
     await evidence.shot(page, "home-05-offline-390");
     await ana.context.setOffline(false);
-    await page.getByRole("button", { name: "Begin", exact: true }).click();
+    await page.getByRole("button", { name: "Make it a Space" }).click();
     evidence.record(S, ana.role, "retrying once the network returns records it, and takes her into it",
       await page.waitForURL(/\/world\/[0-9a-f-]{36}$/, { timeout: 20000 }).then(() => true, () => false)
       && (await page.getByRole("heading", { level: 1 }).textContent().catch(() => ""))?.trim() === second);

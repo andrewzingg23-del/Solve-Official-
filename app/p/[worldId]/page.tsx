@@ -53,9 +53,9 @@ export default async function PublicPage({ params }: PageProps<"/p/[worldId]">) 
       <header className={styles.head}>
         {by ? (page.space
           ? <Link href={`/s/${page.space}`} prefetch={false} className={styles.owner} data-owner-space>
-              <span className="s-label" data-by>{by}</span><span className={styles.more} aria-hidden="true">→</span>
+              <span className={styles.by} data-by>{by}</span><span className={styles.more} aria-hidden="true">→</span>
             </Link>
-          : <div className={styles.owner}><span className="s-label" data-by>{by}</span></div>) : null}
+          : <div className={styles.owner}><span className={styles.by} data-by>{by}</span></div>) : null}
         <h1 className={styles.title}>{page.title}</h1>
         {description ? <p className={styles.description}>{description}</p> : null}
       </header>

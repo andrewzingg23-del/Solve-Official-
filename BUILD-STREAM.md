@@ -1449,5 +1449,9 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
     - `npm run test:compare` screenshots the empty shell at the reference window's inside (1366 × 950) and writes side-by-side, overlay and difference images against `docs/reference/approved-shell.png` (SHA-256 checked).
     - Mean difference 15.6 → 7.2 of 255.
     - Intentional departures: no drawn window frame or traffic lights (the operating system's, not controls of ours); the avatar shows a person outline until a name is set (the reference's "S" is a name's initial); one line under the box says where a guest's words are kept (honesty).
-  - **Checks:** typecheck 0, lint 0, build ok; `npm test` 207/207 (the drop is the removed code's tests); `test:product` passed on the new shell at 320/390/1440; in-browser kernel tests 73/73. **Staging acceptance not yet rerun on this shell** — its scenarios still drive the old screens.
-  - **Next:** rewrite the acceptance scenarios for the shell and prove on staging — create, save, reopen, change how it appears, share with the right permissions — then connect one external capability and verify it.
+  - **Checks:** typecheck 0, lint 0, build ok; `npm test` 207/207 (the drop is the removed code's tests); `test:product` passed on the new shell at 320/390/1440; in-browser kernel tests 73/73.
+  - **Staging, on the new shell: all six scenarios, 197/197** (`acc-202611101243-pzpy`).
+    - The scenarios now drive the shell: the box, the Space switcher, Search, the Space's visibility, People.
+    - The first run caught one regression: the public page showed its owner's name only in an all-capitals label. Fixed; it now shows the name as written.
+    - Covered: create, reload, find, appearance with undo and Base, invite and join, publish to a stranger, withdraw.
+  - **Next:** connect one external capability end to end and verify it.

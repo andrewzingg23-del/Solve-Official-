@@ -2,7 +2,7 @@
 // does in SOLVE just because it's fun". Three independent people: the one who starts it, a friend
 // with no account who joins from a link, and a third person who tries to reuse the friend's link.
 import { createHash, randomUUID } from "node:crypto";
-import { INTERNAL_IDS, MARK, OUR_WORDS, VIEWPORTS, close, persona, beginThing } from "../lib.mjs";
+import { INTERNAL_IDS, MARK, OUR_WORDS, VIEWPORTS, close, persona, beginThing, switcherEntry } from "../lib.mjs";
 import { GPS, loaded, phonePhoto, whyNot } from "./photos.mjs";
 
 const S = "together";
@@ -57,7 +57,7 @@ export async function together({ browser, base, evidence }) {
     const landed = await friend.page.waitForURL(new RegExp(`/world/${worldId}$`), { timeout: 20000 }).then(() => true, () => false);
     evidence.record(S, friend.role, "one press joins them and takes them inside", landed, friend.page.url());
     const inside = await friend.page.locator("main").first().innerText();
-    evidence.record(S, friend.role, "sees it's being built together, and with whom", /building together/i.test(inside) && inside.includes(`${MARK} starter`), inside.slice(0, 200));
+    evidence.record(S, friend.role, "sees it's shared, and with whom", /Shared/.test(inside) && inside.includes(`${MARK} starter`), inside.slice(0, 200));
     evidence.record(S, friend.role, "sees what's already been added, and by whom",
       inside.includes("Rent a van for four") && (await friend.page.locator("[data-piece]", { hasText: "Rent a van" }).locator("[data-author]").textContent())?.includes("starter"));
 
@@ -108,10 +108,17 @@ export async function together({ browser, base, evidence }) {
     evidence.record(S, host.role, "sees their friend among the people building it", (await host.page.locator("[data-people]").textContent())?.includes("friend"));
     await evidence.shot(host.page, "together-04-host-sees-friend-390");
 
-    // --- The friend finds it among their own things.
-    await friend.page.goto(base + "/");
-    evidence.record(S, friend.role, "finds it among their own recent things on Home",
-      await friend.page.locator("a[data-thing]", { hasText: title }).waitFor({ timeout: 15000 }).then(() => true, () => false));
+    // --- The Space now says it is shared, and each sees the other under People.
+    evidence.record(S, host.role, "the Space now says it is shared", /Shared/.test(await host.page.locator("[data-visibility]").first().innerText().catch(() => "")));
+    await host.page.goto(base + "/people");
+    evidence.record(S, host.role, "finds their friend under People, with the Space they share",
+      (await host.page.locator("main").innerText()).includes(title));
+    await friend.page.goto(base + "/people");
+    evidence.record(S, friend.role, "finds the host under People", (await friend.page.locator("main").innerText()).includes(title));
+
+    // --- The friend finds it among their own Spaces.
+    evidence.record(S, friend.role, "finds it in their own Space switcher",
+      await (await switcherEntry(friend.page, base, title)).waitFor({ timeout: 15000 }).then(() => true, () => false));
 
     // --- Kernel read-back: the friend's piece is authored by the friend, and the friend can read it.
     const events = await host.kernel.rpc("read_events", { p_scope: `world:${worldId}`, p_after_seq: 0, p_limit: 200, p_newest_first: false }).catch(() => []);
