@@ -10,9 +10,8 @@ import { createConnector, type Session } from "../../lib/bot/connector";
 import { approveConnection } from "../../lib/bot/memory";
 import { saveBot } from "../../lib/bot/store";
 import { botGrantsIn, setBotAccess, worldsForBot } from "../../lib/bot/worlds";
-import { createCreativeResourceEntry, createCreativeWorld, loadCreativeWorld, updateCreativeResourceEntry } from "../../lib/world/creative";
+import { createCreativeResourceEntry, createCreativeWorld, loadCreativeWorld } from "../../lib/world/creative";
 import { createKernelDb, service, user } from "../kernel/harness";
-import { readRoomConversation, submitRoomTurn } from "../../lib/world/room";
 
 const CLAUDE = "00000000-0000-4000-8000-0000000c1a0d";
 const WORLD = "6f1d2c3b-4a59-4687-9a0b-1c2d3e4f5a6b";
@@ -37,35 +36,6 @@ async function setting() {
   };
   return { db, ana, ben, anaId, benId, anaBot: anaBot.avatar!.agent_id, benBot: benBot.avatar!.agent_id, botAs, call };
 }
-
-it("connected external assistants share the room context and post as their own bot with scoped consent", async () => {
-  const { ana, ben, anaBot, benBot, botAs, call } = await setting();
-  const world = await createCreativeWorld(ana, { worldId: WORLD, title: "Shared prototype" });
-  await submitRoomTurn(ana, { worldId: WORLD, requestId: "decision", text: "Prototype first", intent: "decision" });
-  await setBotAccess(ana, { scope: world.scope, botAgentId: anaBot, access: "read" }, "room-read");
-  await setBotAccess(ana, { scope: world.scope, botAgentId: benBot, access: "add" }, "room-ben-add");
-  const read = await call(ana, "read_room", { world_id: WORLD });
-  assert.equal(read.isError, undefined, read.content[0].text);
-  assert.ok(read.content[0].text.includes("Prototype first"));
-  const args = { world_id: WORLD, request_id: "external-1", text: "Test the cartridge before the enclosure" };
-  assert.equal((await call(ana, "post_room_message", args)).isError, true, "read-only World access cannot post");
-  const posted = await call(ben, "post_room_message", args);
-  assert.equal(posted.isError, undefined, posted.content[0].text);
-  await call(ben, "post_room_message", args);
-  const messages = (await readRoomConversation(ana, WORLD)).messages;
-  assert.equal(messages.filter(m => m.text === args.text).length, 1);
-  assert.equal(messages.at(-1)!.actor_id, benBot);
-  assert.equal(messages.at(-1)!.actor_kind, "agent");
-  await assert.rejects(botAs(benBot).postRoomMessage({ worldId: WORLD, requestId: "no-human", text: "We accepted", kind: "decision" }));
-  const forged = await call(ben, "post_room_message", { ...args, request_id: "forged-kind", text: "A proposal", kind: "decision" });
-  assert.equal(forged.structuredContent?.kind, "message", "tool arguments cannot turn a bot proposal into human agreement");
-  const benId = (await ben.whoami()).actor_id;
-  await approveConnection(ben, benId, benBot, { clientId: CLAUDE, clientName: "ChatGPT", mode: "read" }, "room-read-only-connection");
-  assert.equal((await call(ben, "post_room_message", { ...args, request_id: "no-write-consent" })).isError, true, "World grants alone do not override connection write consent");
-  assert.equal((await call(ben, "read_room", { world_id: WORLD })).isError, undefined);
-  await setBotAccess(ana, { scope: world.scope, botAgentId: benBot, access: "none" }, "room-ben-out");
-  assert.equal((await call(ben, "read_room", { world_id: WORLD })).isError, true);
-});
 
 it("lets the bot into a World only as far as its owner allows, and out again", async () => {
   const { ana, anaId, anaBot, botAs, call } = await setting();
@@ -97,14 +67,6 @@ it("lets the bot into a World only as far as its owner allows, and out again", a
   assert.equal((await call(ana, "read_world", { world_id: WORLD })).isError, true, "not let in: nothing to read");
 
   await setBotAccess(ana, { scope: world.scope, botAgentId: anaBot, access: "read" }, "in-1");
-  const cannotMapYet = await call(ana, "map_world_resource", {
-    world_id: WORLD,
-    type: "need",
-    category: "time",
-    title: "Installer",
-    details: "Needs an hour.",
-  });
-  assert.equal(cannotMapYet.isError, true, "read access cannot write structured resources");
   const read = await call(ana, "read_world", { world_id: WORLD });
   assert.match(read.content[0].text, /World: Kitchen remodel/);
   assert.ok(read.content[0].text.length <= 12_000, "World context stays within its character budget");
@@ -123,37 +85,6 @@ it("lets the bot into a World only as far as its owner allows, and out again", a
   assert.match(refused.content[0].text, /may not add to that World/);
 
   await setBotAccess(ana, { scope: world.scope, botAgentId: anaBot, access: "add" }, "in-2");
-  const mappedArgs = {
-    world_id: WORLD,
-    type: "need",
-    category: "time",
-    title: "Find a Saturday installation helper",
-    details: "I can use two people for four hours this Saturday.",
-    time_window: "Saturday, 10am–2pm",
-  };
-  const mapped = await call(ana, "map_world_resource", mappedArgs);
-  assert.equal(mapped.isError, undefined, mapped.content[0].text);
-  const mappedId = (mapped.structuredContent as { resource_id: string }).resource_id;
-  const retriedMap = await call(ana, "map_world_resource", mappedArgs);
-  assert.equal((retriedMap.structuredContent as { resource_id: string }).resource_id, mappedId, "a retried map is one entry");
-  const botEntry = (await loadCreativeWorld(ana, WORLD)).resources.find((entry) => entry.entityId === mappedId)!;
-  assert.deepEqual([botEntry.entryType, botEntry.category, botEntry.reportedBy, botEntry.reportedOnBehalfOf, botEntry.updatedBy], ["need", "time", anaBot, anaId, anaBot]);
-  const creationEvent = (await ana.readEvents(world.scope)).find((event) => event.type === "kernel.entity.created" && event.payload.entity_id === mappedId);
-  assert.deepEqual([creationEvent?.actor_id, creationEvent?.on_behalf_of], [anaBot, anaId], "the kernel records the bot acting for its owner");
-
-  await updateCreativeResourceEntry(ana, {
-    scope: world.scope,
-    entityId: mappedId,
-    requestId: "owner-revises-bot-entry",
-    title: "Find a Saturday installation helper",
-    description: "I can use one person for three hours this Saturday.",
-    timeWindow: "Saturday, 11am–2pm",
-    sourceUrl: "",
-    status: "open",
-  });
-  const revisedBotEntry = (await loadCreativeWorld(ana, WORLD)).resources.find((entry) => entry.entityId === mappedId)!;
-  assert.deepEqual([revisedBotEntry.reportedBy, revisedBotEntry.reportedOnBehalfOf, revisedBotEntry.updatedBy], [anaBot, anaId, anaId]);
-
   const added = await call(ana, "add_to_world", { world_id: WORLD, title: "Budget", body: "Cabinets first, then counters. <script>x</script>" });
   assert.equal(added.isError, undefined, added.content[0].text);
   const again = await call(ana, "add_to_world", { world_id: WORLD, title: "Budget", body: "Cabinets first, then counters. <script>x</script>" });
@@ -167,9 +98,9 @@ it("lets the bot into a World only as far as its owner allows, and out again", a
   assert.equal(artifacts[0].via, "Claude", "a piece the bot writes names the assistant it came through");
   const history = await ana.readEvents(world.scope);
   const byBot = history.filter((e) => e.type.startsWith("kernel.entity") && e.actor_id === anaBot);
-  assert.deepEqual(byBot.map((e) => [e.type, e.on_behalf_of]), [["kernel.entity.created", anaId], ["kernel.entity.created", anaId], ["kernel.entity.updated", anaId]], "resource and document changes are the bot's, for Ana; retries added nothing");
+  assert.deepEqual(byBot.map((e) => [e.type, e.on_behalf_of]), [["kernel.entity.created", anaId], ["kernel.entity.updated", anaId]], "document changes are the bot's, for Ana; retries added nothing");
   const { viaOf } = await import("../../lib/world/creative");
-  assert.deepEqual(byBot.slice(1).map((e) => viaOf((e.payload as { request?: { attributes?: Record<string, unknown> } }).request?.attributes)), ["Claude", "Claude"], "each revision's event records the assistant");
+  assert.deepEqual(byBot.map((e) => viaOf((e.payload as { request?: { attributes?: Record<string, unknown> } }).request?.attributes)), ["Claude", "Claude"], "each revision's event records the assistant");
   const finalRead = await call(ana, "read_world", { world_id: WORLD });
   assert.match(finalRead.content[0].text, /<pieces note=[^>]+>\n- \[.+\] Budget: Counters first after all\./);
   assert.ok(finalRead.content[0].text.length <= 12_000, "pieces and resources share the context budget");
@@ -227,43 +158,3 @@ it("lets a World's owner bring in someone else's bot, and stops a member passing
   assert.match((await call(ben, "add_to_world", { world_id: WORLD, title: "More", body: "x" })).content[0].text, /read only/);
 });
 
-it("lets an invited collaborator's bot record an idempotent, non-executable capability proposal", async () => {
-  const { ana, ben, benId, benBot, call } = await setting();
-  const world = await createCreativeWorld(ana, { worldId: WORLD, title: "Workshop" });
-  const args = {
-    world_id: WORLD,
-    goal: "Coordinate a 3D printer queue",
-    outcome: "Prepare an ordered print queue with material and time estimates.",
-    current_tools: "The bot can currently make a text plan in this World.",
-    data_needs: "Printer model, available filament, queued jobs, and estimated print times.",
-    acceptance_test: "Given three sample jobs and two spools, produce a feasible order and flag any missing material.",
-  };
-
-  const refused = await call(ben, "propose_capability", args);
-  assert.equal(refused.isError, true, "a bot not invited by SOV ID cannot add a proposal");
-  assert.deepEqual((await loadCreativeWorld(ana, WORLD)).artifacts, []);
-
-  await setBotAccess(ana, { scope: world.scope, botAgentId: benBot, access: "add" }, "ana-invites-ben-bot");
-  const saved = await call(ben, "propose_capability", args);
-  assert.equal(saved.isError, undefined, saved.content[0].text);
-  assert.match(saved.content[0].text, /draft capability proposal/);
-  const record = saved.structuredContent as { proposal_id: string; status: string; url: string };
-  assert.deepEqual([record.status, record.url], ["draft", `https://sov.test/world/${WORLD}`]);
-
-  const retried = await call(ben, "propose_capability", args);
-  assert.equal((retried.structuredContent as { proposal_id: string }).proposal_id, record.proposal_id, "same request is idempotent");
-  const { artifacts } = await loadCreativeWorld(ana, WORLD);
-  assert.equal(artifacts.length, 1, "the retry creates no duplicate");
-  assert.match(artifacts[0].title, /^Capability proposal · Coordinate a 3D printer queue$/);
-  assert.match(artifacts[0].body, /STATUS: Draft proposal — not executable/);
-  assert.match(artifacts[0].body, /CURRENT TOOLS CONSIDERED\nThe bot can currently make a text plan/);
-  assert.match(artifacts[0].body, /DATA OR ACCESS NEEDED\nPrinter model/);
-  assert.match(artifacts[0].body, /This proposal does not run code, contact providers, grant access, or perform external actions\./);
-
-  const event = (await ana.readEvents(world.scope, { newestFirst: true, limit: 1 }))[0];
-  assert.deepEqual([event.type, event.actor_id, event.on_behalf_of], ["kernel.entity.created", benBot, benId], "the World owner can see which person's bot made the proposal");
-  await approveConnection(ben, benId, CLAUDE, { clientId: CLAUDE, clientName: "ChatGPT", mode: "read" }, "ben-downgrades-connection");
-  const readOnly = await call(ben, "propose_capability", args);
-  assert.equal(readOnly.isError, true, "read-only assistant connection cannot create a proposal");
-  assert.match(readOnly.content[0].text, /read only/);
-});

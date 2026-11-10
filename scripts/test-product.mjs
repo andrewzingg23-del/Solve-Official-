@@ -27,7 +27,7 @@ if (!executablePath) throw new Error("Set CHROMIUM_PATH to an installed Chromium
 
 const port = process.env.PRODUCT_TEST_PORT || "3005", url = `http://localhost:${port}`;
 const server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "--port", port], {
-  cwd: root, env: { ...process.env, ENABLE_EXPERIMENTAL_FEATURES: "false", ENABLE_MONEY: "false", ENABLE_EXTERNAL_FINANCIAL_ACTIONS: "false" },
+  cwd: root, env: { ...process.env },
   stdio: ["ignore", "pipe", "pipe"],
 });
 let serverLog = "", browser;

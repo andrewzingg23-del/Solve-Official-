@@ -7,15 +7,10 @@ import { it } from "node:test";
 import { kernelClient, type Kernel } from "../../lib/kernel/client";
 import { localSupabase } from "../../lib/kernel/local";
 import { createConnector, INSTRUCTIONS, PROTOCOL_VERSIONS, TOOLS, type Session } from "../../lib/bot/connector";
-import { readWorldAsBot } from "../../lib/bot/worlds";
-import { parsePixelArt } from "../../lib/bot/pixel-art";
 import { approveConnection, MEMORY_NOTED, memoryScope, noteMemory, readMemories, revokeConnection } from "../../lib/bot/memory";
 import { protectedResourceMetadata, serveMcp } from "../../lib/bot/mcp-http";
 import { saveBot } from "../../lib/bot/store";
 import { createKernelDb, service, user } from "../kernel/harness";
-import { createCreativeWorld } from "../../lib/world/creative";
-import { assembleStudio } from "../../lib/studio/document";
-import { readStudios, saveStudioRevision } from "../../lib/world/studio";
 
 const CLAUDE = "00000000-0000-4000-8000-0000000c1a0d";
 const OTHER = "00000000-0000-4000-8000-00000000babe";
@@ -49,38 +44,11 @@ it("speaks the protocol: initialize, ping, tools, notifications and errors", asy
   assert.equal(unknownVersion.result.protocolVersion, PROTOCOL_VERSIONS[0], "otherwise the newest version is offered");
   assert.deepEqual(await c.handle({ jsonrpc: "2.0", id: 3, method: "ping" }), { jsonrpc: "2.0", id: 3, result: {} });
   const list = (await c.handle({ jsonrpc: "2.0", id: 4, method: "tools/list" })) as { result: { tools: { name: string }[] } };
-  assert.deepEqual(list.result.tools.map((t) => t.name), ["read_studios", "save_studio", "whoami", "get_context", "search", "fetch", "remember", "learn_business", "list_worlds", "read_world", "read_room", "post_room_message", "start_world", "map_world_resource", "add_to_world", "add_proof", "design_part", "create_pixel_art", "propose_routes", "propose_outreach", "record_outcome", "propose_capability", "list_communities", "read_community", "send_note"]);
+  assert.deepEqual(list.result.tools.map((t) => t.name), ["whoami", "get_context", "search", "fetch", "remember", "list_worlds", "read_world", "start_world", "add_to_world", "add_proof"]);
   assert.equal(TOOLS.find((t) => t.name === "remember")!.annotations.readOnlyHint, false);
   assert.equal(await c.handle({ jsonrpc: "2.0", method: "notifications/initialized" }), null, "notifications get no response");
   assert.equal((await c.handle({ jsonrpc: "2.0", id: 5, method: "resources/list" }) as { error: { code: number } }).error.code, -32601);
   assert.equal((await c.handle({ jsonrpc: "2.0", id: 6, method: "tools/call", params: { name: "delete_everything" } }) as { error: { code: number } }).error.code, -32602);
-});
-
-it("studio tools use the bot's grants and immutable delegated author, never the owner's broader access", async () => {
-  const {ana, anaId, bot, session, call} = await setting();
-  const world = await createCreativeWorld(ana, {worldId:"00000000-0000-4000-8000-000000005701",title:"Private design"});
-  const document = assembleStudio("object","Desk","delegated-desk");
-  const first = await saveStudioRevision(ana,{worldId:world.worldId,document,parents:[],requestId:"first"});
-  const s = session(ana,CLAUDE),agentId=bot.avatar!.agent_id;
-  await approveConnection(ana,anaId,agentId,{clientId:CLAUDE,clientName:"Claude",mode:"read"},"studio-read");
-  assert.equal((await call(s,"read_studios",{world_id:world.worldId})).isError,true);
-  const readGrant = await ana.issueGrant({grantee:agentId,capability:"kernel.read",scope:world.scope});
-  const read = await call(s,"read_studios",{world_id:world.worldId,studio_id:document.id,revision_id:first});
-  assert.equal(read.isError,undefined,read.content[0].text);
-  assert.equal((read.structuredContent as {revision:{document:{title:string}}}).revision.document.title,"Desk");
-  const args={world_id:world.worldId,document,parents:[first],request_id:"bot-revision"};
-  assert.equal((await call(s,"save_studio",args)).isError,true);
-  await approveConnection(ana,anaId,agentId,{clientId:CLAUDE,clientName:"Claude",mode:"remember"},"studio-remember");
-  assert.equal((await call(s,"save_studio",args)).isError,true,"write permission is independently required");
-  await ana.issueGrant({grantee:agentId,capability:"world.entity.write",scope:world.scope});
-  const saved=await call(s,"save_studio",args);assert.equal(saved.isError,undefined,saved.content[0].text);
-  const revision=(await readStudios(ana,world.worldId))[0].heads[0];
-  assert.equal(revision.authorId,agentId);assert.equal(revision.onBehalfOf,anaId);
-  const replay=await call(s,"save_studio",args);assert.equal(replay.structuredContent?.revision_id,saved.structuredContent?.revision_id);
-  await ana.revokeGrant(readGrant,"Access ended");
-  assert.equal((await call(s,"read_studios",{world_id:world.worldId})).isError,true);
-  await revokeConnection(ana,anaId,CLAUDE,"studio-revoke");
-  assert.equal((await call(s,"save_studio",{...args,request_id:"revoked"})).isError,true);
 });
 
 it("lets an approved assistant read the bot, and remember only when allowed", async () => {
@@ -217,95 +185,3 @@ it("serves Streamable HTTP: 401 with metadata, JSON-RPC over POST, batches and n
 });
 
 
-it("learns owner-approved business context incrementally, with provenance and secret rejection", async () => {
-  const { ana, anaId, bot, session, call } = await setting();
-  await approveConnection(ana, anaId, bot.avatar!.agent_id, { clientId: CLAUDE, clientName: "Claude", mode: "remember" }, "business-learn-approve");
-  const s = session(ana, CLAUDE);
-  const overview = {
-    business_name: "Zingg Works",
-    section: "overview",
-    details: "Owner says the company works on industrial piping and mechanical systems for regional commercial projects.",
-  };
-  const learned = await call(s, "learn_business", overview);
-  assert.equal(learned.isError, undefined, learned.content[0].text);
-  const saved = learned.structuredContent as { id: string; section: string; duplicate: boolean };
-  assert.deepEqual([saved.section, saved.duplicate], ["overview", false]);
-  assert.match(learned.content[0].text, /sealed business memory/);
-
-  const retried = await call(s, "learn_business", overview);
-  assert.equal((retried.structuredContent as { id: string; duplicate: boolean }).id, saved.id);
-  assert.equal((retried.structuredContent as { duplicate: boolean }).duplicate, true, "retries do not create duplicate business memory");
-
-  const systems = await call(s, "learn_business", {
-    business_name: "Zingg Works",
-    section: "systems_and_equipment",
-    details: "The owner is exploring 3D printing for prototypes and real-time pixel generation for interactive visual work.",
-  });
-  assert.equal(systems.isError, undefined, systems.content[0].text);
-  const memories = await readMemories(ana, anaId);
-  assert.equal(memories.length, 2);
-  assert.match(memories[0].text, /real-time pixel generation/);
-  assert.match(memories[0].source.title ?? "", /Zingg Works/);
-  assert.deepEqual(memories[0].via, { client_id: CLAUDE, client_name: "Claude" });
-
-  const secret = await call(s, "learn_business", {
-    business_name: "Zingg Works",
-    section: "systems_and_equipment",
-    details: "api_key=sk-abcdefghijklmnopqrstuvwxyz012345",
-  });
-  assert.equal(secret.isError, true);
-  assert.match(secret.content[0].text, /Remove passwords, keys, tokens/);
-  assert.equal((await readMemories(ana, anaId)).length, 2, "credentials never enter memory");
-
-  const unsupported = await call(s, "learn_business", { business_name: "Zingg Works", section: "toString", details: "none" });
-  assert.equal(unsupported.isError, true, "the connector validates section values even if a caller skips the MCP schema");
-
-  await approveConnection(ana, anaId, bot.avatar!.agent_id, { clientId: CLAUDE, clientName: "Claude", mode: "read" }, "business-read-only");
-  const readOnly = await call(session(ana, CLAUDE), "learn_business", overview);
-  assert.equal(readOnly.isError, true, "read-only connections cannot add business memory");
-});
-
-it("creates attributed pixel art in a World and makes retries idempotent", async () => {
-  const { ana, bot, session, call, botAs } = await setting();
-  await approveConnection(ana, await ana.whoami().then((who) => who.actor_id), bot.avatar!.agent_id, {
-    clientId: CLAUDE,
-    clientName: "Claude",
-    mode: "remember",
-  }, "pixel-approve");
-  const s = session(ana, CLAUDE);
-  const started = await call(s, "start_world", { title: "Pixel studio" });
-  const worldId = (started.structuredContent as { world_id: string }).world_id;
-  const input = {
-    world_id: worldId,
-    title: "Blue robot",
-    prompt: "A friendly blue robot, transparent background",
-    rows: [".11.", "1001", ".11."],
-    palette: ["#1967d2", "#f5faff"],
-  };
-  const first = await call(s, "create_pixel_art", input);
-  assert.equal(first.isError, undefined, first.content[0].text);
-  assert.equal((first.structuredContent as { media_type: string }).media_type, "application/vnd.sov.pixel-grid+json");
-  const retry = await call(s, "create_pixel_art", input);
-  assert.deepEqual(
-    [(retry.structuredContent as { artifact_id: string }).artifact_id, (retry.structuredContent as { revised: boolean }).revised],
-    [(first.structuredContent as { artifact_id: string }).artifact_id, false],
-  );
-  const loaded = await readWorldAsBot(botAs(bot.avatar!.agent_id), worldId);
-  assert.equal(loaded.artifacts.length, 1, "a retry leaves one saved artifact");
-  const art = parsePixelArt(loaded.artifacts[0].body);
-  assert.equal(art?.prompt, input.prompt);
-  assert.deepEqual(art?.rows, input.rows);
-
-  const malformed = await call(s, "create_pixel_art", { ...input, rows: ["11", "1"] });
-  assert.equal(malformed.isError, true);
-  assert.match(malformed.content[0].text, /same width/);
-  assert.equal((await readWorldAsBot(botAs(bot.avatar!.agent_id), worldId)).artifacts.length, 1, "invalid input writes nothing");
-
-  await approveConnection(ana, await ana.whoami().then((who) => who.actor_id), bot.avatar!.agent_id, {
-    clientId: CLAUDE,
-    clientName: "Claude",
-    mode: "read",
-  }, "pixel-read-only");
-  const readOnly = await call(session(ana, CLAUDE), "create_pixel_art", input);
-  assert.equal(readOnly.isError, true, "read-only assistant cannot write the image");
-});

@@ -4,22 +4,7 @@ import { kernelClient } from "../../lib/kernel/client";
 import { localSupabase } from "../../lib/kernel/local";
 import { createCreativeWorld, updateCreativeArtifact } from "../../lib/world/creative";
 import { grantWorldAccess } from "../../lib/world/collaboration";
-import { loadRoomContext } from "../../lib/world/room";
 import { createKernelDb, user } from "../kernel/harness";
-
-it("excludes private documents even when the requesting human has private-read authority in the shared World", async () => {
-  const db = await createKernelDb();
-  const owner = kernelClient(localSupabase(db, user("auth:private-room-owner")));
-  await owner.register("Ana");
-  const world = await createCreativeWorld(owner, { worldId: "00000000-0000-4000-8000-000000000961", title: "Shared" });
-  const privateId = await owner.upsertEntity({ scope: world.scope, kind: "document", title: "Private notes", attributes: { worldId: world.worldId, documentType: "text", content: "PRIVATE_WITHIN_SHARED_WORLD", canvas: { x: 40, y: 50 } }, visibility: "private", idempotencyKey: "private-doc" });
-  assert.ok((await owner.readWorld(world.scope)).some(e => e.entity_id === privateId), "fixture owner can actually read the private document");
-  const context = await loadRoomContext(owner, world.worldId);
-  assert.ok(!context.sharedText.includes("PRIVATE_WITHIN_SHARED_WORLD"));
-  assert.ok(!context.sharedText.includes("Private notes"));
-  assert.ok(!context.sourceRefs.some(s => s.entityId === privateId));
-  assert.equal(context.omittedSources, 0, "even omission metadata excludes private sources");
-});
 
 it("editing a private text document preserves its visibility and denies a direct editor RPC without private-read access", async () => {
   const db = await createKernelDb();

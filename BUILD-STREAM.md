@@ -1357,3 +1357,25 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
     - **All seven acceptance scenarios on staging: 237/237** (`acc-202611100653-u5jl`), which also verifies the card-selector fix the sign-in limit had blocked.
   - **Not removed:** dormant database functions (money, ledger, settlements, custom types), deliberately. Removing database functions is a separate, riskier decision.
   - **Next:** the founder reviews the branch. Once it's merged into `solve/from-zero`, recommendation 2 (the three staging-only migrations) follows.
+
+- 2026-11-10 — **Second cut: everything not foundational to the five products** (branch `solve/remove-dead-code`, **not merged**). Founder: "I want to take everything out that is not perfectly foundational for the full vision." The test applied was the consolidated direction: the five products, Home, Connect, and the kernel's identity, things, relationships, authority, actions, evidence and history.
+  - **The AI connector now offers 10 tools instead of 26,** and its instructions describe only those:
+    - identity: `whoami`;
+    - My AI's memory: `get_context`, `search`, `fetch`, `remember`;
+    - your things: `list_worlds`, `read_world`, `start_world`, `add_to_world`;
+    - evidence: `add_proof`.
+  - **Removed connector tools,** with their code: studios, business-learning, old room chat, offers-and-needs mapping, 3D parts (and `/parts`), pixel art, route plans, sales outreach, capability proposals, and communities (with `lib/community`, the solar desk and community packs).
+  - **The app-level money stack is gone:** payment routing, settlement, and the proof-of-life and send-bob demos with their tests. The kernel's money functions and their kernel tests, including the small Solana helper they use, are kept, as the direction says to preserve verified kernel capabilities.
+  - **Money flags are gone.** `lib/flags.ts` and the "experimental" switch in `lib/product/routes.ts` could re-open retired paths. Retired addresses now permanently redirect to where that thing lives, retired APIs are refused, and nothing can switch them back on. Routes test rewritten, including a whole-segment check.
+  - **No AI provider remains in the app.** `@anthropic-ai/sdk` is gone; it served only the old in-app chat and reasoning endpoints, already unreachable from the rebuilt app. My AI exists today only through the connector. This is a product gap to fill deliberately, not one this cut created.
+  - **Tests:** cases about removed tools were cut from tests whose subject is live, and those tests kept. That covers the connector protocol test (now asserting exactly the 10 tools), bot access to a thing (none / read / add / out), private documents in shared things, and guest-owned things.
+  - **Size:**
+    - `app/` and `lib/`: 131 → **109 files**, about 13,700 → **9,459 lines**. Across both cuts, about 48,000 → 9,459.
+    - dependencies: 36 → 26.
+    - test files: 129 → 44.
+  - **Checks:**
+    - typecheck 0 errors, lint 0 problems, build ok.
+    - `npm test` 253 pass / 0 fail, and **no live file lost its only test** (checked against `solve/from-zero`).
+    - `test:product` passed; in-browser kernel tests 74/74.
+    - **All seven acceptance scenarios on staging: 237/237** (`acc-202611100719-45hw`).
+  - **Not touched:** database migrations and `kernel_api` (including dormant money functions and custom types), `/oauth/consent`'s old markup (it is the live connector's consent screen), and documentation. Pruning the docs is a separate step, pending the founder.

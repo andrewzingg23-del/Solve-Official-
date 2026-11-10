@@ -24,18 +24,15 @@ it('gives anonymous Auth users stable isolated actors without opening unauthenti
   assert.equal(await k.value(user('existing-account'), 'register'), member);
 });
 
-it('lets guests create and reload projects and communities with private project contents', async () => {
+it('lets guests create and reload their things, kept private from other guests', async () => {
   const { kernelClient } = await import('../../lib/kernel/client');
   const { localSupabase } = await import('../../lib/kernel/local');
   const { createCreativeWorld } = await import('../../lib/world/creative');
-  const { startCommunity } = await import('../../lib/community/community');
   const db = await createKernelDb();
   const session = { role: 'authenticated' as const, sub: 'guest-builder', is_anonymous: true };
   const first = kernelClient(localSupabase(db, session));
   await first.register();
   const world = await createCreativeWorld(first, { worldId: 'b53d4b8c-6cff-43f8-a29e-1f9207f84e50', title: 'Guest project', goal: 'Build inside SOLVE' });
-  const community = await startCommunity(first, { name: 'Guest builders', about: 'Build together', packs: [], nonce: '0aed60fe-8fb5-42ef-b42f-8fb2ca5d147e' });
-  assert.ok(community.communityId);
   const reloaded = kernelClient(localSupabase(db, session));
   assert.ok((await reloaded.readWorld(world.scope)).length);
   const other = kernelClient(localSupabase(db, { role: 'authenticated', sub: 'other-guest', is_anonymous: true }));
