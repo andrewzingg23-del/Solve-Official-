@@ -8,7 +8,10 @@ import { PHOTO_BUCKET, PHOTO_LINK_SECONDS, isPhotoOf } from "@/lib/product/photo
 import { loadCreativeWorld } from "@/lib/world/creative";
 import { readWorldMembers } from "@/lib/world/collaboration";
 import { nameFor, type ActorNames } from "@/lib/product/thing";
-import { AddPhoto, AddPiece, AiAccess, InviteFriend, RevisePiece, SharePage } from "./together";
+import { AddPhoto, AddPiece, AiAccess, EditSpace, InviteFriend, RevisePiece, SharePage } from "./together";
+import { presentationFromParams, readPresentation } from "@/lib/product/presentation";
+import { SEEDS } from "@/lib/product/card";
+import { environmentFor } from "@/lib/product/environment";
 import { actionsFor, heldInSpace } from "@/lib/product/capabilities";
 import { loadBot } from "@/lib/bot/store";
 import { accessFrom, botGrantsIn } from "@/lib/bot/worlds";
@@ -23,8 +26,9 @@ export const metadata: Metadata = { title: "SOLVE" };
 // founder's answer to "what's the first thing someone does just because it's fun": build something
 // and invite your friends. Everything shown is read from the kernel, and who added what is taken
 // from the record of who created it — never from anything a screen supplies.
-export default async function ThingPage({ params }: PageProps<"/world/[worldId]">) {
+export default async function ThingPage({ params, searchParams }: PageProps<"/world/[worldId]">) {
   const { worldId } = await params;
+  const query = await searchParams;
   const user = await getUser();
   if (!user) return <GuestGate />;
 
@@ -100,8 +104,42 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
   ].sort((a, b) => b.at.localeCompare(a.at));
   const initial = (id: string) => (nameFor(id, names).replace(/^[^\p{L}]+/u, "").charAt(0) || "·").toUpperCase();
 
-  return <div className={styles.page}>
-    <header className={styles.head}>
+  // How this Space is composed: its saved presentation, or a draft being previewed (nothing saved).
+  const resources = {
+    photos: new Set(pieces.filter(p => p.kind === "photo").map(p => p.id.toLowerCase())),
+    notes: new Set(texts.map(a => a.entityId.toLowerCase())),
+  };
+  const stored = await readPresentation(kernel, world.worldId, resources).catch(() => null);
+  const draft = canAdd ? presentationFromParams(query, resources) : null;
+  const shown = draft ?? stored?.presentation ?? { composition: "base" as const, cover: null, featured: [], tint: null };
+  // The Space's own colour enters only as its accent, computed for readability like the person's look.
+  const tint = shown.tint ? environmentFor({ expression: "personal", seed: shown.tint, tone: "light", finish: "glass" }) : null;
+  const cover = shown.composition === "story" && shown.cover ? pieces.find(p => p.id.toLowerCase() === shown.cover && p.photo?.url) : undefined;
+  const featured = shown.composition === "story" ? shown.featured.map(id => pieces.find(p => p.id.toLowerCase() === id)).filter((p): p is (typeof pieces)[number] => Boolean(p)) : [];
+  const rest = pieces.filter(p => !featured.includes(p) && p !== cover);
+  const story = shown.composition === "story";
+
+  return <div className={styles.page} data-composition={shown.composition}
+    style={tint ? { "--accent": tint.accent, "--on-accent": tint.onAccent } as React.CSSProperties : undefined}>
+    {draft ? <div className={styles.previewBar} role="status" data-previewing>
+      <span>Previewing — nothing is saved yet.</span>
+      <a href={`/world/${encodeURIComponent(world.worldId)}`} className="s-button" data-variant="quiet" style={{ color: "inherit", borderColor: "currentColor" }}>Discard</a>
+    </div> : null}
+    {cover?.photo?.url ? <div className={styles.hero} data-hero>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={cover.photo.url} alt={cover.text || ""} className={styles.heroImage} />
+      <div className={styles.heroText}>
+        <h1>{world.title}</h1>
+        <div className={styles.row}>
+          <a href={isOwner ? "#share" : undefined} className={styles.visibility} data-visibility>
+            <Icon name={publication?.published ? "globe" : people.length > 1 ? "people" : "lock"} size={16} />
+            {publication?.published ? "Public" : people.length > 1 ? "Shared" : "Private"}
+          </a>
+          {canAdd ? <a href="#edit-space" className={styles.visibility} data-edit-open>Edit Space</a> : null}
+        </div>
+      </div>
+    </div> : null}
+    {cover?.photo?.url ? null : <header className={styles.head}>
       <div className={styles.titleRow}>
         <h1>{world.title}</h1>
         {/* Who can see this Space, from the kernel: its members, and whether it is published. */}
@@ -109,9 +147,10 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
           <Icon name={publication?.published ? "globe" : people.length > 1 ? "people" : "lock"} size={16} />
           {publication?.published ? "Public" : people.length > 1 ? "Shared" : "Private"}
         </a>
+        {canAdd ? <a href="#edit-space" className={styles.visibility} data-edit-open>Edit Space</a> : null}
       </div>
       {ownDescription(world.summary, world.title) ? <p className="s-muted">{ownDescription(world.summary, world.title)}</p> : null}
-    </header>
+    </header>}
 
     <section className={styles.people} aria-label="Who's building this">
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -128,11 +167,22 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
       <AddPhoto worldId={world.worldId} />
     </div> : null}
 
-    <section aria-labelledby="pieces-title" className="s-stack">
-      <h2 id="pieces-title">{pieces.length ? "What's been added" : "Nothing added yet"}</h2>
+    {featured.length ? <section aria-labelledby="highlights-title" className="s-stack" data-highlights>
+      <h2 id="highlights-title">Highlights</h2>
+      <ul className={styles.highlights}>{featured.map(piece => <li key={piece.id} className={styles.highlight} data-highlight data-piece>
+        {piece.text ? <p>{piece.text}</p> : null}
+        <span className={styles.by}>Added by <strong>{authorOf.get(piece.id) ? nameFor(authorOf.get(piece.id)!, names) : "Someone"}</strong>{editorOf.has(piece.id) ? <> · edited by <strong>{nameFor(editorOf.get(piece.id)!, names)}</strong></> : null}</span>
+        {actionsFor({ kind: piece.kind }, held).map(action => action.id === "revise"
+          ? <RevisePiece key={action.id} worldId={world.worldId} entityId={piece.id} version={piece.version} text={piece.text} label={action.label} />
+          : null)}
+      </li>)}</ul>
+    </section> : null}
+
+    <section aria-labelledby="pieces-title" className={story ? `s-stack ${styles.journal}` : "s-stack"}>
+      <h2 id="pieces-title">{pieces.length ? (story ? "Journal" : "What's been added") : "Nothing added yet"}</h2>
       {pieces.length === 0
         ? <p className="s-muted">{isOwner ? "Add the first piece, or invite a friend to start it with you." : "Be the first to add something."}</p>
-        : <ul className={styles.pieces}>{pieces.map(piece => {
+        : <ul className={styles.pieces}>{(story ? rest : pieces).map(piece => {
             const author = authorOf.get(piece.id);
             const who = author ? nameFor(author, names) : "Someone";
             return <li key={piece.id} className={styles.piece} data-piece data-photo={piece.photo ? "" : undefined}>
@@ -161,6 +211,10 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
       candidates={pieces.filter(p => !p.link && authorOf.get(p.id) === ownerId).map(p => ({
         id: p.id, kind: p.photo ? "photo" as const : "text" as const, text: p.text, url: p.photo?.url ?? null }))}
       friendsPieces={pieces.filter(p => !p.link && authorOf.get(p.id) !== ownerId).length} /> : null}
+
+    {canAdd ? <EditSpace worldId={world.worldId} current={shown} previewing={Boolean(draft)} canUndo={Boolean(stored?.previous)} tints={[...SEEDS]}
+      photos={pieces.filter(p => p.kind === "photo").map(p => ({ id: p.id.toLowerCase(), label: p.text || "A photo", url: p.photo?.url ?? null }))}
+      notes={texts.map(a => ({ id: a.entityId.toLowerCase(), label: (a.body || a.title).slice(0, 80) }))} /> : null}
 
     {ai ? <AiAccess worldId={world.worldId} current={ai.access} name={ai.name} /> : null}
 

@@ -6,6 +6,7 @@ import { createClient as createSupabase, getUser } from "@/lib/supabase/server";
 import { PHOTO_BUCKET, checkPhoto, isPhotoOf, photoProblem } from "@/lib/product/photo";
 import { createCreativeArtifact, loadCreativeWorld, updateCreativeArtifact } from "@/lib/world/creative";
 import { KernelError } from "@/lib/kernel/client";
+import { BASE_PRESENTATION, normalizePresentation, readPresentation, samePresentation, writePresentation, type SpaceResources } from "@/lib/product/presentation";
 import { createWorldInvitation } from "@/lib/world/invitations";
 import { readWorldMembers } from "@/lib/world/collaboration";
 import { cleanSelection, setPublished } from "@/lib/product/page";
@@ -173,4 +174,30 @@ export async function revisePiece(worldId: string, entityId: string, expectedVer
   }
   const saved = (await loadCreativeWorld(kernel, worldId).catch(() => null))?.artifacts.find(a => a.entityId === entityId);
   return { ok: true, version: saved?.version ?? expectedVersion + 1 };
+}
+
+/** What a Space actually holds, so a presentation can only point at real photos and notes. */
+export async function resourcesOf(loaded: Awaited<ReturnType<typeof loadCreativeWorld>>): Promise<SpaceResources> {
+  const photos = loaded.entities.filter(e => e.kind === "document" && e.attributes.documentType === "photo").map(e => e.entity_id.toLowerCase());
+  return { photos: new Set(photos), notes: new Set(loaded.artifacts.map(a => a.entityId.toLowerCase())) };
+}
+
+// Save a composition, undo the last change, or return to Base. Each is a new version of the Space's
+// one presentation record; the kernel decides who may write it (world.entity.write on the Space).
+export async function changePresentation(worldId: string, mode: "save" | "undo" | "base", raw: unknown, requestId: string): Promise<SimpleResult> {
+  if (!REQUEST.test(requestId)) return { ok: false, error: "This couldn't be saved. Reload and try again." };
+  if (!(await getUser())) return { ok: false, error: "Your identity isn't ready yet. Reload and try again." };
+  try {
+    const kernel = await getKernel();
+    const loaded = await loadCreativeWorld(kernel, worldId);
+    const resources = await resourcesOf(loaded);
+    const current = await readPresentation(kernel, loaded.world.worldId, resources);
+    const next = mode === "base" ? BASE_PRESENTATION : mode === "undo" ? current.previous ?? BASE_PRESENTATION : normalizePresentation(raw, resources);
+    if (current.entityId && samePresentation(current.presentation, next)) return { ok: true };
+    await writePresentation(kernel, loaded.world.worldId, current, next, `presentation:${loaded.world.worldId}:${requestId}`);
+    return { ok: true };
+  } catch (error) {
+    if (error instanceof KernelError && error.name === "forbidden") return { ok: false, error: "You can see this Space but not change how it looks." };
+    return { ok: false, error: "It wasn't saved. Nothing changed; try again." };
+  }
 }

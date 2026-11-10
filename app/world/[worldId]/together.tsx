@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { PHOTO_BUCKET, PHOTO_MAX_BYTES, PHOTO_MAX_SIDE, photoName } from "@/lib/product/photo";
-import { addPiece, makeInvite, revisePiece, setAiAccess, recordPhoto, setPagePublished } from "./together-actions";
+import { addPiece, changePresentation, makeInvite, revisePiece, setAiAccess, recordPhoto, setPagePublished } from "./together-actions";
 import styles from "./together.module.css";
 
 // Add your piece. The words stay on screen until the kernel has them.
@@ -347,5 +347,110 @@ export function RevisePiece({ worldId, entityId, version, text, label }: {
     </div>
     {error ? <p role="alert" className="s-error" data-revise-error>{error}</p> : null}
   </form>;
+}
+
+// Edit Space: compose how this Space looks from what's already in it. Preview opens the draft at its
+// own address and saves nothing; Save, Undo and Return to Base each write a version.
+export type EditOption = { id: string; label: string; url?: string | null };
+
+/** The average colour of the middle of a photo the person added — their own content as the Space's colour. */
+async function colourOf(url: string): Promise<string> {
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.src = url;
+  await img.decode();
+  const c = document.createElement("canvas");
+  c.width = 32; c.height = 32;
+  const g = c.getContext("2d")!;
+  g.drawImage(img, img.width * 0.2, img.height * 0.2, img.width * 0.6, img.height * 0.6, 0, 0, 32, 32);
+  const d = g.getImageData(0, 0, 32, 32).data; // throws if the browser won't let the photo be read
+  let r = 0, gr = 0, b = 0;
+  for (let i = 0; i < d.length; i += 4) { r += d[i]; gr += d[i + 1]; b += d[i + 2]; }
+  const n = d.length / 4, hex = (x: number) => Math.round(x / n).toString(16).padStart(2, "0");
+  return `#${hex(r)}${hex(gr)}${hex(b)}`;
+}
+export function EditSpace({ worldId, current, previewing, photos, notes, tints, canUndo }: {
+  worldId: string; current: { composition: string; cover: string | null; featured: string[]; tint: string | null };
+  previewing: boolean; photos: EditOption[]; notes: EditOption[]; tints: string[]; canUndo: boolean;
+}) {
+  const router = useRouter();
+  const [draft, setDraft] = useState(current);
+  const [error, setError] = useState("");
+  const [pending, start] = useTransition();
+  const panel = useRef<HTMLDetailsElement>(null);
+  // Opened in place from the Space's own header ("Edit Space"), like sharing.
+  useEffect(() => {
+    const openIfAsked = () => { if (window.location.hash === "#edit-space" && panel.current) panel.current.open = true; };
+    openIfAsked();
+    window.addEventListener("hashchange", openIfAsked);
+    return () => window.removeEventListener("hashchange", openIfAsked);
+  }, []);
+  const coverUrl = photos.find(p => p.id === draft.cover)?.url ?? null;
+  const fromCover = async () => {
+    if (!coverUrl) return;
+    setError("");
+    try { const tint = await colourOf(coverUrl); setDraft(d => ({ ...d, tint })); }
+    catch { setError("This photo's colour can't be read here. Choose a colour instead."); }
+  };
+  const run = (mode: "save" | "undo" | "base") => start(async () => {
+    setError("");
+    const result = await changePresentation(worldId, mode, draft, crypto.randomUUID());
+    if (!result.ok) { setError(result.error); return; }
+    router.replace(`/world/${encodeURIComponent(worldId)}`);
+    router.refresh();
+  });
+  const previewHref = () => {
+    const q = new URLSearchParams({ preview: "1", composition: draft.composition });
+    if (draft.cover) q.set("cover", draft.cover);
+    if (draft.featured.length) q.set("featured", draft.featured.join(","));
+    if (draft.tint) q.set("tint", draft.tint);
+    return `/world/${encodeURIComponent(worldId)}?${q}`;
+  };
+  return <details ref={panel} id="edit-space" className={styles.sharePanel} data-edit-space open={previewing || undefined}>
+    <summary className={styles.shareLine}>
+      <span className={styles.shareIcon} aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="3.5" y="13.5" width="17" height="7" rx="1.5" /></svg></span>
+      <span className={styles.shareText}><h2 className={styles.shareTitle}>Edit Space</h2><span className="s-muted s-small">{previewing ? "Previewing — not saved" : "How this Space looks"}</span></span>
+    </summary>
+    <div className={styles.shareBody}>
+      <fieldset className={styles.choose} disabled={pending}>
+        <legend className="s-small">Layout</legend>
+        {[["base", "Base", "Solve's own layout"], ["story", "Story", "A cover leads, your highlights first"]].map(([v, l, h]) =>
+          <label key={v} className={styles.option}><input type="radio" name="composition" checked={draft.composition === v} data-composition={v}
+            onChange={() => setDraft(d => ({ ...d, composition: v }))} /><span><strong>{l}</strong> <span className="s-muted s-small">{h}</span></span></label>)}
+      </fieldset>
+      {photos.length ? <label className="s-stack" style={{ "--gap": "6px" } as React.CSSProperties}><span className="s-small">Cover</span>
+        <select className="s-input" value={draft.cover ?? ""} data-cover disabled={pending} onChange={e => setDraft(d => ({ ...d, cover: e.target.value || null }))}>
+          <option value="">No cover</option>
+          {photos.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+        </select></label> : <p className="s-muted s-small">Add a photo to use it as a cover.</p>}
+      {notes.length ? <fieldset className={styles.choose} disabled={pending}>
+        <legend className="s-small">Highlights (up to 3)</legend>
+        {notes.map(n => <label key={n.id} className={styles.option}><input type="checkbox" data-feature={n.id} checked={draft.featured.includes(n.id)}
+          onChange={e => setDraft(d => ({ ...d, featured: e.target.checked ? [...d.featured, n.id].slice(0, 3) : d.featured.filter(x => x !== n.id) }))} />
+          <span className={styles.optionText}>{n.label}</span></label>)}
+      </fieldset> : null}
+      <fieldset className={styles.choose} disabled={pending}>
+        <legend className="s-small">Colour</legend>
+        <div className={styles.row}>
+          <button type="button" className={styles.swatch} aria-pressed={!draft.tint} aria-label="Solve's own colour" data-tint="" onClick={() => setDraft(d => ({ ...d, tint: null }))} />
+          {tints.map(t => <button key={t} type="button" className={styles.swatch} style={{ background: t }} aria-pressed={draft.tint === t} aria-label={`Colour ${t}`} data-tint={t}
+            onClick={() => setDraft(d => ({ ...d, tint: t }))} />)}
+          <label className={styles.swatch} aria-label="Any colour" style={draft.tint && !tints.includes(draft.tint) ? { background: draft.tint } : undefined}
+            data-any-tint aria-pressed={Boolean(draft.tint && !tints.includes(draft.tint))}>
+            <input type="color" className="s-visually-hidden" value={draft.tint ?? "#888888"} onChange={e => setDraft(d => ({ ...d, tint: e.target.value }))} />
+          </label>
+        </div>
+        {coverUrl ? <button type="button" className={styles.chip} onClick={fromCover} data-tint-from-cover>Take the colour from the cover</button> : null}
+        <p className="s-muted s-small">Whatever you choose, text stays readable — that&apos;s computed, not hoped for.</p>
+      </fieldset>
+      <div className={styles.row}>
+        <a href={previewHref()} className="s-button" data-variant="quiet" data-preview-space>Preview</a>
+        <button type="button" className="s-button" disabled={pending} onClick={() => run("save")} data-save-space>{pending ? "Saving…" : "Save"}</button>
+        <button type="button" className="s-button" data-variant="quiet" disabled={pending || !canUndo} onClick={() => run("undo")} data-undo-space>Undo</button>
+        <button type="button" className="s-button" data-variant="link" disabled={pending} onClick={() => run("base")} data-base-space>Return to Base</button>
+      </div>
+      {error ? <p role="alert" className="s-error">{error}</p> : null}
+    </div>
+  </details>;
 }
 

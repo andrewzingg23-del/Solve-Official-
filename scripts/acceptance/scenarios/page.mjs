@@ -4,7 +4,7 @@
 // looking, goes dark the moment the owner stops sharing, and that a handoff to another tool carries
 // exactly the brief the owner reviewed.
 import { createClient } from "@supabase/supabase-js";
-import { INTERNAL_IDS, MARK, OUR_WORDS, STAGING, VIEWPORTS, close, persona, beginThing, openShare } from "../lib.mjs";
+import { INTERNAL_IDS, MARK, OUR_WORDS, STAGING, VIEWPORTS, close, persona, beginThing } from "../lib.mjs";
 import { loaded, phonePhoto, whyNot } from "./photos.mjs";
 
 const S = "page";

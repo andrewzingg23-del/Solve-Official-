@@ -95,3 +95,23 @@
 .shareChevron { flex: none; color: var(--muted); transition: transform 160ms ease; }
 .sharePanel[open] .shareChevron { transform: rotate(180deg); }
 .shareBody { display: flex; flex-direction: column; gap: 12px; padding: 4px 18px 18px; }
+
+.swatch { width: 40px; height: 40px; border-radius: 999px; border: 2px solid var(--glass-edge); background: var(--surface); cursor: pointer; }
+.swatch[aria-pressed="true"] { outline: 2px solid var(--text); outline-offset: 2px; }
+
+/* Story: a cover leads, highlights first, the rest as a journal. The scrim keeps the title readable
+   over any photo; frame, navigation and consent surfaces are untouched. */
+.hero { position: relative; margin: -8px 0 0; border-radius: 28px; overflow: hidden; min-height: 300px; display: flex; align-items: flex-end; background: var(--raised); box-shadow: var(--shadow-lift); }
+.heroImage { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.heroText { position: relative; width: 100%; padding: 28px; display: flex; flex-direction: column; gap: 10px; color: #fff;
+  background: linear-gradient(to top, rgba(8, 8, 16, 0.78), rgba(8, 8, 16, 0.35) 60%, transparent); }
+.heroText h1 { color: #fff; overflow-wrap: anywhere; }
+.heroText .titleRow .visibility { color: var(--text); }
+.heroText .visibility { color: var(--text); }
+.highlights { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.highlight { padding: 22px; border-radius: 22px; background: color-mix(in srgb, var(--accent) 12%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); display: flex; flex-direction: column; gap: 8px; }
+.highlight p { font-size: 19px; line-height: 1.35; font-weight: 600; white-space: pre-wrap; overflow-wrap: anywhere; }
+.journal .piece { background: transparent; border: 0; border-left: 3px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-radius: 0; padding: 6px 0 6px 18px; }
+.preview { }
+.previewBar { position: sticky; top: 8px; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: space-between; padding: 10px 14px; border-radius: 18px; background: var(--text); color: var(--page); }
+@media (max-width: 640px) { .hero { min-height: 240px; border-radius: 22px; } .heroText { padding: 20px; } }

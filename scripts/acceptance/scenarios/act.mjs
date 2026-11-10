@@ -102,7 +102,8 @@ export async function act({ browser, base, evidence }) {
     evidence.record(S, owner.role, "a dropped connection is reported, and the words stay", /wasn't saved/i.test(dropped ?? "") && (await piece.locator("[data-revise-text]").inputValue()) === third, dropped ?? "");
     await owner.context.setOffline(false);
     await piece.locator("[data-revise-save]").click();
-    await settled(owner.page);
+    // The earlier error is still on screen, so wait for the save itself: the editor closes.
+    await owner.page.locator("[data-revise]").waitFor({ state: "detached", timeout: 20000 }).catch(() => {});
     const v3 = await pieceIn(owner.kernel, trip, third);
     evidence.record(S, owner.role, "saving again once connected makes exactly one new version", v3?.version === 3, `v${v3?.version}`);
 
@@ -140,7 +141,8 @@ export async function act({ browser, base, evidence }) {
     const kept = await pieceIn(owner.kernel, trip, "Hotel booked: Alfama, 4 nights");
     evidence.record(S, owner.role, "the kernel still holds the family member's version", Boolean(kept), `v${kept?.version}`);
     await owner.page.locator("[data-revise-save]").click();
-    await settled(owner.page);
+    // The conflict message is still showing, so wait for the save itself: the editor closes.
+    await owner.page.locator("[data-revise]").waitFor({ state: "detached", timeout: 20000 }).catch(() => {});
     const resolved = await pieceIn(owner.kernel, trip, "Flights on the 5th, hotel still to find");
     evidence.record(S, owner.role, "saving again, knowingly, replaces it as a new version", resolved?.version === (kept?.version ?? 0) + 1, `v${resolved?.version}`);
     await evidence.shot(owner.page, "act-02-conflict-390");
