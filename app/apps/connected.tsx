@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { disconnectApp } from "./apps-actions";
-import styles from "./control.module.css";
+import { disconnectApp } from "./actions";
+import styles from "./apps.module.css";
 
 export type ConnectedApp = { clientId: string; name: string; since: string };
 

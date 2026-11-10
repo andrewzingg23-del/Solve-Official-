@@ -1,63 +1,107 @@
-.shell { min-height: 100svh; display: grid; grid-template-columns: 252px minmax(0, 1fr); }
+/* The approved shell, measured from the canonical reference (docs/reference/approved-shell.png,
+   inside the drawn window: 1366 × 950). Rail 198 wide; controls 51 tall at 41 from the top; the
+   search field begins 52 in from the rail. Values come from app/ui/system.css tokens. */
+.shell { min-height: 100svh; display: grid; grid-template-columns: 198px minmax(0, 1fr); }
 
 .skip { position: fixed; top: 10px; left: 10px; z-index: 100; padding: 12px 18px; border-radius: 999px; background: var(--text); color: var(--page); transform: translateY(-160%); }
 :global(html:not([data-pointer])) .skip:focus-visible { transform: none; }
 
-.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: 0.3em; font-size: 14px; text-decoration: none; }
+.brand { font-weight: 700; letter-spacing: -0.045em; font-size: 33px; line-height: 1; text-decoration: none; color: var(--text); }
 
-/* The rail: the frame. Monochrome; the person's colour appears only as where they are. */
 .rail {
   position: sticky; top: 0; height: 100svh;
-  display: flex; flex-direction: column; gap: 32px;
-  padding: 28px 22px 24px;
-  border-right: 1px solid var(--line);
-  background: var(--page);
+  display: flex; flex-direction: column;
+  padding: 64px 12px 32px 16px;
+  background: color-mix(in srgb, var(--surface) 26%, transparent);
+  box-shadow: inset -1px 0 0 color-mix(in srgb, var(--surface) 70%, transparent), 10px 0 30px -22px rgba(24, 22, 52, 0.22);
 }
-.nav { display: flex; flex-direction: column; gap: 2px; }
+.rail > .brand { padding-left: 17px; }
+.nav { margin-top: 34px; display: flex; flex-direction: column; gap: 8px; }
 .link {
-  position: relative; display: flex; align-items: center; gap: 12px;
-  min-height: 44px; padding: 0 14px; border-radius: 12px;
-  color: var(--muted); text-decoration: none; font-size: 15px;
+  display: flex; align-items: center; gap: 19px;
+  height: 51px; padding: 0 16px 0 24px; border-radius: 18px;
+  color: var(--text); text-decoration: none; font-size: 20px; font-weight: 400; letter-spacing: -0.01em;
 }
-.link:hover { color: var(--text); background: var(--surface); }
-.link[aria-current="page"] { color: var(--text); background: var(--raised); }
-.link[aria-current="page"]::before {
-  content: ""; position: absolute; left: 0; top: 11px; bottom: 11px; width: 3px; border-radius: 3px; background: var(--accent);
-}
+.link:hover { background: color-mix(in srgb, var(--raised) 55%, transparent); }
+.link[aria-current="page"] { background: var(--raised); }
 
-.you { margin-top: auto; display: flex; flex-direction: column; gap: 8px; text-decoration: none; border-radius: 12px; }
-.youNote { font-size: 12px; color: var(--muted); padding-left: 2px; }
+.you { margin-top: auto; align-self: flex-start; display: flex; align-items: center; gap: 14px; margin-left: 20px; padding: 0; border-radius: 999px; text-decoration: none; color: var(--text); }
+.avatar { flex: none; width: 42px; height: 42px; border-radius: 999px; display: grid; place-items: center; background: #0c0e1d; color: #fff; font-weight: 600; font-size: 18px; }
 
 .body { min-width: 0; display: flex; flex-direction: column; }
-.top { display: none; }
-.here { font-size: 14px; color: var(--muted); }
-.main { flex: 1; width: 100%; max-width: 1160px; padding: 48px 56px 72px; outline: none; }
+.top { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 21px; padding: 41px 28px 0 52px; }
+.topBrand { display: none; }
+.search {
+  flex: 0 1 542px; display: flex; align-items: center; gap: 12px;
+  height: var(--control-h); padding: 0 22px; border-radius: var(--radius-pill);
+  background: var(--glass); border: 1px solid var(--glass-edge); box-shadow: var(--shadow-soft); color: var(--text);
+}
+.search:focus-within { border-color: color-mix(in srgb, var(--text) 45%, transparent); }
+.searchInput { flex: 1; min-width: 0; border: 0; background: transparent; outline: none; height: 100%; color: var(--text); font-size: 19px; }
+.searchInput::placeholder { color: var(--hint); opacity: 1; }
+
+.actions { margin-left: auto; display: flex; align-items: center; gap: 21px; }
+.pill {
+  display: inline-flex; align-items: center; gap: 10px; height: var(--control-h); padding: 0 19px;
+  border-radius: var(--radius-pill); border: 1px solid var(--glass-edge);
+  background: var(--glass); box-shadow: var(--shadow-soft);
+  color: var(--text); text-decoration: none; font-size: 19px; font-weight: 400; cursor: pointer; list-style: none;
+}
+.pill::-webkit-details-marker { display: none; }
+.pill:hover { background: var(--glass-strong); }
+.pill[data-visibility] { padding: 0 16px 0 17px; gap: 8px; }
+.ai {
+  background: linear-gradient(100deg, #e4f2fd 0%, #e7e3fc 50%, #fdeee2 100%);
+  box-shadow: var(--shadow-soft), 0 0 18px -4px rgba(190, 170, 255, 0.55);
+}
+.round { display: grid; place-items: center; width: var(--control-h); height: var(--control-h); border-radius: 999px; border: 1px solid var(--glass-edge); background: var(--glass-strong); box-shadow: var(--shadow-soft); color: var(--text); }
+.divider { width: 1px; height: 28px; background: color-mix(in srgb, var(--text) 16%, transparent); margin: 0 -1px; }
+
+.add { position: relative; }
+.menu {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; min-width: 220px;
+  display: flex; flex-direction: column; padding: 6px; border-radius: 18px;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-lift);
+}
+.menuItem { display: flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 12px; text-decoration: none; color: var(--text); font-size: 16px; }
+.menuItem:hover, .menuItem:focus-visible { background: var(--raised); }
+
+.main { flex: 1; width: 100%; max-width: 1180px; padding: 40px 52px 72px; outline: none; }
 .tabs { display: none; }
 
 /* Bare frame, for pages reached from someone else's link. */
 .bare { min-height: 100svh; display: flex; flex-direction: column; }
-.bareHead { padding: 22px 24px; }
+.bareHead { padding: 24px; }
 .bareMain { flex: 1; width: 100%; max-width: 680px; margin: 0 auto; padding: 16px 24px 64px; }
 
+/* Tablet: the same shell, tighter. */
+@media (max-width: 1180px) {
+  .top { gap: 12px; padding: 32px 24px 0 32px; }
+  .actions { gap: 12px; }
+  .pill { padding: 0 15px; font-size: 17px; }
+  .main { padding: 32px 32px 64px; }
+}
+/* Phone: the four places move to a tab bar; the controls stay in reach at the top. */
 @media (max-width: 899px) {
   .shell { grid-template-columns: minmax(0, 1fr); }
   .rail { display: none; }
-  .top {
-    display: flex; align-items: center; justify-content: space-between;
-    position: sticky; top: 0; z-index: 20;
-    padding: 14px 20px; border-bottom: 1px solid var(--line);
-    background: color-mix(in srgb, var(--page) 88%, transparent);
-    backdrop-filter: saturate(140%) blur(14px);
-  }
-  .main { padding: 28px 20px calc(96px + env(safe-area-inset-bottom)); }
+  .top { padding: 12px 16px; gap: 8px; flex-wrap: wrap; background: color-mix(in srgb, var(--page) 82%, transparent); backdrop-filter: blur(16px); }
+  .topBrand { display: inline-block; font-size: 26px; margin-right: auto; }
+  .actions { margin-left: 0; gap: 6px; }
+  .search { order: 3; flex-basis: 100%; height: 46px; }
+  .searchInput { font-size: 16px; }
+  .pill { height: 44px; padding: 0 13px; font-size: 16px; }
+  .round { width: 44px; height: 44px; }
+  .pill[data-visibility] span, .add .pill span, .divider { display: none; }
+  .main { padding: 20px 18px calc(96px + env(safe-area-inset-bottom)); }
   .tabs {
     display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
     padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
     border-top: 1px solid var(--line);
-    background: color-mix(in srgb, var(--page) 92%, transparent);
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
     backdrop-filter: saturate(140%) blur(16px);
   }
-  .tabs .link { flex-direction: column; justify-content: center; gap: 4px; padding: 6px 2px; min-height: 56px; font-size: 11px; border-radius: 12px; }
-  .tabs .link[aria-current="page"]::before { left: 30%; right: 30%; top: 0; bottom: auto; width: auto; height: 3px; }
+  .tabs .link { flex-direction: column; justify-content: center; gap: 4px; padding: 6px 2px; height: auto; min-height: 58px; font-size: 12px; font-weight: 500; }
 }
+@media (max-width: 360px) { .ai span { display: none; } }

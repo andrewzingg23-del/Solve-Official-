@@ -4,11 +4,9 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { getKernel } from "@/lib/kernel/server";
 import { createClient as createSupabase } from "@/lib/supabase/server";
-import { cardPalette, normalizeCardLook } from "@/lib/product/card";
+import { normalizeCardLook } from "@/lib/product/card";
 import { environmentFor, environmentStyle } from "@/lib/product/environment";
 import { PHOTO_BUCKET, PHOTO_LINK_SECONDS, isPhotoOf } from "@/lib/product/photo";
-import { Mark } from "@/app/ui/mark";
-import { SovCard } from "@/app/ui/sov-card";
 import styles from "./page.module.css";
 
 // A person's Space: their card, in their colours, and the things they chose to share — at one link
@@ -46,14 +44,11 @@ export default async function SpacePage({ params }: PageProps<"/s/[actorId]">) {
     for (const entry of signed?.data ?? []) if (entry.path && entry.signedUrl && !entry.error) links.set(entry.path, entry.signedUrl);
   }
 
-  // The glow carries no text, so it can be the card's own colour rather than the readability-tuned accent.
-  const style = { ...environmentStyle(env), "--glow": cardPalette(look).surface } as React.CSSProperties;
+  const style = environmentStyle(env) as React.CSSProperties;
   return <div className={styles.page} data-tone={env.tone} style={style}>
     <main className={styles.main}>
       <header className={styles.hero}>
-        <div className={styles.card} data-space-card><SovCard name={name} look={look} /></div>
-        {/* The card carries the name; the heading is for screen readers and the tab, not a repeat. */}
-        <h1 className="s-visually-hidden">{name ? `${name}'s Space` : "A Space on SOLVE"}</h1>
+        <h1 className={styles.name} data-space-name>{name || "A Space on Solve"}</h1>
       </header>
 
       {space.pages.length ? <section aria-labelledby="made" className={styles.section}>
@@ -78,7 +73,7 @@ export default async function SpacePage({ params }: PageProps<"/s/[actorId]">) {
     </main>
     <footer className={styles.foot}>
       {/* No prefetch: prefetching Home would give the person looking an identity they never asked for. */}
-      <Link href="/" prefetch={false} className={styles.made}><Mark size={18} />Made on SOLVE</Link>
+      <Link href="/" prefetch={false} className={styles.made}>Made on Solve.</Link>
       <Link href="/" prefetch={false} className="s-button" data-variant="quiet">Make your own</Link>
     </footer>
   </div>;

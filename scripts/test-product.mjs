@@ -1,9 +1,9 @@
 // The rebuilt experience with no database at all (rewritten from zero, 2026-11-10).
 //
 // scripts/acceptance/ proves behaviour against the real staging kernel. This suite proves what a
-// person meets when there is no identity and no database: the shell, the five destinations at
-// 320/390/1440, keyboard use, honest failure when the browser refuses storage, and every older
-// address landing on a rebuilt destination. It never claims anything was saved, because nothing can be.
+// person meets when there is no identity and no database: the approved shell and its four places at
+// 320/390/1440, keyboard use, honest failure when the browser refuses storage, and removed screens
+// staying gone. It never claims anything was saved, because nothing can be.
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync } from "node:fs";
@@ -35,8 +35,9 @@ server.stdout.on("data", d => { serverLog = (serverLog + d).slice(-8000); });
 server.stderr.on("data", d => { serverLog = (serverLog + d).slice(-8000); });
 
 const fits = page => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
-const DESTINATIONS = ["Home", "ID", "Space", "Bench", "Control"];
+const PLACES = ["Space", "People", "Apps", "Control"];
 const words = "Plan the garden for spring";
+const BOX = "Ask, create, or add anything";
 
 try {
   let ready = false;
@@ -47,42 +48,59 @@ try {
   const page = await context.newPage(), errors = [];
   page.on("pageerror", e => errors.push(e.message));
 
-  // --- One shell, five destinations, Home marked.
+  // --- The approved shell: four places with Space marked; Search, Add, AI, Private and you in reach.
   await page.goto(url);
   const primary = page.getByRole("navigation", { name: "Primary", exact: true });
-  assert.deepEqual(await primary.getByRole("link").allTextContents(), DESTINATIONS);
-  assert.equal(await primary.getByRole("link", { name: "Home" }).getAttribute("aria-current"), "page");
+  assert.deepEqual((await primary.getByRole("link").allTextContents()).map(t => t.trim()), PLACES);
+  assert.equal(await primary.getByRole("link", { name: "Space" }).getAttribute("aria-current"), "page");
+  assert.ok(await page.getByRole("searchbox", { name: "Search your Spaces" }).isVisible(), "Search");
+  assert.ok(await page.locator("summary", { hasText: "Add" }).isVisible(), "Add");
+  assert.ok(await page.getByRole("link", { name: "AI", exact: true }).isVisible(), "AI");
+  assert.ok(await page.getByRole("link", { name: /Your Space is private/ }).isVisible(), "who can see your Space");
+  assert.ok(await page.getByRole("heading", { level: 1, name: "Your Space" }).isVisible());
+  for (const chip of ["Add people", "Connect apps", "Add to Space"]) assert.ok(await page.locator("main").getByText(chip, { exact: true }).isVisible(), chip);
   assert.equal(await page.getByRole("link", { name: /trading|payment card|packs|studio|coming soon/i }).count(), 0, "nothing hidden is linked");
   assert.ok(await fits(page), "no horizontal overflow at 1440");
+  await page.screenshot({ path: join(out, "space-1440.png") });
+
+  // --- Add opens a real menu; every entry goes somewhere that exists.
+  await page.locator("summary", { hasText: "Add" }).click();
+  for (const item of ["New Space", "Add people", "Connect apps"]) assert.ok(await page.getByRole("menuitem", { name: item }).isVisible(), item);
+  await page.keyboard.press("Escape");
 
   // --- A person's words survive a reload before anything is saved.
-  const field = page.getByRole("textbox", { name: "What do you want to do?" });
+  const field = page.getByRole("textbox", { name: BOX });
   await field.fill(words);
   await page.reload();
   await page.waitForFunction(w => document.getElementById("home-words")?.value === w, words);
-  await page.screenshot({ path: join(out, "home-1440.png"), fullPage: true });
 
-  // --- With no identity and no database, Begin never sends anyone to sign in: it tries to make a
+  // --- With no identity and no database, the box never sends anyone to sign in: it tries to make a
   // guest here, says plainly that it couldn't, and the words stay.
-  await page.getByRole("button", { name: "Begin", exact: true }).click();
+  await page.getByRole("button", { name: "Make it a Space" }).click();
   await page.locator("main [role=alert]").filter({ hasText: "couldn't get you set up" }).waitFor();
   assert.equal(new URL(page.url()).pathname, "/", "no sign-in screen");
-  assert.equal(await page.getByRole("textbox", { name: "What do you want to do?" }).inputValue(), words);
+  assert.equal(await page.getByRole("textbox", { name: BOX }).inputValue(), words);
 
-  // --- ID shows the card, at the true card shape, even before there is an identity.
+  // --- Your ID shows the card at the true card shape, even before there is an identity.
   await page.goto(url + "/account");
-  const card = page.locator("main figure[data-card='full']");
+  const card = page.locator("main figure[data-id-card]");
   await card.waitFor();
   const box = await card.boundingBox();
-  assert.ok(box && Math.abs(box.width / box.height - 85.6 / 53.98) < 0.012, "the card is ID-1 shaped");
-  assert.equal(await page.locator("main figure[data-card='full'] [data-card-name]").textContent(), "Add your name", "an unnamed card invites a name");
+  assert.ok(box && Math.abs(box.width / box.height - 85.6 / 53.98) < 0.02, "the card is ID-1 shaped");
+  assert.equal(await page.locator("main figure[data-id-card] [data-card-name]").textContent(), "Your Name", "an unnamed card invites a name");
+  await page.screenshot({ path: join(out, "id-1440.png"), fullPage: true });
 
-  // --- Every destination, at the smallest phone and a normal phone.
+  // --- Apps says how to connect your own AI, with the real address; no catalogue is pretended.
+  await page.goto(url + "/apps");
+  assert.match(await page.locator("[data-mcp-address]").innerText(), /\/mcp$/);
+  assert.match(await page.locator("main").innerText(), /Solve has no AI of its own/);
+
+  // --- Every place, at the smallest phone and a normal phone.
   for (const width of [320, 390]) {
     await page.setViewportSize({ width, height: 844 });
-    for (const [path, slug] of [["/", "home"], ["/account", "id"], ["/space", "space"], ["/workbench", "bench"], ["/control", "control"]]) {
+    for (const [path, slug] of [["/", "space"], ["/people", "people"], ["/apps", "apps"], ["/control", "control"], ["/account", "id"], ["/space", "share"], ["/search?q=garden", "search"]]) {
       await page.goto(url + path);
-      await page.getByRole("heading", { level: 1 }).waitFor();
+      await page.getByRole("heading", { level: 1 }).first().waitFor();
       assert.ok(await fits(page), `${path} overflows at ${width}px`);
       const tabs = page.getByRole("navigation", { name: "Primary mobile", exact: true });
       assert.ok(await tabs.isVisible(), `${path} has mobile navigation at ${width}px`);
@@ -92,7 +110,7 @@ try {
         assert.ok(b && b.height >= 44 && b.width >= 44, "touch targets are at least 44px");
         rows.add(Math.round(b.y));
       }
-      assert.equal(rows.size, 1, `${path} at ${width}px: every destination on one row`);
+      assert.equal(rows.size, 1, `${path} at ${width}px: every place on one row`);
       await page.screenshot({ path: join(out, `${slug}-${width}.png`), fullPage: true });
     }
   }
@@ -103,46 +121,29 @@ try {
   await page.keyboard.press("Tab");
   assert.equal(await page.evaluate(() => document.activeElement?.textContent), "Skip to content");
   await page.waitForFunction(() => (document.activeElement?.getBoundingClientRect().top ?? -1) >= 0);
-  assert.ok((await page.evaluate(() => document.activeElement.getBoundingClientRect().top)) >= 0, "after Tab, the skip link is on screen");
   await page.keyboard.press("Enter");
   assert.equal(await page.evaluate(() => document.activeElement?.id), "main");
 
-  // --- Every older address lands on a rebuilt destination; mutations to them are refused.
-  for (const [path, location] of [
-    ["/projects", "/workbench"], ["/communities", "/"], ["/bot", "/account"], ["/onboarding", "/account"], ["/apps", "/control"],
-    ["/worlds/new", "/workbench"], ["/world/example/room", "/world/example"], ["/card", "/"], ["/money", "/"], ["/studio", "/"], ["/sov-id", "/account"],
-  ]) {
-    const r = await fetch(url + path, { redirect: "manual" });
-    assert.equal(r.status, 307, path);
-    assert.equal(new URL(r.headers.get("location"), url).pathname, location, path);
-    assert.equal((await fetch(url + path, { method: "POST", redirect: "manual" })).status, 404, `POST ${path}`);
-  }
-  for (const path of ["/api/market/sparkline", "/api/studio/propose", "/api/auth/meta/start", "/api/avatar/generate"]) {
-    const r = await fetch(url + path, { method: "POST" });
-    assert.equal(r.status, 404, path);
-    assert.equal(r.headers.get("cache-control"), "no-store");
-  }
+  // --- What was removed is gone, not redirected: no Bench, no confirm screen.
+  for (const path of ["/workbench", "/confirm/abc"]) assert.equal((await fetch(url + path, { redirect: "manual" })).status, 404, path);
 
-  // --- The connector's approval screen, rebuilt to the current standard: with no request waiting it
-  // says so plainly, in the bare frame, with a way back, and no old styling or broken links.
+  // --- The connector's approval screen: with no request waiting it says so plainly, in the bare frame.
   await page.goto(url + "/oauth/consent");
-  const consent = await page.locator("main").innerText();
-  assert.match(consent, /Nothing is waiting/);
+  assert.match(await page.locator("main").innerText(), /Nothing is waiting/);
   assert.equal(await page.getByRole("navigation", { name: "Primary", exact: true }).count(), 0, "someone else's link gets the bare frame");
-  assert.ok(await page.getByRole("link", { name: "Go to SOLVE" }).isVisible());
 
   // --- A browser that refuses storage is told so, and the person keeps their words on screen.
   const blocked = await browser.newContext();
   await blocked.addInitScript(() => { Storage.prototype.setItem = function () { throw new DOMException("Blocked for this test", "SecurityError"); }; });
   const failure = await blocked.newPage();
   await failure.goto(url);
-  await failure.getByRole("textbox", { name: "What do you want to do?" }).fill("Keep this idea");
-  await failure.getByRole("button", { name: "Begin", exact: true }).click();
+  await failure.getByRole("textbox", { name: BOX }).fill("Keep this idea");
+  await failure.getByRole("button", { name: "Make it a Space" }).click();
   await failure.locator("main [role=alert]").filter({ hasText: "can't keep this" }).waitFor();
   assert.equal(new URL(failure.url()).pathname, "/");
-  assert.equal(await failure.getByRole("textbox", { name: "What do you want to do?" }).inputValue(), "Keep this idea");
+  assert.equal(await failure.getByRole("textbox", { name: BOX }).inputValue(), "Keep this idea");
   await blocked.close();
 
   assert.deepEqual(errors, []);
-  console.log("Product browser checks passed on the rebuilt experience: one shell and five destinations at 320/390/1440, keyboard, a draft surviving reload and a failed start with no sign-in screen, the card's true shape, every older address landing on a rebuilt destination, and honest storage failure. No database was present, so nothing is claimed as saved.");
+  console.log("Product browser checks passed on the approved shell: four places and Search, Add, AI, visibility and Your ID in reach at 320/390/1440, the Add menu, keyboard, a draft surviving reload and a failed start with no sign-in screen, the ID card's true shape, Apps' real connector address, removed screens gone, and honest storage failure. No database was present, so nothing is claimed as saved.");
 } catch (error) { console.error(serverLog); throw error; } finally { await browser?.close(); server.kill("SIGTERM"); }

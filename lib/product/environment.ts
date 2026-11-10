@@ -29,7 +29,8 @@ export type Environment = {
 
 const FRAME = {
   dark: { page: "#0a0b0d", surface: "#121418", raised: "#1a1d23", line: "#262a31", text: "#f2f3f5", muted: "#a3a8b2" },
-  light: { page: "#f7f7f5", surface: "#ffffff", raised: "#efefec", line: "#dcdcd7", text: "#121316", muted: "#5b5f68" },
+  // The launch boards (DECISIONS.md, 2026-11-10): black and white, warmed by a soft lavender.
+  light: { page: "#e9e9f3", surface: "#ffffff", raised: "#dadae4", line: "#d6d6e2", text: "#11121c", muted: "#4f5061" },
 } as const;
 
 export function environmentFor(look: CardLook = BASE_LOOK): Environment {

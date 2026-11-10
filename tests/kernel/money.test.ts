@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { solve } from "../../lib/chain/solve";
-import { POLICY, moneyKernel, verifyOutcome, worldWithOutcome, type Money } from "../support/money-fixture";
+import { POLICY, solve, moneyKernel, verifyOutcome, worldWithOutcome, type Money } from "../support/money-fixture";
 import { anon, createKernelDb, service, sha, sqlstate, user, type KernelDb } from "./harness";
 
 const alice = user("auth-alice");

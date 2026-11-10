@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { SovCard } from "@/app/ui/sov-card";
-import { BASE_LOOK, EXPRESSIONS, FINISHES, SEEDS, TONES, type CardLook } from "@/lib/product/card";
+import { IdCard } from "@/app/ui/id-card";
+import { BASE_LOOK, EXPRESSIONS, SEEDS, TONES, type CardLook } from "@/lib/product/card";
 import { resetLook, saveLook, undoLook, type LookResult } from "./look-actions";
 import { saveName } from "./id-actions";
 import styles from "./studio.module.css";
@@ -11,7 +11,6 @@ import styles from "./studio.module.css";
 const LABEL = {
   expression: { base: "Base", personal: "Personal", expressive: "Expressive" },
   tone: { dark: "Dark", light: "Light" },
-  finish: { matte: "Matte", metal: "Metal", glass: "Glass" },
 } as const;
 
 function Choices<T extends string>({ label, options, value, names, onPick }: {
@@ -25,8 +24,7 @@ function Choices<T extends string>({ label, options, value, names, onPick }: {
   </fieldset>;
 }
 
-// The card and everything that shapes it. The preview is the real card, so what a person sees is
-// exactly what is saved. Saving, undo and Base are all writes to their own record. Because the
+// Your ID card, your name, and the colours your whole Solve wears. Saving, undo and Base are all writes to their own record. Because the
 // whole environment takes its colours from this card, saving refreshes the page around it too.
 export function Studio({ name: initialName, saved, canUndo: initialUndo }: { name: string; saved: CardLook; canUndo: boolean }) {
   const router = useRouter();
@@ -55,19 +53,17 @@ export function Studio({ name: initialName, saved, canUndo: initialUndo }: { nam
     const result = await saveName(draftName);
     if (!result.ok) { setMessage({ ok: false, text: result.error }); return; }
     setName(result.name); setDraftName(result.name);
-    setMessage({ ok: true, text: "Your name is on your card." });
+    setMessage({ ok: true, text: "Your name is on your ID." });
     router.refresh();
   });
 
   return <div className={styles.studio}>
-    <div className={styles.cardColumn}>
-      <SovCard name={nameChanged ? draftName : name} look={draft} />
-      {lookChanged || nameChanged ? <p className="s-muted s-small" role="status">Previewing — not saved yet.</p> : null}
-    </div>
+    <IdCard name={nameChanged ? draftName : name} />
+    {lookChanged || nameChanged ? <p className="s-muted s-small" role="status">Not saved yet.</p> : null}
 
     <div className={styles.controls}>
       <form className={styles.group} onSubmit={event => { event.preventDefault(); if (nameChanged) commitName(); }}>
-        <label htmlFor="card-name" className="s-label">Name on your card</label>
+        <label htmlFor="card-name" className="s-label">Your name</label>
         <div className={styles.nameRow}>
           <input id="card-name" className="s-input" value={draftName} maxLength={80} autoComplete="name"
             placeholder="Your name" onChange={event => { setMessage(null); setDraftName(event.target.value); }} />
@@ -89,10 +85,7 @@ export function Studio({ name: initialName, saved, canUndo: initialUndo }: { nam
         <p className="s-muted s-small">Your colour becomes your whole SOLVE — and whatever you choose, everything stays readable. That&apos;s checked, not hoped for.</p>
       </fieldset>
 
-      <div className={styles.pair}>
-        <Choices label="Tone" options={TONES} value={draft.tone} names={LABEL.tone} onPick={v => set({ tone: v })} />
-        <Choices label="Finish" options={FINISHES} value={draft.finish} names={LABEL.finish} onPick={v => set({ finish: v })} />
-      </div>
+      <Choices label="Tone" options={TONES} value={draft.tone} names={LABEL.tone} onPick={v => set({ tone: v })} />
 
       <div className={styles.actions}>
         <button type="button" className="s-button" disabled={!lookChanged || pending} onClick={() => runLook(() => saveLook(draft), "Saved. Your SOLVE now wears it.")}>

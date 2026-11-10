@@ -37,7 +37,8 @@ export type CardLook = {
   finish: (typeof FINISHES)[number];
 };
 
-export const BASE_LOOK: CardLook = { expression: "base", seed: "#101318", tone: "dark", finish: "matte" };
+// Light by default, as on the launch boards (DECISIONS.md, 2026-11-10); dark stays a choice.
+export const BASE_LOOK: CardLook = { expression: "base", seed: "#101318", tone: "light", finish: "glass" };
 
 /** Seeds offered without a colour picker. Chosen to span hue, not to suggest a "correct" choice. */
 export const SEEDS = ["#1f3d7a", "#2f6b4f", "#7a2f5c", "#8a5a1f", "#3d3d4f", "#b8442f", "#5b3fa0", "#1f6b75"] as const;

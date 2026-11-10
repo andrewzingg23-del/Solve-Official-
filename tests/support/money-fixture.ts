@@ -1,8 +1,10 @@
 import { newId } from "./keys";
-import { solve } from "../../lib/chain/solve";
 import { service, sha, type KernelDb, type Session, user } from "../kernel/harness";
 
 export const POLICY = "dev-proof-of-life";
+
+/** Whole DEV_SOLVE tokens in base units (9 decimals), as the kernel stores amounts. */
+export const solve = (tokens: bigint | number) => BigInt(tokens) * BigInt(10) ** BigInt(9);
 
 // Kernel side of a settlement rail: root, DEV_SOLVE, service actors, Earn mirror accounts, the
 // observed chain genesis, the rail and a reward policy.

@@ -4,8 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { PHOTO_BUCKET, PHOTO_MAX_BYTES, PHOTO_MAX_SIDE, photoName } from "@/lib/product/photo";
-import { briefFor, needsOf, pathsFor, replitLink, type Support } from "@/lib/product/paths";
-import { addPiece, linkWhatWasMade, makeInvite, recordPhoto, setPagePublished } from "./together-actions";
+import { addPiece, makeInvite, recordPhoto, setPagePublished } from "./together-actions";
 import styles from "./together.module.css";
 
 // Add your piece. The words stay on screen until the kernel has them.
@@ -174,7 +173,7 @@ export function SharePage({ worldId, title, description, published, selected, ca
     router.refresh();
   });
 
-  return <section className={styles.share} aria-labelledby="share-title" data-share>
+  return <section id="share" className={styles.share} aria-labelledby="share-title" data-share>
     <h2 id="share-title">Public page</h2>
     <p className="s-muted s-small">
       {published ? "Shared. Anyone with the link can see what's below — and can save or screenshot it." :
@@ -225,66 +224,5 @@ export function SharePage({ worldId, title, description, published, selected, ca
     </div>
     {note ? <p role="status" className="s-small" data-share-note>{note}</p> : null}
     {error ? <p role="alert" className="s-error">{error}</p> : null}
-  </section>;
-}
-
-const SUPPORT_WORDS: Record<Support, string> = {
-  native: "Right here", connected: "Connected", handoff: "Opens in another app", unavailable: "Not available",
-};
-
-// The ways this intention can get made. The thing and its people stay here whichever is chosen;
-// a tool is a path, and what it produced comes back as a link.
-export function Ways({ worldId, title, summary, isOwner }: { worldId: string; title: string; summary: string; isOwner: boolean }) {
-  const router = useRouter();
-  const words = `${title}\n${summary}`;
-  const needs = needsOf(words);
-  const paths = pathsFor(words);
-  const [open, setOpen] = useState<string | null>(null);
-  const [brief, setBrief] = useState(() => briefFor(title, summary, needs));
-  const [url, setUrl] = useState("");
-  const [error, setError] = useState("");
-  const [pending, start] = useTransition();
-  if (paths.length < 2) return null;
-  const handoffLink = (() => { try { return replitLink(brief, needs); } catch { return null; } })();
-
-  return <section className={styles.ways} aria-labelledby="ways-title" data-ways>
-    <h2 id="ways-title">Ways to make it</h2>
-    <ul className={styles.wayList}>
-      {paths.map(path => <li key={path.id} className={styles.way} data-way={path.id}>
-        <div className={styles.wayHead}>
-          <strong>{path.name}</strong>
-          <span className="s-label">{SUPPORT_WORDS[path.support]}</span>
-          {path.recommended ? <span className={styles.pick} data-recommended>Fits best</span> : null}
-        </div>
-        <p className="s-muted s-small">{path.why}</p>
-        {path.support === "native"
-          ? <p className="s-small">{isOwner ? "Keep building it here together, then share it as a public page." : "Keep building it here together."}</p>
-          : path.support === "handoff" ? (open === path.id
-            ? <div className="s-stack" style={{ "--gap": "10px" } as React.CSSProperties}>
-                <label htmlFor={`brief-${path.id}`} className="s-small">What {path.name} will be given — edit it first. Nothing leaves SOLVE until you open it.</label>
-                <textarea id={`brief-${path.id}`} className="s-textarea" rows={6} maxLength={50000} value={brief} onChange={e => setBrief(e.target.value)} data-brief />
-                {handoffLink
-                  ? <div><a href={handoffLink} target="_blank" rel="noopener noreferrer" className="s-button" data-open-tool>Open in {path.name}</a></div>
-                  : <p role="alert" className="s-error">Write something for {path.name} to build.</p>}
-                <form className={styles.row} onSubmit={event => {
-                  event.preventDefault();
-                  start(async () => {
-                    setError("");
-                    const result = await linkWhatWasMade(worldId, url, path.id);
-                    if (!result.ok) { setError(result.error); return; }
-                    setUrl(""); router.refresh();
-                  });
-                }}>
-                  <label htmlFor={`made-${path.id}`} className="s-visually-hidden">Link to what you made</label>
-                  <input id={`made-${path.id}`} className="s-input" inputMode="url" placeholder="Made it? Paste its link here" value={url}
-                    onChange={e => { setUrl(e.target.value); setError(""); }} data-made-link />
-                  <button className="s-button" data-variant="quiet" disabled={!url.trim() || pending}>{pending ? "Adding…" : "Add link"}</button>
-                </form>
-                {error ? <p role="alert" className="s-error">{error}</p> : null}
-              </div>
-            : <div><button type="button" className="s-button" data-variant="quiet" onClick={() => setOpen(path.id)} data-prepare={path.id}>Prepare it for {path.name}</button></div>)
-          : null}
-      </li>)}
-    </ul>
   </section>;
 }

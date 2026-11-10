@@ -4,7 +4,6 @@
 // looking, goes dark the moment the owner stops sharing, and that a handoff to another tool carries
 // exactly the brief the owner reviewed.
 import { createClient } from "@supabase/supabase-js";
-import LZString from "lz-string";
 import { INTERNAL_IDS, MARK, OUR_WORDS, STAGING, VIEWPORTS, close, persona, beginThing } from "../lib.mjs";
 import { loaded, phonePhoto, whyNot } from "./photos.mjs";
 
@@ -36,41 +35,6 @@ export async function page({ browser, base, evidence }) {
     // --- The owner states an intention. It lives here, with its people, whatever tool makes it.
     const worldId = await beginThing(owner.page, base, title);
     if (!evidence.record(S, owner.role, "states an intention, and is taken into it", Boolean(worldId))) return;
-    await owner.page.locator("[data-ways]").waitFor({ timeout: 15000 }).catch(() => {});
-
-    // --- The ways to make it: here first for a portfolio, a specialist offered and labelled honestly.
-    const ways = await owner.page.locator("[data-way]").evaluateAll(els => els.map(e => e.getAttribute("data-way")));
-    evidence.record(S, owner.role, "is shown ways to make it, here first for a portfolio", ways[0] === "solve-page" && ways.includes("replit"), ways.join(","));
-    evidence.record(S, owner.role, "the fitting path is marked, and the specialist is labelled as opening another app",
-      await owner.page.locator('[data-way="solve-page"] [data-recommended]').count() === 1
-      && /opens in another app/i.test(await owner.page.locator('[data-way="replit"]').innerText()));
-
-    // --- The handoff: the owner edits the brief; the link carries exactly that and nothing else.
-    await owner.page.locator('[data-prepare="replit"]').click();
-    const brief = owner.page.locator("[data-brief]");
-    const first = await brief.inputValue();
-    evidence.record(S, owner.role, "the brief starts from the intention's own words only", first.startsWith(title), first.slice(0, 120));
-    const edited = `${first}\nUse a dark theme with large photos.`;
-    await brief.fill(edited);
-    const href = await owner.page.locator("[data-open-tool]").getAttribute("href");
-    const url = href ? new URL(href) : null;
-    evidence.record(S, owner.role, "opening Replit carries exactly the brief they reviewed, in Replit's documented format",
-      url?.origin === "https://replit.com" && url.searchParams.get("stack") === "Design"
-      && LZString.decompressFromEncodedURIComponent(url.searchParams.get("prompt") ?? "") === edited, href?.slice(0, 120) ?? "no link");
-    evidence.record(S, owner.role, "the handoff opens in a new tab, without sending SOLVE's address along",
-      (await owner.page.locator("[data-open-tool]").getAttribute("rel"))?.includes("noreferrer"));
-    await evidence.shot(owner.page, "page-01-ways-390");
-
-    // --- They bring back what was made; it's shown as their word, not something SOLVE checked.
-    await owner.page.locator("[data-made-link]").fill("javascript:alert(1)");
-    await owner.page.getByRole("button", { name: "Add link" }).click();
-    evidence.record(S, owner.role, "a link that isn't a plain https address is refused",
-      await owner.page.locator("[data-ways] [role=alert]").filter({ hasText: "https://" }).waitFor({ timeout: 10000 }).then(() => true, () => false));
-    await owner.page.locator("[data-made-link]").fill("https://example.com/portfolio");
-    await owner.page.getByRole("button", { name: "Add link" }).click();
-    const made = owner.page.locator("[data-piece]", { has: owner.page.locator("[data-made]") });
-    evidence.record(S, owner.role, "what they made elsewhere is linked back, labelled as their word and not checked",
-      await made.waitFor({ timeout: 15000 }).then(() => true, () => false) && /made with replit/i.test(await made.innerText()) && /not checked/i.test(await made.innerText()));
 
     // --- The owner adds their own work; a friend joins and adds theirs.
     const ownText = "Golden hour at the lake";

@@ -8,7 +8,6 @@ import { loadCreativeWorld } from "@/lib/world/creative";
 import { readWorldMembers } from "@/lib/world/collaboration";
 import { Record } from "@/app/ui/record";
 import { fieldsFromType, proofOf, actsFrom, accessFrom, collapseActs, nameFor, type ActorNames, type ThingConfirmation } from "@/lib/product/thing";
-import { AskForConfirmation } from "./ask";
 
 export const metadata: Metadata = { title: "Record · SOLVE" };
 
@@ -84,13 +83,7 @@ export default async function WorldRecordPage({ params }: PageProps<"/world/[wor
   const ownerActorId = membership?.ownerActorId;
   const ownerLabel = ownerActorId ? nameFor(ownerActorId, names) : "Not recorded";
 
-  // Only an action that exists, offered only to someone who could take it. The holder of a thing
-  // that nothing proves yet is offered the one act that changes that: asking someone else.
-  const isHolder = Boolean(ownerActorId && me?.actor_id === ownerActorId);
   const proof = proofOf(evidence, confirmations ?? []);
-  const nextAction = isHolder && (proof.status === "none" || proof.status === "claimed")
-    ? <AskForConfirmation worldId={world.worldId} entityId={world.entityId} />
-    : undefined;
   const asked: ThingConfirmation[] = (confirmations ?? []).map(c => ({
     id: c.confirmation_id, askedOf: c.asked_of, question: c.question, state: c.state,
     answeredBy: c.answered_by, answeredAt: c.answered_at,
@@ -107,7 +100,6 @@ export default async function WorldRecordPage({ params }: PageProps<"/world/[wor
     acts={collapseActs(actsFrom(events ?? [], names))}
     proof={proof}
     confirmations={asked}
-    nextAction={nextAction}
     access={accessFrom(grants, names, granteeOf)}
   />;
 }

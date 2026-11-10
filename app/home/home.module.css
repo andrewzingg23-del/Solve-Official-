@@ -1,39 +1,97 @@
-.home { display: flex; flex-direction: column; gap: 72px; }
+/* Your Space, measured from the canonical reference (inside the drawn window, 1366 × 950): title
+   66px at 360; the line beneath at 450; the box 888 × 86 at 509; chips 55 tall at 652, 28 apart.
+   The page fills everything under the top controls (which end at 92). */
+.home {
+  position: relative; margin: -40px -52px -72px; min-height: calc(100svh - 92px);
+  display: flex; align-items: center; justify-content: center; padding: 17px 24px 0; overflow: clip;
+}
+/* The arc of light: the edge of a circle ~1083px in radius whose top sits at (1000, 147) in the
+   reference — 802 in from the rail, 55 below the controls — bright from beside the box, fading past
+   the top. Decorative only; it carries no text. */
+.home::before {
+  content: ""; position: absolute; z-index: 0; pointer-events: none;
+  width: 2166px; height: 2166px; left: calc(802px - 1083px); top: 55px;
+  border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 -2px 18px 4px rgba(255, 255, 255, 0.7), 0 -6px 46px 10px rgba(255, 212, 198, 0.42), inset 0 14px 40px -8px rgba(255, 255, 255, 0.6);
+  mask-image: conic-gradient(from 305deg, transparent 0deg, #000 22deg, #000 58deg, rgba(0, 0, 0, 0.35) 75deg, transparent 92deg, transparent 360deg);
+}
+/* The soft halo inside the arc, lighter toward its top. */
+.home::after {
+  content: ""; position: absolute; z-index: 0; pointer-events: none; inset: 0;
+  background: radial-gradient(48% 42% at 64% 30%, rgba(255, 255, 255, 0.32), transparent 72%);
+}
+.centre { position: relative; z-index: 1; width: min(100%, 888px); display: flex; flex-direction: column; align-items: center; text-align: center; }
 
-.intro { display: flex; flex-direction: column; gap: 22px; max-width: 760px; padding-top: 24px; }
+/* The reference sets the title, the line and the box slightly left of centre (≈15px); the chips sit centred. */
+.switcher { position: relative; transform: translateX(-15px); }
+.title { display: inline-flex; align-items: center; gap: 14px; cursor: pointer; list-style: none; color: var(--text); }
+.title::-webkit-details-marker { display: none; }
+.title h1 { font-size: 68.5px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.02; }
+.title svg { color: var(--hint); }
+.spaces {
+  position: absolute; z-index: 10; left: 50%; top: calc(100% + 10px); transform: translateX(-50%);
+  width: min(86vw, 360px); max-height: 60vh; overflow: auto;
+  display: flex; flex-direction: column; gap: 4px; padding: 14px; text-align: left;
+  border-radius: 20px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-lift);
+}
+.spaces > :global(.s-label), .spaces > p { padding: 4px 10px 8px; }
+.spaceItem {
+  display: flex; align-items: center; gap: 12px; min-height: 46px; padding: 0 12px; border-radius: 12px;
+  border: 0; background: transparent; color: var(--text); text-decoration: none; font-size: 16px; text-align: left; cursor: pointer;
+}
+.spaceItem span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spaceItem:hover, .spaceItem:focus-visible { background: var(--raised); }
 
+.subtitle { transform: translateX(-17px); margin-top: 9px; font-size: 29px; line-height: 1.2; letter-spacing: 0; color: var(--ink-2); }
+
+.composeWrap { position: relative; width: 100%; margin-top: 43px; transform: translateX(-13px); }
 .compose {
-  display: flex; align-items: flex-end; gap: 12px;
-  padding: 10px 10px 10px 20px;
-  border: 1px solid var(--line); border-radius: 28px;
-  background: var(--surface);
-  transition: border-color 160ms ease, box-shadow 160ms ease;
+  width: 100%; height: 86px; display: flex; align-items: center;
+  padding: 0 18px 0 42px; border-radius: var(--radius-pill);
+  background: var(--glass-strong); border: 1px solid var(--glass-edge); box-shadow: var(--shadow-lift);
+  color: var(--text);
 }
-.compose:focus-within { border-color: var(--text); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
-.words {
-  flex: 1; min-height: 52px; max-height: 240px; padding: 13px 0; resize: none;
-  border: 0; outline: none; background: transparent; color: var(--text);
-  font-size: 18px; line-height: 1.45;
+.compose:focus-within { border-color: color-mix(in srgb, var(--text) 35%, transparent); }
+.compose > svg { flex: none; }
+.bar { width: 1.5px; height: 32px; margin: 0 24px 0 18px; background: color-mix(in srgb, var(--text) 22%, transparent); flex: none; }
+.words { flex: 1; min-width: 0; border: 0; background: transparent; outline: none; font-size: 24.4px; height: 100%; color: var(--text); }
+.words::placeholder { color: var(--hint); opacity: 1; }
+.go {
+  flex: none; width: 56px; height: 56px; border-radius: 999px; display: grid; place-items: center;
+  border: 0; background: color-mix(in srgb, var(--raised) 70%, var(--surface)); color: var(--text); cursor: pointer;
 }
-.words::placeholder { color: var(--muted); opacity: 1; }
-.custody { font-size: 14px; color: var(--muted); }
+.go:disabled { cursor: default; }
+.go:not(:disabled):hover { background: var(--text); color: var(--page); }
+/* Where the words are kept, said plainly; placed under the box so it never moves the chips. */
+.custody { position: absolute; left: 0; right: 0; top: calc(100% + 14px); font-size: 13px; color: var(--ink-2); }
+.custody[data-custody="durable"] { visibility: hidden; }
+.error { position: absolute; left: 0; right: 0; top: calc(100% + 14px); font-size: 14px; }
 
-.things { display: flex; flex-direction: column; gap: 18px; }
-.thingsHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.empty { color: var(--muted); max-width: 520px; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-.thing {
-  display: flex; flex-direction: column; gap: 8px; height: 100%;
-  padding: 20px 22px; border-radius: 18px; border: 1px solid var(--line);
-  background: var(--surface); text-decoration: none;
-  transition: border-color 140ms ease, transform 140ms ease;
+.chips { margin-top: 57px; display: flex; flex-wrap: wrap; justify-content: center; gap: 28px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 11px; height: 55px; padding: 0 23px; border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-edge); background: var(--glass); box-shadow: var(--shadow-soft);
+  color: var(--text); text-decoration: none; font-size: 19px; font-weight: 400; cursor: pointer;
 }
-.thing strong { font-weight: 500; font-size: 17px; line-height: 1.3; overflow-wrap: anywhere; }
-.thing:hover { border-color: var(--muted); transform: translateY(-1px); }
+.chip:hover { background: var(--glass-strong); }
 
-@media (max-width: 640px) {
-  .home { gap: 48px; }
-  .intro { padding-top: 4px; }
-  .compose { flex-direction: column; align-items: stretch; border-radius: 22px; padding: 12px; }
-  .words { font-size: 17px; }
+@media (max-width: 1180px) {
+  .home { margin: -32px -32px -64px; }
+  .title h1 { font-size: 60px; }
+}
+@media (max-width: 899px) {
+  .home { margin: -20px -18px 0; min-height: calc(100svh - 230px); padding: 0 18px; }
+  .home::before { left: calc(55% - 1083px); top: 20px; }
+  .title { padding-left: 0; gap: 8px; }
+  .title h1 { font-size: clamp(38px, 11vw, 52px); }
+  .subtitle { font-size: 18px; }
+  .composeWrap { margin-top: 28px; transform: none; }
+  .switcher, .subtitle { transform: none; }
+  .compose { height: 64px; padding: 0 8px 0 20px; }
+  .bar { display: none; }
+  .compose > svg { margin-right: 10px; }
+  .words { font-size: 16px; }
+  .go { width: 46px; height: 46px; }
+  .chips { gap: 10px; margin-top: 48px; }
+  .chip { height: 46px; padding: 0 16px; font-size: 15px; gap: 8px; }
 }

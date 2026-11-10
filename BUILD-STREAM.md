@@ -1424,3 +1424,30 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
     - `test:product` passed; in-browser kernel tests 73/73.
     - **All seven acceptance scenarios on staging: 237/237** (`acc-202611100758-rjsu`).
     - The Space panel heading was renamed after that run (no repeat of the page title), and `space` was rerun and passed (`acc-202611100801-wrd5`).
+
+- 2026-11-10 — **The approved shell, and everything that didn't serve it removed** (branch `solve/shell-truth`, **not merged**). Founder: "analyze the code base versus the shell with the shell being truth. If anything doesn't serve the shell, then we need to get rid of it"; "Take out all current graphics … the confirmed screen … the Solana chain code. Remove it all"; on the launch boards and the ID card, "Yes and yes"; "It needs to look exactly the same as pics". Recorded in `DECISIONS.md`.
+  - **Removed:**
+    - every old graphic (ring mark, black card, nav icons, brand files, favicon);
+    - the counterparty confirm screen and its asking flow (the kernel keeps both; the record still shows any confirmation already made);
+    - all Solana code (`lib/chain`, its tests, `@solana/*`, `litesvm`) — the kernel's money tables and tests stay, now with no chain library;
+    - "Ways to make it" and the Replit handoff (`lib/product/paths.ts`, `lz-string`);
+    - Bench and the greeting;
+    - redirects for retired products;
+    - the unused `three` package.
+  - **Built — the approved shell:**
+    - four places, Space · People · Apps · Control, with Search, Add, AI, the Space's visibility and Your ID always in reach;
+    - Home is "Your Space": the switcher over all your Spaces, the box that makes a Space from your words, and the three chips;
+    - **People** lists everyone you share a Space with, from kernel membership;
+    - **Apps** holds connected apps (moved from Control) and how to connect your own AI, with the real connector address;
+    - **Search** searches your Spaces' names and descriptions, and says so;
+    - **Control** lists Your ID, Privacy & sharing, Apps & AI, what you can reach, and export;
+    - **Your ID** has the card in the boards' style;
+    - a Space shows its own visibility in its header;
+    - the "S." icon is drawn in code;
+    - one token source (`app/ui/system.css` with `lib/product/environment.ts`), now light lavender by default.
+  - **Fidelity:**
+    - `npm run test:compare` screenshots the empty shell at the reference window's inside (1366 × 950) and writes side-by-side, overlay and difference images against `docs/reference/approved-shell.png` (SHA-256 checked).
+    - Mean difference 15.6 → 7.2 of 255.
+    - Intentional departures: no drawn window frame or traffic lights (the operating system's, not controls of ours); the avatar shows a person outline until a name is set (the reference's "S" is a name's initial); one line under the box says where a guest's words are kept (honesty).
+  - **Checks:** typecheck 0, lint 0, build ok; `npm test` 207/207 (the drop is the removed code's tests); `test:product` passed on the new shell at 320/390/1440; in-browser kernel tests 73/73. **Staging acceptance not yet rerun on this shell** — its scenarios still drive the old screens.
+  - **Next:** rewrite the acceptance scenarios for the shell and prove on staging — create, save, reopen, change how it appears, share with the right permissions — then connect one external capability and verify it.

@@ -1,0 +1,20 @@
+/* ID-1 proportions (85.60 × 53.98 mm), glass over a lavender-to-peach wash tinted by the person's
+   colour. Text sits on the near-white glass, so it is always the frame's own readable ink. */
+.card {
+  position: relative; width: min(100%, 440px); aspect-ratio: 85.6 / 53.98;
+  display: flex; flex-direction: column; justify-content: space-between; padding: 26px 28px;
+  border-radius: 22px; overflow: hidden; color: #15141d;
+  background:
+    radial-gradient(80% 90% at 100% 0%, color-mix(in srgb, var(--accent) 28%, #e6defe), transparent 70%),
+    radial-gradient(70% 80% at 0% 100%, #ffe6dc, transparent 70%),
+    linear-gradient(135deg, #ffffff, #f1eefc);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 2px rgba(20, 18, 40, 0.06), 0 30px 60px -30px rgba(40, 30, 90, 0.45);
+}
+.top { display: flex; justify-content: space-between; align-items: flex-start; }
+.brand { font-weight: 700; font-size: 26px; letter-spacing: -0.03em; line-height: 1; }
+.mark { color: #3d3a52; }
+.body { display: flex; flex-direction: column; gap: 4px; }
+.kind { font-size: 13px; color: #55526a; }
+.name { font-size: clamp(22px, 4vw, 30px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; overflow-wrap: anywhere; }
+.status { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #3d3a52; }

@@ -1,0 +1,17 @@
+/* The boards' settings list: rows on a glass panel, a line icon, a title, a quiet description and a
+   chevron. Shared by Control, Apps, People and Search so a list reads the same everywhere. */
+.panel { display: flex; flex-direction: column; padding: 6px; border-radius: 22px; border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(18px);
+  box-shadow: 0 1px 2px rgba(20, 18, 40, 0.04), 0 12px 32px -18px rgba(20, 18, 40, 0.18); }
+.row { display: flex; align-items: center; gap: 16px; min-height: 64px; padding: 10px 16px; border-radius: 16px; color: var(--text); text-decoration: none; }
+a.row:hover, a.row:focus-visible { background: var(--raised); }
+.row + .row { border-top: 1px solid var(--line); }
+.rowIcon { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--raised); }
+.rowText { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rowTitle { font-weight: 600; font-size: 16px; overflow: hidden; text-overflow: ellipsis; }
+.rowNote { font-size: 14px; color: var(--muted); }
+.chevron { flex: none; color: var(--muted); transform: rotate(-90deg); }
+.empty { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 56px 24px; }
+.emptyIcon { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; background: var(--raised); color: var(--text); }
+.section { display: flex; flex-direction: column; gap: 14px; margin-top: 40px; }
+.section:first-of-type { margin-top: 0; }

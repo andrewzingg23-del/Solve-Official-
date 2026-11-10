@@ -8,10 +8,11 @@ import { PHOTO_BUCKET, PHOTO_LINK_SECONDS, isPhotoOf } from "@/lib/product/photo
 import { loadCreativeWorld } from "@/lib/world/creative";
 import { readWorldMembers } from "@/lib/world/collaboration";
 import { nameFor, type ActorNames } from "@/lib/product/thing";
-import { AddPhoto, AddPiece, InviteFriend, SharePage, Ways } from "./together";
+import { AddPhoto, AddPiece, InviteFriend, SharePage } from "./together";
 import { ownDescription, readPublication } from "@/lib/product/page";
 import styles from "./together.module.css";
 import { GuestGate } from "@/app/ui/guest-gate";
+import { Icon } from "@/app/ui/icons";
 
 export const metadata: Metadata = { title: "SOLVE" };
 
@@ -90,8 +91,14 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
 
   return <div className={styles.page}>
     <header className={styles.head}>
-      <span className="s-label">{people.length > 1 ? "Building together" : "Yours"}</span>
-      <h1>{world.title}</h1>
+      <div className={styles.titleRow}>
+        <h1>{world.title}</h1>
+        {/* Who can see this Space, from the kernel: its members, and whether it is published. */}
+        <a href={isOwner ? "#share" : undefined} className={styles.visibility} data-visibility>
+          <Icon name={publication?.published ? "globe" : people.length > 1 ? "people" : "lock"} size={16} />
+          {publication?.published ? "Public" : people.length > 1 ? "Shared" : "Private"}
+        </a>
+      </div>
       {ownDescription(world.summary, world.title) ? <p className="s-muted">{ownDescription(world.summary, world.title)}</p> : null}
     </header>
 
@@ -105,7 +112,7 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
       {isOwner ? <InviteFriend worldId={world.worldId} title={world.title} /> : null}
     </section>
 
-    {canAdd ? <div className="s-stack" style={{ "--gap": "12px" } as React.CSSProperties}>
+    {canAdd ? <div id="add" className="s-stack" style={{ "--gap": "12px" } as React.CSSProperties}>
       <AddPiece worldId={world.worldId} />
       <AddPhoto worldId={world.worldId} />
     </div> : null}
@@ -135,7 +142,6 @@ export default async function ThingPage({ params }: PageProps<"/world/[worldId]"
           })}</ul>}
     </section>
 
-    {canAdd ? <Ways worldId={world.worldId} title={world.title} summary={ownDescription(world.summary, world.title)} isOwner={isOwner} /> : null}
     {isOwner ? <SharePage worldId={world.worldId} title={world.title} description={ownDescription(world.summary, world.title)}
       published={publication?.published ?? false} selected={publication?.pieces ?? []}
       candidates={pieces.filter(p => !p.link && authorOf.get(p.id) === ownerId).map(p => ({

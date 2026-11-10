@@ -5,6 +5,7 @@ import { getKernel } from "@/lib/kernel/server";
 import { BASE_LOOK, type CardLook } from "@/lib/product/card";
 import { environmentFor, environmentStyle } from "@/lib/product/environment";
 import { readLook } from "@/lib/product/look-store";
+import { readSpaceShared } from "@/lib/product/page";
 import { Shell } from "./ui/shell";
 import "./ui/system.css";
 
@@ -16,40 +17,39 @@ const sans = Geist({ variable: "--font-sans", subsets: ["latin"] });
 const mono = Geist_Mono({ variable: "--font-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SOLVE",
+  title: "Solve",
   description: "Your digital life, in your hands.",
-  applicationName: "SOLVE",
-  appleWebApp: { capable: true, title: "SOLVE", statusBarStyle: "black-translucent" },
-  icons: {
-    icon: [{ url: "/brand/solve-favicon.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/brand/solve-app-icon.svg", type: "image/svg+xml" }],
-  },
+  applicationName: "Solve",
+  appleWebApp: { capable: true, title: "Solve", statusBarStyle: "default" },
 };
 
-export const viewport: Viewport = { themeColor: "#0a0b0d" };
+export const viewport: Viewport = { themeColor: "#f5f4fa" };
 
 /** Who is here, and how their SOLVE looks. Any failure falls back to SOLVE's Base, never to an error. */
-async function presence(): Promise<{ name: string; look: CardLook; signedIn: boolean }> {
+async function presence(): Promise<{ name: string; look: CardLook; signedIn: boolean; publicSpace: boolean }> {
   const user = await getUser().catch(() => null);
-  if (!user) return { name: "", look: BASE_LOOK, signedIn: false };
+  if (!user) return { name: "", look: BASE_LOOK, signedIn: false, publicSpace: false };
   try {
     const kernel = await getKernel();
     const me = await kernel.whoami();
     const [profile] = await kernel.readActors([me.actor_id]).catch(() => []);
-    const stored = await readLook(kernel, me.actor_id).catch(() => null);
-    return { name: profile?.label?.trim() ?? "", look: stored?.look ?? BASE_LOOK, signedIn: !user.is_anonymous };
+    const [stored, space] = await Promise.all([
+      readLook(kernel, me.actor_id).catch(() => null),
+      readSpaceShared(kernel, me.actor_id).catch(() => ({ shared: false })),
+    ]);
+    return { name: profile?.label?.trim() ?? "", look: stored?.look ?? BASE_LOOK, signedIn: !user.is_anonymous, publicSpace: space.shared };
   } catch {
-    return { name: "", look: BASE_LOOK, signedIn: !user.is_anonymous };
+    return { name: "", look: BASE_LOOK, signedIn: !user.is_anonymous, publicSpace: false };
   }
 }
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const { name, look, signedIn } = await presence();
+  const { name, look, signedIn, publicSpace } = await presence();
   const env = environmentFor(look);
   return (
     <html lang="en" data-tone={env.tone} className={`${sans.variable} ${mono.variable}`} style={environmentStyle(env) as React.CSSProperties}>
       <body>
-        <Shell name={name} look={look} signedIn={signedIn}>{children}</Shell>
+        <Shell name={name} signedIn={signedIn} publicSpace={publicSpace}>{children}</Shell>
       </body>
     </html>
   );

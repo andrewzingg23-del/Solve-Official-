@@ -8,8 +8,6 @@ import { normalizeCardLook } from "@/lib/product/card";
 import { environmentFor, environmentStyle } from "@/lib/product/environment";
 import { linkParts, ownDescription } from "@/lib/product/page";
 import { PHOTO_BUCKET, PHOTO_LINK_SECONDS, isPhotoOf } from "@/lib/product/photo";
-import { Mark } from "@/app/ui/mark";
-import { SovCard } from "@/app/ui/sov-card";
 import styles from "./page.module.css";
 
 // A thing its owner chose to show the world — MySpace-style: their colours, their card, what they
@@ -55,9 +53,9 @@ export default async function PublicPage({ params }: PageProps<"/p/[worldId]">) 
       <header className={styles.head}>
         {by ? (page.space
           ? <Link href={`/s/${page.space}`} prefetch={false} className={styles.owner} data-owner-space>
-              <SovCard name={by} look={look} size="mini" /><span className="s-label" data-by>{by}</span><span className={styles.more} aria-hidden="true">→</span>
+              <span className="s-label" data-by>{by}</span><span className={styles.more} aria-hidden="true">→</span>
             </Link>
-          : <div className={styles.owner}><SovCard name={by} look={look} size="mini" /><span className="s-label" data-by>{by}</span></div>) : null}
+          : <div className={styles.owner}><span className="s-label" data-by>{by}</span></div>) : null}
         <h1 className={styles.title}>{page.title}</h1>
         {description ? <p className={styles.description}>{description}</p> : null}
       </header>
@@ -83,7 +81,7 @@ export default async function PublicPage({ params }: PageProps<"/p/[worldId]">) 
     </main>
     <footer className={styles.foot}>
       {/* No prefetch: prefetching Home would give the person looking an identity they never asked for. */}
-      <Link href="/" prefetch={false} className={styles.made}><Mark size={18} />Made on SOLVE</Link>
+      <Link href="/" prefetch={false} className={styles.made}>Made on Solve.</Link>
       <Link href="/" prefetch={false} className="s-button" data-variant="quiet">Make your own</Link>
     </footer>
   </div>;

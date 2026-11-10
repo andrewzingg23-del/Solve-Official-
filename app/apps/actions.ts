@@ -15,6 +15,6 @@ export async function disconnectApp(clientId: string): Promise<DisconnectResult>
   if (!user) return { ok: false, error: "Your identity isn't ready yet. Reload and try again." };
   const { error } = await (await createClient()).auth.oauth.revokeGrant({ clientId });
   if (error) return { ok: false, error: "It wasn't disconnected. Try again; nothing else changed." };
-  revalidatePath("/control");
+  revalidatePath("/apps");
   return { ok: true };
 }

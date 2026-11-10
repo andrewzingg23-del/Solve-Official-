@@ -85,9 +85,6 @@ async function exerciseEveryMethod(supabase: SupabaseClient, actAs?: string) {
   await k.setAvatarRepresentation(id, "pixel", "sov-1", "ref");
   await k.myAvatars();
   await k.exportMine();
-  await k.requestConfirmation({ entityId: id, tokenHash: "a".repeat(64), askedOf: "The homeowner", question: "Done?", requestId: "r" });
-  await k.readConfirmationRequest("a".repeat(64));
-  await k.answerConfirmation({ tokenHash: "a".repeat(64), decision: "confirmed", note: "yes", requestId: "r" });
   await k.readConfirmations(id);
   await k.readWorldInvitation("a".repeat(64));
   await k.readPage(id);

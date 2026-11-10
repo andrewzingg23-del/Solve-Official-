@@ -1,5 +1,0 @@
-.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
-.reach { display: flex; flex-direction: column; }
-.reach li { display: flex; flex-direction: column; gap: 2px; padding: 12px 0; border-top: 1px solid var(--line); }
-.reach li:first-child { border-top: 0; padding-top: 0; }
-@media (max-width: 760px) { .grid { grid-template-columns: minmax(0, 1fr); } }

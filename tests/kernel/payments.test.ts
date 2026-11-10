@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { generateKeyPairSigner } from "@solana/kit";
+import { newAddress } from "../support/keys";
 import { KernelError, kernelClient, type Kernel } from "../../lib/kernel/client";
 import { moneyKernel } from "../support/money-fixture";
 import { pgliteSupabase } from "../support/pglite-supabase";
@@ -46,8 +46,8 @@ async function setup({ registerSolve = true } = {}) {
   const aliceId = await alice.register("Alice");
   const bobId = await bob.register("Bob");
   const carolId = await carol.register("Carol");
-  const A = (await generateKeyPairSigner()).address;
-  const B = (await generateKeyPairSigner()).address;
+  const A = newAddress();
+  const B = newAddress();
   await alice.linkWallet("litesvm", A);
   await bob.linkWallet("litesvm", B);
   await bob.setPaymentProfile({ chain: "litesvm", receiveAddress: B, acceptAssets: ["DEV_USDC", "ARC"] });
@@ -121,7 +121,7 @@ describe("payment intents", () => {
     assert.deepEqual(before.accept_assets, ["DEV_USDC", "ARC"]);
 
     // Bob moves to a new wallet later; this payment still pays what he published when it began.
-    const B2 = (await generateKeyPairSigner()).address;
+    const B2 = newAddress();
     await t.bob.linkWallet("litesvm", B2);
     await t.bob.setPaymentProfile({ chain: "litesvm", receiveAddress: B2, acceptAssets: ["DEV_USDC"] });
     assert.equal((await t.alice.readPayment(paymentId)).recipient_address, t.B);
