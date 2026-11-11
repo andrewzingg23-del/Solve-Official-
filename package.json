@@ -15,7 +15,8 @@
     "test:postgres": "node scripts/test-postgres.mjs",
     "test:product": "node scripts/test-product.mjs",
     "test:acceptance": "node scripts/acceptance/run.mjs",
-    "test:compare": "node scripts/compare-shell.mjs"
+    "test:compare": "node scripts/compare-shell.mjs",
+    "verify:ai": "node --import tsx scripts/verify-ai-engine.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",
