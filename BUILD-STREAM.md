@@ -1554,3 +1554,9 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
   - **Not built:** real transfer of a guest's entities and grants into an existing account. That is re-scoping across actors in an append-only store, touching identity and authority; it deserves its own slice and attack tests, not a squeeze into this one.
   - **Checks:** typecheck 0, lint 0, `npm test` 230/230.
   - **Next:** the founder's choice — stay on the account and rebuild today's grants there, share today's Space across, or move on to the second tester.
+
+- 2026-11-11 — **Pushed, and the guest-creation fix verified against staging** (branch `solve/space-presentation`, preview alias `solve-git-solve-space-presentation-sovigrn.vercel.app`, **not merged**).
+  - Founder said push. `1561a73..2e3d456` to the side branch; Vercel built `dpl_GFTNnW4g1buJi6YMHkqrt7hL5uPY` and the alias now serves the new code (confirmed by `data-custody`, which exists only in these commits).
+  - **Measured, not assumed.** Baseline 727 guests. The build-window poll added 29 — the old code, still serving, minting one per request, which is the bug itself showing up one last time. Against the new code: **9 cookieless requests (8 curl with `Accept: */*`, 1 with `Sec-Fetch-Mode: cors`) produced 0 new guests**, total unchanged at 755, newest guest older than the test. The leak is closed for traffic that merely looks.
+  - **Unproven still:** continuity itself. The working path needs a guest whose email is *new*, and the founder's address is the taken case by definition, so only a second person can exercise it.
+  - **Next:** a second tester with a fresh email — now both the continuity proof and the first person through the new guest rule.
