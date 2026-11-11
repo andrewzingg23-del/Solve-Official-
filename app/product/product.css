@@ -147,3 +147,11 @@
   .solve-console-open { right:14px; bottom:calc(env(safe-area-inset-bottom) + 78px); }
   .solve-console { right:10px; left:10px; width:auto; bottom:calc(env(safe-area-inset-bottom) + 74px); max-height:min(70svh,calc(100svh - 160px)); }
 }
+
+/* One AI surface, replaceable engines. Keep this control inside Claude's console. */
+.solve-console-provider-choice { display:flex; align-items:center; gap:10px; padding:8px 15px; border-bottom:1px solid #26364c; }
+.solve-console-provider-choice label { color:#8194ab; font-size:11px; }
+.solve-console-provider-choice select { flex:1; min-width:0; padding:7px 10px; border:1px solid #2f4a63; border-radius:8px; color:#d6e4f2; background:#101b2b; font:inherit; font-size:12px; }
+.solve-console-provider-choice select:focus-visible { outline:2px solid #22d3ee; outline-offset:2px; }
+.solve-console-provider-choice select:disabled { opacity:.55; }
+.solve-console-provider-label { display:block; font-size:10px; color:#8ccbd6; margin-bottom:3px; }
