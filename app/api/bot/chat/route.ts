@@ -4,6 +4,8 @@
 // "switch anthropic with open router"). Response contract is full JSON —
 // the Talk panel reads data.reply via res.json(); keep it that way.
 import { getUser } from "@/lib/supabase/server";
+import { selectChatProvider } from "@/lib/bot/provider-choice";
+import { OPENAI_DEFAULT_MODEL, OPENAI_MISSING_KEY_ERROR, buildOpenAIResponsesBody, completeOpenAIChat } from "@/lib/bot/openai";
 import { loginRequired } from "@/lib/auth/gate";
 import { getBotSoul } from "@/lib/bot/soul";
 import { getKernel } from "@/lib/kernel/server";
@@ -52,6 +54,15 @@ export async function POST(request: Request) {
   } catch {
     return json({ error: "Send a valid JSON request." }, 400);
   }
+  // Provider choice is allowlisted. Neither model IDs nor endpoints come from the browser.
+  const selected = body && typeof body === "object" && !Array.isArray(body)
+    ? selectChatProvider((body as Record<string, unknown>).provider)
+    : null;
+  if (!selected) return json({ error: "Choose a supported AI provider." }, 422);
+  // Only signed-in identities may use this additional paid provider.
+  if (selected === "openai" && (!user || user.is_anonymous))
+    return json({ error: "Sign in before using OpenAI in SOLVE." }, 401);
+
   // Tier routing happens before validation so a "smart:" prefix never
   // reaches the model or counts against the message length limit.
   const rawMessage =
@@ -88,10 +99,12 @@ export async function POST(request: Request) {
   if (spendBlocked(limiterKey))
     return json({ error: "Hourly token budget spent — back in a bit." }, 429);
 
-  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
-  if (!apiKey) return json({ error: OPENROUTER_MISSING_KEY_ERROR }, 503);
+  const apiKey = (selected === "openai" ? process.env.OPENAI_API_KEY : process.env.OPENROUTER_API_KEY)?.trim();
+  if (!apiKey) return json({ error: selected === "openai" ? OPENAI_MISSING_KEY_ERROR : OPENROUTER_MISSING_KEY_ERROR }, 503);
 
-  const model = resolveChatModel(tier);
+  const model = selected === "openai"
+    ? (process.env.OPENAI_MODEL?.trim() || OPENAI_DEFAULT_MODEL)
+    : resolveChatModel(tier);
 
   // The Inside loop, first half: when the person asks for a way (not small
   // talk), their ask goes on the kernel record before the bot answers.
@@ -152,21 +165,24 @@ export async function POST(request: Request) {
       passport,
       screen: chat.screen,
     }).text;
-    const completion = await completeChat(
-      apiKey,
-      buildChatCompletionBody({ model, system, history: chat.history, message: chat.message }),
-    );
+    // Both providers receive the same approved, bounded SOLVE context and history.
+    // This route remains conversational: no model gets direct mutation tools.
+    const completion = selected === "openai"
+      ? await completeOpenAIChat(apiKey, buildOpenAIResponsesBody({ model, system, history: chat.history, message: chat.message }))
+      : await completeChat(apiKey, buildChatCompletionBody({ model, system, history: chat.history, message: chat.message }));
     recordSpend(limiterKey, completion.inputTokens + completion.outputTokens);
     return json({
       reply: completion.reply,
       wayEventId,
       wayPlan,
       usage: {
+        provider: selected,
         model,
         tier,
         inputTokens: completion.inputTokens,
         outputTokens: completion.outputTokens,
-        estimatedCostUsd: estimateCostUsd(model, completion.inputTokens, completion.outputTokens),
+        // Do not apply OpenRouter pricing to an OpenAI API model.
+        estimatedCostUsd: selected === "openai" ? null : estimateCostUsd(model, completion.inputTokens, completion.outputTokens),
         tokensSpentThisHour: tokensSpentThisHour(limiterKey),
       },
     });
