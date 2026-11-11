@@ -51,6 +51,9 @@ export type RoomSourceRef = { entityId: string; version: number; title: string }
 
 export type ChainCheck = { ok: boolean; events_checked: number; first_bad_seq: number | null; problem: string | null };
 
+/** Durable AI consumption for the authenticated actor in a bounded window. */
+export type AiSpend = { tokens: number; calls: number };
+
 export type SettlementChain = "litesvm" | "solana-devnet" | "solana-mainnet";
 export type SettlementStatus = "prepared" | "submitted" | "confirmed" | "failed" | "needs_reconciliation";
 
@@ -513,6 +516,23 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
 
 
     myGrants: () => call<Grant[]>("my_grants", { ...as }),
+
+    // Durable AI metering. User sessions can only meter their own actor.
+    // Connected app JWTs cannot record spend; service-authorized workers may.
+    readAiSpend: (windowSeconds = 3600) =>
+      one<{ tokens: string | number; calls: number }>("read_ai_spend", {
+        p_window_seconds: windowSeconds,
+        ...as,
+      }).then((r): AiSpend => ({ tokens: Number(r.tokens), calls: Number(r.calls) })),
+
+    recordAiSpend: (input: { tokens: number; kind: string; windowSeconds?: number; requestId?: string }) =>
+      one<{ tokens: string | number; calls: number }>("record_ai_spend", {
+        p_tokens: input.tokens,
+        p_kind: input.kind,
+        p_window_seconds: input.windowSeconds ?? 3600,
+        p_request_id: input.requestId ?? null,
+        ...as,
+      }).then((r): AiSpend => ({ tokens: Number(r.tokens), calls: Number(r.calls) })),
 
     // Service role only.
     verifyChain: () => one<ChainCheck>("verify_chain", {}),
