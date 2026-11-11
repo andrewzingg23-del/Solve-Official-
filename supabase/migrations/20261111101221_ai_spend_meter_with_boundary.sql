@@ -126,3 +126,6 @@ grant execute on function kernel_api.record_ai_spend(integer, text, integer, tex
 -- The table itself is never reachable from an API role: only the two functions
 -- above touch it, and they are security definer.
 revoke all on table kernel.ai_meter from public;
+-- Follow-up to #98; preserve its original migration and close PostgreSQL's
+-- default PUBLIC execute grant on the internal validation helper.
+revoke all on function kernel.require_meter_window(integer) from public, anon, authenticated, service_role;

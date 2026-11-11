@@ -1627,3 +1627,24 @@ non-anonymous staging account, branch-scoped preview gate/allowlist, and a NEW s
 key with provider-side spending limits remain operator setup. No existing secret was pulled. Create-
 resource work remains gated on live signed-in verification and user approval of exactly one action.
 Current integration contract and full source audit: docs/integrations/2026-11-11-staging-ai-integration.md.
+
+### Same slice — least-effort staging setup
+
+The founder asked "what lets me test it and it work wit h least effort". Removed unnecessary manual
+key/UUID setup: metadata-only inspection shows the existing Anthropic key is already Preview-scoped;
+its value was never decrypted, pulled, copied or changed. It also lists Production/Development, so no
+account-wide provider setting was changed. The owner's existing non-anonymous account was identified
+in staging only, and the allowlist/gate/Haiku model are scoped to this branch's Preview environment.
+
+Applied the exact reviewed meter+helper correction atomically to solve-staging as migration
+20261111101221_ai_spend_meter_with_boundary. Consolidated the two never-applied source files into the
+one canonical file matching actual staging history; no applied SQL was altered and no duplicate meter
+will be pushed later. Byte-for-byte SQL comparison matches the applied payload. Real Postgres role
+checks confirm no API role can access kernel schema/table or execute its internal helper, and anon
+cannot execute meter APIs. Production database, users and environment settings remain untouched.
+
+GitHub Actions43000808512 passed all307 tests, typecheck, lint, build and both browser suites for
+code5a0ab20; browser screenshots uploaded. Final staging acceptance acc-202611111004-urwf passed101/101.
+An explicitly staging-targeted rebuild is preparing the one-click signed-in test link. Automatic
+review rejected an extra deployment request with an omitted target; that request was not executed.
+No live reply is claimed until the person signs in and exercises the route.

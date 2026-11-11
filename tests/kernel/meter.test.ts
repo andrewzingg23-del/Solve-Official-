@@ -1,4 +1,4 @@
-// The AI spend meter (migration 20261111010000). Durable and shared, unlike the
+// The AI spend meter (migration 20261111101221). Durable and shared, unlike the
 // per-instance Map it replaces: the count survives, a retry is not charged
 // twice, and one person can never read or move another's meter.
 import assert from "node:assert/strict";

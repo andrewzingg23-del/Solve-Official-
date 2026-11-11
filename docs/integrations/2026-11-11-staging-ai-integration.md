@@ -1,8 +1,9 @@
 # One staging AI integration
 
 Current review target: `codex/ai-staging-integration-20261111` → `solve/space-presentation`.
-The approved shell remains the base. No merge to `main`, production deployment, remote schema
-application, production-user query, or deployment-secret retrieval is part of this work.
+The approved shell remains the base. No merge to `main`, production deployment, production-user query, or deployment-secret retrieval
+is part of this work. The reviewed meter was applied to solve-staging only after the user asked
+for the least-effort working test.
 
 ## Source audit
 
@@ -25,7 +26,7 @@ The pre-existing GitHub build workflow ran only on `main`, so these PR heads had
 This integration enables that workflow for its own branch, including browser screenshots.
 
 The #101 stack is incorporated once. #100's MCP attribution and inventory are added independently;
-its identical provider files are not duplicated. #98's migration and typed client are retained.
+its identical provider files are not duplicated. #98's SQL and typed client are retained; the meter SQL plus its helper correction form one canonical applied migration.
 The unused provider-choice code and the `verify:ai:local` deployment-secret-pull shortcut are removed.
 
 ## Current behavior and boundaries
@@ -65,9 +66,12 @@ confers authority or makes stored text executable instructions.
 ## Meter assessment
 
 Include #98 as **usage accounting for this private preview**, not as public billing protection.
-Its original migration is unchanged, including its version `20261111010000`; one additive follow-up
-`20261111095128_ai_meter_boundary.sql` revokes the helper's unintended execute privileges. Neither
-migration collides with the approved branch's `20261111000000_legacy_app_tokens_refused.sql`.
+Its original SQL is preserved and followed by the helper-execute revoke in one atomic canonical migration:
+`20261111101221_ai_spend_meter_with_boundary.sql`, matching staging's actual migration version/name.
+The two never-applied source filenames are removed so a later push cannot apply the meter twice.
+The applied SQL's SHA-256 is `e35655dfec3311a8cd8832932c23e1a869fe3175291468bca6bca2010aa0e283`;
+the repository file was compared byte-for-byte with the submitted migration and matches.
+It does not collide with the approved branch's legacy-token lockdown migration.
 Connected-app writes, cross-actor impersonation, role grants, validation, windows and replay are tested.
 
 The handler refuses to call a provider if the meter cannot be read. Recorded usage of 20,000 tokens
@@ -78,36 +82,42 @@ usable usage may still incur charges not recorded here.
 A failed post-call recording preserves the already-paid reply and visibly says usage was not recorded.
 
 Therefore this is not a hard token/dollar cap, not a billing ledger, and not ready for general users
-or autonomous actions. A designated preview account and a NEW provider credential with an operator-set
-provider-side spending limit remain necessary. Public rollout requires trusted atomic admission,
+or autonomous actions. Access is restricted to the designated existing staging account. The already-configured Preview
+Anthropic credential is used by the server in place; no value was decrypted, copied or changed.
+Its metadata also lists Production, so an account-wide provider spending change is not made here.
+An isolated Preview-only credential is preferable before expanding beyond this one-account test. Public rollout requires trusted atomic admission,
 usage reconciliation and consent/retention decisions; no new foundational budget system is invented here.
 
-## Human-only setup and remaining live gate
+## Least-effort test and remaining live gate
 
-No local provider key is present. No existing Vercel/production secret was read, pulled, decrypted,
-copied or logged. The staging migration list was read only for project `taeikshnbcsjlgbattyp`;
-the meter is absent. Historical staging migration version numbers also differ from repository file
-versions, so do not blindly run a blanket database push.
+Setup is complete in staging:
 
-An authorized staging operator must:
+- The actual staging `resolve_caller` definition was inspected and matches the connected-app identity
+  boundary. The meter was absent before applying the exact reviewed SQL atomically as
+  `20261111101221_ai_spend_meter_with_boundary` in project `taeikshnbcsjlgbattyp` only.
+- Real Postgres privilege queries confirm anon/authenticated/service roles have no kernel schema/table
+  access or helper execute; anon cannot call either meter API; authenticated/service can call only
+  the typed meter APIs as intended. No production migration was applied.
+- The existing non-anonymous account matching the project owner's email was identified in **staging only**.
+  No production users were queried; no token was issued or impersonated to bypass sign-in.
+- Vercel environment metadata was inspected with `decrypt=false`. `ANTHROPIC_API_KEY` is already configured
+  for Preview (also listed for Production/Development); its value was never retrieved or copied.
+- `SOLVE_AI_INTERNAL_PREVIEW=1`, the designated staging user's allowlist, `SOLVE_AI_ENGINE=anthropic`, and
+  `ANTHROPIC_MODEL=claude-haiku-5-5` are scoped to **Preview + this integration branch only**.
+  No production environment variable or credential was edited.
+- Configured test deployment: `solve-ngyuvd255-sovigrn.vercel.app`, code SHA
+  `5a0ab20b2000805d4de38bcfc2f293551347c794`. Its explicit Vercel target is `staging`, not production.
+  The final PR/evidence report records build readiness and the unauthenticated boundary check.
 
-1. Review/apply the two meter SQL files to **solve-staging only**, reconciling its existing migration
-   history and applying the helper correction immediately. Verify the same privilege checks afterward.
-2. Create or designate a **non-anonymous staging test account** and provide its staging Auth UUID,
-   without looking up production users. No service-role key is required by the AI turn route.
-3. In Vercel Preview scoped to this integration branch, enter `SOLVE_AI_INTERNAL_PREVIEW=1` and
-   `SOLVE_AI_PREVIEW_USER_IDS=<designated staging UUID>`. Keep the gate off elsewhere.
-4. Add a **new staging-only** `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` through the provider/Vercel UI;
-   do not reuse or pull existing production credentials. Set a provider-side spending limit.
-   Set `SOLVE_AI_ENGINE=openai|anthropic` and the matching `OPENAI_MODEL` or `ANTHROPIC_MODEL` if
-   desired. `claude-haiku-5-5` is a documented low-cost Anthropic option, not proof of this account's access.
-5. Rebuild this branch's preview, verify its exact commit SHA and staging target, sign in, open AI,
-   and get one real reply. Confirm provider/model, unknown-vs-estimated cost and independently read
-   usage. Test a second follow-up, navigation, unauthorized Space, revocation, sign-out and account change.
+The person's remaining steps are: open that test link, sign in with the existing account, open AI,
+and ask a short question. No terminal command, key copy or UUID handoff is required. If the configured
+provider credential is rejected or lacks model access, an operator must replace it **for Preview only**
+through the provider/Vercel UI; never retrieve an existing production key.
 
-`npm run verify:ai -- openai` (or `anthropic`) is an optional adapter-only check with a newly supplied
-staging environment credential; it is not a signed-in product test. Never put credentials in a chat,
-command argument, shell-history assignment, repository, screenshot, or report.
+A real signed-in reply, its provider/usage/cost, a second turn, navigation, and a revoked/unauthorized
+Space still need live confirmation. The automated component and transport fixtures do not establish that.
+`npm run verify:ai` remains an optional adapter-only check with a separately supplied local staging
+credential; it never pulls a deployment key and is unnecessary for this browser test.
 
 **No create-resource action is designed or implemented yet.** Its prerequisites are a verified live
 signed-in conversation and the user's approval of exactly one proposed action, with preview/review,
@@ -125,10 +135,10 @@ permission enforcement, idempotency, provenance and read-back evidence. Fixture 
 - `test:product`: approved shell and panel reachability/keyboard at 320/390/1440 passed without a database.
 - `test:ai-ui`: actual component with labelled simulated transport passed provider labels, estimated/unknown
   cost, bounded long-history follow-up, navigation, account reset, light/dark at 320/390/1440.
-- Real staging acceptance `acc-202611110954-nlze`: **101/101**, scenarios `home,present,second`.
+- Final reviewed-tree staging acceptance `acc-202611111004-urwf`: **101/101**, scenarios `home,present,second`.
   This proves ordinary Space presentation and connected-app flows, not a live internal model reply.
 - `verify:ai` with no key exits **2**, names missing provider configuration and makes no API call.
-- Live signed-in AI, actual provider cost, remote meter application and resource creation remain **unverified**.
+- Remote meter application and role privileges are verified on staging. Live signed-in AI, actual provider cost and resource creation remain **unverified**.
 
 Provider schema/pricing references checked 2026-11-11:
 [OpenAI Responses](https://developers.openai.com/api/reference/resources/responses/methods/create),
