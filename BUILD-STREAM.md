@@ -1566,3 +1566,64 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
   - **Never walked by a person:** a guest with an unused email signing in and keeping their work. Chris was a signed-in account from the first second (`is_anonymous` never true), and the founder's address is the taken case, so nobody has exercised it. `docs/acceptance/STATUS.md` now says so in those words rather than implying verification.
   - **Still stranded:** Space `3adaa236…` with today's task, evidence and resource. No grants on it since 06:00; reachable only from the browser holding guest `c27ca26f…`. The kernel records stand as proof regardless.
   - **Next, when the founder wants it:** either the one continuity run, or specced transfer of a guest's work into an existing account.
+
+- 2026-11-11 — **Draft approved-shell AI console, not yet verified** (stacked on headless OpenAI PR #97; `feat/approved-shell-ai-console-20261111`).
+  - `app/ui/shell.tsx` keeps all four destinations and existing shell styling; its AI control now opens one persistent `app/ui/ai-console.tsx` conversation panel, with screen labels and keyboard open/close, no second navigation destination.
+  - `/api/ai/turn` performs real auth and Kernel read checks before using a Space's title or summary as optional model context. All model calls require preview-only owner allowlist and server-side key; no model tools or writes granted.
+  - `lib/ai/console-contract.ts` and focused tests reject untrusted paths, system-role history, oversized input and unallowlisted users. Separate `docs/integrations/2026-11-11-shell-console.md` records required live/privacy/accessibility tests.
+  - **Not verified:** full test suite, typecheck, lint, deployment build, live paid model response, cross-device conversation persistence and durable AI budget. The 8-turn process limiter is only a floor; keep preview closed until PR #98's durable meter and its authorization boundary are independently verified.
+  - **Next:** build/test preview for exact SHA, verify allowed-account reply and wrong-owner denial; have Claude reconcile the useful behaviors from PR #94 into this one approved-shell console rather than cherry-picking old visuals.
+
+2026-11-11: Slice — the console answers from either engine (Claude, claude/console-claude-engine, STACKED ON PR #99's branch, not duplicating it). Founder: "yes wire it". Stacked rather than rebuilt because the route lives on #99 and a second console is exactly the mistake that cost PRs #95 and #96 today.
+
+NEW `lib/ai/engines.ts` — the engines a deployment can actually reach, assembled from its configuration. An engine exists only when its credential is present, so routing never picks something that 503s a moment later. Credentials are read here and nowhere else in the AI path; the adapters take a key as an argument. `UNKNOWN_PRICE` is Infinity for a model this repo has no published price for (the OpenAI model, and any unrecognized Claude model): routing compares prices only to find something CHEAPER, so an unknown price means "never chosen as a cost saving" while still reachable by preference or fallback. Inventing a number would be worse.
+
+`app/api/ai/turn/route.ts` — the engine is now a setting, not a dependency. `enginesFrom(process.env)` + `chooseEngine(...)` decide; the browser still names no model and no key. An empty 200 from an engine is rejected as "came back empty" rather than shown as an answer (the exact failure mode that broke first-draft generation on the free model). A safety decline returns an honest "the engine declined this request" instead of a 502, and the classifier category is NOT relayed. The response now reports `engine: { id, model, chosenBy }` so the choice is explainable. `overBudget` is deliberately NOT wired and said so in a comment: the durable meter is PR #98 and is not on this branch, so the process-local throttle is still the only cost floor.
+
+Two PRE-EXISTING breaks on #99's branch found and fixed — its own notes said typecheck, lint and the full suite were unverified, and both of these were real:
+1. **It did not typecheck.** `previewAllowed(userId, env: { SOLVE_AI_INTERNAL_PREVIEW?: string; ... })` is a type of only-optional properties, which trips TypeScript's weak-type check against `ProcessEnv` — `app/api/ai/turn/route.ts(40,32) TS2559`. Fixed with an index-signature parameter, keys documented in a comment.
+2. **It broke `tests/product/shell.test.ts`.** The guard asserted `href="/apps#ai"`, the old AI link to "connect your own provider", which #99 legitimately replaced with the console button (verified: #97's shell has it, #99's does not). The guard's intent — AI stays always in reach — is unchanged, so it now asserts the affordance that exists (`aria-label="Talk with AI"` and the mounted `<AiConsole`), with a comment saying why it changed rather than silently weakening it.
+
+Also noted, not touched: `lib/ai/provider-choice.ts` (PR #97) is imported by nothing on this branch and offers `"openrouter"` as a provider that does not exist here. That is #97's author's call, and the trunk's AGENTS.md says code nothing reaches is deleted.
+
+Checks actually run: full suite **269 pass / 0 fail** (was 268/1 before the two fixes), including 7 new engine-table tests — a blank key is not a key, a known model is priced and an unknown one is never given an invented price, an unpriced engine is never chosen as a cost saving but still answers by preference, a bogus `SOLVE_AI_ENGINE` is ignored, and with only one key set that engine answers whichever it is. typecheck ok; lint 0 problems; production build ok.
+
+STILL NOT a live reply, and this is the honest limit: the route needs a signed-in non-anonymous person who is on the preview allowlist. `ANTHROPIC_API_KEY` is already on the Vercel project, so what remains is `SOLVE_AI_INTERNAL_PREVIEW=1` and the founder's own Supabase user id in `SOLVE_AI_PREVIEW_USER_IDS` — neither of them a secret — plus a redeploy. The adapter's request shape is tested against fixtures, never yet against the real API.
+
+2026-11-11: Tooling — `npm run verify:ai`, the one command that settles whether an engine actually answers (Claude, claude/console-claude-engine). Founder said go on verifying the adapter against the real API; I have no Anthropic credential in this environment (no `ANTHROPIC_API_KEY`, no `ant` CLI, no local `.env`), and the only key available is the founder's in Vercel, which I said I would not decrypt and did not. So the verification is a script the founder runs with their own key, which never enters a transcript.
+
+NEW `scripts/verify-ai-engine.ts` + `npm run verify:ai`. It reads the key from the environment only, routes through the REAL adapter and the REAL routing policy (not a hand-written request, so it tests what production runs), and prints the shape of the answer: which engines have keys, which was chosen and by which rule, latency, tokens in/out/cached, estimated cost, and a 300-character excerpt as the actual evidence. It never prints the key and redacts anything key-shaped out of a provider error before showing it. An empty 200 is reported as a FAIL with exit 1, naming it as the failure mode the route now rejects. No key exits 2 and says exactly what to set.
+
+Dry run with no key behaves correctly: both engines listed as "no key", exit 2, clear instruction. typecheck ok; lint 0 problems; suite unchanged at 269 pass / 0 fail.
+
+Why it matters: every AI path in SOLVE has been tested against fixtures and never once against a live model. `npm run verify:ai` is a few seconds and a fraction of a cent, and it is the first thing that would turn "code written, tests green, preview queued" into one verified fact.
+
+## 2026-11-11 — One staging AI integration, preserving the approved shell
+
+Founder request: take ownership of fragmented #97–101 and produce one reviewable staging PR on
+`solve/space-presentation`, with no production change, credential retrieval, or production-user query.
+Integrated the #97/#99/#101 stack once, #100 MCP attribution, and #98 meter/client/tests. Kept #98's
+original SQL unchanged and added a separate PUBLIC helper-execute revoke after reproducing its
+real security-test failure. No remote migration was applied; staging's migration list confirms the
+meter absent. New branch `codex/ai-staging-integration-20261111` is the single integration target.
+
+Fixed selected-engine labels, actual model/usage/estimated-vs-unknown cost, sanitized errors, bounded
+history, app-agent and production denial, same-origin/body boundaries, and account-scoped conversation
+state. Independent review found charged empty/refusal accounting, multiline MCP author spoofing and
+stale-tab cross-account history; all three were reproduced with failing tests and corrected. Requests
+now bind the expected viewer before transferring history. Known charged non-text outcomes are metered;
+no provider error diagnostics are retained. MCP text stays inside JSON-encoded attributed records.
+Removed the unused provider chooser and the secret-pull verification shortcut. No tools or actions added.
+
+Verified locally: final full suite 307/307, focused reviewed boundaries 43/43, meter/kernel 41/41;
+typecheck and lint pass; optimized build passes. Product browser checks and actual-component simulated
+provider checks passed at 320/390/1440 (light/dark, labels, long follow-up, identity reset). Staging
+acceptance `acc-202611110954-nlze` passed 101/101 for home/present/second; final reviewed-tree rerun is
+reported with the PR evidence. Test fixtures are not live AI evidence. No-key verify:ai exits 2.
+
+The meter is durable accounting with sequential preview limits, not atomic admission or a hard dollar
+cap. No live signed-in model reply is claimed. Staging-only migration review/application, a designated
+non-anonymous staging account, branch-scoped preview gate/allowlist, and a NEW staging-only provider
+key with provider-side spending limits remain operator setup. No existing secret was pulled. Create-
+resource work remains gated on live signed-in verification and user approval of exactly one action.
+Current integration contract and full source audit: docs/integrations/2026-11-11-staging-ai-integration.md.

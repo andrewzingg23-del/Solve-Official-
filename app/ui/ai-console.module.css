@@ -1,0 +1,39 @@
+/* AI is a contextual surface inside the approved SOLVE shell, not another page.
+   It inherits the person's base tokens. Never changes the fixed navigation. */
+.panel {
+  position: fixed; right: 28px; bottom: 24px; z-index: 60;
+  width: min(422px, calc(100vw - 36px));
+  max-height: min(690px, calc(100svh - 48px));
+  display: flex; flex-direction: column; overflow: hidden;
+  border: 1px solid var(--glass-edge);
+  border-radius: 24px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-lift);
+}
+.header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 17px 20px 13px; }
+.heading { display: flex; flex-direction: column; gap: 3px; }
+.heading strong { font-size: 17px; font-weight: 650; }
+.context { font-size: 12px; color: var(--muted); }
+.close { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 50%; background: var(--raised); cursor: pointer; font-size: 25px; line-height: 1; }
+.meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; padding: 10px 20px; border-block: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+.log { min-height: 180px; height: 300px; overflow: auto; display: flex; flex-direction: column; gap: 12px; padding: 18px; overscroll-behavior: contain; }
+.empty { display: flex; flex-direction: column; gap: 12px; color: var(--muted); font-size: 14px; line-height: 1.55; }
+.you, .assistant { max-width: 92%; white-space: pre-wrap; overflow-wrap: anywhere; border-radius: 17px; padding: 11px 14px; font-size: 14px; line-height: 1.55; }
+.you { align-self: flex-end; background: var(--raised); border-bottom-right-radius: 5px; }
+.assistant { align-self: flex-start; background: var(--glass); border: 1px solid var(--glass-edge); border-bottom-left-radius: 5px; }
+.speaker { display: block; margin-bottom: 5px; color: var(--muted); font-size: 11px; }
+.busy { color: var(--muted); font-size: 13px; }
+.error { color: var(--danger, #a33); font-size: 13px; line-height: 1.45; }
+.entry { display: flex; align-items: flex-end; gap: 8px; padding: 13px 15px; border-top: 1px solid var(--line); }
+.entry textarea { flex: 1; min-width: 0; resize: vertical; max-height: 110px; min-height: 49px; padding: 12px; background: var(--glass); border: 1px solid var(--glass-edge); border-radius: 13px; font: inherit; font-size: 14px; }
+.entry button { min-height: 45px; padding: 0 14px; border: 1px solid var(--glass-edge); border-radius: 13px; background: var(--raised); cursor: pointer; }
+.entry button:disabled { opacity: .5; cursor: not-allowed; }
+.signin { padding: 18px; font-size: 13px; border-top: 1px solid var(--line); }
+.footer { padding: 10px 18px 14px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+.footer a { color: var(--text); }
+@media (max-width: 899px) {
+  .panel { right: 10px; left: 10px; width: auto; bottom: calc(84px + env(safe-area-inset-bottom)); max-height: min(68svh, calc(100svh - 168px)); border-radius: 20px; }
+  .log { min-height: 100px; height: 260px; }
+}
+@media (prefers-reduced-motion: reduce) { .panel *, .panel { scroll-behavior: auto; transition: none; } }

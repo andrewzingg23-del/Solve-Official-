@@ -26,9 +26,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: "#f5f4fa" };
 
 /** Who is here, and how their SOLVE looks. Any failure falls back to SOLVE's Base, never to an error. */
-async function presence(): Promise<{ name: string; look: CardLook; signedIn: boolean; publicSpace: boolean }> {
+async function presence(): Promise<{ name: string; look: CardLook; signedIn: boolean; publicSpace: boolean; identityKey: string }> {
   const user = await getUser().catch(() => null);
-  if (!user) return { name: "", look: BASE_LOOK, signedIn: false, publicSpace: false };
+  if (!user) return { name: "", look: BASE_LOOK, signedIn: false, publicSpace: false, identityKey: "signed-out" };
   try {
     const kernel = await getKernel();
     const me = await kernel.whoami();
@@ -37,19 +37,19 @@ async function presence(): Promise<{ name: string; look: CardLook; signedIn: boo
       readLook(kernel, me.actor_id).catch(() => null),
       readSpaceShared(kernel, me.actor_id).catch(() => ({ shared: false })),
     ]);
-    return { name: profile?.label?.trim() ?? "", look: stored?.look ?? BASE_LOOK, signedIn: !user.is_anonymous, publicSpace: space.shared };
+    return { name: profile?.label?.trim() ?? "", look: stored?.look ?? BASE_LOOK, signedIn: !user.is_anonymous, publicSpace: space.shared, identityKey: user.id };
   } catch {
-    return { name: "", look: BASE_LOOK, signedIn: !user.is_anonymous, publicSpace: false };
+    return { name: "", look: BASE_LOOK, signedIn: !user.is_anonymous, publicSpace: false, identityKey: user.id };
   }
 }
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const { name, look, signedIn, publicSpace } = await presence();
+  const { name, look, signedIn, publicSpace, identityKey } = await presence();
   const env = environmentFor(look);
   return (
     <html lang="en" data-tone={env.tone} className={`${sans.variable} ${mono.variable}`} style={environmentStyle(env) as React.CSSProperties}>
       <body>
-        <Shell name={name} signedIn={signedIn} publicSpace={publicSpace}>{children}</Shell>
+        <Shell identityKey={identityKey} name={name} signedIn={signedIn} publicSpace={publicSpace}>{children}</Shell>
       </body>
     </html>
   );

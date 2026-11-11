@@ -19,7 +19,8 @@ export async function second({ browser, base, evidence }) {
     // --- The second person finds how to connect from the shell's own AI button.
     const p = other.page;
     await p.goto(base + "/");
-    await p.getByRole("link", { name: "AI", exact: true }).click();
+    await p.getByRole("button", { name: "Talk with AI", exact: true }).click();
+    await p.getByRole("link", { name: "Connect your own AI", exact: true }).click();
     await p.waitForURL(/\/apps/, { timeout: 15000 }).catch(() => {});
     const address = await p.locator("[data-mcp-address]").innerText().catch(() => "");
     evidence.record(S, other.role, "the shell's AI button leads to how to connect their own AI, with the address", /\/mcp$/.test(address), address);

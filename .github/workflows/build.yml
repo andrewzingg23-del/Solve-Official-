@@ -1,11 +1,10 @@
 name: Build
 on:
-  # GitHub Actions runs only on pushes to main (post-merge). Per-PR checks run on
-  # Vercel (build command "npm test && npm run build"), to conserve GitHub Actions
-  # usage while account billing is constrained (2026-11-01).
+  # Verify this bounded staging integration before any merge.
   push:
     branches:
       - main
+      - codex/ai-staging-integration-20261111
     paths-ignore:
       - "**/*.md"
       - "docs/**"
@@ -47,3 +46,17 @@ jobs:
         run: npm run lint
       - name: Build
         run: npm run build
+      - name: Browser checks for staging integration
+        if: github.ref == 'refs/heads/codex/ai-staging-integration-20261111'
+        env:
+          CHROMIUM_PATH: /usr/bin/google-chrome
+        run: npm run test:product && npm run test:ai-ui
+      - name: Upload browser evidence
+        if: always() && github.ref == 'refs/heads/codex/ai-staging-integration-20261111'
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-ai-browser-evidence
+          path: |
+            test-results/product/*.png
+            test-results/ai-console/*.png
+          if-no-files-found: ignore

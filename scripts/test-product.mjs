@@ -55,7 +55,7 @@ try {
   assert.equal(await primary.getByRole("link", { name: "Space" }).getAttribute("aria-current"), "page");
   assert.ok(await page.getByRole("searchbox", { name: "Search your Spaces" }).isVisible(), "Search");
   assert.ok(await page.locator("summary", { hasText: "Add" }).isVisible(), "Add");
-  assert.ok(await page.getByRole("link", { name: "AI", exact: true }).isVisible(), "AI");
+  assert.ok(await page.getByRole("button", { name: "Talk with AI", exact: true }).isVisible(), "AI");
   assert.ok(await page.getByRole("link", { name: /Your Space is private/ }).isVisible(), "who can see your Space");
   assert.ok(await page.getByRole("heading", { level: 1, name: "Your Space" }).isVisible());
   for (const chip of ["Add people", "Connect apps", "Add to Space"]) assert.ok(await page.locator("main").getByText(chip, { exact: true }).isVisible(), chip);
@@ -109,7 +109,15 @@ try {
       const tabs = page.getByRole("navigation", { name: "Primary mobile", exact: true });
       assert.ok(await tabs.isVisible(), `${path} has mobile navigation at ${width}px`);
       // Every control in the top bar keeps its name when a narrow screen hides its words.
-      for (const name of ["AI", "Your ID"]) assert.ok(await page.getByRole("link", { name, exact: true }).first().isVisible(), `${name} is reachable by name at ${width}px`);
+      for (const name of ["Talk with AI", "Your ID"]) assert.ok(await page.getByRole(name === "Talk with AI" ? "button" : "link", { name, exact: true }).first().isVisible(), `${name} is reachable by name at ${width}px`);
+      await page.getByRole("button", { name: "Talk with AI", exact: true }).click();
+      const panel = page.getByRole("dialog", { name: "Talk with AI" });
+      assert.ok(await panel.isVisible());
+      assert.doesNotMatch(await panel.innerText(), /OpenAI GPT/);
+      assert.match(await panel.innerText(), /Sign in/);
+      assert.ok(await fits(page), `AI panel fits at ${width}px`);
+      await page.keyboard.press("Escape");
+      assert.equal(await page.getByRole("button", { name: "Talk with AI" }).evaluate(el => el === document.activeElement), true);
       const rows = new Set();
       for (const link of await tabs.getByRole("link").all()) {
         const b = await link.boundingBox();
