@@ -24,8 +24,9 @@ import { space } from "./scenarios/space.mjs";
 import { apps } from "./scenarios/apps.mjs";
 import { act } from "./scenarios/act.mjs";
 import { present } from "./scenarios/present.mjs";
+import { second } from "./scenarios/second.mjs";
 
-const SCENARIOS = { home, card, control, together, page, space, act, present, apps };
+const SCENARIOS = { home, card, control, together, page, space, act, present, apps, second };
 const args = process.argv.slice(2);
 const build = !args.includes("--no-build");
 const only = args.filter(a => !a.startsWith("--")).flatMap(a => a.split(","));

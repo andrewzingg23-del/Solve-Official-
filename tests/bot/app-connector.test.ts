@@ -79,6 +79,18 @@ it("disconnected, it can do nothing anywhere — and what it added is still the 
   assert.ok((await loadCreativeWorld(sam, pen.worldId)).artifacts.some(a => a.entityId === id), "the work stays in the person's Space");
 });
 
+it("a retried add is one piece, not two", async () => {
+  const { call, pen, sam } = await setup();
+  const first = await call("add_to_world", { world_id: pen.worldId, title: "Quote", body: "1,000 units at $2.10" });
+  const again = await call("add_to_world", { world_id: pen.worldId, title: "Quote", body: "1,000 units at $2.10" });
+  assert.equal(again.structuredContent!.artifact_id, first.structuredContent!.artifact_id);
+  const tagged = await call("add_to_world", { world_id: pen.worldId, title: "Note", body: "x", request_id: "r-1" });
+  const tagged2 = await call("add_to_world", { world_id: pen.worldId, title: "Note", body: "x", request_id: "r-1" });
+  assert.equal(tagged2.structuredContent!.artifact_id, tagged.structuredContent!.artifact_id);
+  const pieces = (await loadCreativeWorld(sam, pen.worldId)).artifacts.filter(a => a.title === "Quote" || a.title === "Note");
+  assert.equal(pieces.length, 2);
+});
+
 it("offers no tool that would pretend: no creating Spaces, publishing, paying or deleting", async () => {
   const { asTool } = await setup();
   const connector = createAppConnector({ app: asTool, clientId: TOOL, appUrl: "https://solve.test" });

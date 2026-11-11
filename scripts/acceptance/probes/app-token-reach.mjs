@@ -12,7 +12,8 @@ const browser = await chromium.launch({ executablePath: chromiumPath(), args: ["
 try {
   const owner = await persona(browser, base, "owner", VIEWPORTS.phone390, evidence, "probe");
   const secret = `${RUN} private diary`;
-  const worldId = await beginThing(owner.page, base, secret);
+  // A legacy deployment has the old home screen; the person's own private scope is enough to probe.
+  const worldId = await beginThing(owner.page, base, secret).catch(() => "");
   const reg = await fetch(`${STAGING.url}/auth/v1/oauth/clients/register`, { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ client_name: `[automated ${RUN}] probe app`, redirect_uris: [REDIRECT], token_endpoint_auth_method: "none", grant_types: ["authorization_code"], response_types: ["code"] }) }).then(r => r.json());
   const verifier = b64url(randomBytes(32)), challenge = b64url(createHash("sha256").update(verifier).digest());
@@ -26,7 +27,9 @@ try {
   const tok = await fetch(`${STAGING.url}/auth/v1/oauth/token`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ grant_type: "authorization_code", code, code_verifier: verifier, client_id: reg.client_id, redirect_uri: REDIRECT }) }).then(r => r.json());
   const app = kernelFor(tok.access_token);
-  const read = await app.rpc("read_world", { p_scope: `world:${worldId}` }).then(rows => rows, e => e);
+  const who = await app.rpc("whoami").then(r => r, e => e);
+  console.log(JSON.stringify({ whoami: who instanceof Error ? `refused: ${who.message}` : `answered as ${who[0]?.kind}` }));
+  const read = await app.rpc("read_world", { p_scope: worldId ? `world:${worldId}` : `actor:${owner.actorId}` }).then(rows => rows, e => e);
   const sawIt = Array.isArray(read) && read.some(r => r.title === secret);
   console.log(JSON.stringify({ connected: Boolean(tok.access_token), aiLetIntoThisSpace: "never (Off)",
     directKernelRead: Array.isArray(read) ? `returned ${read.length} records` : `refused: ${read.message}`, sawPrivateTitle: sawIt }));

@@ -9,6 +9,7 @@
 //     in the Space's history and the person can edit, keep or remove it;
 //   * what it adds lives in the person's Space and stays theirs after the app is disconnected;
 //   * no service key or other privileged credential is involved: the app's own token is the authority.
+import { createHash } from "node:crypto";
 import { KernelError, type Kernel } from "@/lib/kernel/client";
 import { createCreativeArtifact, loadCreativeWorld } from "@/lib/world/creative";
 
@@ -42,7 +43,8 @@ export const APP_TOOLS = [
   {
     name: "add_to_world", title: "Add a draft to a Space",
     description: "Adds a text piece to a Space this app may add to. It is labelled as coming from this app and stays the person's.",
-    inputSchema: { type: "object", properties: { world_id: { type: "string" }, title: { type: "string", maxLength: 160 }, body: { type: "string", maxLength: 7000 } }, required: ["world_id", "title"], additionalProperties: false },
+    inputSchema: { type: "object", properties: { world_id: { type: "string" }, title: { type: "string", maxLength: 160 }, body: { type: "string", maxLength: 7000 },
+      request_id: { type: "string", maxLength: 80, description: "Optional: the same id on a retry makes it one change. Without it, the same words from this app are one change." } }, required: ["world_id", "title"], additionalProperties: false },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
 ] as const;
@@ -97,8 +99,12 @@ export function createAppConnector(s: AppSession) {
       try {
         const { world } = await loadCreativeWorld(s.app, worldId);
         const me = await s.app.whoami();
+        // A retry after a dropped connection must not add the piece twice: the kernel replays a request
+        // it has seen (same actor, same key) instead of writing again.
+        const given = typeof args.request_id === "string" && /^[\w.:-]{1,80}$/.test(args.request_id) ? args.request_id : "";
+        const requestId = given || createHash("sha256").update([s.clientId, world.worldId, title, body].join("\u0000")).digest("hex").slice(0, 40);
         const id = await createCreativeArtifact(s.app, {
-          scope: world.scope, worldEntityId: world.entityId, requestId: crypto.randomUUID(),
+          scope: world.scope, worldEntityId: world.entityId, requestId,
           title, body: body || title, position: { x: 0, y: 0 }, via: { clientId: s.clientId, clientName: me.label },
         });
         return ok(`Added as a draft from ${inert(me.label)}: ${s.appUrl}/world/${world.worldId}`, { artifact_id: id, world_id: world.worldId });

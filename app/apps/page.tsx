@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { getUser, createClient } from "@/lib/supabase/server";
+import { getKernel } from "@/lib/kernel/server";
 import { PageHead } from "@/app/ui/page-head";
 import { Empty, listStyles } from "@/app/ui/list";
 import { ConnectedApps, type ConnectedApp } from "./connected";
@@ -15,9 +16,20 @@ export default async function AppsPage() {
   const user = await getUser();
   let apps: ConnectedApp[] | null = [];
   if (user) {
-    const listed = await (await createClient()).auth.oauth.listGrants().catch(() => null);
-    apps = listed && !listed.error && listed.data
-      ? listed.data.map(g => ({ clientId: g.client.id, name: g.client.name || "An app", since: g.granted_at }))
+    // What Supabase's OAuth server says the person approved, and what the kernel says each app may do.
+    const [listed, kernelApps] = await Promise.all([
+      (await createClient()).auth.oauth.listGrants().catch(() => null),
+      getKernel().then(k => k.myConnections()).catch(() => null),
+    ]);
+    apps = listed && !listed.error && listed.data && kernelApps
+      ? listed.data.map(g => {
+          const live = kernelApps.find(c => c.client_id === g.client.id && !c.disconnected_at);
+          const scopes = (live?.scopes ?? []) as { scope: string; capability: string }[];
+          const spaces = new Set(scopes.filter(x => x.scope.startsWith("world:")).map(x => x.scope));
+          const adds = new Set(scopes.filter(x => x.scope.startsWith("world:") && x.capability === "world.entity.write").map(x => x.scope));
+          return { clientId: g.client.id, name: live?.label || g.client.name || "An app", since: live?.connected_at ?? g.granted_at,
+            status: live ? "connected" as const : "reconnect" as const, spaces: spaces.size, adds: adds.size };
+        })
       : null;
   }
   const host = (await headers()).get("host") ?? "";

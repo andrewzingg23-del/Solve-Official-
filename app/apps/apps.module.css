@@ -3,3 +3,4 @@
 .reach li + li { border-top: 1px solid var(--line); }
 .address { font-family: var(--font-mono), ui-monospace, monospace; font-size: 14px; padding: 12px 14px; border-radius: 12px; background: var(--raised); overflow-wrap: anywhere; user-select: all; }
 .steps { display: flex; flex-direction: column; gap: 8px; padding-left: 20px; list-style: decimal; }
+.app { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
