@@ -71,6 +71,9 @@ All acceptance identities are automated fixtures, labelled `[automated <run>]` i
 | What you can reach, in plain words | **Verified automatically** | |
 | Take everything with you (export) | **Verified automatically** | The download is read back |
 | Identity recovery; claiming a guest's work on a second device | **Unbuilt** | Decided (scoped); nothing built |
+| A guest keeps their work when they sign in (new email) | **Built, never walked by a person** | Deployed 2026-11-11 and unit-tested including the attack case; no human has signed in as a guest with an unused address, so the live path is unproven. Founder chose to skip the walkthrough |
+| A guest signing in with an email that already has an account | **Refused, by design** | `updateUser` cannot attach a taken address. The person is told the cost and pointed at sharing instead; ownership never moves. The founder's own identity is split this way |
+| Moving a guest's Spaces and grants into an existing account | **Unbuilt** | Re-scoping across actors in an append-only kernel; touches identity and authority, so it needs its own slice and attack tests |
 
 ## Share and publish
 
@@ -82,8 +85,9 @@ All acceptance identities are automated fixtures, labelled `[automated <run>]` i
 
 ## What needs the founder
 
-1. **Staging service key for previews.** It exists only for the retired `claude/keen-cerf-tpd7io` branch. Add `SUPABASE_STAGING_SECRET_KEY` (the staging project's secret key) for Preview in Vercel; then rerun `node scripts/acceptance/run.mjs --base=<preview> apps`.
-2. **Staging Auth Site URL** sends people approving an app to that retired preview. Point it at this branch's preview (or a stable alias) in Supabase → Authentication → URL Configuration.
-3. **The real two-person test** (above). No automated run stands in for it.
-4. **Production:** nothing from this work is in production; every database change needs your approval.
-5. **Rotate** the production secret key pasted in chat on 2026-11-09.
+1. **Guest continuity is unproven live.** One deliberate run settles it: a fresh browser, type something so a guest owns work, then sign in with an address that has no account. Skipped on 2026-11-11 by the founder's choice; until someone walks it, it is built, not verified.
+2. **Staging service key for previews.** It exists only for the retired `claude/keen-cerf-tpd7io` branch. Add `SUPABASE_STAGING_SECRET_KEY` (the staging project's secret key) for Preview in Vercel; then rerun `node scripts/acceptance/run.mjs --base=<preview> apps`.
+3. **Staging Auth Site URL** sends people approving an app to that retired preview. Point it at this branch's preview (or a stable alias) in Supabase → Authentication → URL Configuration.
+4. **The real two-person test** (above). No automated run stands in for it.
+5. **Production:** nothing from this work is in production; every database change needs your approval.
+6. **Rotate** the production secret key pasted in chat on 2026-11-09.
