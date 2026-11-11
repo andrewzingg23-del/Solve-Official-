@@ -13,7 +13,7 @@ import type { ProjectCard } from "@/app/product/projects";
 import { custodyNotice, openWorldHref, openWorldLabel } from "@/lib/product/custody";
 import { useDeviceText, writeDeviceText } from "@/lib/client/device-storage";
 
-type AgentTurn = { role: "user" | "assistant"; content: string; kind: "appearance" | "conversation" };
+type AgentTurn = { role: "user" | "assistant"; content: string; kind: "appearance" | "conversation"; provider?: "openrouter" | "openai" };
 
 const APPEARANCE_KEY = "solve.space.appearance.v1";
 const APP_INTERESTS_KEY = "sov.optional-app-interests.v1";
@@ -65,6 +65,7 @@ export function PersonalSpace({
   const [undoAppearance, setUndoAppearance] = useState<SpaceAppearance | null>(null);
   const [styleBusy, setStyleBusy] = useState(false);
   const [chatBusy, setChatBusy] = useState(false);
+  const [chatProvider, setChatProvider] = useState<"openrouter" | "openai">("openrouter");
   const [agentTurns, setAgentTurns] = useState<AgentTurn[]>([]);
   const currentLook = proposal?.changes.length ? proposal.next : appearance;
   function appendTurn(turn: AgentTurn) {
@@ -103,6 +104,7 @@ export function PersonalSpace({
         body: JSON.stringify({
           message,
           botName,
+          provider: chatProvider,
           history: priorTurns.slice(-10).map(turn => ({
             role: turn.role,
             content: turn.content.slice(0, 2000),
@@ -116,7 +118,7 @@ export function PersonalSpace({
         const reason = typeof value.error === "string" ? value.error : "Your AI isn't available right now.";
         appendTurn({ role: "assistant", content: reason.slice(0, 280), kind: "conversation" });
       } else {
-        appendTurn({ role: "assistant", content: value.reply!.slice(0, 6000), kind: "conversation" });
+        appendTurn({ role: "assistant", content: value.reply!.slice(0, 6000), kind: "conversation", provider: chatProvider });
       }
     } catch {
       appendTurn({ role: "assistant", content: "I couldn't reach your AI. Your Space hasn't changed.", kind: "conversation" });
@@ -185,21 +187,28 @@ export function PersonalSpace({
       </header>
 
       <section className="sov-space-card sov-style-editor" aria-label="Customize your Space through natural language">
-        <div className="sov-space-title"><h2>Talk to {botName}</h2><span>Private · You approve changes</span></div>
+        <div className="sov-space-title"><h2>Talk to {chatProvider === "openai" ? "ChatGPT" : botName}</h2><span>Private · You approve changes</span></div>
         <p>Ask anything or tell your AI how to change the look of your Space. Appearance changes are previewed before you apply them.</p>
         <div className="sov-agent-transcript" aria-live="polite" aria-label="Your AI conversation">
           {agentTurns.length ? agentTurns.map((turn, index) => (
             <div key={index} className={"sov-agent-turn sov-agent-turn--" + turn.role}>
-              <small>{turn.role === "assistant" ? botName + (turn.kind === "appearance" ? " · Appearance" : "") : "You"}</small>
+              <small>{turn.role === "assistant" ? (turn.provider === "openai" ? "ChatGPT" : botName) + (turn.kind === "appearance" ? " · Appearance" : "") : "You"}</small>
               <p>{turn.content}</p>
             </div>
           )) : <p className="sov-agent-prompt">Try “Make SOLVE look like my Instagram” or “Make this feel like a vintage skate magazine.”</p>}
           {chatBusy ? <p className="sov-agent-waiting" role="status">Your AI is responding…</p> : null}
         </div>
+        <div className="sov-ai-provider">
+          <label htmlFor="solve-ai-provider">Assistant</label>
+          <select id="solve-ai-provider" aria-label="AI provider" value={chatProvider} onChange={event => setChatProvider(event.target.value === "openai" ? "openai" : "openrouter")} disabled={chatBusy || styleBusy}>
+            <option value="openrouter">Current AI</option>
+            <option value="openai">ChatGPT</option>
+          </select>
+        </div>
         <form className="sov-style-form" onSubmit={event => void sendAgentMessage(event)}>
           <label htmlFor="solve-style-request" className="sr-only">Talk to your AI</label>
           <div className="sov-style-input-row">
-            <input id="solve-style-request" name="message" value={styleText} onChange={event => setStyleText(event.target.value)} maxLength={700} autoComplete="off" placeholder={"Ask " + botName + " or change your Space…"} />
+            <input id="solve-style-request" name="message" value={styleText} onChange={event => setStyleText(event.target.value)} maxLength={700} autoComplete="off" placeholder={"Ask " + (chatProvider === "openai" ? "ChatGPT" : botName) + " or change your Space…"} />
             <button className="solve-button" type="submit" disabled={!styleText.trim() || styleBusy || chatBusy}>{chatBusy ? "Thinking…" : "Send"}</button>
           </div>
         </form>
