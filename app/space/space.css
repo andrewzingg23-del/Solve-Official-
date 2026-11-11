@@ -216,9 +216,3 @@
 .sov-agent-turn small { color:var(--solve-v-muted); font-size:10px; font-weight:600; display:block; margin-bottom:4px; }
 .sov-agent-turn p { font-size:12px; line-height:1.6; color:var(--solve-v-ink); white-space:pre-wrap; margin:0; }
 .sov-agent-waiting { font-size:11px; color:var(--solve-v-muted); margin:0 8px; }
-
-/* SOLVE native assistant provider picker: stays inside the existing AI card. */
-.sov-ai-provider { display:flex; gap:10px; align-items:center; margin-top:14px; flex-wrap:wrap; }
-.sov-ai-provider label { color:var(--solve-v-muted); font-size:12px; font-weight:600; }
-.sov-ai-provider select { appearance:auto; color:var(--solve-v-ink); background:var(--solve-v-glass); border:1px solid var(--solve-v-line); border-radius:999px; padding:8px 13px; font-size:12px; }
-.sov-ai-provider select:focus-visible { outline:2px solid var(--space-accent); outline-offset:2px; }
