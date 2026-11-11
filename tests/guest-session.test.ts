@@ -24,7 +24,9 @@ test('guest bootstrap preserves existing sessions and respects login gate, API b
     }}] });
     const path = join(dir,'proxy.mjs'); await writeFile(path, output.outputFiles[0].text);
     const {updateSession} = await import(pathToFileURL(path).href);
-    const request = (path='/') => ({method:'GET',nextUrl:{pathname:path},cookies:new Map()});
+    // A real browser opening a page. Anything without these headers is not a person arriving.
+    const request = (path='/',headers:Record<string,string>={'sec-fetch-mode':'navigate','accept':'text/html'}) =>
+      ({method:'GET',nextUrl:{pathname:path},cookies:new Map(),headers:new Map(Object.entries(headers))});
     const first = request(); const guest = await updateSession(first);
     assert.equal(guest.signedIn,true); assert.equal(fixture.signups,1); assert.equal(fixture.registrations,1);
     assert.equal(first.cookies.get('guest-cookie'),'private-token');
@@ -34,5 +36,23 @@ test('guest bootstrap preserves existing sessions and respects login gate, API b
     fixture.claims=false; fixture.required=true; await updateSession(request()); assert.equal(fixture.signups,1);
     fixture.required=false; await updateSession(request('/api/bot/chat')); await updateSession(request('/auth/callback')); assert.equal(fixture.signups,1);
     fixture.fail=true; assert.equal((await updateSession(request())).signedIn,false); assert.equal(fixture.registrations,2);
+    fixture.fail=false; fixture.signups=0;
+
+    // Only a person opening a page becomes a guest. An identity owns work and can hold a GitHub
+    // token, so nothing that merely looks may mint one — staging reached 725 guests against one
+    // account that way.
+    await updateSession(request('/',{'sec-fetch-mode':'cors','accept':'*/*'}));
+    assert.equal(fixture.signups,0,'a fetch from script is not a person arriving');
+    await updateSession(request('/',{'sec-fetch-mode':'no-cors','accept':'text/html'}));
+    assert.equal(fixture.signups,0,'nor is a prefetch or an embed, whatever it accepts');
+    await updateSession(request('/',{'accept':'*/*'}));
+    assert.equal(fixture.signups,0,'a scripted client sending no Sec-Fetch headers is not either');
+    await updateSession(request('/',{'user-agent':'curl/8.4.0'}));
+    assert.equal(fixture.signups,0,'an uptime check or a crawler gets the page and no identity');
+    // An older or unusual browser still asks for a page, and is still a person.
+    await updateSession(request('/',{'accept':'text/html,application/xhtml+xml'}));
+    assert.equal(fixture.signups,1,'a browser without Sec-Fetch headers is still someone arriving');
+    await updateSession(request('/'));
+    assert.equal(fixture.signups,2,'and a normal navigation always is');
   } finally { await rm(dir,{recursive:true,force:true}); }
 });

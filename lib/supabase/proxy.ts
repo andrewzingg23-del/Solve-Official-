@@ -37,7 +37,12 @@ export async function updateSession(request: NextRequest) {
     && path !== "/login" && !path.startsWith("/_next/")
     // Looking at someone's public page never creates an identity for the person looking.
     && !path.startsWith("/p/") && !path.startsWith("/s/")
-    && !/\.[a-z0-9]+$/i.test(path);
+    && !/\.[a-z0-9]+$/i.test(path)
+    // And only for a person actually opening a page. An identity is a real thing in the kernel —
+    // it owns work and can hold a GitHub token — so a crawler, a link preview, an uptime check or
+    // a scripted request must not mint one by looking (staging reached 725 guests against one
+    // account this way). A browser opening a page says so in these headers; nothing else does.
+    && isBrowserNavigation(request);
   if (!signedIn && !loginRequired() && guestPage) {
     const { data: guest, error } = await supabase.auth.signInAnonymously();
     signedIn = !error && Boolean(guest.session);
@@ -52,4 +57,21 @@ export async function updateSession(request: NextRequest) {
   }
   response.headers.set("Cache-Control", "private, no-store");
   return { response, signedIn };
+}
+
+/**
+ * A top-level page opening in a real browser.
+ *
+ * Every browser since 2020 sends `Sec-Fetch-Mode` on navigations, and it cannot be set by page
+ * script, so it is a cheap and honest signal. This is not a security boundary — it is refused
+ * capacity, not refused access: anything turned away here still gets the page, and a person whose
+ * browser is unusual can still become a guest from the browser itself (lib/supabase/become-guest.ts)
+ * or by doing something that needs an identity.
+ */
+function isBrowserNavigation(request: NextRequest): boolean {
+  // Absent reads as null from Headers and undefined from a plain map, so test for presence.
+  const mode = request.headers.get("sec-fetch-mode") || "";
+  if (mode) return mode === "navigate";
+  // No Sec-Fetch headers at all: only treat it as a person if it at least asks for a page.
+  return (request.headers.get("accept") || "").includes("text/html");
 }
