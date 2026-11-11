@@ -9,8 +9,6 @@
 // The World itself (its entities, canvas and history) is Codex's lib/world/creative.ts; this file
 // only decides who the bot is and what it was let into.
 import type { Kernel } from "@/lib/kernel/client";
-import { createCreativeArtifact, listCreativeWorlds, loadCreativeWorld, updateCreativeArtifact, type ArtifactVia, type CreativeWorld } from "@/lib/world/creative";
-import { cleanText } from "./memory";
 
 export type WorldAccess = "none" | "read" | "add";
 export const ACCESS_CAPABILITIES: Record<Exclude<WorldAccess, "none">, readonly string[]> = {
@@ -18,10 +16,8 @@ export const ACCESS_CAPABILITIES: Record<Exclude<WorldAccess, "none">, readonly 
   add: ["kernel.read", "world.entity.write", "kernel.evidence.attach"],
 };
 export const ACCESS_DAYS = 30;
-export const WORLD_LIMITS = { title: 160, body: 7000, perPerson: 50 } as const;
 
 export type BotGrant = { id: string; capability: string; scope: string; expiresAt: string | null };
-export type WorldWithAccess = CreativeWorld & { access: WorldAccess; url: string };
 
 export const worldScope = (worldId: string) => `world:${worldId}`;
 export const worldUrl = (appUrl: string, worldId: string) => `${appUrl}/world/${worldId}`;
@@ -74,57 +70,3 @@ export async function setBotAccess(
   }
   return input.access;
 }
-
-// The person's Worlds, each with what their bot may do there. For the person's own view (/bot).
-export async function worldsForBot(person: Kernel, botAgentId: string, appUrl = ""): Promise<WorldWithAccess[]> {
-  const worlds = await listCreativeWorlds(person);
-  return Promise.all(
-    worlds.map(async (w) => ({ ...w, access: accessFrom(await botGrantsIn(person, w.scope, botAgentId).catch(() => [])), url: worldUrl(appUrl, w.worldId) })),
-  );
-}
-
-// What a connected assistant sees: the Worlds the person can see and the Worlds the bot was let
-// into (someone else's included), with the bot's access from its own grants.
-export async function worldsForAssistant(person: Kernel, bot: Kernel, appUrl: string): Promise<WorldWithAccess[]> {
-  const [mine, botGrants, botWorlds] = await Promise.all([listCreativeWorlds(person), bot.myGrants(), listCreativeWorlds(bot)]);
-  const byId = new Map<string, CreativeWorld>();
-  for (const w of [...mine, ...botWorlds]) byId.set(w.worldId, w);
-  return [...byId.values()]
-    .map((w) => ({ ...w, access: accessFrom(botGrants.filter((g) => g.scope === w.scope)), url: worldUrl(appUrl, w.worldId) }))
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-}
-
-// Reads a World as the bot: only what the bot was let into, private entities withheld by the kernel.
-export async function readWorldAsBot(bot: Kernel, worldId: string) {
-  return loadCreativeWorld(bot, worldId);
-}
-
-// A spot on the canvas from the request itself, so a retried call writes exactly the same piece.
-function spotFor(requestId: string) {
-  let h = 2166136261;
-  for (let i = 0; i < requestId.length; i++) h = Math.imul(h ^ requestId.charCodeAt(i), 16777619) >>> 0;
-  return { x: 8 + (h % 84), y: 10 + ((h >>> 8) % 80) };
-}
-
-// Adds a text piece to a World as the bot, or revises one. The request id makes a retried call one
-// change, not two.
-export async function addToWorld(
-  bot: Kernel,
-  input: { worldId: string; title: unknown; body: unknown; artifactId?: string | null; via?: ArtifactVia },
-  requestId: string,
-): Promise<{ entityId: string; revised: boolean }> {
-  const title = cleanText(input.title, WORLD_LIMITS.title);
-  const body = typeof input.body === "string" ? cleanText(input.body, WORLD_LIMITS.body) : "";
-  if (!title) throw new WorldInputError("a piece needs a title");
-  const { world, artifacts } = await loadCreativeWorld(bot, input.worldId);
-  if (input.artifactId) {
-    const existing = artifacts.find((a) => a.entityId === input.artifactId);
-    if (!existing) throw new WorldInputError("no such piece in this World");
-    const entityId = await updateCreativeArtifact(bot, { scope: world.scope, entityId: existing.entityId, requestId, title, body, position: existing.position, via: input.via });
-    return { entityId, revised: true };
-  }
-  const entityId = await createCreativeArtifact(bot, { scope: world.scope, worldEntityId: world.entityId, requestId, title, body, position: spotFor(requestId), via: input.via });
-  return { entityId, revised: false };
-}
-
-export class WorldInputError extends Error {}

@@ -17,7 +17,6 @@ import {
   readAllMemories,
   readMemories,
 } from "../../lib/bot/memory";
-import { saveBot } from "../../lib/bot/store";
 import { anon, createKernelDb, service, sqlstate, user } from "../kernel/harness";
 
 const none = { client_id: null, client_name: null };
@@ -32,8 +31,10 @@ async function setting() {
   const ben = kernelClient(localSupabase(db, user("auth:erase-ben")));
   const anaId = await ana.register("Ana");
   await ben.register("Ben");
-  const bot = await saveBot(ana, { name: "Juno" }, "persona-erase-1");
-  return { db, ana, ben, anaId, bot };
+  // An AI companion's agent, as the kernel makes it (create_avatar): it may hold memory grants.
+  await ana.createAvatar({ type: "ai_companion", name: "Juno", relationship: "assist", seed: {}, representation: "abstract" });
+  const agentId = (await ana.myAvatars())[0].agent_id;
+  return { db, ana, ben, anaId, agentId };
 }
 
 it("seals each memory, and erasing it destroys its words for good", async () => {
@@ -61,8 +62,8 @@ it("seals each memory, and erasing it destroys its words for good", async () => 
 });
 
 it("lets only the recorder seal, only readers unseal, and only the owner erase", async () => {
-  const { db, ana, ben, anaId, bot } = await setting();
-  const agent = bot.avatar!.agent_id;
+  const { db, ana, ben, anaId, agentId } = await setting();
+  const agent = agentId;
   const asBot = kernelClient(localSupabase(db, service), { actAs: agent });
   await approveConnection(ana, anaId, agent, { clientId: "client-c", clientName: "Claude", mode: "remember" }, "erase-connect-1");
   const viaClaude = { client_id: "client-c", client_name: "Claude" };

@@ -160,8 +160,9 @@ export async function present({ browser, base, evidence }) {
     await highlight.locator("[data-revise-text]").fill("Flights on the 4th, back on the 12th");
     await highlight.locator("[data-revise-save]").click();
     await family.page.locator("[data-revise]").waitFor({ state: "detached", timeout: 20000 }).catch(() => {});
-    evidence.record(S, family.role, "can edit a highlighted note in place, and it stays highlighted",
-      (await family.page.locator("[data-highlight]").first().innerText()).includes("back on the 12th"));
+    const stays = await family.page.locator("[data-highlight]", { hasText: "back on the 12th" }).waitFor({ timeout: 15000 }).then(() => true, () => false);
+    const inKernel = (await owner.kernel.rpc("read_world", { p_scope: `world:${worldId}` }).catch(() => [])).some(r => r.attributes?.content === "Flights on the 4th, back on the 12th");
+    evidence.record(S, family.role, "can edit a highlighted note in place, and it stays highlighted", stays && inKernel, `shown ${stays}, in the kernel ${inKernel}`);
     const kept = await presentationOf(owner.kernel, worldId);
     evidence.record(S, owner.role, "editing content doesn't touch the presentation record", kept?.version === 3);
     await family.page.screenshot({ path: `${evidence.dir}/present-04-family-320.png` });

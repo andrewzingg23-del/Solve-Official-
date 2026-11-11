@@ -11,7 +11,9 @@
 //   * no service key or other privileged credential is involved: the app's own token is the authority.
 import { KernelError, type Kernel } from "@/lib/kernel/client";
 import { createCreativeArtifact, loadCreativeWorld } from "@/lib/world/creative";
-import { PROTOCOL_VERSIONS } from "./connector";
+
+// MCP versions this connector speaks, newest first.
+export const PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"] as const;
 
 export type AppSession = { app: Kernel; clientId: string; appUrl: string };
 

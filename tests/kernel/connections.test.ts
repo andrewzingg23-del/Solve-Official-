@@ -23,20 +23,17 @@ async function setup() {
   return { db, ana, anaId, shared, secret, asApp, asAna };
 }
 
-it("an app connected before SOLVE Connect can read, and cannot change anything at all", async () => {
-  const { asApp, ana, anaId, shared } = await setup();
-  const [me] = await asApp()("whoami");
-  assert.equal(me.actor_id, anaId, "it still reads as the person (the stated, remaining exposure)");
-  assert.ok((await asApp()("read_world", { p_scope: shared.scope })).length > 0);
-  const before = await ana.readEvents(shared.scope, { limit: 500 });
+it("an app connected before SOLVE Connect is refused everything — it can't read a Space it was never let into", async () => {
+  const { asApp, ana, shared, secret } = await setup();
   const refused = (p: Promise<unknown>) => assert.rejects(p, sqlstate("KA002"));
+  await refused(asApp()("whoami"));
+  await refused(asApp()("read_world", { p_scope: secret.scope }));
+  await refused(asApp()("read_world", { p_scope: shared.scope }));
+  const before = await ana.readEvents(shared.scope, { limit: 500 });
   await refused(asApp()("upsert_entity", { p_kind: "document", p_scope: shared.scope, p_title: "x", p_summary: "", p_attributes: {}, p_visibility: "members", p_idempotency_key: "w1" }));
-  await refused(asApp()("issue_grant", { p_grantee: anaId, p_capability: "kernel.read", p_scope: shared.scope }));
-  await refused(asApp()("create_world_invitation", { p_world_id: shared.worldId, p_token_hash: "c".repeat(64), p_role: "editor", p_request_id: "w2" }));
-  await refused(asApp()("set_person_label", { p_label: "Someone Else", p_request_id: randomUUID() }));
   await refused(asApp()("connect_app", { p_client_id: "another-app", p_label: "x" }));
-  await refused(asApp()("record_event", { p_type: "app.note", p_scope: shared.scope, p_payload: {}, p_idempotency_key: "w4" }));
   assert.equal((await ana.readEvents(shared.scope, { limit: 500 })).length, before.length, "nothing was appended");
+  assert.ok((await ana.whoami()).actor_id, "the person's own session is untouched");
 });
 
 it("an app whose session was revoked is refused at once, before its token expires", async () => {
@@ -45,6 +42,8 @@ it("an app whose session was revoked is refused at once, before its token expire
   await db.owner("create table if not exists auth.sessions (id uuid primary key)");
   const live = randomUUID(), revoked = randomUUID();
   await db.owner("insert into auth.sessions (id) values ($1)", [live]);
+  const agent = (await db.rpc(user("auth:conn-ana"), "connect_app", { p_client_id: CLAUDE, p_label: "Claude" }))[0].connect_app as string;
+  await ana.issueGrant({ grantee: agent, capability: "kernel.read", scope: shared.scope, idempotencyKey: "read-shared" });
   const call = (session: string) => db.rpc(app("auth:conn-ana", CLAUDE, session), "read_world", { p_scope: shared.scope });
   assert.ok((await call(live)).length > 0);
   await assert.rejects(call(revoked), sqlstate("KA001"), "a session Supabase deleted is refused");
@@ -89,8 +88,7 @@ it("given one thing, the app can read and add to that thing — and nothing else
   await assert.rejects(asApp()("connect_app", { p_client_id: "another-app" }), sqlstate("KA002"), "it cannot connect other apps");
   await assert.rejects(asApp()("disconnect_app", { p_client_id: "another-app" }), sqlstate("KA002"));
   await assert.rejects(asApp()("my_connections"), sqlstate("KA002"));
-  const [other] = await asApp("some-other-client")("whoami");
-  assert.notEqual(other.actor_id, agentId, "a different app holding the same person's token is not this app");
+  await assert.rejects(asApp("some-other-client")("whoami"), sqlstate("KA002"), "a different app holding the same person's token is not this app — and, never connected, is refused");
   await assert.rejects(asApp("some-other-client")("upsert_entity", { p_kind: "document", p_scope: shared.scope, p_title: "x", p_summary: "",
     p_attributes: {}, p_visibility: "members", p_idempotency_key: "other-app" }), sqlstate("KA002"), "and, never connected the new way, it can change nothing");
 });

@@ -1,11 +1,13 @@
 import "server-only";
 
-// Verifies a connector token with Supabase Auth and builds the two kernel sessions the connector
-// uses: as the person (their own OAuth token) and as their bot (the service key, acting as the bot
-// agent; null when this deployment has no service key, so the bot cannot write).
+// Verifies a connector token with Supabase Auth. Only an app connected as itself is served: the
+// kernel resolves its token to the app's own agent (20261110070000), and that token is the only
+// authority the connector uses — no service key, no acting as anyone else. Any other token (an app
+// connected before per-app agents, or a person's own session) gets 401, which sends the client back
+// through sign-in and consent, where it is connected as itself (20261111000000).
 import { createClient } from "@supabase/supabase-js";
 import { kernelClient } from "@/lib/kernel/client";
-import { isSupabaseConfigured, serviceKey, supabasePublishableKey, supabaseUrl } from "@/lib/supabase/config";
+import { isSupabaseConfigured, supabasePublishableKey, supabaseUrl } from "@/lib/supabase/config";
 import type { McpAuth } from "./mcp-http";
 
 const noSession = { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } as const;
@@ -22,22 +24,12 @@ function clientIdOf(token: string): string | null {
 
 export async function authenticateConnector(token: string): Promise<McpAuth | null> {
   if (!isSupabaseConfigured) return null;
-  const asPerson = createClient(supabaseUrl, supabasePublishableKey, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: noSession });
-  const { data, error } = await asPerson.auth.getUser(token);
+  const asApp = createClient(supabaseUrl, supabasePublishableKey, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: noSession });
+  const { data, error } = await asApp.auth.getUser(token);
   if (error || !data.user) return null;
-  // Only tokens Sovereign issued to an OAuth client (a connected assistant) open the connector; an
-  // ordinary app session cannot be replayed here.
   const clientId = clientIdOf(token);
   if (!clientId) return null;
-  // Connected as itself: the kernel resolves this token to the app's own agent. Use nothing else.
-  const asApp = kernelClient(asPerson);
-  const me = await asApp.whoami().catch(() => null);
-  if (me?.kind === "agent") return { clientId, person: asApp, botAs: null, asApp };
-  const secret = serviceKey();
-  const service = secret ? createClient(supabaseUrl, secret, { auth: noSession }) : null;
-  return {
-    clientId,
-    person: kernelClient(asPerson),
-    botAs: service ? (agentId: string) => kernelClient(service, { actAs: agentId }) : null,
-  };
+  const app = kernelClient(asApp);
+  const me = await app.whoami().catch(() => null);
+  return me?.kind === "agent" ? { clientId, app } : null;
 }

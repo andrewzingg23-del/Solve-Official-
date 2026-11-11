@@ -16,7 +16,6 @@ import {
   revokeConnection,
   searchMemories,
 } from "../../lib/bot/memory";
-import { saveBot } from "../../lib/bot/store";
 import { createKernelDb, user } from "../kernel/harness";
 
 it("cleans what it is asked to remember", () => {
@@ -34,7 +33,9 @@ it("hides forgotten memories, searches by words, and honors the latest connectio
   const db = await createKernelDb();
   const ana = kernelClient(localSupabase(db, user("auth:mem-ana")));
   const anaId = await ana.register("Ana");
-  const bot = await saveBot(ana, { name: "Juno" }, "persona-request-9");
+  // An AI companion's agent, as the kernel makes it (create_avatar): it may hold memory grants.
+  await ana.createAvatar({ type: "ai_companion", name: "Juno", relationship: "assist", seed: {}, representation: "abstract" });
+  const agentId = (await ana.myAvatars())[0].agent_id;
   const none = { client_id: null, client_name: null };
 
   const lisbon = await noteMemory(ana, anaId, { text: "Planning a trip to Lisbon in May.", source: { kind: "note", title: "Trips" } }, none);
@@ -47,7 +48,7 @@ it("hides forgotten memories, searches by words, and honors the latest connectio
   const left = await readMemories(ana, anaId);
   assert.deepEqual(left.map((m) => m.text), ["Lisbon hotel shortlist: Alfama, Baixa.", "Allergic to peanuts."], "forgotten everywhere, newest first; forgetting twice is one record");
 
-  const agent = bot.avatar!.agent_id;
+  const agent = agentId;
   await approveConnection(ana, anaId, agent, { clientId: "client-a", clientName: "Claude", mode: "read" }, "c-1");
   await approveConnection(ana, anaId, agent, { clientId: "client-b", clientName: "ChatGPT", mode: "remember" }, "c-2");
   await approveConnection(ana, anaId, agent, { clientId: "client-a", clientName: "Claude", mode: "remember" }, "c-3");
