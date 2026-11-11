@@ -13,8 +13,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { screenFromPath } from "@/lib/product/screen-context";
 import { CHAT_LIMITS } from "@/lib/bot/chat";
+import { CHAT_PROVIDER_OPTIONS, type ChatProvider } from "@/lib/bot/provider-choice";
 
-type Turn = { role: "user" | "assistant"; content: string };
+type Turn = { role: "user" | "assistant"; content: string; provider?: ChatProvider };
 
 const HISTORY_SENT = CHAT_LIMITS.history;
 
@@ -23,6 +24,7 @@ export function Console({ botName }: { botName: string }) {
   const [open, setOpen] = useState(false);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
+  const [provider, setProvider] = useState<ChatProvider>("openrouter");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -58,13 +60,14 @@ export function Console({ botName }: { botName: string }) {
     setDraft("");
     setError(null);
     setBusy(true);
-    const history = turns.slice(-HISTORY_SENT);
+    const selectedProvider = provider;
+    const history = turns.slice(-HISTORY_SENT).map(({ role, content }) => ({ role, content }));
     setTurns((prev) => [...prev, { role: "user", content: message }]);
     try {
       const res = await fetch("/api/bot/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, botName, history, screen }),
+        body: JSON.stringify({ message, botName, history, screen, provider: selectedProvider }),
       });
       const data = (await res.json().catch(() => null)) as
         | { reply?: string; error?: string }
@@ -73,14 +76,14 @@ export function Console({ botName }: { botName: string }) {
         setError(data?.error || "That didn't go through. Try again.");
         return;
       }
-      setTurns((prev) => [...prev, { role: "assistant", content: data.reply! }]);
+      setTurns((prev) => [...prev, { role: "assistant", content: data.reply!, provider: selectedProvider }]);
     } catch {
       setError("That didn't go through. Try again.");
     } finally {
       setBusy(false);
       inputRef.current?.focus();
     }
-  }, [draft, busy, turns, botName, screen]);
+  }, [draft, busy, turns, botName, screen, provider]);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -123,6 +126,18 @@ export function Console({ botName }: { botName: string }) {
         </button>
       </header>
 
+      <div className="solve-console-provider-choice">
+        <label htmlFor="solve-console-provider">AI engine</label>
+        <select
+          id="solve-console-provider"
+          value={provider}
+          onChange={(event) => setProvider(event.target.value === "openai" ? "openai" : "openrouter")}
+          disabled={busy}
+          aria-label="AI engine"
+        >
+          {CHAT_PROVIDER_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+        </select>
+      </div>
       <div className="solve-console-log" ref={logRef} role="log" aria-live="polite">
         {turns.length === 0 && (
           <p className="solve-console-empty">
@@ -132,6 +147,9 @@ export function Console({ botName }: { botName: string }) {
         )}
         {turns.map((turn, i) => (
           <p key={i} className={turn.role === "user" ? "solve-console-you" : "solve-console-them"}>
+            {turn.role === "assistant" && turn.provider ? (
+              <span className="solve-console-provider-label">{turn.provider === "openai" ? "OpenAI · GPT" : "Current AI"}</span>
+            ) : null}
             {turn.content}
           </p>
         ))}
