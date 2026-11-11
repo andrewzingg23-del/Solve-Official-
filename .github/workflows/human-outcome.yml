@@ -1,0 +1,97 @@
+name: Human outcome
+on:
+  # A real person records what they observed on an exact Vercel preview commit.
+  # Workflow dispatch is available after this workflow reaches the default branch.
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number tested"
+        required: true
+        type: string
+      commit_sha:
+        description: "Exact 40-character PR head SHA tested"
+        required: true
+        type: string
+      preview_url:
+        description: "Exact non-production Vercel preview URL tested"
+        required: true
+        type: string
+      outcome:
+        description: "Observed outcome"
+        required: true
+        type: choice
+        options:
+          - passed
+          - failed
+      observations:
+        description: "What a real human actually did and saw (minimum 20 characters)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+  statuses: write
+
+jobs:
+  record:
+    name: Record founder-observed user outcome
+    if: github.actor == 'andrewzingg23-del'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate exact PR head, deployed commit and non-production URL
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          TESTED_SHA: ${{ inputs.commit_sha }}
+          PREVIEW_URL: ${{ inputs.preview_url }}
+          OUTCOME: ${{ inputs.outcome }}
+          OBSERVATIONS: ${{ inputs.observations }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$PR_NUMBER" =~ ^[0-9]+$ ]] || { echo "Invalid PR number"; exit 1; }
+          [[ "$TESTED_SHA" =~ ^[a-fA-F0-9]{40}$ ]] || { echo "Invalid commit SHA"; exit 1; }
+          [[ "${#OBSERVATIONS}" -ge 20 ]] || { echo "Specific human observations are required"; exit 1; }
+          # This is a *manual attestation*, not an automated UX result.
+          # Refuse if the PR has moved since the human inspected the preview.
+          actual_sha="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.head.sha')"
+          [[ "$actual_sha" == "$TESTED_SHA" ]] || { echo "PR moved: retest the current head"; exit 1; }
+          PREVIEW_URL="$PREVIEW_URL" node -e '
+            const u = new URL(process.env.PREVIEW_URL);
+            if (u.protocol !== "https:" || !u.hostname.endsWith(".vercel.app") ||
+                u.username || u.password || u.port || u.search || u.hash ||
+                !u.hostname.startsWith("solve-") || u.hostname === "solve-sage.vercel.app")
+              throw Error("Use the exact non-production solve-*.vercel.app preview URL");
+          '
+          vercel_ok="$(gh api "repos/$GITHUB_REPOSITORY/commits/$TESTED_SHA/status" --jq '[.statuses[] | select(.context == "Vercel" and .state == "success")] | length')"
+          [[ "$vercel_ok" -gt 0 ]] || { echo "No successful Vercel deployment on this SHA"; exit 1; }
+          {
+            echo "### Real-person acceptance"
+            echo "PR: #$PR_NUMBER"
+            echo "Exact SHA: $TESTED_SHA"
+            echo "Preview URL: $PREVIEW_URL"
+            echo "Result: $OUTCOME"
+            echo "These are founder-reported observations, not automated proof:"
+            printf '%s\n' "$OBSERVATIONS"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish the manual acceptance commit status
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TESTED_SHA: ${{ inputs.commit_sha }}
+          OUTCOME: ${{ inputs.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          state=failure
+          description="Founder-reported human outcome: failed"
+          if [[ "$OUTCOME" == "passed" ]]; then
+            state=success
+            description="Founder-reported human outcome: passed"
+          fi
+          gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$TESTED_SHA" \
+            -f state="$state" \
+            -f context="human-outcome/verified" \
+            -f description="$description" \
+            -f target_url="https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
