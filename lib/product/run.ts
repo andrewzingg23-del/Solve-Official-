@@ -13,7 +13,12 @@ import { createHash } from "node:crypto";
 import { KernelError, type Kernel, type Task } from "@/lib/kernel/client";
 import { loadCreativeWorld } from "@/lib/world/creative";
 
-/** A provider adapter: one real operation, its input check, and how its result becomes a resource. */
+/**
+ * A provider adapter: one real operation, its input check, and how its result becomes a resource.
+ * Kernel idempotency covers Solve's own records, not the provider's side effects: an adapter that
+ * writes outside Solve must use the provider's idempotency key or check the provider's state before
+ * a retry (docs/architecture/2026-11-10-reusable-foundation.md §10). Read-only adapters are safe to retry.
+ */
 export type Adapter<In, Out> = {
   id: string;                         // "link.capture"
   title: (input: In) => string;       // what the task is called in the Space's history

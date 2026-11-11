@@ -9,7 +9,7 @@ import { loaded, phonePhoto } from "./photos.mjs";
 const S = "space";
 
 export async function space({ browser, base, evidence }) {
-  const owner = await persona(browser, base, "owner", VIEWPORTS.phone390, evidence, S);
+  const owner = await persona(browser, base, "owner", VIEWPORTS.phone390, evidence, S, { fresh: true }); // its Space must start unshared
   const ctx = await browser.newContext({ viewport: VIEWPORTS.phone390, reducedMotion: "reduce" });
   const stranger = { role: "stranger", context: ctx, page: await ctx.newPage(), errors: [] };
   stranger.page.on("pageerror", e => stranger.errors.push(e.message));

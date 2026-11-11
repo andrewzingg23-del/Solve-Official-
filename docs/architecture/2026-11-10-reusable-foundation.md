@@ -159,3 +159,20 @@ rule). Edit Space is next (§5), and builds on the same contract.
 **Reuses:** `updateCreativeArtifact` / `update_document_version`, `loadCreativeWorld`, the Space page,
 grants and invitations, `read_page`, the acceptance harness. **New code:** the contract
 (`lib/product/capabilities.ts`), one server action, one inline editor, and an acceptance scenario.
+
+## 10. The run lifecycle and external side effects (2026-11-11)
+
+A capability run is a kernel task (`lib/product/run.ts`). What that guarantees, and what it doesn't:
+
+| Concern | Guaranteed by | Limit |
+|---|---|---|
+| The same request twice makes one task and one resource | kernel idempotency keys (`create_task`, `upsert_entity`) | Solve's own records only |
+| Authority is checked at claim and at every later step | `transition_task` re-runs `decide` | an app switched Off is stopped at the next step, not mid-call to a provider |
+| A transient failure is retried; a final one is recorded with its reason | the adapter's `transient()` and the task's `failed` state | three attempts, then the person sees why |
+| What was received is fingerprinted | `artifact` evidence (SHA-256 + source URI) | it proves what Solve received, not that the content is true |
+
+**External side effects are not covered by kernel idempotency.** If a provider acts and the connection drops before Solve records the result, a retry could act twice. So:
+
+- **Reads** (`link.capture`, reading a repository) are safe to retry.
+- **Writes** must use the provider's own idempotency key where it has one. Where it doesn't, the adapter checks the provider's state before retrying, and the task moves to `needs_reconciliation` until that check settles it.
+- An external action is recorded as the provider confirmed it. Solve never claims it can stop or undo something already done elsewhere; reversal, where the provider supports it, is a separate, explicit action.

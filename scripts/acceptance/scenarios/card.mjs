@@ -32,7 +32,7 @@ async function storedLook(kernel, actorId) {
 }
 
 export async function card({ browser, base, evidence }) {
-  const owner = await persona(browser, base, "card-owner", VIEWPORTS.phone390, evidence, S);
+  const owner = await persona(browser, base, "card-owner", VIEWPORTS.phone390, evidence, S, { fresh: true }); // its first look must be Base
   const other = await persona(browser, base, "another-person", VIEWPORTS.desktop, evidence, S);
   try {
     if (!owner.kernel || !other.kernel) return;

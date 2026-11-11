@@ -10,7 +10,7 @@
 // labelled "[automated]" in the kernel where the kernel allows it, and everything they write
 // starts with the run's marker, so no fixture can be mistaken for genuine human activity.
 
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { createClient } from "@supabase/supabase-js";
@@ -125,15 +125,58 @@ export async function sessionOf(context) {
 // ---------------------------------------------------------------------------------------------
 // A persona: an independent browser context, so cookies, storage and identity are fully separate.
 
-export async function persona(browser, base, role, viewport, evidence, scenario) {
+// ---------------------------------------------------------------------------------------------
+// Reusable fixtures. A scenario's people are real staging identities, created once and then restored
+// on later runs through Supabase's ordinary refresh-token exchange — the same path a browser uses —
+// instead of a new anonymous sign-up per person per run, which is what exhausted staging's guest
+// sign-in limit. Nothing about authentication is weakened: the identity, its session and the kernel
+// checks are the real ones. Refresh tokens stay in an ignored local folder; each is keyed by
+// scenario and role, so scenarios never share a person. ACCEPTANCE_FRESH=1, or { fresh: true } for a
+// check that needs a genuinely new person, makes a new one.
+
+const FIXTURES = join("test-results", "acceptance", ".identities");
+const fixtureFile = key => join(FIXTURES, `${key.replace(/[^a-z0-9-]/gi, "_")}.json`);
+const COOKIE_CHUNK = 3180; // @supabase/ssr's chunk size
+
+/** Put a session in a browser context exactly as @supabase/ssr stores it. */
+async function setSession(context, base, session) {
+  const name = `sb-${STAGING.ref}-auth-token`;
+  const value = "base64-" + Buffer.from(JSON.stringify(session)).toString("base64url");
+  const url = new URL(base);
+  const cookie = (n, v) => ({ name: n, value: v, domain: url.hostname, path: "/", httpOnly: false, secure: url.protocol === "https:", sameSite: "Lax" });
+  const chunks = value.length <= COOKIE_CHUNK ? [[name, value]] : Array.from({ length: Math.ceil(value.length / COOKIE_CHUNK) }, (_, i) => [`${name}.${i}`, value.slice(i * COOKIE_CHUNK, (i + 1) * COOKIE_CHUNK)]);
+  await context.addCookies(chunks.map(([n, v]) => cookie(n, v)));
+}
+
+async function restoreFixture(context, base, key) {
+  if (process.env.ACCEPTANCE_FRESH === "1" || !existsSync(fixtureFile(key))) return null;
+  const { refresh_token } = JSON.parse(readFileSync(fixtureFile(key), "utf8"));
+  const sb = createClient(STAGING.url, STAGING.publishableKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { data, error } = await sb.auth.refreshSession({ refresh_token });
+  if (error || !data.session) return null;
+  writeFileSync(fixtureFile(key), JSON.stringify({ refresh_token: data.session.refresh_token }));
+  await setSession(context, base, data.session);
+  return data.session;
+}
+
+function keepFixture(key, session) {
+  if (!session?.refresh_token) return;
+  mkdirSync(FIXTURES, { recursive: true });
+  writeFileSync(fixtureFile(key), JSON.stringify({ refresh_token: session.refresh_token }));
+}
+
+export async function persona(browser, base, role, viewport, evidence, scenario, { fresh = false } = {}) {
   const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));
+  const key = `${scenario}-${role}`;
+  const restored = fresh ? null : await restoreFixture(context, base, key).catch(() => null);
   await page.goto(base + "/");
   // The proxy gives every visitor an anonymous identity and registers it with the kernel.
   const session = await sessionOf(context);
-  const who = { role, context, page, errors, session, kernel: null, actorId: null };
+  if (!restored && !fresh) keepFixture(key, session);
+  const who = { role, context, page, errors, session, kernel: null, actorId: null, reused: Boolean(restored), fixture: fresh ? null : key };
   if (!evidence.record(scenario, role, "is given an identity on first visit, with no sign-up", Boolean(session?.access_token),
     "no Supabase session cookie after visiting Home")) return who;
   who.kernel = kernelFor(session.access_token);
@@ -157,7 +200,11 @@ export async function persona(browser, base, role, viewport, evidence, scenario)
 }
 
 export async function close(...personas) {
-  for (const p of personas) await p?.context?.close().catch(() => {});
+  for (const p of personas) {
+    // Keep the newest session: the browser may have rotated the refresh token during the run.
+    if (p?.fixture && p.context) keepFixture(p.fixture, await sessionOf(p.context).catch(() => null));
+    await p?.context?.close().catch(() => {});
+  }
 }
 
 /** Our words, which a person should never see on their own thing (DECISIONS.md 2026-11-09). */
