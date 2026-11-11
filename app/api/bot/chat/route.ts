@@ -20,6 +20,7 @@ import {
   buildChatCompletionBody,
   completeChat,
 } from "@/lib/bot/openrouter";
+import { chargeSpend, checkSpend, spentMessage, type SpendMeter } from "@/lib/bot/meter";
 import {
   buildChatSystemPrompt,
   estimateCostUsd,
@@ -54,12 +55,11 @@ export async function POST(request: Request) {
   } catch {
     return json({ error: "Send a valid JSON request." }, 400);
   }
-  // Provider choice is allowlisted. Neither model IDs nor endpoints come from the browser.
+  // Only supported provider names are accepted; model IDs and credentials are server-owned.
   const selected = body && typeof body === "object" && !Array.isArray(body)
     ? selectChatProvider((body as Record<string, unknown>).provider)
     : null;
   if (!selected) return json({ error: "Choose a supported AI provider." }, 422);
-  // Only signed-in identities may use this additional paid provider.
   if (selected === "openai" && (!user || user.is_anonymous))
     return json({ error: "Sign in before using OpenAI in SOLVE." }, 401);
 
@@ -96,6 +96,19 @@ export async function POST(request: Request) {
     }
   }
 
+  // Two meters, on purpose. The durable one (kernel_api.read_ai_spend, via
+  // lib/bot/meter.ts) is shared across instances and survives a restart; it is
+  // the one that will still be right when a turn can run tools. The in-process
+  // one stays as the floor: it is all a guest has (anonymous sessions cannot
+  // use the kernel) and it still catches a burst inside one instance.
+  // A meter that cannot be read never locks the person out — it degrades to
+  // the process limiter below.
+  let meter: SpendMeter | null = null;
+  if (user && !user.is_anonymous) {
+    meter = await getKernel().catch(() => null);
+    const verdict = await checkSpend(meter);
+    if (verdict.blocked) return json({ error: spentMessage(verdict) }, 429);
+  }
   if (spendBlocked(limiterKey))
     return json({ error: "Hourly token budget spent — back in a bit." }, 429);
 
@@ -165,12 +178,16 @@ export async function POST(request: Request) {
       passport,
       screen: chat.screen,
     }).text;
-    // Both providers receive the same approved, bounded SOLVE context and history.
-    // This route remains conversational: no model gets direct mutation tools.
+    // Both providers receive the same bounded, permissioned SOLVE context.
+    // This conversational route does not grant any model direct write tools.
     const completion = selected === "openai"
       ? await completeOpenAIChat(apiKey, buildOpenAIResponsesBody({ model, system, history: chat.history, message: chat.message }))
       : await completeChat(apiKey, buildChatCompletionBody({ model, system, history: chat.history, message: chat.message }));
-    recordSpend(limiterKey, completion.inputTokens + completion.outputTokens);
+    const spent = completion.inputTokens + completion.outputTokens;
+    recordSpend(limiterKey, spent);
+    // Charge the durable meter too. Never fatal: the person already paid for
+    // this turn, so a meter failure must not swallow their answer.
+    await chargeSpend(meter, { tokens: spent, kind: "chat" });
     return json({
       reply: completion.reply,
       wayEventId,
@@ -181,7 +198,6 @@ export async function POST(request: Request) {
         tier,
         inputTokens: completion.inputTokens,
         outputTokens: completion.outputTokens,
-        // Do not apply OpenRouter pricing to an OpenAI API model.
         estimatedCostUsd: selected === "openai" ? null : estimateCostUsd(model, completion.inputTokens, completion.outputTokens),
         tokensSpentThisHour: tokensSpentThisHour(limiterKey),
       },
