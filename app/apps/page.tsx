@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { headers } from "next/headers";
 import { getUser, createClient } from "@/lib/supabase/server";
 import { getKernel } from "@/lib/kernel/server";
@@ -8,6 +9,7 @@ import { ConnectedApps, type ConnectedApp } from "./connected";
 import { GithubTool, type ToolState } from "./tools";
 import { githubConfig } from "@/lib/product/providers/github";
 import { providerScope, readProvider } from "@/lib/product/credentials";
+import { custodyOf, connectionNotice } from "@/lib/product/custody";
 import styles from "./apps.module.css";
 
 export const metadata: Metadata = { title: "Apps · Solve" };
@@ -49,11 +51,20 @@ export default async function AppsPage() {
       }
     }
   }
+  // Who these connections belong to. A guest's belong to this browser alone, and saying so here is
+  // the difference between a confusing fallback and an understandable one.
+  const custody = custodyOf(user?.id ?? null, Boolean(user && !user.is_anonymous));
   const host = (await headers()).get("host") ?? "";
   const address = host ? `${host.startsWith("localhost") ? "http" : "https"}://${host}/mcp` : "/mcp";
 
   return <div>
     <PageHead label="Apps" title="Apps">Bring the tools and the AI you already use into your Space.</PageHead>
+
+    <div className={styles.custody} data-custody={custody}>
+      <p className="s-small">{connectionNotice(custody)}</p>
+      {custody === "durable" ? null
+        : <Link href="/login?next=%2Fapps" className="s-button" data-variant="quiet" data-custody-signin>Sign in</Link>}
+    </div>
 
     <section className={listStyles.section} aria-labelledby="connected">
       <h2 id="connected">Connected</h2>

@@ -29,3 +29,21 @@ export function custodyNotice(custody: Custody): string {
   }
 }
 
+
+/**
+ * What the person is told on Apps about who the things they connect there belong to.
+ *
+ * A guest identity lives in one browser. A real run (BUILD-STREAM.md, 2026-11-11) connected GitHub
+ * in one browser while the Space belonged to the guest in another: the product behaved honestly but
+ * never said why, so the person had no way to understand it. This is where it says why.
+ */
+export function connectionNotice(custody: Custody): string {
+  switch (custody) {
+    case "durable":
+      return "Signed in. Apps and tools you connect here are reachable on every device you sign in on.";
+    case "browser":
+      return "You're a guest in this browser. Apps and tools you connect here belong to this browser alone — another browser is a different guest and won't see them, or your Spaces. Sign in first to keep them together.";
+    case "device":
+      return "Sign in to connect anything. Without an identity there is nothing here for an app to reach.";
+  }
+}

@@ -1511,3 +1511,11 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
     - make guest-versus-signed-in plain on Apps and Your ID;
     - the same read started by the founder's AI through the connector (needs staging's Site URL and redirect URLs);
     - a second person with their own GitHub.
+
+- 2026-11-11 — **Guest or signed in, said plainly where it matters** (branch `solve/space-presentation`, **not merged**).
+  - The real run on 2026-11-11 found that two browsers are two guests: GitHub was connected to one and the Space belonged to the other. The product behaved honestly but never explained it. Now it explains it.
+  - **One home for the wording** (`lib/product/custody.ts`): `connectionNotice(custody)` alongside `custodyNotice`, for the three real situations — no identity, a guest in this browser, a signed-in account. A guest is told their connections belong to this browser alone, that another browser is a different guest that won't see them or their Spaces, and is offered Sign in.
+  - **Apps** carries that notice under the head, with `data-custody` so a check can read which of the three it is. **Your ID** now names the consequence instead of only the remedy ("Another browser is a different guest, with its own ID and its own Spaces").
+  - **Checks:** typecheck 0, lint 0, `npm test` 223/223 (10 new, covering all three states and that Apps carries the shared wording rather than its own). `test:product` passed, with a new assertion that Apps names the custody in words.
+    - **Worth knowing:** `test:product` runs `next start` against a prebuilt `.next`, so it does not pick up source changes without `npm run build` first. A run of it that looks green on a fresh edit may be testing the previous build.
+  - **Next:** unchanged and still with the founder — the staging admin step, then the same GitHub read started by the founder's AI through the connector, and a second person with their own GitHub.

@@ -55,7 +55,7 @@ export default async function IdPage() {
         <h2>Where it lives</h2>
         <p className="s-muted">{durable
           ? "It's the same on every device you sign in on."
-          : "It's already yours, kept in this browser. Sign in to reach it from anywhere."}</p>
+          : "It's already yours, kept in this browser. Another browser is a different guest, with its own ID and its own Spaces. Sign in to reach this one from anywhere."}</p>
         {durable
           ? <form action={signOut}><button className="s-button" data-variant="quiet">Sign out</button></form>
           : <Link href="/login?next=%2Faccount" className="s-button" data-variant="quiet">Sign in</Link>}

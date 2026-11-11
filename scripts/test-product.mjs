@@ -94,6 +94,10 @@ try {
   await page.goto(url + "/apps");
   assert.match(await page.locator("[data-mcp-address]").innerText(), /\/mcp$/);
   assert.match(await page.locator("main").innerText(), /Solve has no AI of its own/);
+  // Who the connections belong to is stated, never left for the person to infer from a fallback.
+  const custody = page.locator("[data-custody]");
+  assert.ok(["device", "browser", "durable"].includes(await custody.getAttribute("data-custody")), "Apps names which of the three it is");
+  assert.ok((await custody.innerText()).trim().length > 20, "and says it in words");
 
   // --- Every place, at the smallest phone and a normal phone.
   for (const width of [320, 390]) {
