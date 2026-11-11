@@ -39,7 +39,7 @@ All acceptance identities are automated fixtures, labelled `[automated <run>]` i
 | A Space shows who can see it (Private, Shared, Public) | **Verified automatically** | Private when made; Shared once a friend joins |
 | The full record of a Space | **Verified automatically** | Six parts, in order, with real names and no internal ids |
 | Search | **Verified automatically**, names and descriptions only | Finds by words; says so when nothing matches; a stranger finds nothing |
-| Edit Space (layout, components) | **Unbuilt** | Only colours change today (Your ID) |
+| Edit Space (layout, components) | **UI only** | `app/world/[worldId]/page.tsx` has `EditSpace`: composition (`base`/`story`), cover, featured pieces and tint, with a preview bar and undo. Present in code on the trunk at 2026-11-11; no acceptance run has exercised it, so it is not claimed verified |
 | Versions and restore of a Space | **Unbuilt** | History is recorded; there is no restore control |
 
 ## People
@@ -57,7 +57,8 @@ All acceptance identities are automated fixtures, labelled `[automated <run>]` i
 |---|---|---|
 | Connect an outside AI app (OAuth 2.1, PKCE, consent) | **Verified against the deployed preview** | Registers, is sent to consent, a wrong verifier gets nothing, the code becomes a token, no token gets 401 |
 | Let your AI into one Space: Off, Read or Add, from the Space | **Verified against the deployed preview** | Off by default; the choice is written as kernel grants; switched off, the app is refused at once (on permission) |
-| It reads and adds drafts where you let it in | **Blocked** | The preview now has a staging service key, but staging rejects it ("Invalid API key"): the value must be re-entered |
+| It **reads** where you let it in | **Verified against the deployed preview, by a real app** | Not a fixture: Claude Code, connected over OAuth with `add` on one Space, called `read_world` and got the Space's title and its piece back (2026-11-11). The old blocker was designed out when `lib/bot/mcp-auth.ts` dropped the service key — the app's own token is the only authority now. Pieces are labelled with who wrote them: the person, this app, or another app |
+| It **adds** drafts where you let it in | **Unverified** | One call would settle it, but an app can't delete and no screen removes a piece, so the test leaves something behind that nobody can take out. Blocked on removal, not on auth |
 | A connected app creates a Space | **Removed** | Its token can change nothing (connector containment), so `start_world` could never work; the person starts the Space and lets their AI in |
 | Disconnect it in Apps; it stops at once | **Verified against the deployed preview** | The token is refused immediately; refresh fails |
 | Discover apps; app detail | **Unbuilt** | Apps says there is no catalogue yet |
