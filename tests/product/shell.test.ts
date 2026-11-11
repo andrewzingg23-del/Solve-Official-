@@ -32,7 +32,12 @@ it("is the only shell, and it keeps Search, Add, AI, visibility and you in reach
   const shell = readFileSync("app/ui/shell.tsx", "utf8");
   assert.match(shell, /action="\/search"/, "search is a real form");
   assert.match(shell, /<span>Add<\/span>/, "Add");
-  assert.match(shell, /href="\/apps#ai"/, "AI connects your own provider");
+  // AI used to be a link to /apps#ai, where a person connected their own provider. The
+  // console (PR #99) replaced that link with a button that opens one conversation in place.
+  // The guard's intent is unchanged — AI stays always in reach — so it now checks for the
+  // affordance that exists rather than the one that was removed.
+  assert.match(shell, /aria-label="Talk with AI"/, "AI is in reach");
+  assert.match(shell, /<AiConsole/, "and it opens the one console");
   assert.match(shell, /"Public" : "Private"/, "who can see your Space");
   assert.match(shell, /href="\/account"/, "you");
   assert.match(shell, /\/world-invite/, "a link from someone else gets only the name");

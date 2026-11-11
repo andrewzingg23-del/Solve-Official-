@@ -60,10 +60,13 @@ export function validateConsoleTurn(raw: unknown): ConsoleTurn | null {
 }
 
 /** Fail closed: preview authorization never comes from user input or forwarded headers. */
-export function previewAllowed(userId: string, env: {
-  SOLVE_AI_INTERNAL_PREVIEW?: string;
-  SOLVE_AI_PREVIEW_USER_IDS?: string;
-}): boolean {
+export function previewAllowed(
+  userId: string,
+  // An index signature so `process.env` is accepted directly: a type of only-optional
+  // properties trips TypeScript's weak-type check against ProcessEnv. Keys read:
+  // SOLVE_AI_INTERNAL_PREVIEW, SOLVE_AI_PREVIEW_USER_IDS.
+  env: Record<string, string | undefined>,
+): boolean {
   if (env.SOLVE_AI_INTERNAL_PREVIEW !== "1" || !userId) return false;
   return (env.SOLVE_AI_PREVIEW_USER_IDS || "").split(",").map(s => s.trim())
     .filter(Boolean).includes(userId);
