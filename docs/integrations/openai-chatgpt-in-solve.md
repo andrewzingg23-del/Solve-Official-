@@ -20,6 +20,8 @@ There is ONE intelligent interaction surface inside SOLVE, not a ChatGPT window 
 | AG-UI protocol | Event stream for agent messages, state deltas, lifecycle, approvals | Evaluate later if adding multi-agent progress and app/agent shared state becomes cumbersome. CopilotKit UI components are optional; no second chat surface. |
 | OpenAI Responses API | ChatGPT-backed conversations, function tools, MCP, streaming | Present in the proposed OpenAI adapter; start with read-only chat, then scoped tool actions via SOLVE-owned executor. |
 | Claude Agent SDK | Programmatic code editing/testing in isolated environment | Developer-only sidecar; not ordinary user's personal assistant. Requires separate execution authority and audit. |
+| Vercel Sandbox (or OpenAI Agents API managed sandbox) | Isolated filesystem/process for coding, tests and previews with streamed proof | Preferred developer execution boundary; choose ONE after evaluating existing Vercel tools and required workspace persistence. Avoid direct browser-to-shell access. |
+| Agent2Agent (A2A) protocol | Agent-to-agent task delegation with discovered skills and task status | Later, when Claude/OpenAI/OpenClaw are genuinely separate remotely hosted agents. MCP is for tools; A2A is for agents. |
 | Composio or Nango | Per-user connected account OAuth and tool catalog | Pilot only after the scoped MCP/OAuth security migration is verified. Choose ONE for initial test. |
 | Inngest | Durable execution, retries, human waits and traceable steps | Add only for a measured long-running-job failure; reuse existing kernel lifecycle where sufficient. |
 | OpenAI Agents SDK | Orchestration, agent handoffs and approvals | Alternative to writing advanced agent loops, not a prerequisite to basic ChatGPT chat. Don't combine multiple orchestration runtimes without a clear reason. |
@@ -32,6 +34,9 @@ Authoritative references:
 - https://developers.openai.com/api/docs/guides/function-calling
 - https://developers.openai.com/api/docs/guides/agents/sdk
 - https://github.com/anthropics/claude-agent-sdk-typescript
+- https://vercel.com/docs/sandbox
+- https://developers.openai.com/api/docs/guides/agents-api/overview
+- https://a2a-protocol.org/v1.0.0/
 - https://docs.composio.dev/docs/authentication
 - https://nango.dev/platform/auth/
 - https://www.inngest.com/docs/durable-execution
