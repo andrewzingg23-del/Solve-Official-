@@ -8,12 +8,19 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const code = searchParams.get("code");
+  // A guest confirming the email they just added arrives as an email_change token rather than a
+  // code. It is the same session becoming permanent, so it must be honoured here too — otherwise
+  // the one path that carries a guest's work into an account dead-ends.
+  const tokenHash = searchParams.get("token_hash");
+  const type = searchParams.get("type");
   const next = safeNextPath(searchParams.get("next"));
 
-  if (!code) return redirectTo(loginWithError("Missing sign-in code"));
+  if (!code && !tokenHash) return redirectTo(loginWithError("Missing sign-in code"));
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { error } = code
+    ? await supabase.auth.exchangeCodeForSession(code)
+    : await supabase.auth.verifyOtp({ token_hash: tokenHash!, type: emailOtpType(type) });
   if (error) return redirectTo(loginWithError(error.message));
 
   // Link the session to its canonical kernel actor. Sign-in still succeeds if the kernel is
@@ -31,6 +38,12 @@ export async function GET(request: NextRequest) {
 // production domain). request.url reflects the server's own hostname, not the visitor's.
 function redirectTo(path: string) {
   return new NextResponse(null, { status: 307, headers: { Location: path } });
+}
+
+/** Only the link types sign-in actually sends; anything else is treated as a magic link. */
+function emailOtpType(type: string | null): "email_change" | "magiclink" | "email" | "recovery" | "invite" {
+  return type === "email_change" || type === "magiclink" || type === "email"
+    || type === "recovery" || type === "invite" ? type : "magiclink";
 }
 
 function loginWithError(message: string) {
