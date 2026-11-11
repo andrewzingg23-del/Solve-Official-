@@ -4,7 +4,6 @@
 // "switch anthropic with open router"). Response contract is full JSON —
 // the Talk panel reads data.reply via res.json(); keep it that way.
 import { getUser } from "@/lib/supabase/server";
-import { OPENAI_DEFAULT_MODEL, OPENAI_MISSING_KEY_ERROR, buildOpenAIResponsesBody, completeOpenAIChat } from "@/lib/bot/openai";
 import { isInstagramStyleRequest, instagramHandleInRequest } from "@/lib/product/instagram-style";
 import { loginRequired } from "@/lib/auth/gate";
 import { getBotSoul } from "@/lib/bot/soul";
@@ -55,16 +54,6 @@ export async function POST(request: Request) {
   } catch {
     return json({ error: "Send a valid JSON request." }, 400);
   }
-  // Explicit, server-validated provider selection; unknown values never fall through.
-  const requestedProvider = body && typeof body === "object" && !Array.isArray(body)
-    ? (body as Record<string, unknown>).provider : undefined;
-  if (requestedProvider !== undefined && requestedProvider !== "openrouter" && requestedProvider !== "openai")
-    return json({ error: "Choose a supported AI provider." }, 422);
-  const provider: "openrouter" | "openai" = requestedProvider === "openai" ? "openai" : "openrouter";
-  // OpenAI usage is authenticated-only: never expose a second paid API to anonymous guests.
-  if (provider === "openai" && (!user || user.is_anonymous))
-    return json({ error: "Sign in before using ChatGPT in SOLVE." }, 401);
-
   // Tier routing happens before validation so a "smart:" prefix never
   // reaches the model or counts against the message length limit.
   const rawMessage =
@@ -113,10 +102,10 @@ export async function POST(request: Request) {
   if (spendBlocked(limiterKey))
     return json({ error: "Hourly token budget spent — back in a bit." }, 429);
 
-  const apiKey = (provider === "openai" ? process.env.OPENAI_API_KEY : process.env.OPENROUTER_API_KEY)?.trim();
-  if (!apiKey) return json({ error: provider === "openai" ? OPENAI_MISSING_KEY_ERROR : OPENROUTER_MISSING_KEY_ERROR }, 503);
+  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+  if (!apiKey) return json({ error: OPENROUTER_MISSING_KEY_ERROR }, 503);
 
-  const model = provider === "openai" ? (process.env.OPENAI_MODEL?.trim() || OPENAI_DEFAULT_MODEL) : resolveChatModel(tier);
+  const model = resolveChatModel(tier);
 
   // The Inside loop, first half: when the person asks for a way (not small
   // talk), their ask goes on the kernel record before the bot answers.
@@ -170,9 +159,10 @@ export async function POST(request: Request) {
     // rules are always kept; soul, then passport fill what's left (lib/ai/context.ts).
     const personalBrief = user ? agentSpaceBrief(user.user_metadata?.sov_personal_space) : "";
     const system = packSystemPrompt({ rules: buildChatSystemPrompt(chat.botName), soul, projectBrief: personalBrief, passport }).text;
-    const completion = provider === "openai"
-      ? await completeOpenAIChat(apiKey, buildOpenAIResponsesBody({ model, system, history: chat.history, message: chat.message }))
-      : await completeChat(apiKey, buildChatCompletionBody({ model, system, history: chat.history, message: chat.message }));
+    const completion = await completeChat(
+      apiKey,
+      buildChatCompletionBody({ model, system, history: chat.history, message: chat.message }),
+    );
     recordSpend(limiterKey, completion.inputTokens + completion.outputTokens);
     return json({
       reply: completion.reply,
@@ -180,11 +170,10 @@ export async function POST(request: Request) {
       wayPlan,
       usage: {
         model,
-        provider,
         tier,
         inputTokens: completion.inputTokens,
         outputTokens: completion.outputTokens,
-        estimatedCostUsd: provider === "openai" ? null : estimateCostUsd(model, completion.inputTokens, completion.outputTokens),
+        estimatedCostUsd: estimateCostUsd(model, completion.inputTokens, completion.outputTokens),
         tokensSpentThisHour: tokensSpentThisHour(limiterKey),
       },
     });
