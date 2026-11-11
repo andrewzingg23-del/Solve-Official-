@@ -15,7 +15,7 @@ it("builds a scoped, non-stored Responses request with the supplied history", ()
     history: [{ role: "user", content: "first" }, { role: "assistant", content: "second" }],
     message: "third",
   });
-  assert.equal(body.model, "gpt-6-astra");
+  assert.equal(body.model, "gpt-6.1-sol");
   assert.equal(body.store, false);
   assert.equal(body.max_output_tokens, 2048);
   assert.equal(body.instructions.includes("Do not act"), true);
