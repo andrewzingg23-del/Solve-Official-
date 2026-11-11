@@ -1,5 +1,15 @@
 # BUILD_STATUS
 
+## The console — step 2: the AI spend meter — 2026-11-11 (Claude)
+
+- **Finding:** the instruction/mission queue planned for this step **already exists** — `kernel.tasks` (risk, reversible, budget, evidence, verification) and `kernel.actions` + approvals + transitions, with `create_task` / `propose_action` / `approve_action` / `enact_action` / `inbox` in `kernel_api`. No queue was built; the console wires onto that at step 3–4.
+- **The real gap was metering.** The limiters in `lib/bot/chat.ts` live in one instance's memory — fine for talk, useless once a turn can run tools and a sandbox.
+- New migration `20261111000000_ai_spend_meter.sql`: `kernel.ai_meter` (append-only, retry-idempotent per actor) plus `kernel_api.read_ai_spend` / `record_ai_spend`. **A caller can only ever meter itself** — the actor comes from `resolve_caller`, no target actor is accepted from an end user, and the table is granted to no API role.
+- New `lib/bot/meter.ts` holds the policy: the kernel counts, app config sets the threshold, and a meter that cannot be read **never blocks** — no one is locked out of their workspace by a meter outage. Wired into the chat route around the model call; the in-process limiter stays as the floor.
+- **Known gap:** guests cannot use the kernel (`KA001`), so guest spend is still only bounded in-process per IP. Documented in `lib/bot/meter.ts`.
+- Checks: full suite **553 pass / 1 pre-existing skip (554)**, new kernel meter tests **8/8** against the real migrations in PGlite (including the grants via `has_table_privilege`), new policy tests **7/7**, typecheck ok, lint **0 errors**, build ok.
+- **The migration is NOT applied to any store** — it needs the founder to apply it to Supabase `dupgybzkkbddsbaykrae`. Until then the durable meter degrades to the designed fallback. Production unchanged. Branch `claude/console`.
+
 ## The console — step 1: a surface on every screen — 2026-11-11 (Claude)
 
 - Founder directive: everyone should be able to control their own solve by talking to it from any screen. This slice builds the surface and the screen context only. **It still talks and never acts** — tools go through the kernel's authority checks in later steps, never through the console component.

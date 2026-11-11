@@ -48,6 +48,8 @@ async function exerciseEveryMethod(supabase: SupabaseClient, actAs?: string) {
   await k.accountBalance(id);
   await k.myGrants();
   await k.verifyChain();
+  await k.readAiSpend();
+  await k.recordAiSpend({ tokens: 10, kind: "chat", requestId: "exercise" });
   await k.registerRail({ chain: "litesvm", mintAddress: "m", settlementAuthority: "s", onchainAccount: id, unallocatedAccount: id, payableAccount: id });
   await k.defineRewardPolicy({ policyKey: "p", chain: "litesvm", outcomeType: "outcome.completed", amount: BigInt(1), maxPerRelease: "1", totalCap: "1", requiredBases: ["system_observed"], minIndependentParties: 1, active: true });
   await k.readRail("litesvm");

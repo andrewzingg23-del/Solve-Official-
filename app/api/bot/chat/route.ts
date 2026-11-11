@@ -18,6 +18,7 @@ import {
   buildChatCompletionBody,
   completeChat,
 } from "@/lib/bot/openrouter";
+import { chargeSpend, checkSpend, spentMessage, type SpendMeter } from "@/lib/bot/meter";
 import {
   buildChatSystemPrompt,
   estimateCostUsd,
@@ -85,6 +86,19 @@ export async function POST(request: Request) {
     }
   }
 
+  // Two meters, on purpose. The durable one (kernel_api.read_ai_spend, via
+  // lib/bot/meter.ts) is shared across instances and survives a restart; it is
+  // the one that will still be right when a turn can run tools. The in-process
+  // one stays as the floor: it is all a guest has (anonymous sessions cannot
+  // use the kernel) and it still catches a burst inside one instance.
+  // A meter that cannot be read never locks the person out — it degrades to
+  // the process limiter below.
+  let meter: SpendMeter | null = null;
+  if (user && !user.is_anonymous) {
+    meter = await getKernel().catch(() => null);
+    const verdict = await checkSpend(meter);
+    if (verdict.blocked) return json({ error: spentMessage(verdict) }, 429);
+  }
   if (spendBlocked(limiterKey))
     return json({ error: "Hourly token budget spent — back in a bit." }, 429);
 
@@ -156,7 +170,11 @@ export async function POST(request: Request) {
       apiKey,
       buildChatCompletionBody({ model, system, history: chat.history, message: chat.message }),
     );
-    recordSpend(limiterKey, completion.inputTokens + completion.outputTokens);
+    const spent = completion.inputTokens + completion.outputTokens;
+    recordSpend(limiterKey, spent);
+    // Charge the durable meter too. Never fatal: the person already paid for
+    // this turn, so a meter failure must not swallow their answer.
+    await chargeSpend(meter, { tokens: spent, kind: "chat" });
     return json({
       reply: completion.reply,
       wayEventId,

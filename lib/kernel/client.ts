@@ -68,6 +68,9 @@ export type Entry = { account_id: string; amount: bigint | string };
 
 export type ChainCheck = { ok: boolean; events_checked: number; first_bad_seq: number | null; problem: string | null };
 
+/** What an actor has spent on AI in a window. Durable and shared, unlike a per-instance Map. */
+export type AiSpend = { tokens: number; calls: number };
+
 export type SettlementChain = "litesvm" | "solana-devnet" | "solana-mainnet";
 export type SettlementStatus = "prepared" | "submitted" | "confirmed" | "failed" | "needs_reconciliation";
 
@@ -586,6 +589,26 @@ export function kernelClient(supabase: SupabaseClient, { actAs }: Options = {}) 
 
     // Service role only.
     verifyChain: () => one<ChainCheck>("verify_chain", {}),
+
+    // The AI spend meter (migration 20261111000000). The kernel reports what
+    // has been spent; the limit itself stays in app config. A caller can only
+    // ever meter itself — these take no target actor from an end user.
+    // sum() comes back as a bigint, i.e. a string over the wire: normalized here.
+    readAiSpend: (windowSeconds = 3600) =>
+      one<{ tokens: string | number; calls: number }>("read_ai_spend", {
+        p_window_seconds: windowSeconds,
+        ...as,
+      }).then((r): AiSpend => ({ tokens: Number(r.tokens), calls: Number(r.calls) })),
+
+    /** Charge a completed call and get the window total back. Idempotent on `requestId`. */
+    recordAiSpend: (input: { tokens: number; kind: string; windowSeconds?: number; requestId?: string }) =>
+      one<{ tokens: string | number; calls: number }>("record_ai_spend", {
+        p_tokens: input.tokens,
+        p_kind: input.kind,
+        p_window_seconds: input.windowSeconds ?? 3600,
+        p_request_id: input.requestId ?? null,
+        ...as,
+      }).then((r): AiSpend => ({ tokens: Number(r.tokens), calls: Number(r.calls) })),
 
     // Money: rails and policies (system authority).
     registerRail: (input: {
