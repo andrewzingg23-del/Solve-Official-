@@ -1495,3 +1495,19 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
   - **Next:**
     - the founder's one-time admin step (staging Site URL, guest rate limit, remove the unused Preview key);
     - then connect Claude Code to Solve and start the Development Space with GitHub and Vercel adapters.
+
+- 2026-11-11 — **First real authenticated capability: a person's own GitHub, read into their Space** (branch `solve/space-presentation`, preview `solve-git-solve-space-presentation-sovigrn.vercel.app`, **not merged**).
+  - **Founder setup:** a GitHub App, with its client id and secret in Vercel Preview for this branch.
+  - **The founder's run:** Apps → Your tools → GitHub → Connect, approved on GitHub; the kernel recorded `andrewzingg23-del`, sealed. Then a github.com repository address pasted into a Space ran `github.repo.read` through the shared run path:
+    - task `76034b26…` completed: 1 attempt, 583 ms, about 9.8 KB, $0;
+    - artifact evidence `sha256:c5d4e91a…` for `https://api.github.com/repos/andrewzingg23-del/Solve-Official-`;
+    - resource `6f0520b0…` saved in the Space.
+  - **Independent check:** the saved name, description, default branch, visibility and README opening match GitHub's API asked directly afterwards.
+  - **Found by the real run, not by tests:**
+    - **(1) Two guests.** The founder used two browsers as two separate guests, so GitHub was connected to one and the Space belonged to the other. The product handled it honestly (it fell back to the public page) but didn't explain it.
+    - **(2) A pasted secret.** The first Vercel values swapped the client id and secret; the secret was printed in this session and must be rotated (rotation reported done).
+    - **(3) Throwaway guests from monitoring.** A monitoring loop with a fresh cookie jar created about ten throwaway staging guests (05:13–05:16).
+  - **Next:**
+    - make guest-versus-signed-in plain on Apps and Your ID;
+    - the same read started by the founder's AI through the connector (needs staging's Site URL and redirect URLs);
+    - a second person with their own GitHub.
