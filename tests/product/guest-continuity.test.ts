@@ -116,3 +116,12 @@ test("a failure says so instead of claiming a link was sent", async () => {
     assert.ok(!/sent=/.test(fixture.redirect) && !/taken=/.test(fixture.redirect));
   } finally { await cleanup(); }
 });
+
+test("the dead end names the way round it, and overstates nothing", async () => {
+  const page = await import("node:fs").then(fs => fs.readFileSync("app/login/page.tsx", "utf8"));
+  const taken = page.slice(page.indexOf("data-taken"), page.indexOf("data-bring-across") + 900);
+  assert.match(taken, /share a Space/, "the person is pointed at a primitive that exists");
+  assert.match(taken, /stays owned by this browser/, "and told it is reach, not a transfer of ownership");
+  assert.match(taken, /connected again/, "and that a tool or an AI's access does not travel");
+  assert.ok(!/mov(e|ed|es) (everything|your work)/i.test(taken), "nothing claims the work is moved");
+});

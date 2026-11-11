@@ -36,6 +36,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         ? <section role="alert" className="s-surface s-stack" data-taken>
             <h2>That email already has an account.</h2>
             <p><strong>{taken}</strong> belongs to an account already, so it can&apos;t be added to this one. Signing in to it would leave what this browser holds behind — your Spaces here, anything you&apos;ve connected, and whatever you&apos;ve let an AI reach. That can&apos;t be undone from the other account.</p>
+            <p className="s-small" data-bring-across>If both are you, there is a way round it: before you sign in, share a Space from this browser and accept the link in the other account. The Space stays owned by this browser&apos;s identity, but the account can reach it. Anything you&apos;ve connected — a tool, or an AI&apos;s access — has to be connected again in the account; those don&apos;t travel.</p>
             <form action={signInLeavingGuestBehind}>
               <input type="hidden" name="next" value={nextPath} />
               <input type="hidden" name="email" value={taken} />
