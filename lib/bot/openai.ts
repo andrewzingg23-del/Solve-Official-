@@ -3,7 +3,8 @@
 // The calling SOLVE route authorizes the viewer, scopes context, and charges usage.
 // Never accept a user-supplied API key or model ID from the browser.
 export const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
-export const OPENAI_DEFAULT_MODEL = "gpt-6-astra";
+// Balance cost and reasoning for general SOLVE chat; allow a stronger model via server configuration.
+export const OPENAI_DEFAULT_MODEL = "gpt-6.1-sol";
 export const OPENAI_MISSING_KEY_ERROR =
   "ChatGPT isn't configured on this SOLVE deployment. An OpenAI API key is needed.";
 
