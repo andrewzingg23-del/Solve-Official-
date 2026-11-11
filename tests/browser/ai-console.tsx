@@ -20,7 +20,7 @@ function Fixture() {
     <p>Simulated provider responses. No live AI calls.</p>
     <button onClick={() => setPath("/people")}>Go to People</button>
     <button onClick={() => setIdentity("fixture-two")}>Switch fixture identity</button>
-    <AiConsole identityKey={identity} open signedIn pathname={path} onClose={() => {}} />
+    <AiConsole identityKey={identity} open signedIn={false} guestPreview pathname={path} onClose={() => {}} />
   </>;
 }
 createRoot(document.getElementById("root")!).render(<Fixture />);

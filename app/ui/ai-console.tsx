@@ -13,6 +13,7 @@ type ConsoleProps = {
   open: boolean;
   onClose: () => void;
   signedIn: boolean;
+  guestPreview?: boolean;
   pathname: string;
   identityKey: string;
 };
@@ -33,7 +34,8 @@ export function AiConsole(props: ConsoleProps) {
   // including an in-flight reply. Ordinary navigation keeps the same key.
   return <Conversation key={props.identityKey} {...props} />;
 }
-function Conversation({ open, onClose, signedIn, pathname, identityKey }: ConsoleProps) {
+function Conversation({ open, onClose, signedIn, pathname, identityKey, guestPreview }: ConsoleProps) {
+  const canChat = signedIn || Boolean(guestPreview && identityKey !== "signed-out");
   const [turns, setTurns] = useState<ConsoleMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -42,14 +44,14 @@ function Conversation({ open, onClose, signedIn, pathname, identityKey }: Consol
   const log = useRef<HTMLDivElement>(null);
   const screen = screenFromPath(pathname);
 
-  useEffect(() => { if (open && signedIn) entry.current?.focus(); }, [open, signedIn]);
+  useEffect(() => { if (open && canChat) entry.current?.focus(); }, [open, canChat]);
   useEffect(() => {
     if (log.current && open) log.current.scrollTop = log.current.scrollHeight;
   }, [turns, busy, open]);
 
   async function send() {
     const message = draft.trim();
-    if (!message || busy || !signedIn) return;
+    if (!message || busy || !canChat) return;
     setError(null);
     setDraft("");
     setBusy(true);
@@ -127,7 +129,7 @@ function Conversation({ open, onClose, signedIn, pathname, identityKey }: Consol
         {busy ? <p className={styles.busy}>Thinking…</p> : null}
         {error ? <p className={styles.error} role="alert">{error}</p> : null}
       </div>
-      {signedIn ? (
+      {canChat ? (
         <form className={styles.entry} onSubmit={e => { e.preventDefault(); void send(); }}>
           <label htmlFor="solve-ai-draft" className="s-visually-hidden">Message to AI</label>
           <textarea
@@ -143,6 +145,8 @@ function Conversation({ open, onClose, signedIn, pathname, identityKey }: Consol
           />
           <button type="submit" disabled={busy || !draft.trim()} aria-label="Send message">Send</button>
         </form>
+      ) : guestPreview ? (
+        <div className={styles.signin}><button type="button" onClick={() => window.location.assign("/")}>Start a guest browser session</button></div>
       ) : (
         <div className={styles.signin}>Sign in to use the internal AI preview. <Link href="/login?intent=signin&next=%2Fapps">Sign in</Link></div>
       )}

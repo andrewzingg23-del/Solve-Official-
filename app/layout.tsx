@@ -49,7 +49,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" data-tone={env.tone} className={`${sans.variable} ${mono.variable}`} style={environmentStyle(env) as React.CSSProperties}>
       <body>
-        <Shell identityKey={identityKey} name={name} signedIn={signedIn} publicSpace={publicSpace}>{children}</Shell>
+        <Shell guestAi={process.env.VERCEL_ENV === "preview" && process.env.SOLVE_AI_INTERNAL_PREVIEW === "1" && process.env.SOLVE_AI_GUEST_PREVIEW === "1"} identityKey={identityKey} name={name} signedIn={signedIn} publicSpace={publicSpace}>{children}</Shell>
       </body>
     </html>
   );

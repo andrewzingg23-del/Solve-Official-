@@ -12,8 +12,8 @@ import { AiConsole } from "./ai-console";
 // always in reach, Search, Add, AI, who can see your Space, and you. Nothing else is permanent
 // navigation; whatever a person builds lives inside a Space. Pages reached from someone else's link
 // get only the name "Solve." — never someone else's navigation.
-export function Shell({ name, signedIn, publicSpace, identityKey, children }: {
-  name: string; signedIn: boolean; publicSpace: boolean; identityKey: string; children: React.ReactNode;
+export function Shell({ name, signedIn, publicSpace, identityKey, guestAi, children }: {
+  name: string; signedIn: boolean; publicSpace: boolean; identityKey: string; guestAi: boolean; children: React.ReactNode;
 }) {
   const path = usePathname();
   const [aiOpen, setAiOpen] = useState(false);
@@ -116,7 +116,7 @@ export function Shell({ name, signedIn, publicSpace, identityKey, children }: {
       <main id="main" tabIndex={-1} className={styles.main}>{children}</main>
     </div>
     <nav aria-label="Primary mobile" className={styles.tabs}>{links}</nav>
-    <AiConsole identityKey={identityKey} open={aiOpen} signedIn={signedIn} pathname={path} onClose={() => {
+    <AiConsole guestPreview={guestAi} identityKey={identityKey} open={aiOpen} signedIn={signedIn} pathname={path} onClose={() => {
       setAiOpen(false);
       aiButton.current?.focus();
     }} />

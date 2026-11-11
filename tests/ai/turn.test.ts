@@ -168,3 +168,19 @@ it("a stale tab cannot send its previous account's history under a new session",
   assert.equal(res.status, 409); assert.equal((await res.json()).code, "session_changed");
   assert.equal(calls.length, 0);
 });
+it("the temporary guest-preview gate permits browser guests with metering and no email allowlist", async t => {
+  const { env, alice, handler } = await setup(); provider(t, success);
+  const h=handler({env:{...env,SOLVE_AI_GUEST_PREVIEW:"1",SOLVE_AI_PREVIEW_USER_IDS:""},getUser:async()=>({id:"alice",is_anonymous:true})});
+  assert.equal((await h(request())).status,200);
+  assert.deepEqual(await alice.readAiSpend(),{tokens:100,calls:1});
+});
+it("guest preview still rejects production, disabled gates and another guest's Space", async t => {
+  const { env,alice,bob,handler }=await setup();const calls=provider(t,success);
+  await createCreativeWorld(bob,{worldId:WORLD,title:"Other guest private Space"});
+  const guest=async()=>({id:"alice",is_anonymous:true});
+  const opts={...env,SOLVE_AI_GUEST_PREVIEW:"1",SOLVE_AI_PREVIEW_USER_IDS:""};
+  assert.equal((await handler({env:{...opts,VERCEL_ENV:"production"},getUser:guest})(request())).status,403);
+  assert.equal((await handler({env:{...opts,SOLVE_AI_INTERNAL_PREVIEW:"0"},getUser:guest})(request())).status,403);
+  assert.equal((await handler({env:opts,getUser:guest})(request({message:"help",path:`/world/${WORLD}`}))).status,403);
+  assert.deepEqual(await alice.readAiSpend(),{tokens:0,calls:0});assert.equal(calls.length,0);
+});

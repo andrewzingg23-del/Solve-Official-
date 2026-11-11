@@ -58,8 +58,10 @@ export function createConsoleHandler({ getUser, getKernel, env }: Dependencies) 
     if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json"))
       return answer({ error: "Send a JSON request." }, 415);
     const user = await getUser().catch(() => null);
-    if (!user || user.is_anonymous) return answer({ error: "Sign in to use AI inside SOLVE." }, 401);
-    if (!previewAllowed(user.id, env))
+    if (!user) return answer({ error: "Open SOLVE to start your browser session, then try AI again." }, 401);
+    const guestPreview = env.SOLVE_AI_GUEST_PREVIEW === "1" && user.is_anonymous;
+    if (user.is_anonymous && !guestPreview) return answer({ error: "Sign in to use AI inside SOLVE." }, 401);
+    if (env.SOLVE_AI_INTERNAL_PREVIEW !== "1" || (!guestPreview && !previewAllowed(user.id, env)))
       return answer({ error: "AI conversation is not enabled for this account in this preview. Connect an external AI in Apps." }, 403);
 
     if (request.headers.get("x-solve-viewer") !== user.id)

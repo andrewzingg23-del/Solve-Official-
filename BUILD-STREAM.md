@@ -1664,3 +1664,16 @@ found the retry-link intent loss; reproduced and corrected. Full checks and stag
 are reported in PR102, which remains the single staging integration PR.
 Verified for this fix: full suite309/309, typecheck/lint/build pass; product browser checks pass;
 staging sign-in acceptance acc-202611111030-1hyk7/7 passes (no mail sent or session replaced).
+
+## 2026-11-11 — Temporary AI testing without email sign-in
+
+Founder: "take off the requiment for a sign in for now". Added an explicit Preview-only guest gate
+SOLVE_AI_GUEST_PREVIEW, enabled only for this integration branch. The normal browser guest identity
+may use the same human-kernel, scoped metadata and metered turn route, without an email account or
+UUID allowlist. Production still refuses every AI turn; no-session calls, OAuth agents, other guests'
+private Spaces, stale sessions and usage bounds remain enforced. No provider credential was read or
+changed. UI offers the conversation to guests, preserving the rest of the account UI.
+
+Verified311/311 full tests, typecheck/build, targeted guest scope/gate tests18/18 and guest component
+browser checks with simulated providers. Lint checked before push. A real guest reply is the next
+preview verification; fixtures are not claimed as a live model call.
