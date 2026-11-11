@@ -1,5 +1,6 @@
 // Proves an AI engine actually answers, through the real adapter, against the real API.
 //
+//   npx vercel env pull .env.local && npm run verify:ai:local   # no key pasted anywhere
 //   ANTHROPIC_API_KEY=... npm run verify:ai          # Claude
 //   OPENAI_API_KEY=...    npm run verify:ai -- openai
 //   ANTHROPIC_MODEL=claude-haiku-5-5 ANTHROPIC_API_KEY=... npm run verify:ai

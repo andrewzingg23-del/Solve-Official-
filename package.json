@@ -16,7 +16,8 @@
     "test:product": "node scripts/test-product.mjs",
     "test:acceptance": "node scripts/acceptance/run.mjs",
     "test:compare": "node scripts/compare-shell.mjs",
-    "verify:ai": "node --import tsx scripts/verify-ai-engine.ts"
+    "verify:ai": "node --import tsx scripts/verify-ai-engine.ts",
+    "verify:ai:local": "node --env-file-if-exists=.env.local --import tsx scripts/verify-ai-engine.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",
