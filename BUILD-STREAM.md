@@ -1648,3 +1648,19 @@ code5a0ab20; browser screenshots uploaded. Final staging acceptance acc-20261111
 An explicitly staging-targeted rebuild is preparing the one-click signed-in test link. Automatic
 review rejected an extra deployment request with an omitted target; that request was not executed.
 No live reply is claimed until the person signs in and exercises the route.
+
+## 2026-11-11 — Fix the existing-account sign-in loop
+
+The founder reports the existing-email warning still blocks the AI test. Root cause: login defaults
+to upgrading a guest, and the known-existing account path is buried in the collision notice. Added
+an explicit intent=signin route and a direct link from AI. The old taken-email URL now renders a
+prefilled existing-account sign-in form, with an honest notice that guest work is separate. Guest
+upgrade retains its original identity-preserving behavior; no ownership, grants or tokens are moved.
+Existing-account OTP explicitly disallows new-user creation. Errors and retry/email-change links
+preserve intent. No real sign-in emails were sent by these checks. No production changes.
+
+Regression tests fail against the original page/action and pass with the fix. An independent review
+found the retry-link intent loss; reproduced and corrected. Full checks and staging browser evidence
+are reported in PR102, which remains the single staging integration PR.
+Verified for this fix: full suite309/309, typecheck/lint/build pass; product browser checks pass;
+staging sign-in acceptance acc-202611111030-1hyk7/7 passes (no mail sent or session replaced).

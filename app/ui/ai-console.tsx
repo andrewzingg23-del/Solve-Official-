@@ -144,7 +144,7 @@ function Conversation({ open, onClose, signedIn, pathname, identityKey }: Consol
           <button type="submit" disabled={busy || !draft.trim()} aria-label="Send message">Send</button>
         </form>
       ) : (
-        <div className={styles.signin}>Sign in to use the internal AI preview. <Link href="/login?next=%2Fapps">Sign in</Link></div>
+        <div className={styles.signin}>Sign in to use the internal AI preview. <Link href="/login?intent=signin&next=%2Fapps">Sign in</Link></div>
       )}
       <footer className={styles.footer}>
         <Link href="/apps#ai" onClick={onClose}>Connect your own AI</Link>

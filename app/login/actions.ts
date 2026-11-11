@@ -47,11 +47,11 @@ export async function sendMagicLink(formData: FormData) {
 export async function signInLeavingGuestBehind(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const next = safeNextPath(formData.get("next"));
-  if (!email) redirect(loginUrl({ next, error: "Enter your email address." }));
+  if (!email) redirect(loginUrl({ next, intent: "signin", error: "Enter your email address." }));
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: await callbackUrl(next) } });
-  if (error) redirect(loginUrl({ next, error: error.message }));
+  const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: await callbackUrl(next), shouldCreateUser: false } });
+  if (error) redirect(loginUrl({ next, intent: "signin", error: error.message }));
   redirect(loginUrl({ next, sent: email, left: "1" }));
 }
 
