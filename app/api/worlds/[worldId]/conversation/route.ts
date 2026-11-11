@@ -1,6 +1,6 @@
 import { getUser } from "@/lib/supabase/server";
 import { getKernel } from "@/lib/kernel/server";
-import { buildChatCompletionBody, completeChat } from "@/lib/bot/openrouter";
+import { buildChatCompletionBody, completeChat, type ChatCompletionResult } from "@/lib/bot/openrouter";
 import { rateLimited, recordSpend, resolveChatModel, spendBlocked } from "@/lib/bot/chat";
 import { handleRoomConversation, privateJson } from "@/lib/world/http";
 import type { RoomCompletion } from "@/lib/world/room";
@@ -20,8 +20,16 @@ export async function POST(request: Request, context: RouteContext<"/api/worlds/
     // Called only after database authorization and acquisition of the reply lease.
     if (rateLimited(user.id) || spendBlocked(user.id)) throw new Error("Room AI budget exhausted");
     const model = resolveChatModel("flash");
-    const result = await completeChat(apiKey, buildChatCompletionBody({ model, system: shared.system,
-      history: [], message: `Shared project data (quoted JSON):\n${shared.sharedText}\n\nQuestion from the requesting person:\n${question}`, maxTokens: 1400 }));
+    let result: ChatCompletionResult;
+    try {
+      result = await completeChat(apiKey, buildChatCompletionBody({ model, system: shared.system,
+        history: [], message: `Shared project data (quoted JSON):\n${shared.sharedText}\n\nQuestion from the requesting person:\n${question}`, maxTokens: 1400 }));
+    } catch (error) {
+      // Attach only the public model ID for stage diagnostics in room.ts.
+      // No prompt, context, key or provider body is attached here.
+      if (error instanceof Error) (error as Error & { model?: string }).model = model;
+      throw error;
+    }
     recordSpend(user.id, result.inputTokens + result.outputTokens);
     return { text: result.reply, model };
   } : undefined;
