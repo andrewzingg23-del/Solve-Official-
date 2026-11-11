@@ -76,7 +76,7 @@ export function Shell({ name, signedIn, publicSpace, children }: {
               <Link role="menuitem" href="/apps" className={styles.menuItem}>Connect apps</Link>
             </div>
           </details>
-          <Link href="/apps#ai" className={`${styles.pill} ${styles.ai}`} aria-current={path === "/apps" ? "page" : undefined}>
+          <Link href="/apps#ai" className={`${styles.pill} ${styles.ai}`} aria-label="AI" aria-current={path === "/apps" ? "page" : undefined}>
             <Icon name="ai" size={24} /><span>AI</span>
           </Link>
           <span className={styles.divider} aria-hidden="true" />

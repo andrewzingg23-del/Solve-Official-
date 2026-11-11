@@ -104,6 +104,8 @@ try {
       assert.ok(await fits(page), `${path} overflows at ${width}px`);
       const tabs = page.getByRole("navigation", { name: "Primary mobile", exact: true });
       assert.ok(await tabs.isVisible(), `${path} has mobile navigation at ${width}px`);
+      // Every control in the top bar keeps its name when a narrow screen hides its words.
+      for (const name of ["AI", "Your ID"]) assert.ok(await page.getByRole("link", { name, exact: true }).first().isVisible(), `${name} is reachable by name at ${width}px`);
       const rows = new Set();
       for (const link of await tabs.getByRole("link").all()) {
         const b = await link.boundingBox();

@@ -1475,3 +1475,23 @@ Setting OPENROUTER_MODEL/_SMART as Vercel envs (free-model defaults) broke the V
     - six scenarios on staging 197/197 (`acc-202611102212-g6vt` home, card, control, together; `acc-202611102223-7z1r` page, space — the first try hit staging's guest sign-in limit);
     - `apps` on the preview: everything up to the first write passes; the writes fail with "Invalid API key" (`acc-202611102221-xxu1`).
   - **Next:** the founder re-enters the staging secret key's value; rerun `apps` on the preview.
+
+- 2026-11-11 — **Connected AIs as themselves; one capability path; a second person proven** (branch `solve/space-presentation`, **not merged**).
+  - **Per-app agents:**
+    - consent now calls `connect_app`, so each AI app is its own agent with nothing until let into a Space;
+    - "Apps here" sets Off/Read/Add per app per Space;
+    - the connector uses only the app's own token (the service-key "bot" path and its unreachable code are deleted);
+    - Apps shows each connection's real state.
+  - **Security:** migration `20261111000000` (applied to **staging only**) refuses tokens from apps connected before per-app agents, closing the verified read where access was Off.
+  - **Capability runs** (`lib/product/run.ts`): a run is a kernel task — validate, create or resume, claim (kernel-authorized), execute through an adapter with transient retries, save the result in the Space, complete with artifact evidence or fail honestly. Access withdrawn mid-run stops it before anything is saved.
+    - First adapter, `link.capture`: safe https fetch, real title, status and SHA-256.
+    - Used by a person pasting a link and by an AI through `bring_in_link`. "Add" now includes starting tasks.
+    - `add_to_world` is idempotent on retry.
+  - **Accessibility:** the AI button had no accessible name at 320px; fixed, and the product checks now look up AI and Your ID by name at every width.
+  - **Checks:**
+    - `npm test` 213/213; in-browser kernel 73/73; `test:product` passed; shell comparison unchanged (7.16).
+    - Staging: `apps` 34/34 (`acc-202611102354-6twk`); `second` 28/28 (`acc-202611110100-cg8s`) — a second person reaches Apps from the shell's AI button, connects a different app with one approval, does an unrelated task, their AI brings in a live page as a completed task, isolation holds both ways (connector and raw token), and each person's revocation is immediate and independent.
+  - **Not yet re-run on staging:** the legacy-token re-probe and `present`, both blocked by staging's guest sign-in limit.
+  - **Next:**
+    - the founder's one-time admin step (staging Site URL, guest rate limit, remove the unused Preview key);
+    - then connect Claude Code to Solve and start the Development Space with GitHub and Vercel adapters.
