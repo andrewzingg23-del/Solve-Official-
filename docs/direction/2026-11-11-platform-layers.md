@@ -29,6 +29,7 @@ production — nothing here is in production.
 | 7 | **Console** | One surface on every screen: a single thread, what is waiting on you, undo, and the screen you are standing on | **two competing PRs (#94, #99); zero live replies ever** |
 | 8 | **Master bot** | One kernel agent holding the person's delegated authority. Engines sit behind it through a provider interface and a routing policy; it arbitrates when they disagree; one memory across all of them; every act recorded as itself with `on_behalf_of` the person | **not built** |
 | 9 | **Means** | Sandboxed execution, repository writes, outbound action — so it changes something real instead of drafting | `bring_in_link` and `github_read_repo` only |
+| 9b | **Reach** (Tailscale) | A private network joining the founder's devices, Muse and any machine running a local model, with no public endpoint and no open ports. It is what makes two things in this document possible rather than theoretical: the routing policy's `location: "local"` engines (something has to be able to reach Ollama on a machine the founder owns), and prompting a builder from a device that isn't the one it runs on | **founder is setting it up (2026-11-11); nothing in this repo uses it yet** |
 | 10 | **Outcomes** | What actually worked, recorded and fed back into context; standing earned from record rather than granted by assumption | **not built — and the only layer nobody else can copy** |
 
 Layers 1–6 are most of a year of work, already done. The gap is not foundation. It is that
@@ -126,3 +127,36 @@ the claims-versus-verified rule rendered in plain language in the actual UI, whi
 nothing ships. And `previewBar` — *"Previewing — nothing is saved yet. [Discard]"* — is the
 reversibility grammar the rest of the platform needs, already invented, currently used only
 for presentation drafts.
+
+---
+
+## Reach: what Tailscale does and does not solve
+
+Added 2026-11-11, because the founder is connecting his devices and Muse over Tailscale in
+order to prompt a builder from whichever device he is holding.
+
+**What it solves.** Private device-to-device reachability with no public endpoint, no open
+port and no tunnel to maintain. That is exactly the right transport for two things this
+document already assumes: a local model the routing policy can choose, and a prompt arriving
+from a device that is not the one the builder runs on.
+
+**What it does not solve, and this is the part that matters.** A coding agent run from a
+terminal has **no inbound listener**. Nothing can push a prompt into a running session from
+outside it, over a tailnet or otherwise. Tailscale carries the message; something still has
+to be listening at this end to receive it. Three honest options:
+
+1. **Use the web or remote sessions instead.** Sessions reachable from a browser need no
+   tailnet and no relay — any device with a browser can prompt them. This is the zero-build
+   answer when the goal is simply "prompt it from my phone".
+2. **A queue on the tailnet, polled by the session.** Something accepts a prompt — an HTTP
+   endpoint, or a file in a synced directory — and the running session polls it. This is the
+   same shape as the console's instruction queue, and it is the only one of the three that
+   makes an arbitrary surface (Muse included) a usable input. Small to build. Tailscale is
+   the right transport for it precisely because the queue should never be public.
+3. **MCP from Muse directly.** `docs/research/connecting-builders.md` records that Muse is
+   **not** in the validated client list for those MCP servers. Treat it as unverified; do not
+   design on it until a real connection has been seen.
+
+**The order that follows from that:** if the need is to prompt from any device, (1) already
+works. If the need is specifically Muse as the input surface, (2) is the build, and it is the
+same queue layer 4 and layer 7 want anyway — so it is one piece of work, not a detour.
