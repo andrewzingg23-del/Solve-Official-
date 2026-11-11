@@ -207,6 +207,16 @@ export async function changePresentation(worldId: string, mode: "save" | "undo" 
 export async function captureLink(worldId: string, url: string, requestId: string): Promise<SimpleResult> {
   if (!REQUEST.test(requestId)) return { ok: false, error: "This couldn't be added. Reload and try again." };
   if (!(await getUser())) return { ok: false, error: "Your identity isn't ready yet. Reload and try again." };
-  const run = await runCapability(await getKernel(), linkAdapter(), worldId, { url }, requestId);
+  const kernel = await getKernel();
+  // A GitHub repository, when the person has GitHub connected, is read through their own account;
+  // anything else (or GitHub not connected) is brought in as the public page.
+  const { repoFrom, githubRepoAdapter, githubToken } = await import("@/lib/product/adapters/github");
+  const { readProvider } = await import("@/lib/product/credentials");
+  const repo = /^https:\/\/github\.com\//i.test(url) ? repoFrom(url) : null;
+  const person = repo ? (await kernel.whoami()).actor_id : null;
+  const viaGithub = repo && person && (await readProvider(kernel, person, "github").catch(() => null))?.status === "connected";
+  const run = viaGithub
+    ? await runCapability(kernel, githubRepoAdapter(() => githubToken(kernel, person!)), worldId, { repo }, requestId)
+    : await runCapability(kernel, linkAdapter(), worldId, { url }, requestId);
   return run.ok ? { ok: true } : { ok: false, error: `It wasn't brought in: ${run.error}` };
 }

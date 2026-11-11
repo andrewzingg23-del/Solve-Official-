@@ -14,6 +14,7 @@ import { KernelError, type Kernel } from "@/lib/kernel/client";
 import { createCreativeArtifact, loadCreativeWorld } from "@/lib/world/creative";
 import { runCapability } from "@/lib/product/run";
 import { linkAdapter } from "@/lib/product/adapters/link";
+import { githubRepoAdapter, githubToken } from "@/lib/product/adapters/github";
 
 // MCP versions this connector speaks, newest first.
 export const PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"] as const;
@@ -53,6 +54,12 @@ export const APP_TOOLS = [
     name: "bring_in_link", title: "Bring a web page into a Space",
     description: "Fetches a public https page and saves it in a Space this app may add to: its real title, address, status and a fingerprint of what was received. Runs as a recorded task; a retry with the same request_id (or the same address) is one run.",
     inputSchema: { type: "object", properties: { world_id: { type: "string" }, url: { type: "string", maxLength: 2048 }, request_id: { type: "string", maxLength: 80 } }, required: ["world_id", "url"], additionalProperties: false },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+  },
+  {
+    name: "github_read_repo", title: "Read a GitHub repository into a Space",
+    description: "Reads one of the person's GitHub repositories (its details and README) through their own GitHub connection and saves it in a Space this app may add to. Needs the person to have connected GitHub in Solve and let this app use it. Read-only; runs as a recorded task.",
+    inputSchema: { type: "object", properties: { world_id: { type: "string" }, repo: { type: "string", description: "owner/name, or its github.com address" }, request_id: { type: "string", maxLength: 80 } }, required: ["world_id", "repo"], additionalProperties: false },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
   },
 ] as const;
@@ -127,6 +134,17 @@ export function createAppConnector(s: AppSession) {
       const run = await runCapability(s.app, linkAdapter(), worldId, { url }, key);
       return run.ok
         ? ok(`${run.resumed ? "Already brought in" : "Brought in"}: ${s.appUrl}/world/${worldId}`, { artifact_id: run.entityId, task_id: run.taskId, resumed: run.resumed })
+        : fail(`Nothing was saved: ${run.error}${run.retryable ? " (you can try again)" : ""}`);
+    }
+    if (name === "github_read_repo") {
+      // On behalf of the person who connected this app; through their GitHub, if they allowed it.
+      const me = await s.app.whoami();
+      if (!me.owner_id) return fail("This connection has no person behind it.");
+      const repo = typeof args.repo === "string" ? args.repo : "";
+      const key = typeof args.request_id === "string" && args.request_id ? `${s.clientId}:${args.request_id}` : `${s.clientId}:${repo}`;
+      const run = await runCapability(s.app, githubRepoAdapter(() => githubToken(s.app, me.owner_id!)), worldId, { repo }, key);
+      return run.ok
+        ? ok(`${run.resumed ? "Already read" : "Read"} from GitHub and saved: ${s.appUrl}/world/${worldId}`, { artifact_id: run.entityId, task_id: run.taskId, resumed: run.resumed })
         : fail(`Nothing was saved: ${run.error}${run.retryable ? " (you can try again)" : ""}`);
     }
     return fail(`Unknown tool: ${name}`);

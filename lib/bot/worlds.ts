@@ -54,12 +54,13 @@ export async function botGrantsIn(kernel: Kernel, scope: string, botAgentId: str
 // anyone else. Returns the access the bot now has.
 export async function setBotAccess(
   person: Kernel,
-  input: { scope: string; botAgentId: string; access: WorldAccess },
+  input: { scope: string; botAgentId: string; access: WorldAccess; capabilities?: readonly string[] },
   requestId: string,
   now = new Date(),
 ): Promise<WorldAccess> {
   const current = await botGrantsIn(person, input.scope, input.botAgentId, now);
-  const wanted = new Set(input.access === "none" ? [] : ACCESS_CAPABILITIES[input.access]);
+  // A Space uses the access levels; other scopes (a provider connection) name exactly what they grant.
+  const wanted = new Set(input.access === "none" ? [] : input.capabilities ?? ACCESS_CAPABILITIES[input.access]);
   for (const g of current.filter((g) => !wanted.has(g.capability))) {
     await person.revokeGrant(g.id, "taken out of this World by its owner", `bot-world-out:${requestId}:${g.id}`.slice(0, 200));
   }

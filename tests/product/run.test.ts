@@ -36,6 +36,9 @@ it("a person brings in a page: the real title, saved in the Space, the task comp
   const [task] = await tasksOf(sam, trip.scope);
   assert.equal(task.status, "completed");
   assert.equal(task.result?.entity_id, saved?.entity_id);
+  const m = task.result?.metering as { provider: string; attempts: number; estimated_cost_usd: number; bytes: number };
+  assert.deepEqual([m.provider, m.attempts, m.estimated_cost_usd], ["web", 1, 0], "metered: provider, attempts, cost");
+  assert.ok(m.bytes > 0);
 });
 
 it("the same request again resumes: one task, one resource, no second fetch", async () => {

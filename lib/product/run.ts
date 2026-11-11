@@ -21,6 +21,9 @@ import { loadCreativeWorld } from "@/lib/world/creative";
  */
 export type Adapter<In, Out> = {
   id: string;                         // "link.capture"
+  /** Who performs it and what one call costs, for metering. 0 when the provider doesn't charge. */
+  provider: string;
+  costPerCallUsd: number;
   title: (input: In) => string;       // what the task is called in the Space's history
   validate: (raw: unknown) => { ok: true; input: In } | { ok: false; error: string };
   execute: (input: In, attempt: number) => Promise<Out>;
@@ -86,16 +89,25 @@ export async function runCapability<In, Out>(
     return { ok: false, taskId, error: refusal(e) ? "Not allowed: this needs Add access to the Space." : "The run couldn't be claimed.", retryable: !refusal(e) };
   }
 
-  // Execute, retrying only what is worth retrying.
+  // Execute, retrying only what is worth retrying. Metered from the first call: provider, attempts,
+  // time, bytes received and estimated cost go onto the task, success or not.
   let output: Out | null = null;
   let last: unknown = null;
+  let attempts = 0;
+  const started = Date.now();
   for (let attempt = 1; attempt <= MAX_ATTEMPTS && output === null; attempt++) {
+    attempts = attempt;
     try { output = await adapter.execute(checked.input, attempt); }
     catch (e) { last = e; if (!adapter.transient(e) || attempt === MAX_ATTEMPTS) break; await pause(300 * attempt); }
   }
+  const metering = {
+    provider: adapter.provider, attempts, ms: Date.now() - started,
+    bytes: output === null ? 0 : Buffer.byteLength(JSON.stringify(output)),
+    estimated_cost_usd: Number((attempts * adapter.costPerCallUsd).toFixed(6)),
+  };
   if (output === null) {
     const why = last instanceof Error ? last.message : "the provider didn't answer";
-    await kernel.transitionTask({ taskId, status: "failed", detail: why.slice(0, 500) }).catch(() => {});
+    await kernel.transitionTask({ taskId, status: "failed", detail: why.slice(0, 500), result: { capability: adapter.id, outcome: "failed", metering } }).catch(() => {});
     return { ok: false, taskId, error: why, retryable: adapter.transient(last) };
   }
 
@@ -104,7 +116,7 @@ export async function runCapability<In, Out>(
     const entityId = await adapter.persist(kernel, world, output, key);
     const print = adapter.fingerprint(output);
     await kernel.transitionTask({
-      taskId, status: "completed", result: { entity_id: entityId, capability: adapter.id },
+      taskId, status: "completed", result: { entity_id: entityId, capability: adapter.id, outcome: "completed", metering },
       evidence: [{ basis: "artifact", content_hash: print.contentHash, uri: print.uri, media_type: print.mediaType, description: `Received by ${adapter.id}` }],
     });
     return { ok: true, taskId, entityId, resumed: false };

@@ -41,6 +41,8 @@ function meta(html: string, name: string) {
 export function linkAdapter(fetchImpl: typeof fetch = fetch): Adapter<LinkInput, LinkCapture> {
   return {
     id: "link.capture",
+    provider: "web",
+    costPerCallUsd: 0, // a plain https fetch from Solve's server
     title: input => `Bring in ${input.url}`,
     validate: raw => {
       const url = typeof (raw as { url?: unknown })?.url === "string" ? (raw as { url: string }).url : "";

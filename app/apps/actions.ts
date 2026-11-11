@@ -27,3 +27,51 @@ export async function disconnectApp(clientId: string): Promise<DisconnectResult>
   revalidatePath("/apps");
   return { ok: true };
 }
+
+export type ToolResult = { ok: true } | { ok: false; error: string };
+
+// Let one connected AI app use the person's GitHub through Solve — or stop it. A kernel grant on the
+// person's GitHub record and nothing broader; the app never sees the token itself.
+export async function setToolUse(clientId: string, provider: "github", allow: boolean): Promise<ToolResult> {
+  if (!(await getUser())) return { ok: false, error: "Your identity isn't ready yet. Reload and try again." };
+  try {
+    const kernel = await getKernel();
+    const person = (await kernel.whoami()).actor_id;
+    const app = (await kernel.myConnections()).find(c => c.client_id === clientId && !c.disconnected_at);
+    if (!app) return { ok: false, error: "That app isn't connected any more." };
+    const { providerScope, PROVIDER_USE } = await import("@/lib/product/credentials");
+    const { setBotAccess } = await import("@/lib/bot/worlds");
+    await setBotAccess(kernel, { scope: providerScope(person, provider), botAgentId: app.agent_id, access: allow ? "add" : "none", capabilities: PROVIDER_USE }, `tool-use:${provider}:${crypto.randomUUID()}`);
+    revalidatePath("/apps");
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "That didn't change. Nothing else changed." };
+  }
+}
+
+// Disconnect the person's GitHub: the sealed tokens are dropped from their record at once, and
+// Solve's authorization is revoked at GitHub too, where GitHub allows it.
+export async function disconnectTool(provider: "github"): Promise<ToolResult> {
+  if (!(await getUser())) return { ok: false, error: "Your identity isn't ready yet. Reload and try again." };
+  try {
+    const kernel = await getKernel();
+    const person = (await kernel.whoami()).actor_id;
+    const { readProvider, writeProvider, unseal } = await import("@/lib/product/credentials");
+    const { githubConfig } = await import("@/lib/product/providers/github");
+    const current = await readProvider(kernel, person, provider);
+    if (!current) return { ok: true };
+    const config = githubConfig();
+    if (config && current.sealed) {
+      const { accessToken } = unseal<{ accessToken: string }>(current.sealed);
+      await fetch(`https://api.github.com/applications/${config.clientId}/grant`, {
+        method: "DELETE", headers: { Authorization: `Basic ${Buffer.from(`${config.clientId}:${config.clientSecret}`).toString("base64")}`, Accept: "application/vnd.github+json", "User-Agent": "Solve" },
+        body: JSON.stringify({ access_token: accessToken }), signal: AbortSignal.timeout(10000),
+      }).catch(() => null);
+    }
+    await writeProvider(kernel, person, provider, current, { account: current.account, status: "disconnected", secret: null }, `tool-off:${crypto.randomUUID()}`);
+    revalidatePath("/apps");
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "It wasn't disconnected. Try again; nothing else changed." };
+  }
+}

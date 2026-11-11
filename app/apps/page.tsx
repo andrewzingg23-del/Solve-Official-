@@ -5,6 +5,9 @@ import { getKernel } from "@/lib/kernel/server";
 import { PageHead } from "@/app/ui/page-head";
 import { Empty, listStyles } from "@/app/ui/list";
 import { ConnectedApps, type ConnectedApp } from "./connected";
+import { GithubTool, type ToolState } from "./tools";
+import { githubConfig } from "@/lib/product/providers/github";
+import { providerScope, readProvider } from "@/lib/product/credentials";
 import styles from "./apps.module.css";
 
 export const metadata: Metadata = { title: "Apps · Solve" };
@@ -15,6 +18,7 @@ export const metadata: Metadata = { title: "Apps · Solve" };
 export default async function AppsPage() {
   const user = await getUser();
   let apps: ConnectedApp[] | null = [];
+  let github: ToolState = { state: githubConfig() ? "none" : "unavailable" };
   if (user) {
     // What Supabase's OAuth server says the person approved, and what the kernel says each app may do.
     const [listed, kernelApps] = await Promise.all([
@@ -31,6 +35,19 @@ export default async function AppsPage() {
             status: live ? "connected" as const : "reconnect" as const, spaces: spaces.size, adds: adds.size };
         })
       : null;
+    // The person's GitHub, and which of their AI apps may use it — from the kernel.
+    if (githubConfig() && kernelApps) {
+      const kernel = await getKernel();
+      const person = (await kernel.whoami().catch(() => null))?.actor_id;
+      const conn = person ? await readProvider(kernel, person, "github").catch(() => null) : null;
+      if (person && conn && conn.status !== "disconnected") {
+        const scope = providerScope(person, "github");
+        github = { state: conn.status, account: conn.account, apps: kernelApps.filter(c => !c.disconnected_at).map(c => ({
+          clientId: c.client_id, name: c.label || "An app",
+          allowed: ((c.scopes ?? []) as { scope: string }[]).some(g => g.scope === scope),
+        })) };
+      }
+    }
   }
   const host = (await headers()).get("host") ?? "";
   const address = host ? `${host.startsWith("localhost") ? "http" : "https"}://${host}/mcp` : "/mcp";
@@ -47,6 +64,11 @@ export default async function AppsPage() {
             ? <Empty icon="apps" title="No apps connected"><span className="s-muted s-small">Connect your AI below to start.</span></Empty>
             : <ConnectedApps apps={apps} />}
       </div>
+    </section>
+
+    <section className={listStyles.section} aria-labelledby="tools">
+      <h2 id="tools">Your tools</h2>
+      <ul className={listStyles.panel}><GithubTool tool={github} /></ul>
     </section>
 
     <section id="ai" className={listStyles.section} aria-labelledby="ai-title">
