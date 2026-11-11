@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { it } from "node:test";
 import {
   buildChatSystemPrompt,
+  packSystemPrompt,
   resolveChatModel,
   validateChatBody,
 } from "../../lib/bot/chat";
@@ -140,4 +141,38 @@ it("estimates cost from the OpenRouter model family, labeled as estimate", async
   assert.ok(haiku > 0 && sonnet > haiku, "sonnet estimates cost more than haiku");
   assert.equal(haiku, 1.0 + 5.0, "haiku-4.5 priced at $1/M in, $5/M out (2026-10-06)");
   assert.equal(estimateCostUsd("unknown-model-x", 0, 0), 0);
+});
+
+// The console sends where the person stands; the chat contract carries it as
+// context and never lets a bad one break the conversation.
+it("carries a valid screen context on the chat request", () => {
+  const chat = validateChatBody({
+    message: "make this wider",
+    botName: "Nova",
+    screen: { path: "/world/abc", label: "a project workspace", worldId: "abc" },
+  });
+  assert.ok(chat);
+  assert.equal(chat.screen?.worldId, "abc");
+});
+
+it("a missing or malformed screen context is dropped, not fatal", () => {
+  assert.equal(validateChatBody({ message: "hi", botName: "Nova" })?.screen, null);
+  assert.equal(validateChatBody({ message: "hi", botName: "Nova", screen: "nope" })?.screen, null);
+  assert.equal(validateChatBody({ message: "hi", botName: "Nova", screen: { path: "/" } })?.screen, null);
+});
+
+it("the screen layer survives a tight budget and reads as position, not orders", () => {
+  const packed = packSystemPrompt(
+    {
+      rules: buildChatSystemPrompt("Nova"),
+      passport: "x".repeat(8000),
+      screen: { path: "/world/abc/room", label: "a project's shared room", worldId: "abc" },
+    },
+    400,
+  );
+  const screen = packed.layers.find((l) => l.name === "screen");
+  assert.ok(screen);
+  assert.ok(screen.tokens > 0, "the screen layer is reserved, not evicted by a big passport");
+  assert.match(packed.text, /shared room/);
+  assert.match(packed.text, /not an instruction/);
 });

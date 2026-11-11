@@ -7,6 +7,11 @@
 
 import { OPENROUTER_DEFAULT_MODEL, OPENROUTER_DEFAULT_MODEL_FLASH } from "./openrouter";
 import { packContext, type ContextLayer, type PackedContext } from "@/lib/ai/context";
+import {
+  describeScreen,
+  validateScreenContext,
+  type ScreenContext,
+} from "@/lib/product/screen-context";
 
 export const CHAT_LIMITS = {
   message: 2000,
@@ -20,6 +25,8 @@ export type ChatRequest = {
   message: string;
   history: ChatMessage[];
   botName: string;
+  /** Where the person was standing when they spoke. Null when they didn't say. */
+  screen: ScreenContext | null;
 };
 
 const clean = (v: unknown, max: number): string | null =>
@@ -47,7 +54,9 @@ export function validateChatBody(body: unknown): ChatRequest | null {
   const botName = clean(b.botName, CHAT_LIMITS.botName);
   const history = cleanHistory(b.history);
   if (!message || !botName || !history) return null;
-  return { message, history, botName };
+  // A malformed screen context is dropped, never fatal: the console must keep
+  // talking even when a screen reports its position badly.
+  return { message, history, botName, screen: validateScreenContext(b.screen) };
 }
 
 export function buildChatSystemPrompt(botName: string): string {
@@ -57,6 +66,7 @@ export function buildChatSystemPrompt(botName: string): string {
     `What you are: a companion that talks. You do not take actions, move money, contact anyone, or change anything in the world — those go through the person's commands and the kernel, which decides and records. If they ask you to do something real, say what you would need from them to make it happen; do not pretend it is done.`,
     `When they ask for a way — how to do something real — their request is recorded on their record automatically. Say so plainly ("noted — it's on your record") and then give them the sharp version of the way forward.`,
     `What you never do: claim authority ${botName} does not hold. Never invent records, events, balances, or proofs. If you do not know something about their world, say so plainly instead of guessing.`,
+    `Where they are: you ride with them on every screen. When you are told where they stand, resolve "this" and "here" against it, and name the place back so they know you see it. If you are not told, ask which thing they mean rather than guessing.`,
     `Greetings and small talk are fine — be a present companion. When they ask for a way to do something real, give them the sharp version, then point them at what is possible now.`,
   ].join("\n");
 }
@@ -83,12 +93,17 @@ export type SystemPromptParts = {
   projectBrief?: string;
   /** The passportContext() block, if the person connected their passport. */
   passport?: string;
+  /** Where the person was standing when they spoke (lib/product/screen-context.ts). */
+  screen?: ScreenContext | null;
 };
 
 /** Packs the system prompt layers into the token budget. Returns the full accounting. */
 export function packSystemPrompt(parts: SystemPromptParts, budgetTokens = contextBudgetTokens()): PackedContext {
   const layers: ContextLayer[] = [
     { name: "rules", text: parts.rules, cap: 800, required: true },
+    // Second only to the rules: without it, "make this wider" has no referent,
+    // and it is small and cheap. Required so a rich passport can never evict it.
+    { name: "screen", text: describeScreen(parts.screen ?? null), cap: 300, required: true },
     {
       name: "soul",
       text: parts.soul?.trim() ? `The person's soul.md for you (their words, honor them):\n${parts.soul.trim()}` : "",

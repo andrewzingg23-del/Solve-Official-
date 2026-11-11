@@ -1,5 +1,15 @@
 # BUILD_STATUS
 
+## The console — step 1: a surface on every screen — 2026-11-11 (Claude)
+
+- Founder directive: everyone should be able to control their own solve by talking to it from any screen. This slice builds the surface and the screen context only. **It still talks and never acts** — tools go through the kernel's authority checks in later steps, never through the console component.
+- New `lib/product/screen-context.ts` (pure): a pathname becomes a place (label, worldId, focus). `worldId` must be id-shaped or it is dropped; `describeScreen()` labels the result as the person's position and states it is not an instruction, so content in `focus` can never read as a command. It describes a place; it never grants one.
+- `lib/bot/chat.ts` carries `screen` on the request (a malformed one is dropped, never fatal) and packs it as a **required** 300-token layer, so a large passport cannot evict the one thing that makes "make this wider" resolvable. Extended the existing chat home rather than adding a second endpoint.
+- New `app/product/console.tsx`, mounted in `ProductShell`: ⌘K anywhere, one thread that survives navigation (it does not unmount on a route change), the screen label shown to the person, and an empty state that says it cannot act yet.
+- Checks: full suite **538 pass / 1 pre-existing skip (539)**, typecheck ok, lint **0 errors** / 9 pre-existing warnings, production build ok. Local dev on :3001: the console SSRs on `/`, `/bot`, `/communities`, `/account`; a well-formed screen context passes validation (503 only for the missing local key), a malformed body is 422, a junk `screen` still passes.
+- **Not verified:** a live model reply carrying screen context — needs an OpenRouter key, i.e. a preview deploy.
+- No remote database change. No migration. Production unchanged. Branch `claude/console`.
+
 ## One Solve run — Step 0 + Step 1 passport cache — 2026-10-31 (Claude)
 
 - **Run started.** Trunk is `main` (DECISIONS.md 2026-10-31, decision (a)). Working branch `claude/passport-link`. Progress tracked in `docs/plans/RUN-PROGRESS.md`, which carries the live WAITING ON ANDREW list.

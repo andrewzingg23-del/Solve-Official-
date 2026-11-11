@@ -6,6 +6,7 @@ import { DEFAULT_PERSONA, validatePersona, type Persona } from "@/lib/bot/person
 import { BotCharacter } from "@/app/bot/character";
 import { workspaceIdentityLabel } from "@/lib/product/identity";
 import { Icon, type IconName } from "./icons";
+import { Console } from "./console";
 
 const homes: Array<{ href: string; label: string; icon: IconName }> = [
   { href: "/", label: "Projects", icon: "projects" },
@@ -43,5 +44,7 @@ export function ProductShell({ children, identity }: { children: React.ReactNode
       <div id="solve-main" tabIndex={-1} className="solve-main">{children}</div>
     </div>
     <nav aria-label="Primary mobile" className="solve-mobile-nav">{links}</nav>
+    {/* Rides every shell route, so the thread survives navigation. Talk only. */}
+    <Console botName={botName} />
   </div>;
 }

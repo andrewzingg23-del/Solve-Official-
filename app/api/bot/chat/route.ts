@@ -143,7 +143,15 @@ export async function POST(request: Request) {
     // Pack the system prompt into a fixed token budget so a rich soul.md or a
     // big passport can never blow the context or run up the cost. The bot's
     // rules are always kept; soul, then passport fill what's left (lib/ai/context.ts).
-    const system = packSystemPrompt({ rules: buildChatSystemPrompt(chat.botName), soul, passport }).text;
+    // The console rides on every screen, so an ask arrives with the place it
+    // was spoken from (lib/product/screen-context.ts). Context only — it tells
+    // the bot what "this" refers to; it grants nothing and still never acts.
+    const system = packSystemPrompt({
+      rules: buildChatSystemPrompt(chat.botName),
+      soul,
+      passport,
+      screen: chat.screen,
+    }).text;
     const completion = await completeChat(
       apiKey,
       buildChatCompletionBody({ model, system, history: chat.history, message: chat.message }),
