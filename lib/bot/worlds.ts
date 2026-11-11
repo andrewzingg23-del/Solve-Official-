@@ -13,7 +13,7 @@ import type { Kernel } from "@/lib/kernel/client";
 export type WorldAccess = "none" | "read" | "add";
 export const ACCESS_CAPABILITIES: Record<Exclude<WorldAccess, "none">, readonly string[]> = {
   read: ["kernel.read"],
-  add: ["kernel.read", "world.entity.write", "kernel.evidence.attach"],
+  add: ["kernel.read", "world.entity.write", "kernel.evidence.attach", "task.create"],
 };
 export const ACCESS_DAYS = 30;
 

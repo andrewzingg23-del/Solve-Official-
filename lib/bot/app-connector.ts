@@ -12,6 +12,8 @@
 import { createHash } from "node:crypto";
 import { KernelError, type Kernel } from "@/lib/kernel/client";
 import { createCreativeArtifact, loadCreativeWorld } from "@/lib/world/creative";
+import { runCapability } from "@/lib/product/run";
+import { linkAdapter } from "@/lib/product/adapters/link";
 
 // MCP versions this connector speaks, newest first.
 export const PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"] as const;
@@ -46,6 +48,12 @@ export const APP_TOOLS = [
     inputSchema: { type: "object", properties: { world_id: { type: "string" }, title: { type: "string", maxLength: 160 }, body: { type: "string", maxLength: 7000 },
       request_id: { type: "string", maxLength: 80, description: "Optional: the same id on a retry makes it one change. Without it, the same words from this app are one change." } }, required: ["world_id", "title"], additionalProperties: false },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  {
+    name: "bring_in_link", title: "Bring a web page into a Space",
+    description: "Fetches a public https page and saves it in a Space this app may add to: its real title, address, status and a fingerprint of what was received. Runs as a recorded task; a retry with the same request_id (or the same address) is one run.",
+    inputSchema: { type: "object", properties: { world_id: { type: "string" }, url: { type: "string", maxLength: 2048 }, request_id: { type: "string", maxLength: 80 } }, required: ["world_id", "url"], additionalProperties: false },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
   },
 ] as const;
 
@@ -112,6 +120,14 @@ export function createAppConnector(s: AppSession) {
         if (e instanceof KernelError && ["forbidden", "not_found", "invalid"].includes(e.name)) return fail("This app may not add to that Space. The person can let it in to add from the Space in Solve. Nothing was written.");
         throw e;
       }
+    }
+    if (name === "bring_in_link") {
+      const url = typeof args.url === "string" ? args.url : "";
+      const key = typeof args.request_id === "string" && args.request_id ? `${s.clientId}:${args.request_id}` : `${s.clientId}:${url}`;
+      const run = await runCapability(s.app, linkAdapter(), worldId, { url }, key);
+      return run.ok
+        ? ok(`${run.resumed ? "Already brought in" : "Brought in"}: ${s.appUrl}/world/${worldId}`, { artifact_id: run.entityId, task_id: run.taskId, resumed: run.resumed })
+        : fail(`Nothing was saved: ${run.error}${run.retryable ? " (you can try again)" : ""}`);
     }
     return fail(`Unknown tool: ${name}`);
   }

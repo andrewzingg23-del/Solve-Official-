@@ -44,6 +44,19 @@ export async function second({ browser, base, evidence }) {
     const piece = p.locator("[data-piece]", { hasText: "Weekly order" });
     evidence.record(S, other.role, "sees the result in their Space, credited to their AI",
       await piece.waitFor({ timeout: 15000 }).then(() => true, () => false) && /Another AI/.test(await piece.locator("[data-author]").innerText().catch(() => "")));
+    // --- The same AI uses a real tool through Solve: it brings in a live web page, recorded as a task.
+    const brought = await tool(base, otherApp.token, "bring_in_link", { world_id: bakery, url: "https://example.com/" });
+    evidence.record(S, "second app", "runs a real capability through Solve: brings in a live page", !brought.body?.result?.isError, said(brought).slice(0, 160));
+    const again = await tool(base, otherApp.token, "bring_in_link", { world_id: bakery, url: "https://example.com/" });
+    evidence.record(S, "second app", "a retry resumes the same run instead of repeating it", again.body?.result?.structuredContent?.resumed === true && again.body?.result?.structuredContent?.artifact_id === brought.body?.result?.structuredContent?.artifact_id);
+    const tasks = await other.kernel.rpc("read_tasks", { p_scope: `world:${bakery}` }).catch(() => []);
+    const done = tasks.find(t => t.task_id === brought.body?.result?.structuredContent?.task_id);
+    evidence.record(S, other.role, "the run is a completed task in their Space, with its result", done?.status === "completed" && done?.result?.entity_id === brought.body?.result?.structuredContent?.artifact_id, done?.status ?? "no task");
+    await p.goto(`${base}/world/${bakery}`);
+    const page = p.locator("[data-captured]", { hasText: "Example Domain" });
+    evidence.record(S, other.role, "sees the page in their Space with its real title, marked as brought in by Solve",
+      await page.waitFor({ timeout: 15000 }).then(() => true, () => false) && /brought in by Solve/.test(await p.locator("[data-piece]", { has: page }).innerText().catch(() => "")));
+
     await p.goto(base + "/apps");
     const health = await p.locator(`[data-app="${otherApp.clientId}"] [data-app-health]`).innerText().catch(() => "");
     evidence.record(S, other.role, "Apps shows the connection's real state: connected, reaching one Space", /can reach 1 Space/.test(health), health);

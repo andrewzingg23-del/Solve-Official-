@@ -95,5 +95,5 @@ it("offers no tool that would pretend: no creating Spaces, publishing, paying or
   const { asTool } = await setup();
   const connector = createAppConnector({ app: asTool, clientId: TOOL, appUrl: "https://solve.test" });
   const list = (await connector.handle({ jsonrpc: "2.0", id: 1, method: "tools/list" })) as { result: { tools: { name: string }[] } };
-  assert.deepEqual(list.result.tools.map(t => t.name), ["whoami", "list_worlds", "read_world", "add_to_world"]);
+  assert.deepEqual(list.result.tools.map(t => t.name), ["whoami", "list_worlds", "read_world", "add_to_world", "bring_in_link"]);
 });

@@ -6,6 +6,8 @@ import { createClient as createSupabase, getUser } from "@/lib/supabase/server";
 import { PHOTO_BUCKET, checkPhoto, isPhotoOf, photoProblem } from "@/lib/product/photo";
 import { createCreativeArtifact, loadCreativeWorld, updateCreativeArtifact } from "@/lib/world/creative";
 import { KernelError } from "@/lib/kernel/client";
+import { runCapability } from "@/lib/product/run";
+import { linkAdapter } from "@/lib/product/adapters/link";
 import { BASE_PRESENTATION, normalizePresentation, readPresentation, samePresentation, writePresentation, type SpaceResources } from "@/lib/product/presentation";
 import { createWorldInvitation } from "@/lib/world/invitations";
 import { readWorldMembers } from "@/lib/world/collaboration";
@@ -199,4 +201,12 @@ export async function changePresentation(worldId: string, mode: "save" | "undo" 
     if (error instanceof KernelError && error.name === "forbidden") return { ok: false, error: "You can see this Space but not change how it looks." };
     return { ok: false, error: "It wasn't saved. Nothing changed; try again." };
   }
+}
+
+// Bring a web page into this Space — the same capability, the same run path, an AI uses.
+export async function captureLink(worldId: string, url: string, requestId: string): Promise<SimpleResult> {
+  if (!REQUEST.test(requestId)) return { ok: false, error: "This couldn't be added. Reload and try again." };
+  if (!(await getUser())) return { ok: false, error: "Your identity isn't ready yet. Reload and try again." };
+  const run = await runCapability(await getKernel(), linkAdapter(), worldId, { url }, requestId);
+  return run.ok ? { ok: true } : { ok: false, error: `It wasn't brought in: ${run.error}` };
 }

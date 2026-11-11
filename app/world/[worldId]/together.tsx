@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { PHOTO_BUCKET, PHOTO_MAX_BYTES, PHOTO_MAX_SIDE, photoName } from "@/lib/product/photo";
-import { addPiece, changePresentation, makeInvite, revisePiece, setAppAccess, recordPhoto, setPagePublished } from "./together-actions";
+import { addPiece, captureLink, changePresentation, makeInvite, revisePiece, setAppAccess, recordPhoto, setPagePublished } from "./together-actions";
 import styles from "./together.module.css";
 
 // Add your piece. The words stay on screen until the kernel has them.
@@ -12,6 +12,8 @@ export function AddPiece({ worldId }: { worldId: string }) {
   const router = useRouter();
   const [text, setText] = useState("");
   const field = useRef<HTMLTextAreaElement>(null);
+  // Kept until a link is brought in, so pressing again after a dropped connection resumes the same run.
+  const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   // Grow with the words (and shrink back once added) where the browser can't size the field itself.
   useEffect(() => {
     const el = field.current;
@@ -25,9 +27,12 @@ export function AddPiece({ worldId }: { worldId: string }) {
     event.preventDefault();
     if (!text.trim() || pending) return;
     start(async () => {
-      const result = await addPiece(worldId, text).catch(() => ({ ok: false as const, error: "It wasn't added. Your words are still here; retry when you're connected." }));
+      // A lone web address is brought in as the page itself (title, status, fingerprint), not as words.
+      const lone = /^https:\/\/\S+$/.test(text.trim());
+      const result = await (lone ? captureLink(worldId, text.trim(), requestId) : addPiece(worldId, text))
+        .catch(() => ({ ok: false as const, error: "It wasn't added. Your words are still here; retry when you're connected." }));
       if (!result.ok) { setError(result.error); return; }
-      setText(""); setError(""); router.refresh();
+      setText(""); setError(""); setRequestId(crypto.randomUUID()); router.refresh();
     });
   }}>
     <label htmlFor="piece" className="s-visually-hidden">Add something</label>

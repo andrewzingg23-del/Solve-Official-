@@ -92,7 +92,8 @@ export default async function ThingPage({ params, searchParams }: PageProps<"/wo
     clientId: c.client_id, name: c.label || "A connected app",
     access: accessFrom(await botGrantsIn(kernel, world.scope, c.agent_id)),
   })))).catch(() => []) : [];
-  type Piece = { id: string; at: string; text: string; kind: "text" | "photo" | "link"; version: number; photo?: { url: string | null }; link?: { url: string; madeWith: string } };
+  type Piece = { id: string; at: string; text: string; kind: "text" | "photo" | "link"; version: number; photo?: { url: string | null };
+    link?: { url: string; madeWith: string; title?: string; capturedAt?: string } };
   const pieces: Piece[] = [
     ...texts.map(a => ({ id: a.entityId, at: a.updatedAt, text: a.body || a.title, kind: "text" as const, version: a.version })),
     ...photoEntities.map(e => {
@@ -100,7 +101,10 @@ export default async function ThingPage({ params, searchParams }: PageProps<"/wo
       return { id: e.entity_id, at: e.updated_at, text: typeof e.attributes.caption === "string" ? e.attributes.caption : "", kind: "photo" as const, version: e.version, photo: { url: links.get(name) ?? null } };
     }),
     ...linkEntities.map(e => ({ id: e.entity_id, at: e.updated_at, text: "", kind: "link" as const, version: e.version,
-      link: { url: String(e.attributes.url), madeWith: typeof e.attributes.madeWith === "string" ? e.attributes.madeWith : "" } })),
+      link: { url: String(e.attributes.url), madeWith: typeof e.attributes.madeWith === "string" ? e.attributes.madeWith : "",
+        // Brought in by a capability run: the page's own title and when Solve actually fetched it.
+        title: typeof e.attributes.title === "string" ? e.attributes.title : undefined,
+        capturedAt: typeof (e.attributes.captured as { at?: unknown } | undefined)?.at === "string" ? (e.attributes.captured as { at: string }).at : undefined } })),
   ].sort((a, b) => b.at.localeCompare(a.at));
   const initial = (id: string) => (nameFor(id, names).replace(/^[^\p{L}]+/u, "").charAt(0) || "·").toUpperCase();
 
@@ -193,12 +197,17 @@ export default async function ThingPage({ params, searchParams }: PageProps<"/wo
                   ? <img src={piece.photo.url} alt={piece.text || `A photo ${who === "You" ? "you" : who} added`} className={styles.image} loading="lazy" />
                   : <div className={styles.missing} role="status">This photo can&apos;t be shown right now.</div>
                 : null}
-              {piece.link ? <p>
-                {piece.link.madeWith ? <>Made with {piece.link.madeWith}: </> : <>Link: </>}
-                <a href={piece.link.url} target="_blank" rel="noopener noreferrer nofollow" className={styles.linkOut} data-made>{piece.link.url}</a>
-              </p> : null}
+              {piece.link ? piece.link.capturedAt
+                ? <p data-captured>
+                    <a href={piece.link.url} target="_blank" rel="noopener noreferrer nofollow" className={styles.linkOut}>{piece.link.title || new URL(piece.link.url).hostname}</a>
+                    <span className="s-muted s-small"> · {new URL(piece.link.url).hostname}</span>
+                  </p>
+                : <p>
+                    {piece.link.madeWith ? <>Made with {piece.link.madeWith}: </> : <>Link: </>}
+                    <a href={piece.link.url} target="_blank" rel="noopener noreferrer nofollow" className={styles.linkOut} data-made>{piece.link.url}</a>
+                  </p> : null}
               {piece.text ? <p>{piece.text}</p> : null}
-              <span className={styles.by}>Added by <strong data-author>{who}</strong>{editorOf.has(piece.id) ? <> · edited by <strong data-editor>{nameFor(editorOf.get(piece.id)!, names)}</strong></> : null} · {piece.at.slice(0, 10)}{piece.link ? " · their word, not checked by Solve" : ""}</span>
+              <span className={styles.by}>Added by <strong data-author>{who}</strong>{editorOf.has(piece.id) ? <> · edited by <strong data-editor>{nameFor(editorOf.get(piece.id)!, names)}</strong></> : null} · {piece.at.slice(0, 10)}{piece.link ? (piece.link.capturedAt ? ` · brought in by Solve on ${piece.link.capturedAt.slice(0, 10)}` : " · their word, not checked by Solve") : ""}</span>
               {actionsFor({ kind: piece.kind }, held).map(action => action.id === "revise"
                 ? <RevisePiece key={action.id} worldId={world.worldId} entityId={piece.id} version={piece.version} text={piece.text} label={action.label} />
                 : null)}
