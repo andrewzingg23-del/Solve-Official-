@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DESTINATIONS, destinationOf } from "@/lib/product/destinations";
 import { Icon } from "./icons";
 import styles from "./shell.module.css";
+import { AiConsole } from "./ai-console";
 
 // The approved shell (DECISIONS.md, 2026-11-10): four places — Space, People, Apps, Control — and,
 // always in reach, Search, Add, AI, who can see your Space, and you. Nothing else is permanent
@@ -15,6 +16,8 @@ export function Shell({ name, signedIn, publicSpace, children }: {
   name: string; signedIn: boolean; publicSpace: boolean; children: React.ReactNode;
 }) {
   const path = usePathname();
+  const [aiOpen, setAiOpen] = useState(false);
+  const aiButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const root = document.documentElement;
     // After a tap or click, a save that moves focus mustn't pop the skip link up; Tab brings it back.
@@ -24,6 +27,21 @@ export function Shell({ name, signedIn, publicSpace, children }: {
     window.addEventListener("pointerdown", pointer, true);
     return () => { window.removeEventListener("keydown", key, true); window.removeEventListener("pointerdown", pointer, true); };
   }, []);
+  // One conversation surface on every screen. It remains mounted across
+  // navigation so a person's current thread does not reset on every click.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setAiOpen(value => !value);
+      } else if (event.key === "Escape" && aiOpen) {
+        setAiOpen(false);
+        aiButton.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [aiOpen]);
   const active = destinationOf(path);
   const fromSomeoneElse = path.startsWith("/oauth") || path.startsWith("/world-invite");
 
@@ -76,9 +94,17 @@ export function Shell({ name, signedIn, publicSpace, children }: {
               <Link role="menuitem" href="/apps" className={styles.menuItem}>Connect apps</Link>
             </div>
           </details>
-          <Link href="/apps#ai" className={`${styles.pill} ${styles.ai}`} aria-label="AI" aria-current={path === "/apps" ? "page" : undefined}>
+          <button
+            type="button"
+            ref={aiButton}
+            className={`${styles.pill} ${styles.ai}`}
+            aria-label="Talk with AI"
+            aria-expanded={aiOpen}
+            aria-controls="solve-ai-console"
+            onClick={() => setAiOpen(value => !value)}
+          >
             <Icon name="ai" size={24} /><span>AI</span>
-          </Link>
+          </button>
           <span className={styles.divider} aria-hidden="true" />
           {inSpace ? null : <Link href="/space" className={styles.pill} data-visibility={publicSpace ? "public" : "private"}
             aria-label={publicSpace ? "Your Space is public. Change who can see it" : "Your Space is private. Change who can see it"}>
@@ -90,5 +116,9 @@ export function Shell({ name, signedIn, publicSpace, children }: {
       <main id="main" tabIndex={-1} className={styles.main}>{children}</main>
     </div>
     <nav aria-label="Primary mobile" className={styles.tabs}>{links}</nav>
+    <AiConsole open={aiOpen} signedIn={signedIn} pathname={path} onClose={() => {
+      setAiOpen(false);
+      aiButton.current?.focus();
+    }} />
   </div>;
 }
