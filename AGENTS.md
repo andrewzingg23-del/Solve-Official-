@@ -11,6 +11,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 # SOLVE builder rules
 
 Read first, in order: `docs/direction/2026-11-10-consolidated-direction.md` (the governing direction),
+`docs/direction/2026-11-11-platform-layers.md` (what already exists, and what does not),
 `DECISIONS.md` (the founder's decisions, in their words), `SECURITY-INVARIANTS.md`, and
 `docs/acceptance/STATUS.md` (what works, and how it was verified). Only the founder changes the
 direction; record their decisions in `DECISIONS.md` with their words.
@@ -36,4 +37,5 @@ direction; record their decisions in `DECISIONS.md` with their words.
 - Test in proportion to the risk. Any change touching identity, authority, privacy, publication or files gets an attack test.
 - Before pushing: `npm run typecheck`, `npm run lint`, `npm test`, and the browser checks the change affects (`npm run test:product`, `npm run test:acceptance` against staging). Never report green that you didn't see.
 - Append a short entry to `BUILD-STREAM.md` for each coherent slice: what changed, where, the checks you ran and their results, and what's next.
-- Push each finished slice from a side branch; merge it to `main` only with the founder's word. Never override the commit author (Vercel maps it to GitHub to deploy).
+- **The development trunk is `solve/space-presentation`.** Branch every slice from it and target it with every pull request. `main` is 47 commits behind it and 0 ahead (2026-11-11), and 30 of 43 open pull requests target `main` because this file never said where to branch from — two AI builders guessed, and two pull requests were discarded over it. If the founder names another trunk, that one wins and this line is wrong.
+- Push each finished slice from a side branch; merge it to the trunk only with the founder's word. Never override the commit author (Vercel maps it to GitHub to deploy).

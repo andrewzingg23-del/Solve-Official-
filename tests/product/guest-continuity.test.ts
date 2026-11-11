@@ -33,7 +33,7 @@ async function loadActions(fixture: Fixture) {
         "@/lib/supabase/server": `export const createClient=async()=>{const f=globalThis.__continuity;return {auth:{
           getUser:async()=>({data:{user:{is_anonymous:f.anonymous}}}),
           updateUser:async(attrs,opts)=>{f.calls.push("updateUser:"+attrs.email+":"+(opts?.emailRedirectTo??""));return {error:f.updateError};},
-          signInWithOtp:async(args)=>{f.calls.push("signInWithOtp:"+args.email);return {error:f.otpError};},
+          signInWithOtp:async(args)=>{f.calls.push("signInWithOtp:"+args.email+(args.options?.shouldCreateUser===false?":existing-only":""));return {error:f.otpError};},
         }};};`,
       };
       b.onResolve({ filter: /.*/ }, a => a.path in stubs ? { path: a.path, namespace: "fx" } : undefined);
@@ -102,7 +102,7 @@ test("leaving the guest behind happens only when the person asks for it", async 
   const { mod, cleanup } = await loadActions(fixture);
   try {
     await run(() => mod.signInLeavingGuestBehind(form("taken@example.test")));
-    assert.deepEqual(fixture.calls, ["signInWithOtp:taken@example.test"]);
+    assert.deepEqual(fixture.calls, ["signInWithOtp:taken@example.test:existing-only"]);
     assert.match(fixture.redirect, /left=1/, "and the cost is restated on the way out");
   } finally { await cleanup(); }
 });
@@ -124,4 +124,15 @@ test("the dead end names the way round it, and overstates nothing", async () => 
   assert.match(taken, /stays owned by this browser/, "and told it is reach, not a transfer of ownership");
   assert.match(taken, /connected again/, "and that a tool or an AI's access does not travel");
   assert.ok(!/mov(e|ed|es) (everything|your work)/i.test(taken), "nothing claims the work is moved");
+});
+
+test("existing-account sign-in errors remain on the existing-account path", async () => {
+  const fixture: Fixture = { anonymous: true, updateError: null, otpError: { message: "Try again" }, calls: [], redirect: "" };
+  const { mod, cleanup } = await loadActions(fixture);
+  try {
+    await run(() => mod.signInLeavingGuestBehind(form("taken@example.test")));
+    assert.match(fixture.redirect, /intent=signin/);
+    assert.deepEqual(fixture.calls, ["signInWithOtp:taken@example.test:existing-only"]);
+    assert.ok(!fixture.calls.some(c => c.startsWith("updateUser")));
+  } finally { await cleanup(); }
 });

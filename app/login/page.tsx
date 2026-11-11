@@ -13,18 +13,19 @@ import { sendMagicLink, signInLeavingGuestBehind } from "./actions";
 // case where that is untrue — the address already has an account — is said plainly, with its cost,
 // and never taken on the person's behalf.
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
-  const { next, error, sent, keeping, taken, left } = await searchParams;
+  const { next, error, sent, keeping, taken, left, intent } = await searchParams;
   const nextPath = safeNextPath(next);
   const user = await getUser();
   if (user && !user.is_anonymous) redirect(nextPath);
   const guest = Boolean(user?.is_anonymous);
+  const existing = intent === "signin" || typeof taken === "string" || left === "1";
 
   return <div className="s-stack" style={{ "--gap": "32px", maxWidth: 560 } as React.CSSProperties}>
     <header className="s-stack" style={{ "--gap": "14px" } as React.CSSProperties}>
       <span className="s-label">SOV ID</span>
-      <h1>Keep it with you, everywhere.</h1>
+      <h1>{existing ? "Sign in to your account." : "Keep it with you, everywhere."}</h1>
       <p className="s-muted">Sign in with your email and your SOV ID reaches every device you use. We&apos;ll send you a link — no password.</p>
-      {guest ? <p className="s-small" data-keeps-work>Everything you&apos;ve already made in this browser stays yours and comes with you: your Spaces, anything you&apos;ve connected, and whatever you&apos;ve let an AI reach. Until you do this, it lives only in this browser.</p> : null}
+      {guest && !existing ? <p className="s-small" data-keeps-work>Everything you&apos;ve already made in this browser stays yours and comes with you: your Spaces, anything you&apos;ve connected, and whatever you&apos;ve let an AI reach. Until you do this, it lives only in this browser.</p> : null}
     </header>
 
     {!isSupabaseConfigured
@@ -32,31 +33,22 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           <h2>Signing in isn&apos;t available right now.</h2>
           <p className="s-muted">Nothing you&apos;ve made has changed. Try again shortly.</p>
         </section>
-      : typeof taken === "string"
-        ? <section role="alert" className="s-surface s-stack" data-taken>
-            <h2>That email already has an account.</h2>
-            <p><strong>{taken}</strong> belongs to an account already, so it can&apos;t be added to this one. Signing in to it would leave what this browser holds behind — your Spaces here, anything you&apos;ve connected, and whatever you&apos;ve let an AI reach. That can&apos;t be undone from the other account.</p>
-            <p className="s-small" data-bring-across>If both are you, there is a way round it: before you sign in, share a Space from this browser and accept the link in the other account. The Space stays owned by this browser&apos;s identity, but the account can reach it. Anything you&apos;ve connected — a tool, or an AI&apos;s access — has to be connected again in the account; those don&apos;t travel.</p>
-            <form action={signInLeavingGuestBehind}>
-              <input type="hidden" name="next" value={nextPath} />
-              <input type="hidden" name="email" value={taken} />
-              <button className="s-button" data-variant="quiet" data-leave-guest>Sign in to that account anyway</button>
-            </form>
-            <p><Link href={`/login?next=${encodeURIComponent(nextPath)}`} className="s-button" data-variant="link">Use a different email instead</Link></p>
-          </section>
-        : typeof sent === "string"
+      : typeof sent === "string"
           ? <section role="status" className="s-surface s-stack">
               <h2>Check your email.</h2>
               <p>We sent a link to <strong>{sent}</strong>. Open it on this device to continue.</p>
               {keeping === "1" ? <p className="s-small" data-sent-keeping>It confirms this email on the identity you already have, so everything in this browser comes with you.</p> : null}
-              {left === "1" ? <p className="s-small" data-sent-left>This signs you in to that existing account. What this browser holds stays behind.</p> : null}
-              <p><Link href={`/login?next=${encodeURIComponent(nextPath)}`} className="s-button" data-variant="quiet">Use a different email</Link></p>
+              {left === "1" ? <p className="s-small" data-sent-left>This signs you in to that existing account. Guest work was not moved or merged into that account.</p> : null}
+              <p><Link href={`/login?next=${encodeURIComponent(nextPath)}${existing ? "&intent=signin" : ""}`} className="s-button" data-variant="quiet">Use a different email</Link></p>
             </section>
-          : <form action={sendMagicLink} className="s-surface s-stack">
+          : <form action={existing ? signInLeavingGuestBehind : sendMagicLink} className="s-surface s-stack">
+            {existing && guest ? <p className="s-small">You are signing into an existing account. Work in this guest session is separate and will not be moved or merged.</p> : null}
+            {existing && guest ? <details data-taken><summary>Keep access to work in this guest session</summary><p className="s-small" data-bring-across>Before switching, share a Space and accept its invitation in your account. It stays owned by this browser&apos;s guest identity. Tools and AI access must be connected again.</p></details> : null}
             <input type="hidden" name="next" value={nextPath} />
             <label htmlFor="email" className="s-small">Email</label>
-            <input id="email" name="email" type="email" required autoComplete="email" placeholder="you@example.com" className="s-input" />
-            <div><button className="s-button">Email me a link</button></div>
+            <input id="email" name="email" type="email" required autoComplete="email" placeholder="you@example.com" defaultValue={typeof taken === "string" ? taken : ""} className="s-input" />
+            <div><button className="s-button">{existing ? "Email me a sign-in link" : "Email me a link"}</button></div>
+            <Link href={`/login?next=${encodeURIComponent(nextPath)}${existing ? "" : "&intent=signin"}`} className="s-button" data-variant="link">{existing ? (guest ? "Keep this guest’s work with a new account" : "Create an account") : "Sign in to an existing account"}</Link>
             {typeof error === "string" ? <p role="alert" className="s-error">{error}</p> : null}
           </form>}
 

@@ -44,6 +44,8 @@ async function exerciseEveryMethod(supabase: SupabaseClient, actAs?: string) {
   await k.unsealKeys([id]);
   await k.destroyKey(id, "erased");
   await k.myGrants();
+  await k.readAiSpend();
+  await k.recordAiSpend({ tokens: 123, kind: "chat", requestId: "meter-test" });
   await k.verifyChain();
   await k.linkWallet("litesvm", "addr");
   await k.registerChainAsset("litesvm", "DEV_USDC", "m");

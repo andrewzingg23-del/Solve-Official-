@@ -20,6 +20,7 @@ const eslintConfig = defineConfig([
     "public/cesium/**",
     "public/arcadia/**",
     ".browser-tests/**",
+    "test-results/**",
   ]),
 ]);
 
