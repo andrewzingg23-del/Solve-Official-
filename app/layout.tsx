@@ -4,6 +4,7 @@ import "./globals.css";
 import { getUser } from "@/lib/supabase/server";
 import { getBotAvatar } from "@/lib/bot/avatar";
 import { ProductShell } from "./product/shell";
+import "./product/tokens.css";
 import "./product/product.css";
 import "./product/foundation.css";
 import "./world/[worldId]/room/room.css";
