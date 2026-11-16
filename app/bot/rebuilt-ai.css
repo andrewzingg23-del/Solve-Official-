@@ -5,21 +5,7 @@
 .solve-ai-card-heading h2 { color:var(--sov-ink); }
 .solve-ai-actions { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
 .solve-ai-notice { display:flex; flex-direction:column; gap:14px; margin-bottom:24px; }
-.solve-ai-card .solve-ai-fineprint,.solve-ai-persona-status p,.solve-ai-import-note p { color:var(--sov-muted); font-size:12px; line-height:1.8; }
-.solve-ai-local-start { max-width:720px; padding:30px; }
-.solve-ai-persona-status { display:flex; align-items:center; justify-content:space-between; gap:22px; border:1px solid var(--sov-line); border-radius:10px; background:var(--sov-panel); padding:18px 22px; }
-.solve-ai-persona-status strong { display:block; font-size:13px; font-weight:500; margin-bottom:4px; }
-.solve-ai-persona-status .solve-text-link { flex-shrink:0; }
-.solve-ai-creator { border:1px solid var(--sov-line); border-radius:var(--sov-inset-radius); background:var(--sov-panel); padding:28px; }
-.solve-ai-creator>section { grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr); gap:32px; }
-.solve-ai-creator>section>div:first-child { position:static; }
-.solve-ai-creator>section>div:first-child>div:first-child h2 { font-size:25px; }
-.solve-ai-creator>section>div:first-child>div:first-child p { font-size:12px; line-height:1.85; }
-.solve-ai-creator [aria-label="Stage view"] { display:none; }
-.solve-ai-creator :is(button,input,a) { min-height:44px; }
-.solve-ai-creator button { min-width:44px; letter-spacing:.055em; }
-.solve-ai-creator [aria-label="Preview a state"] { display:none; }
-.solve-ai-creator [aria-label="Customize"] button { border-radius:7px; font-size:10px; padding-inline:12px; }
+.solve-ai-card .solve-ai-fineprint,.solve-ai-import-note p { color:var(--sov-muted); font-size:12px; line-height:1.8; }
 .solve-ai-records { display:flex; flex-direction:column; gap:10px; margin:3px 0; }
 .solve-ai-record { display:flex; align-items:center; justify-content:space-between; gap:18px; border:1px solid var(--sov-line); border-radius:var(--sov-control-radius); padding:16px; }
 .solve-ai-record>div { min-width:0; }
@@ -54,5 +40,14 @@
 .solve-ai-knowledge-list>h3 { font-size:15px; font-weight:500; }
 .solve-ai-memory { align-items:flex-start; }
 .solve-ai-card .solve-ai-memory-text { color:var(--sov-secondary); white-space:pre-wrap; overflow-wrap:anywhere; margin-bottom:12px; }
-@media (max-width:1000px) { .solve-ai-creator>section { grid-template-columns:minmax(0,1fr); gap:28px; }.solve-ai-creator>section>div:first-child { max-width:600px; }.solve-ai-project-access { align-items:flex-start; flex-direction:column; gap:10px; } }
-@media (max-width:700px) { .solve-ai-creator { padding:20px 16px; }.solve-ai-creator>section>div:last-child { order:-1; }.solve-ai-persona-status { flex-direction:column; align-items:flex-start; gap:6px; padding:16px; }.solve-ai-record { gap:12px; padding:14px; }.solve-ai-memory { flex-direction:column; }.solve-ai-memory-fields { grid-template-columns:minmax(0,1fr); gap:12px; }.solve-ai-connections>.solve-panel { padding:20px; }.solve-ai-details { padding-inline:16px; }.solve-ai-local-start { padding:22px; } }
+@media (max-width:1000px) { .solve-ai-project-access { align-items:flex-start; flex-direction:column; gap:10px; } }
+@media (max-width:700px) { .solve-ai-record { gap:12px; padding:14px; }.solve-ai-memory { flex-direction:column; }.solve-ai-memory-fields { grid-template-columns:minmax(0,1fr); gap:12px; }.solve-ai-connections>.solve-panel { padding:20px; }.solve-ai-details { padding-inline:16px; }}
+
+.solve-agent-form { display:grid; gap:12px; max-width:34rem; padding:clamp(20px,4vw,36px); }
+.solve-agent-form label { color:var(--sov-ink); font-weight:500; }
+.solve-agent-form label span,.solve-agent-form p { color:var(--sov-muted); font-size:.875rem; }
+.solve-agent-form :is(input,textarea) { width:100%; min-width:0; border:1px solid var(--sov-line); border-radius:var(--sov-control-radius); padding:12px; background:var(--sov-base); color:var(--sov-ink); }
+.solve-agent-form textarea { resize:vertical; }
+.solve-agent-form input { margin-bottom:8px; }
+.solve-agent-form :focus-visible { outline:2px solid var(--sov-gold); outline-offset:2px; }
+.solve-agent-form .solve-ai-actions { margin-top:8px; }
