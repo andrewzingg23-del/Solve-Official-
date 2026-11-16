@@ -21,10 +21,10 @@ import { PassportPanel, type PassportView } from "./passport-panel";
 import { PassportError, passportUrl, projectsFrom } from "@/lib/passport/client";
 import { withPassport } from "@/lib/passport/link";
 
-export const metadata: Metadata = { title: "Your AI — solve" };
+export const metadata: Metadata = { title: "My Agent — SOV" };
 
 const SECTIONS = [
-  { value: "persona", label: "Persona" },
+  { value: "persona", label: "Settings" },
   { value: "connections", label: "Connections" },
   { value: "knowledge", label: "Knowledge" },
 ] as const;
@@ -37,8 +37,6 @@ type Loaded =
   | {
       kind: "ready";
       persona: Persona;
-      version: number;
-      savedAt: string | null;
       exists: boolean;
       ownerId: string;
       botAgentId: string | null;
@@ -93,8 +91,6 @@ async function load(section: Section): Promise<Loaded> {
     return {
       kind: "ready",
       persona: bot.persona,
-      version: bot.history.length,
-      savedAt: bot.saved?.at ?? null,
       exists: Boolean(bot.avatar),
       ownerId: bot.ownerId,
       botAgentId: bot.avatar?.agent_id ?? null,
@@ -126,18 +122,16 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
   return (
     <main className="solve-page solve-ai-page">
       <header className="solve-page-heading">
-        <span className="solve-kicker">Your personal AI</span>
-        <h1>Your AI</h1>
-        <p>Shape its persona, choose its connections and keep the knowledge that matters to you.</p>
+        <h1>My Agent</h1>
       </header>
 
-      <nav className="solve-section-nav" aria-label="Your AI sections">
+      {(section !== "persona" || (state.kind === "ready" && state.exists)) && <nav className="solve-section-nav" aria-label="Your AI sections">
         {SECTIONS.map((item) => (
           <Link key={item.value} href={`/bot?section=${item.value}`} aria-current={section === item.value ? "page" : undefined}>
             {item.label}
           </Link>
         ))}
-      </nav>
+      </nav>}
 
       {typeof params.world_error === "string" ? (
         <Notice title="Check your projects before trying again" body="The project could not be opened from this page. Review your saved projects, or start a new one from Projects." href="/" action="Open Projects" />
@@ -151,8 +145,6 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
         <RebuiltPersona
           signedIn={state.kind === "ready"}
           initial={state.kind === "ready" ? state.persona : undefined}
-          version={state.kind === "ready" ? state.version : 0}
-          savedAt={state.kind === "ready" ? state.savedAt : null}
           exists={state.kind === "ready" && state.exists}
           ownerId={state.kind === "ready" ? state.ownerId : undefined}
         />
@@ -167,7 +159,7 @@ export default async function BotPage({ searchParams }: { searchParams?: Promise
           <Link className="solve-text-link" href="/account">Review your local profile <Icon name="arrow" width={15} /></Link>
         </section>
       ) : !state.exists ? (
-        <Notice title="Save your persona first" body="Give your AI a name or change a detail in Persona, then save it to your account. Connections and private knowledge become available after that first save." href="/bot?section=persona" action="Customize your persona" />
+        <Notice title="Save your persona first" body="Save your Agent in your workspace to manage connections and private knowledge." href="/bot?section=persona" action="Set up My Agent" />
       ) : section === "connections" ? (
         <div className="solve-ai-stack">
           {state.connections ? (

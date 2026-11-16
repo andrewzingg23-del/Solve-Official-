@@ -107,3 +107,4 @@ Production kernel changes and live service credentials are out of scope for this
 | Codex (2026-11-01; founder: full guest access while building) | Seamless anonymous Auth + isolated kernel identity | codex/seamless-guest | lib/supabase/proxy.ts, additive migration, guest tests and access copy | Existing accounts, applied migrations and unrelated work | In progress |
 
 | Codex — approved Step 1 (2026-11-04) | ProductShell, Space, Projects routes/editor, login claiming, scoped foundation styles, focused tests | Isolated codex/sov-step-one; reuse kernel; preview only; PR #51 unmerged |
+| Codex | Simplify My Agent setup | codex/simplify-agent-setup | app/bot | Ready for review |

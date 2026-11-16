@@ -640,3 +640,5 @@ The saved Room and personal chat routes answer development questions from author
 
 ## 2026-11-05 — Shared SOV visual language
 The primary destinations, My Agent and the Development Room use the architectural shell’s warm action color, graphite panels, readable labels, serif display type and shared control geometry. Reused existing components and moved their legacy color literals to semantic tokens. The Room also reserves space for the mobile dock. Desktop/mobile browser checks covered six surfaces against staging data. Thirteen affected tests passed, local preview build passed, lint zero errors/eight warnings. Screenshots are in docs/sov/evidence/shared-design. Review this visual increment independently of PR #53.
+
+My Agent setup simplification — nine focused tests passed, typecheck passed, lint reported eight existing warnings. Local desktop and mobile guest save verified.
